@@ -1,0 +1,58 @@
+// Plan van Aanpak sub-page (bezoeker after the bezoek, then admin during review): what we'll do.
+import { Show } from 'solid-js';
+import { veld } from '../../shared/velden.ts';
+import { MijlpaalRegel } from './acties.tsx';
+import { Controle, afronden } from './bezoek.tsx';
+import { TerugLink } from './pagina.tsx';
+import { useDossier } from './staat.ts';
+import { MateriaalTabel, VeldInvoer, VoorstelLijst } from './velden.tsx';
+
+export function Plan() {
+  const s = useDossier();
+  const ulebeltOpties = () => veld('ulebelt_doet').opties!.filter(([k]) => k !== 'toestemming' || s.d.huur_koop === 'huur');
+  const toelichtingNodig = () => {
+    const b = s.d.data.beoordeling;
+    return typeof b === 'string' && b !== 'uitvoerbaar' && !s.d.data.beoordeling_toelichting;
+  };
+
+  return (
+    <>
+      <TerugLink />
+      <section class="card card-body mb-3 qa-plan">
+        <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
+          <h2 class="h5 mb-0">Plan van Aanpak</h2>
+          <a href={`/docs/dossiers/${s.id}/concept-plan`} target="_blank" class="small qa-concept-plan">Bekijk concept-Plan</a>
+        </div>
+
+        <h3 class="h6 text-muted mt-2">Voorstel Ulebelt</h3>
+        <VeldInvoer k="beoordeling" />
+        <VeldInvoer k="beoordeling_toelichting" />
+        <Show when={toelichtingNodig()}>
+          <div class="small text-warning mt-n2 mb-3 qa-toelichting-nodig">Licht de beoordeling toe voor de bewoner en de woningcorporatie.</div>
+        </Show>
+        <VoorstelLijst />
+
+        <h3 class="h6 text-muted mt-2">Afspraken</h3>
+        <VeldInvoer k="bewoner_doet" />
+        <VeldInvoer k="bewoner_doet_details" />
+        <VeldInvoer k="ulebelt_doet" opties={ulebeltOpties()} />
+        <VeldInvoer k="ulebelt_doet_details" />
+
+        <MateriaalTabel lijst="materialen" />
+        <VeldInvoer k="werkzaamheden" />
+
+        <Controle s={s} pagina="plan" />
+        <MijlpaalRegel mijlpaal="klaar_voor_controle" label="Klaar voor controle" />
+        <Show when={!s.d.klaar_voor_controle_at && s.mag(['bezoeker'])}>
+          <button
+            type="button"
+            class="btn btn-success btn-lg qa-klaar-voor-controle"
+            onClick={() => void afronden(s, 'plan', 'klaar_voor_controle', s.beheerder() ? undefined : 'Hierna kunnen alleen de beheerders het dossier nog wijzigen.')}
+          >
+            Klaar voor controle
+          </button>
+        </Show>
+      </section>
+    </>
+  );
+}

@@ -1,0 +1,155 @@
+// Append-only: each entry runs once, in order, tracked by PRAGMA user_version.
+export const MIGRATIES: string[] = [
+  `
+  CREATE TABLE gebruikers (
+    id INTEGER PRIMARY KEY,
+    naam TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    telefoon TEXT,
+    rol TEXT NOT NULL CHECK (rol IN ('beheerder', 'klusser')),
+    created_at TEXT NOT NULL,
+    archived_at TEXT,
+    last_active_at TEXT
+  );
+
+  CREATE TABLE sessies (
+    id INTEGER PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id),
+    impersonated_user_id INTEGER REFERENCES gebruikers(id),
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+  );
+
+  CREATE TABLE login_codes (
+    id INTEGER PRIMARY KEY,
+    gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id),
+    code_hash TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    foute_pogingen INTEGER NOT NULL DEFAULT 0,
+    gebruikt_at TEXT,
+    vervallen_at TEXT
+  );
+
+  CREATE TABLE login_pogingen (
+    id INTEGER PRIMARY KEY,
+    soort TEXT NOT NULL CHECK (soort IN ('aanvraag', 'code', 'mail')),
+    email TEXT,
+    ip TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX login_pogingen_tijd ON login_pogingen(created_at);
+
+  CREATE TABLE dossiers (
+    id INTEGER PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES gebruikers(id),
+    straat TEXT, huisnummer INTEGER, huisletter TEXT, toevoeging TEXT, postcode TEXT, plaats TEXT, gemeente TEXT,
+    adres_json TEXT,
+    huur_koop TEXT CHECK (huur_koop IN ('huur', 'koop')),
+    bezoeker_id INTEGER REFERENCES gebruikers(id),
+    uitvoerder_id INTEGER REFERENCES gebruikers(id),
+    afspraak TEXT,
+    uitvoering_gepland TEXT,
+    bezoeker_toegewezen_at TEXT, bezoeker_toegewezen_by INTEGER,
+    bezoek_afgerond_at TEXT, bezoek_afgerond_by INTEGER,
+    klaar_voor_controle_at TEXT, klaar_voor_controle_by INTEGER,
+    corporatie_akkoord_at TEXT, corporatie_akkoord_by INTEGER,
+    klussendienst_gekozen_at TEXT, klussendienst_gekozen_by INTEGER,
+    uitvoerder_toegewezen_at TEXT, uitvoerder_toegewezen_by INTEGER,
+    werk_opgeleverd_at TEXT, werk_opgeleverd_by INTEGER,
+    gesloten_at TEXT, gesloten_by INTEGER, gesloten_reden TEXT, gesloten_toelichting TEXT,
+    plan_gewijzigd_at TEXT,
+    data TEXT NOT NULL DEFAULT '{}'
+  );
+  CREATE INDEX dossiers_adres ON dossiers(postcode, huisnummer);
+
+  CREATE TABLE verzendingen (
+    id INTEGER PRIMARY KEY,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+    sjabloon TEXT NOT NULL,
+    ontvanger TEXT NOT NULL,
+    aan TEXT NOT NULL,
+    cc TEXT,
+    onderwerp TEXT NOT NULL,
+    tekst TEXT NOT NULL,
+    handmatig INTEGER NOT NULL DEFAULT 0,
+    mislukt_at TEXT,
+    mislukt_reden TEXT,
+    created_at TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES gebruikers(id)
+  );
+  CREATE INDEX verzendingen_dossier ON verzendingen(dossier_id);
+
+  CREATE TABLE uitstellen (
+    id INTEGER PRIMARY KEY,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+    stap TEXT NOT NULL,
+    tot TEXT NOT NULL,
+    notitie TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES gebruikers(id)
+  );
+
+  CREATE TABLE plan_acks (
+    id INTEGER PRIMARY KEY,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+    ontvanger TEXT NOT NULL,
+    notitie TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES gebruikers(id)
+  );
+
+  CREATE TABLE fotos (
+    id TEXT PRIMARY KEY,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+    slot TEXT NOT NULL,
+    breedte INTEGER NOT NULL,
+    hoogte INTEGER NOT NULL,
+    m_per_px REAL,
+    annotaties TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES gebruikers(id),
+    verwijderd_at TEXT
+  );
+  CREATE INDEX fotos_dossier ON fotos(dossier_id);
+
+  CREATE TABLE audit (
+    id INTEGER PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    actor_id INTEGER REFERENCES gebruikers(id),
+    impersonated_user_id INTEGER REFERENCES gebruikers(id),
+    dossier_id INTEGER,
+    type TEXT NOT NULL,
+    payload TEXT NOT NULL DEFAULT '{}'
+  );
+  CREATE INDEX audit_dossier ON audit(dossier_id, id);
+  CREATE INDEX audit_actor ON audit(actor_id, id);
+
+  CREATE TABLE sjablonen (
+    key TEXT PRIMARY KEY,
+    onderwerp TEXT NOT NULL,
+    tekst TEXT NOT NULL
+  );
+
+  CREATE TABLE materialen (
+    id INTEGER PRIMARY KEY,
+    volgorde INTEGER NOT NULL,
+    naam TEXT NOT NULL,
+    prijs INTEGER NOT NULL
+  );
+
+  CREATE TABLE feedback (
+    id INTEGER PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    gebruiker_id INTEGER REFERENCES gebruikers(id),
+    scherm TEXT NOT NULL,
+    tekst TEXT NOT NULL,
+    afgehandeld_at TEXT,
+    afgehandeld_by INTEGER REFERENCES gebruikers(id)
+  );
+  `,
+];

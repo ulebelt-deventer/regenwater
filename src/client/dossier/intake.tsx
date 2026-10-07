@@ -1,0 +1,244 @@
+// Intake sub-page (admin, at the desk): address, bewoner, woning, subsidie mail, straatfoto, kaart and bodem.
+import { A } from '@solidjs/router';
+import { For, Show, createSignal, onCleanup } from 'solid-js';
+import { DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/constants.ts';
+import { datum } from '../../shared/datum.ts';
+import { SUBSIDIE_SJABLONEN, adresRegel, intakeOntbreekt, laatsteVerzending, str } from '../../shared/status.ts';
+import type { Dossier } from '../../shared/types.ts';
+import { get, post } from '../api.ts';
+import { Modal, melding, probeer } from '../ui.tsx';
+import { MailKnop } from './acties.tsx';
+import { FotoSlot, KaartVeld } from './fotos.tsx';
+import { SluitKnop, TerugLink } from './pagina.tsx';
+import { useDossier } from './staat.ts';
+import { VeldInvoer } from './velden.tsx';
+
+const VARIANT: Record<string, string> = {
+  subsidie_huur: 'subsidiabel, huurwoning',
+  subsidie_koop: 'subsidiabel, koopwoning',
+  subsidie_niet: 'niet subsidiabel',
+};
+
+export function Intake() {
+  const s = useDossier();
+  const uit = () => !s.mag([]);
+  const sjabloon = () => {
+    const riool = str(s.d, 'rioolstelsel');
+    if (!riool || !s.d.huur_koop) return null;
+    return riool === 'gescheiden' ? 'subsidie_niet' : `subsidie_${s.d.huur_koop}`;
+  };
+  const verstuurd = () => laatsteVerzending(s.d, SUBSIDIE_SJABLONEN);
+  const nietSubsidiabel = () => str(s.d, 'rioolstelsel') === 'gescheiden';
+  const ontbreekt = () => intakeOntbreekt(s.d);
+
+  return (
+    <>
+      <TerugLink />
+      <section class="card card-body mb-3 qa-intake">
+        <h2 class="h5">Intake</h2>
+        <AdresVeld />
+        <VeldInvoer k="bewoner_naam" />
+        <VeldInvoer k="bewoner_email" />
+        <VeldInvoer k="bewoner_telefoon" />
+        <VeldInvoer k="huur_koop" />
+        <VeldInvoer k="woningeigenaar" />
+        <VeldInvoer k="woningtype" />
+
+        <div id="veld-rioolstelsel-kop" class="d-flex flex-wrap align-items-center gap-2 mb-1">
+          <div class="form-label fw-semibold mb-0">Rioolstelsel</div>
+          <Show when={s.d.adres}>
+            {(a) => (
+              <Show when={RIOOLKAARTEN[a().gemeente]} fallback={<span class="small text-danger qa-geen-rioolkaart">Voor {a().gemeente} is nog geen rioolkaart bekend. Vraag de ontwikkelaar om {a().gemeente} toe te voegen.</span>}>
+                {(url) => <a href={url()} target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary qa-rioolkaart">Rioolkaart</a>}
+              </Show>
+            )}
+          </Show>
+        </div>
+        <VeldInvoer k="rioolstelsel" kaal class="mb-3" />
+
+        <div id="veld-subsidiemail" class="mb-3 qa-subsidiemail">
+          <div class="form-label fw-semibold mb-1">📧 Mail aan bewoner over subsidie</div>
+          <Show when={verstuurd()}>
+            {(v) => <div class="text-groen fst-italic mb-1 qa-subsidie-verstuurd">✅ {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)} ({VARIANT[v().sjabloon]})</div>}
+          </Show>
+          <Show when={sjabloon()} fallback={<div class="small text-muted">Kies eerst huur/koop en het rioolstelsel.</div>}>
+            {(sj) => <MailKnop sjabloon={sj()} label={`Mail bewoner: ${VARIANT[sj()]}`} uit={uit()} />}
+          </Show>
+        </div>
+
+        <Show
+          when={!nietSubsidiabel()}
+          fallback={
+            <Show when={!s.d.gesloten_at}>
+              <div class="mb-2">
+                <SluitKnop reden="Niet subsidiabel" label="Dossier sluiten: niet subsidiabel" class="btn btn-danger qa-sluiten-niet-subsidiabel" />
+              </div>
+            </Show>
+          }
+        >
+          <div id="veld-straatfoto" class="mb-3 qa-veld-straatfoto">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <div class="form-label fw-semibold mb-0">Straatfoto / vooraanzicht</div>
+              <Show when={s.d.adres}>
+                {(a) => <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${a().ll[1]},${a().ll[0]}`} target="_blank" rel="noopener" class="small qa-streetview">Open Street View</a>}
+              </Show>
+            </div>
+            <FotoSlot k="straatfoto" />
+          </div>
+
+          <KaartVeld />
+
+          <Boorprofiel />
+          <VeldInvoer k="boorlocatie" />
+          <VeldInvoer k="bodemsituatie" />
+        </Show>
+
+        <div class="border-top pt-3 qa-controle">
+          <Show when={ontbreekt().length} fallback={<div class="text-groen qa-intake-compleet">✅ De intake is compleet. Wijs nu een bezoeker toe.</div>}>
+            <div class="text-warning qa-intake-ontbreekt">Nog nodig: {ontbreekt().join(', ')}.</div>
+          </Show>
+          <A href={`/dossiers/${s.id}#sectie-bezoeker`} class="btn btn-primary mt-2 qa-intake-klaar">Naar het dossier</A>
+        </div>
+      </section>
+    </>
+  );
+}
+
+interface Suggestie {
+  id: string;
+  weergavenaam: string;
+}
+
+function AdresVeld() {
+  const s = useDossier();
+  const uit = () => !s.mag([]);
+  const [q, setQ] = createSignal('');
+  const [suggesties, setSuggesties] = createSignal<Suggestie[]>([]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let laatste = 0;
+  onCleanup(() => clearTimeout(timer));
+
+  // Debounced, and only the newest request's answer is shown, so a slow early reply can't overwrite a later one.
+  const zoek = (tekst: string) => {
+    setQ(tekst);
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const nr = ++laatste;
+      void probeer(async () => {
+        const r = await get<{ suggesties: Suggestie[] }>(`/api/adres/suggest?q=${encodeURIComponent(tekst)}`);
+        if (nr === laatste) setSuggesties(r.suggesties);
+      });
+    }, 250);
+  };
+  const kies = async (sug: Suggestie) => {
+    setSuggesties([]);
+    setQ('');
+    await probeer(async () => {
+      const r = await post<{ dossier: Dossier; dubbel: { id: number; gesloten: boolean }[] }>(`/api/dossiers/${s.id}/adres`, { id: sug.id });
+      s.vervang(r.dossier);
+      s.setDubbel(r.dubbel);
+    });
+  };
+
+  return (
+    <div id="veld-adres" class="mb-3 qa-veld-adres">
+      <div class="form-label fw-semibold mb-1">Adres</div>
+      <Show when={s.d.adres}>
+        {(a) => (
+          <div class="mb-1 qa-adres-gekozen">
+            <div>{adresRegel(s.d)}</div>
+            <div>{a().postcode} {a().plaats}</div>
+            <div class="small text-muted">Gemeente {a().gemeente}</div>
+          </div>
+        )}
+      </Show>
+      <Show when={!uit()}>
+        <div class="position-relative">
+          <input
+            class="form-control qa-adres-zoek"
+            placeholder={s.d.adres ? 'Ander adres zoeken: straat, huisnummer, plaats of postcode' : 'Straat, huisnummer, plaats of postcode'}
+            value={q()}
+            onInput={(e) => zoek(e.currentTarget.value)}
+          />
+          <Show when={suggesties().length && q().trim().length >= 2}>
+            <div class="list-group position-absolute w-100 shadow-sm" style={{ 'z-index': 10 }}>
+              <For each={suggesties()}>
+                {(sug) => (
+                  <button type="button" class="list-group-item list-group-item-action qa-adres-suggestie" onClick={() => void kies(sug)}>{sug.weergavenaam}</button>
+                )}
+              </For>
+            </div>
+          </Show>
+        </div>
+      </Show>
+      <For each={s.dubbel()}>
+        {(x) => (
+          <div class="text-danger small mt-1 qa-dubbel">
+            Er bestaat al een dossier voor dit adres: <A href={`/dossiers/${x.id}`} class="link-danger">dossier {x.id}</A> ({x.gesloten ? 'gesloten' : 'open'})
+          </div>
+        )}
+      </For>
+    </div>
+  );
+}
+
+function Boorprofiel() {
+  const s = useDossier();
+  const [tabel, setTabel] = createSignal(false);
+  const [bezig, setBezig] = createSignal(false);
+
+  // The tab opens synchronously on the click, so popup blockers allow it; it's pointed at BROloket once the lookup answers.
+  const zoekBoring = async () => {
+    const tab = window.open('about:blank', '_blank');
+    setBezig(true);
+    const ok = await probeer(async () => {
+      const r = await get<{ boring: { broId: string; afstand_m: number; url: string } | null }>(`/api/dossiers/${s.id}/boring`);
+      if (!r.boring) {
+        melding('warning', 'Geen boring gevonden binnen 5 km. Zoek zelf op DINOloket.');
+        tab?.close();
+        return;
+      }
+      melding('success', `Dichtstbijzijnde boring ${r.boring.broId} ligt op ${r.boring.afstand_m} m.`);
+      if (tab) tab.location.href = r.boring.url;
+      else window.open(r.boring.url, '_blank');
+    });
+    if (!ok) tab?.close();
+    setBezig(false);
+  };
+
+  return (
+    <div id="veld-boorprofiel" class="mb-3 qa-veld-boorprofiel">
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <div class="form-label fw-semibold mb-0">Boorprofiel</div>
+        <Show when={s.beheerder() && s.d.adres}>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-boring" disabled={bezig()} onClick={() => void zoekBoring()}>Dichtstbijzijnde boring</button>
+        </Show>
+        <a href="https://www.dinoloket.nl/ondergrondgegevens" target="_blank" rel="noopener" class="small qa-dinoloket">DINOloket</a>
+        <button type="button" class="btn btn-link btn-sm p-0 qa-doorlaatbaarheid" onClick={() => setTabel(true)}>Doorlaatbaarheid per grondsoort</button>
+      </div>
+      <FotoSlot k="boorprofiel" />
+      <Show when={tabel()}>
+        <Modal titel="Doorlaatbaarheid per grondsoort" onSluit={() => setTabel(false)} class="qa-doorlaatbaarheid-modal">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Grondsoort</th>
+                <th>Doorlaatbaarheid</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={DOORLAATBAARHEID}>
+                {([grond, doorlaat]) => (
+                  <tr>
+                    <td>{grond}</td>
+                    <td>{doorlaat}</td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </Modal>
+      </Show>
+    </div>
+  );
+}

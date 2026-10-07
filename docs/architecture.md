@@ -1,6 +1,6 @@
 # Architecture
 
-Load is tiny (about 15 active users a day), so the design optimizes for simplicity and low maintenance, not scale. The UI and behavior are specified in `2026-10-03 UI spec.md`.
+Load is tiny (about 15 active users a day), so the design optimizes for simplicity and low maintenance, not scale. The UI and behavior are specified in `spec.md`.
 
 ## Hosting
 
@@ -13,7 +13,9 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 
 - TypeScript everywhere. One shared module (`src/shared`) holds the field definitions, the status rules and the aandacht rules, used by both server and client. One field list drives the edit forms, the PDFs, the concept-Plan, the paper bezoekformulieren, the Controle text, the CSV, the audit labels and `plan_gewijzigd_at`; one rule list drives the status, the aandacht findings and the Statussen and Aandacht-criteria pages.
 - Field definitions are plain typed objects in code (key, label, input type, options, which sub-page, `inPlan`/`inOpleverrapport`, who may edit, whether Controle checks it, a `visibleIf` predicate on the dossier), not a JSON schema or a form library. Pages lay out their sections by hand and render each field from its definition, so odd layouts (the photo slot column, the kaart, the materials table) stay ordinary components.
+- Node 26, locally and on the server (pinned in `package.json` `engines` and `.nvmrc`).
 - Server: Hono on Node. SQLite through `better-sqlite3` (a single file, no database server to run), with plain SQL migrations and no ORM.
+- Dossier storage: real columns for everything the app filters, sorts or counts on (adres parts, plaats, huur/koop, bezoeker and uitvoerder, every milestone `_at/_by`, closing). All other form fields live in one JSON column keyed by field key, with repeating items (daken, tuinen, regenpijpen, materiaal rows, werkzaamheden bullets) as objects keyed by their stable IDs. An autosave PATCH sets one key path, which is what makes "last write wins per field" hold.
 - Client: SolidJS single-page app, built with Vite, styled with Bootstrap 5 (themed to the huisstijl via Sass variables). Every page, the login page included, is rendered in the browser from JSON returned by the Hono API. The server renders HTML only for documents: the PDFs, the concept-Plan, the paper bezoekformulieren, the materials print page and the emails. `eslint-plugin-solid` is mandatory: destructuring props or returning early from a component silently breaks reactivity, and the linter catches most of those.
 - Status and aandacht are computed on demand from the dossier's data, never stored or recomputed in the background. The dossiers list loads the rows that match its plain SQL filters, computes status and findings in memory, then filters, sorts and paginates; at thousands of dossiers that's milliseconds.
 - Figtree is self-hosted (woff2 in the build), not loaded from Google Fonts, which would send visitors' IP addresses to Google.
@@ -22,7 +24,7 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 - Sessions are rows in SQLite, checked on every API request together with the user's archived flag, so archiving a user locks them out on their next request. That check already loads the user row, so a request writes `last_active_at` only when the stored value is over 5 minutes old.
 - Login codes and rate limits are SQLite tables too: one row per issued code (hashed, with expiry, wrong-attempt count, used/voided time) and one row per login request or code attempt (e-mail, IP, time), counted over the past hour and pruned daily.
 - Impersonation ("Inloggen als") sets `impersonated_user_id` on the admin's own session row; no second session is created. Each request authorizes as the impersonated klusser (after checking that both are active and the admin is still an admin, else it clears the field), while audit events record the admin as actor with the klusser in an `impersonated_user_id` column.
-- Installable to the home screen: `manifest.webmanifest` (name, `display: standalone`, crème background, donkergroen theme color) with 192px, 512px and maskable 512px icons, plus a 180px `apple-touch-icon` without transparency for iOS. All icons and the favicon are the logo's "U" (with the owl eyes) on crème, cut from page 2 of the huisstijl PDF (`reference/ulebelt-u-cut.png`) and already generated in `src/client/public/`; the maskable one keeps the U inside the central 80% so Android's mask doesn't clip it. A home-screen app on iOS has its own cookies, separate from Safari's, so the user logs in again there; the 6-digit code makes that work.
+- Installable to the home screen: `manifest.webmanifest` (name, `display: standalone`, crème background, donkergroen theme color) with 192px, 512px and maskable 512px icons, plus a 180px `apple-touch-icon` without transparency for iOS. All icons and the favicon are the logo's "U" (with the owl eyes) on crème, cut from page 2 of the huisstijl PDF (`tmp/reference/ulebelt-u-cut.png`) and already generated in `src/client/public/`; the maskable one keeps the U inside the central 80% so Android's mask doesn't clip it. A home-screen app on iOS has its own cookies, separate from Safari's, so the user logs in again there; the 6-digit code makes that work.
 
 ## Email
 
@@ -61,8 +63,8 @@ Bash scripts adapted from `tmp/devops-SAMPLE`, run from the maintainer's machine
 
 - `config.sh`: reads the gitignored `deploy.env` (host, domain, app name) and provides the `remote`/`remote_sudo` helpers.
 - `host-setup.sh`: once per VPS. Apt packages, Node, Caddy, fail2ban, unattended-upgrades, swap, timezone, Litestream, rclone.
-- `provision.sh`: idempotent, rerun whenever the units change. Creates the system user and `/srv/regenton/{app,data,photos,logs}`, the hardened systemd unit for the app (`EnvironmentFile=/etc/regenton.env`), the Litestream service, the scheduled jobs below, and the Caddy site.
-- `deploy.sh`: typecheck, test and build locally; rsync an allow-list to the server; `npm ci --omit=dev` and `npx playwright install --with-deps chromium` only when `package-lock.json` changed; run migrations; restart; poll `/health` until it answers.
+- `provision.sh`: idempotent, rerun whenever the units change. Creates the system user and `/srv/regenton/{app,browsers,data,logs}` (photos in `data/fotos`), the hardened systemd unit for the app (`EnvironmentFile=/etc/regenton.env`), the Litestream service, the scheduled jobs below, and the Caddy site.
+- `deploy.sh`: typecheck, lint, unit tests and build locally; rsync an allow-list to the server; `npm ci --omit=dev` and the Playwright Chromium install only when `package-lock.json` changed; restart (migrations run on boot); poll `/health` until it answers.
 - `push-env.sh`: writes `/etc/regenton.env` (Mailgun key, healthcheck URLs, S3 credentials) from a local gitignored file.
 - `status.sh`, `logs.sh`, `restart.sh`: health, memory, recent errors, backup age and disk at a glance; journald logs; restart.
 

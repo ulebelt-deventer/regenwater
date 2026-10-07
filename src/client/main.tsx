@@ -1,0 +1,57 @@
+import '@fontsource/figtree/400.css';
+import '@fontsource/figtree/600.css';
+import '@fontsource/figtree/800.css';
+import './styles.scss';
+import { Route, Router } from '@solidjs/router';
+import { render } from 'solid-js/web';
+import { DossierActiviteit } from './dossier/activiteit.tsx';
+import { Bezoek } from './dossier/bezoek.tsx';
+import { Intake } from './dossier/intake.tsx';
+import { Details, DossierRoute } from './dossier/pagina.tsx';
+import { Plan } from './dossier/plan.tsx';
+import { Uitvoering } from './dossier/uitvoering.tsx';
+import { Layout } from './layout.tsx';
+import { startOpslag } from './opslag.ts';
+import { Activiteit } from './paginas/activiteit.tsx';
+import { Feedback, Materialen, Sjablonen } from './paginas/beheer.tsx';
+import { Dossiers } from './paginas/dossiers.tsx';
+import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
+import { Inloggen } from './paginas/inloggen.tsx';
+import { Overzicht } from './paginas/overzicht.tsx';
+import { AandachtUitleg, Installeren, Privacy, Statussen } from './paginas/uitleg.tsx';
+
+function NietGevonden() {
+  return <div class="alert alert-warning qa-niet-gevonden">Deze pagina bestaat niet.</div>;
+}
+
+startOpslag();
+
+render(
+  () => (
+    <Router root={Layout}>
+      <Route path="/" component={Overzicht} />
+      <Route path="/inloggen" component={Inloggen} />
+      <Route path="/dossiers" component={Dossiers} />
+      <Route path="/dossiers/:id" component={DossierRoute}>
+        <Route path="/" component={Details} />
+        <Route path="/intake" component={Intake} />
+        <Route path="/bezoek" component={Bezoek} />
+        <Route path="/plan" component={Plan} />
+        <Route path="/uitvoering" component={Uitvoering} />
+        <Route path="/activiteit" component={DossierActiviteit} />
+      </Route>
+      <Route path="/gebruikers" component={Gebruikers} />
+      <Route path="/gebruikers/:id" component={GebruikerPagina} />
+      <Route path="/beheer/materialen" component={Materialen} />
+      <Route path="/beheer/sjablonen" component={Sjablonen} />
+      <Route path="/beheer/feedback" component={Feedback} />
+      <Route path="/beheer/activiteit" component={Activiteit} />
+      <Route path="/uitleg/statussen" component={Statussen} />
+      <Route path="/uitleg/aandacht" component={AandachtUitleg} />
+      <Route path="/installeren" component={Installeren} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="*" component={NietGevonden} />
+    </Router>
+  ),
+  document.getElementById('app')!,
+);

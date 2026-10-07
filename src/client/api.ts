@@ -1,0 +1,44 @@
+// Every server error is `{ fout }`; ApiFout carries it with the status so callers can tell a rejection from a dropped connection.
+export class ApiFout extends Error {
+  status: number;
+  constructor(status: number, bericht: string) {
+    super(bericht);
+    this.status = status;
+  }
+}
+
+export function isNetwerkFout(e: unknown): boolean {
+  return !(e instanceof ApiFout) || e.status >= 500;
+}
+
+export async function api<T = any>(methode: string, pad: string, inhoud?: unknown): Promise<T> {
+  const init: RequestInit = { method: methode, headers: {} };
+  if (inhoud instanceof Blob) {
+    init.body = inhoud;
+    (init.headers as Record<string, string>)['content-type'] = inhoud.type || 'application/octet-stream';
+  } else if (inhoud !== undefined) {
+    init.body = JSON.stringify(inhoud);
+    (init.headers as Record<string, string>)['content-type'] = 'application/json';
+  }
+  const res = await fetch(pad, init);
+  const tekst = await res.text();
+  const json = tekst ? JSON.parse(tekst) : {};
+  if (!res.ok) {
+    if (res.status === 401 && !location.pathname.startsWith('/inloggen')) location.assign('/inloggen');
+    throw new ApiFout(res.status, typeof json.fout === 'string' ? json.fout : `Fout ${res.status}`);
+  }
+  return json as T;
+}
+
+export const get = <T = any>(pad: string) => api<T>('GET', pad);
+export const post = <T = any>(pad: string, inhoud: unknown = {}) => api<T>('POST', pad, inhoud);
+export const patch = <T = any>(pad: string, inhoud: unknown) => api<T>('PATCH', pad, inhoud);
+export const put = <T = any>(pad: string, inhoud: unknown) => api<T>('PUT', pad, inhoud);
+export const del = <T = any>(pad: string) => api<T>('DELETE', pad);
+
+export function query(params: Record<string, string | number | boolean | null | undefined>): string {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== '' && v !== false) q.set(k, String(v));
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}

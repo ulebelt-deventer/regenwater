@@ -1,0 +1,173 @@
+// Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen and regenpijpen, then what was found.
+import { A } from '@solidjs/router';
+import { For, Show } from 'solid-js';
+import { NORMAFVOER_MM } from '../../shared/constants.ts';
+import { getal, kaartItems, waterberging } from '../../shared/kaart.ts';
+import { ontbrekend } from '../../shared/velden.ts';
+import { bevestig, gaNaar } from '../ui.tsx';
+import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
+import { FotoSlot, KaartVeld } from './fotos.tsx';
+import { TerugLink } from './pagina.tsx';
+import { type DossierStaat, useDossier } from './staat.ts';
+import { VeldInvoer } from './velden.tsx';
+
+const REGENPIJP_VELDEN = ['dak', 'soort', 'diameter', 'regenton', 'ondergrond', 'afkoppelen', 'waar', 'hoe'];
+
+// Opens a collapsed regenpijp section before scrolling, since gaNaar can't scroll to a hidden field.
+function naarVeld(anker: string) {
+  const el = document.getElementById(anker);
+  if (!el) throw new Error(`Geen element met id ${anker}`);
+  const details = el.closest('details');
+  if (details) details.open = true;
+  gaNaar(anker);
+}
+
+export function Bezoek() {
+  const s = useDossier();
+  const items = () => kaartItems(s.d);
+  const geenDak = () => (
+    <div class="text-danger mb-2 qa-geen-dak">
+      Er is nog geen dak ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
+    </div>
+  );
+  const m2Cel = (id: string, soort: 'dak' | 'tuin', m2: number | null, berekend: boolean) => (
+    <Show when={berekend} fallback={<VeldInvoer k={`${soort}.${id}.m2`} kaal />}>
+      {m2 === null ? '--' : `${getal(m2)} m²`}
+    </Show>
+  );
+
+  return (
+    <>
+      <TerugLink />
+      <section class="card card-body mb-3 qa-bezoek">
+        <h2 class="h5">Bezoek</h2>
+        <KaartVeld />
+
+        <div id="veld-daken" class="mb-3 qa-daken">
+          <div class="form-label fw-semibold mb-1">Dak</div>
+          <Show when={items().daken.length} fallback={geenDak()}>
+            <Show when={!items().opSchaal}>
+              <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
+            </Show>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-1">
+                <thead>
+                  <tr>
+                    <th>Dakdeel</th>
+                    <th style={{ width: '9rem' }}>m²*</th>
+                    <th>Regenpijpen</th>
+                    <th>Waterberging per regenpijp**</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <For each={items().daken}>
+                    {(dak) => (
+                      <tr class="qa-dak-rij">
+                        <td>{dak.label}</td>
+                        <td>{m2Cel(dak.id, 'dak', dak.m2, dak.m2Berekend)}</td>
+                        <td>{dak.regenpijpen.map((id) => items().labels.get(id)).join(', ') || '--'}</td>
+                        <td class="qa-waterberging">
+                          <Show when={dak.regenpijpen.length} fallback={<span class="text-muted">-- (geen regenpijp)</span>}>
+                            <Show when={waterberging(dak)} fallback="--">
+                              {(w) => (
+                                <>
+                                  {w().liter} liter
+                                  <div class="small text-muted">{w().uitleg}</div>
+                                </>
+                              )}
+                            </Show>
+                          </Show>
+                        </td>
+                      </tr>
+                    )}
+                  </For>
+                </tbody>
+              </table>
+            </div>
+            <div class="small text-muted">* bron: kadastrale kaart (PDOK)</div>
+            <div class="small text-muted">** per regenpijp gebaseerd op normafvoer {NORMAFVOER_MM} mm regenwater</div>
+          </Show>
+        </div>
+
+        <div id="veld-tuinen" class="mb-3 qa-tuinen">
+          <div class="form-label fw-semibold mb-1">Tuin</div>
+          <Show
+            when={items().tuinen.length}
+            fallback={
+              <div class="text-danger mb-2 qa-geen-tuin">
+                Er is nog geen tuin ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
+              </div>
+            }
+          >
+            <For each={items().tuinen}>
+              {(tuin) => (
+                <div class="row g-2 align-items-start border-bottom py-2 qa-tuin-rij">
+                  <div class="col-3 col-md-2 fw-semibold">{tuin.label}</div>
+                  <div class="col-9 col-md-3">{m2Cel(tuin.id, 'tuin', tuin.m2, tuin.m2Berekend)}</div>
+                  <div class="col-12 col-md-7">
+                    <FotoSlot k={`tuin.${tuin.id}`} />
+                  </div>
+                </div>
+              )}
+            </For>
+          </Show>
+        </div>
+
+        <VeldInvoer k="verhard" />
+        <VeldInvoer k="tuinsituatie" />
+
+        <For each={items().regenpijpen}>
+          {(r) => (
+            <details open class="border rounded p-2 mb-3 qa-regenpijp">
+              <summary class="fw-semibold">Regenpijp {r.label}</summary>
+              <div class="pt-2">
+                <For each={REGENPIJP_VELDEN}>{(v) => <VeldInvoer k={`regenpijp.${r.id}.${v}`} />}</For>
+              </div>
+            </details>
+          )}
+        </For>
+
+        <VeldInvoer k="hoosbuien" />
+        <VeldInvoer k="wensen" />
+
+        <Controle s={s} pagina="bezoek" />
+        <MijlpaalRegel mijlpaal="bezoek_afgerond" label="Bezoek afgerond" />
+        <Show when={!s.d.bezoek_afgerond_at && s.mag(['bezoeker'])}>
+          <button type="button" class="btn btn-success btn-lg qa-bezoek-afronden" onClick={() => void afronden(s, 'bezoek', 'bezoek_afgerond')}>Bezoek afronden</button>
+        </Show>
+        <div class="mt-3">
+          <A href={`/dossiers/${s.id}/plan`} class="qa-naar-plan">Verder met het Plan van Aanpak →</A>
+        </div>
+      </section>
+    </>
+  );
+}
+
+// Missing fields only warn; the hand-off stays possible, since some answers can't be known on-site.
+export async function afronden(s: DossierStaat, pagina: 'bezoek' | 'plan', mijlpaal: 'bezoek_afgerond' | 'klaar_voor_controle', bevestiging?: string) {
+  const mist = ontbrekend(s.d, pagina);
+  const vraag = [mist.length ? `Er ontbreekt nog: ${mist.map((m) => m.label).join(', ')}.` : '', bevestiging ?? ''].filter(Boolean).join(' ');
+  if (vraag && !(await bevestig('Weet je het zeker?', vraag, { ja: 'Ja, afronden' }))) return;
+  await zetMijlpaal(s, mijlpaal);
+}
+
+export function Controle(props: { s: DossierStaat; pagina: 'bezoek' | 'plan' }) {
+  const mist = () => ontbrekend(props.s.d, props.pagina);
+  return (
+    <div class="border-top pt-3 mb-3 qa-controle">
+      <div class="form-label fw-semibold mb-1">Controle</div>
+      <Show when={mist().length} fallback={<div class="text-groen qa-compleet">✅ Alles is opgeslagen en lijkt compleet.</div>}>
+        <div class="text-warning mb-1">Nog niet ingevuld:</div>
+        <ul class="mb-0 qa-ontbrekend">
+          <For each={mist()}>
+            {(m) => (
+              <li>
+                <button type="button" class="btn btn-link p-0 text-start align-baseline qa-ontbrekend-link" onClick={() => naarVeld(m.anker)}>{m.label}</button>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </div>
+  );
+}
