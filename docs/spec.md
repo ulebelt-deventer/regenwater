@@ -501,6 +501,7 @@ Aandacht edge cases inside these: an afspraak in the future raises no flag, the 
 
 ## Wishlist ideas for later
 
+- Automatically look up 
 - UI things I'm uncertain about:
   - Maybe the bezoeker's post-onsite fields should be part of the same sub-form, for simplicity/clarity? With a clear "To fill in after the bezoek" heading.
 - Automatically grab a Street View photo to save admin the 10 seconds of screenshotting it.

@@ -37,6 +37,7 @@ export const AUDIT_MERGE_MIN = 60;
 export const DOSSIERS_PER_PAGINA = 30;
 export const FOTO_MAX_PX = 1200;
 export const LUCHTFOTO_MAX_PX = 2400;
+export const BORING_MAX_KM = 1.5; // the nearest-boring search gives up beyond this
 
 export const DOORLAATBAARHEID: [string, string][] = [
   ['Klei', 'Slecht'],

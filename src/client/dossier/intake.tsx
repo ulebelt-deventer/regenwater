@@ -1,7 +1,7 @@
 // Intake sub-page (admin, at the desk): address, bewoner, woning, subsidie mail, straatfoto, kaart and bodem.
 import { A } from '@solidjs/router';
 import { For, Show, createSignal, onCleanup } from 'solid-js';
-import { DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/constants.ts';
+import { BORING_MAX_KM, DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/constants.ts';
 import { datum } from '../../shared/datum.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, intakeOntbreekt, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
@@ -194,7 +194,7 @@ function Boorprofiel() {
     await probeer(async () => {
       const r = await post<{ boring: { bron: string; id: string; afstand_m: number } | null; dossier: Dossier }>(`/api/dossiers/${s.id}/boring`, {});
       if (!r.boring) {
-        melding('warning', 'Geen boring gevonden binnen 5 km. Zoek zelf op DINOloket.');
+        melding('warning', `Geen boring gevonden binnen ${BORING_MAX_KM.toLocaleString('nl-NL')} km. Zoek zelf op DINOloket.`);
         return;
       }
       s.vervang(r.dossier);

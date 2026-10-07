@@ -39,3 +39,4 @@
 - Is it possible that multiple unconnected dakdelen connect to a single rain pipe? Will we actually need to draw in multiple dakdelen at all, or is it nearly always just 1?
 - You mentioned that some eligible addresses will be in Zutphen. Do you have a rioolkaart link for Zutphen? I only see one for Deventer & north.
 - Are you comfortable with this app code being open-source? Just the source code on Github, not any database content, user data, or confidential details.
+- 

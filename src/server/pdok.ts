@@ -1,3 +1,4 @@
+import { BORING_MAX_KM } from '../shared/constants.ts';
 import type { Adres } from '../shared/types.ts';
 import type { Ctx } from './context.ts';
 import { fout } from './context.ts';
@@ -114,7 +115,7 @@ export interface Boring {
   afstand_m: number;
 }
 
-// Metres between two [lon, lat] points; flat-earth is exact enough within the 5 km we search.
+// Metres between two [lon, lat] points; flat-earth is exact enough within the BORING_MAX_KM we search.
 function meters(a: [number, number], b: [number, number]): number {
   const dx = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180) * 111_320;
   const dy = (b[1] - a[1]) * 110_574;
@@ -187,7 +188,7 @@ async function profielSvg(ctx: Ctx, b: Boring): Promise<string | null> {
 const MAX_ZONDER_BESCHRIJVING = 5;
 export async function dichtsteBoring(ctx: Ctx, ll: [number, number]): Promise<(Boring & { png: Buffer }) | null> {
   const { default: sharp } = await import('sharp');
-  for (const km of [0.5, 2, 5]) {
+  for (const km of [0.5, BORING_MAX_KM]) {
     const [bro, dino] = await Promise.all([broBoringen(ctx, ll, km), dinoBoringen(ctx, ll, km)]);
     const boringen = [...bro, ...dino].sort((x, y) => x.afstand_m - y.afstand_m);
     if (!boringen.length) continue;

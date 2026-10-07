@@ -121,15 +121,15 @@ describe('dichtsteBoring', () => {
       broProfiel: svg('#000000'),
     });
     expect(await dichtsteBoring(ctx, LL)).toMatchObject({ bron: 'BRO', id: 'BHR-VER', afstand_m: 1106 });
-    expect(broKm).toEqual([0.5, 2]);
-    expect(dinoM).toEqual([500, 2000]);
+    expect(broKm).toEqual([0.5, 1.5]);
+    expect(dinoM).toEqual([500, 1500]);
   });
 
-  it('gives null when neither source has a boring within 5 km', async () => {
-    const { ctx, broKm, dinoM } = nep({ bro: [broAntwoord([]), broAntwoord([]), broAntwoord([])], dino: [dinoAntwoord([]), dinoAntwoord([]), dinoAntwoord([])] });
+  it('gives null when neither source has a boring within 1.5 km', async () => {
+    const { ctx, broKm, dinoM } = nep({ bro: [broAntwoord([]), broAntwoord([])], dino: [dinoAntwoord([]), dinoAntwoord([])] });
     expect(await dichtsteBoring(ctx, LL)).toBeNull();
-    expect(broKm).toEqual([0.5, 2, 5]);
-    expect(dinoM).toEqual([500, 2000, 5000]);
+    expect(broKm).toEqual([0.5, 1.5]);
+    expect(dinoM).toEqual([500, 1500]);
   });
 
   it('fails with a 502 when BRO answers with an error', async () => {
