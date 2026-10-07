@@ -11,7 +11,9 @@ import { VerstelbareKlok } from './klok.ts';
 import { GeheugenMailer } from './mail.ts';
 import { fakePdok } from './pdokfake.ts';
 
-export { PDOK_ADRES } from './pdokfake.ts';
+import { PDOK_ADRES } from './pdokfake.ts';
+
+export { PDOK_ADRES };
 
 export interface TestApp {
   app: Hono<Env>;
@@ -49,12 +51,14 @@ export function maakGebruiker(t: TestApp, naam: string, rol: 'beheerder' | 'klus
 export class Klant {
   private cookie = '';
   private t: TestApp;
-  constructor(t: TestApp) {
+  private ip: string;
+  constructor(t: TestApp, ip = '10.0.0.1') {
     this.t = t;
+    this.ip = ip;
   }
 
   async verzoek(methode: string, pad: string, inhoud?: unknown, extra: RequestInit = {}): Promise<Response> {
-    const headers: Record<string, string> = { 'x-forwarded-for': '10.0.0.1', cookie: this.cookie };
+    const headers: Record<string, string> = { 'x-forwarded-for': this.ip, cookie: this.cookie };
     let b: BodyInit | undefined;
     if (inhoud instanceof Uint8Array) b = inhoud as BodyInit;
     else if (inhoud !== undefined) {
@@ -82,4 +86,15 @@ export class Klant {
     await this.json('POST', '/api/auth/code', { email, code });
     return this;
   }
+}
+
+// A dossier with address, bewoner and huur/koop filled in, made by `beheerder`.
+export async function nieuwDossier(beheerder: Klant, huurKoop: 'huur' | 'koop' = 'huur'): Promise<number> {
+  const { id } = await beheerder.json<{ id: number }>('POST', '/api/dossiers');
+  await beheerder.json('POST', `/api/dossiers/${id}/adres`, { id: PDOK_ADRES.id });
+  for (const [key, value] of [['bewoner_naam', 'Anna de Vries'], ['bewoner_email', 'anna@example.org'], ['huur_koop', huurKoop], ['rioolstelsel', 'gemengd']]) {
+    await beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
+  }
+  if (huurKoop === 'huur') await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'woningeigenaar', value: 'Ieder1' });
+  return id;
 }

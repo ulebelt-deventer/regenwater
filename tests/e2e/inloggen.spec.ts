@@ -1,0 +1,64 @@
+// Logging in through the real pages: the code typed on a phone and the link clicked on a computer. Rate limits and expiry are in src/server/auth.test.ts.
+import { type Page, expect, test } from '@playwright/test';
+import { BEHEERDER, KLUSSER, emails, start } from './hulp.ts';
+
+// Asks for a login mail from the logged-out login page and returns its code and link (path and hash, so the host doesn't matter).
+async function vraagCode(page: Page, email: string): Promise<{ code: string; link: string }> {
+  await page.context().clearCookies();
+  await page.goto('/inloggen');
+  await page.locator('.qa-login-email').fill(email);
+  await page.locator('.qa-login-aanvragen').click();
+  await expect(page.locator('.qa-login-verstuurd')).toContainText(email);
+  const m = (await emails(page)).findLast((e) => e.aan === email)!;
+  const code = /inlogcode is:\s+(\S+)/.exec(m.tekst)![1];
+  const url = new URL(/(https?:\/\/\S+\/inloggen\/link#\S+)/.exec(m.tekst)![1]);
+  return { code, link: `${url.pathname}${url.hash}` };
+}
+
+const ingelogd = async (page: Page) => (await page.request.get('/api/auth/me')).status();
+
+test('met de code uit de e-mail logt een klusser in en komt op Mijn dossiers', async ({ page }) => {
+  await start(page);
+  const { code } = await vraagCode(page, KLUSSER.email);
+  await page.locator('.qa-login-code').fill(code);
+  await page.locator('.qa-login-inloggen').click();
+  await expect(page).toHaveURL(/\/dossiers$/);
+  await expect(page.locator('.qa-titel')).toHaveText('Mijn dossiers');
+});
+
+test('een verkeerde code geeft een foutmelding en logt niet in', async ({ page }) => {
+  await start(page);
+  const { code } = await vraagCode(page, KLUSSER.email);
+  await page.locator('.qa-login-code').fill(code === '000000' ? '111111' : '000000');
+  await page.locator('.qa-login-inloggen').click();
+  await expect(page.locator('.qa-login-fout')).toBeVisible();
+  await expect(page).toHaveURL(/\/inloggen$/);
+  expect(await ingelogd(page)).toBe(401);
+});
+
+test('alleen het openen van de link logt niet in; de knop wel, en een beheerder komt op het overzicht', async ({ page }) => {
+  await start(page);
+  const { link } = await vraagCode(page, BEHEERDER.email);
+  await page.goto(link);
+  await expect(page.locator('.qa-link-inloggen')).toBeVisible();
+  expect(await ingelogd(page)).toBe(401);
+
+  await page.locator('.qa-link-inloggen').click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(await ingelogd(page)).toBe(200);
+});
+
+test('een link die al gebruikt is geeft een foutmelding met een weg naar een nieuwe code', async ({ page }) => {
+  await start(page);
+  const { link } = await vraagCode(page, KLUSSER.email);
+  await page.goto(link);
+  await page.locator('.qa-link-inloggen').click();
+  await expect(page).toHaveURL(/\/dossiers$/);
+
+  await page.context().clearCookies();
+  await page.goto(link);
+  await page.locator('.qa-link-inloggen').click();
+  await expect(page.locator('.qa-login-fout')).toBeVisible();
+  await expect(page.locator('.qa-login-fout a')).toHaveAttribute('href', '/inloggen');
+  expect(await ingelogd(page)).toBe(401);
+});

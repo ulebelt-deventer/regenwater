@@ -5,12 +5,12 @@ import { FOTO_MAX_PX, LUCHTFOTO_MAX_PX } from '../../shared/constants.ts';
 import { isAnnotatieLijst } from '../../shared/kaart.ts';
 import { magBewerken, magZien } from '../../shared/rechten.ts';
 import type { Annotatie, Dossier, Json } from '../../shared/types.ts';
-import { fotoSlotVoor, type FotoSlot } from '../../shared/velden.ts';
+import { fotoSlotVoor, type FotoSlot, waarde } from '../../shared/velden.ts';
 import { auditWijzigingen } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout } from '../context.ts';
 import { bewaarFoto, fotoPad } from '../fotos.ts';
-import { type Bbox, dichtsteBoring, luchtfoto } from '../pdok.ts';
+import { type Bbox, dichtsteBoring, luchtfoto, straatBij } from '../pdok.ts';
 import { fotoVan, laadDossier } from '../repo.ts';
 import { haalDossier, nietGesloten, planGewijzigd } from './dossiers.ts';
 
@@ -175,10 +175,29 @@ export function fotoRoutes(app: Hono<Env>, ctx: Ctx): void {
     return c.json({ dossier: laadDossier(ctx.db, d.id)!, plan_gewijzigd_at: plan }, 201);
   });
 
-  app.get('/api/dossiers/:id/boring', async (c) => {
+  // Stores the nearest boring's profile as the boorprofiel, replacing any there, and says in boorlocatie where it is and where it came from.
+  app.post('/api/dossiers/:id/boring', async (c) => {
     alleenBeheerder(c);
     const d = haalDossier(ctx, c);
+    nietGesloten(d);
     if (!d.adres) fout(409, 'Kies eerst een adres.');
-    return c.json({ boring: await dichtsteBoring(ctx, d.adres.rd, d.adres.ll) });
+    const b = await dichtsteBoring(ctx, d.adres.ll);
+    if (!b) return c.json({ boring: null, dossier: d, plan_gewijzigd_at: null });
+    const boorlocatie = `${await straatBij(ctx, b.ll)}: boring ${b.id} (${b.bron === 'DINO' ? 'DINOloket' : 'BROloket'}), ${b.afstand_m} m van het huis`;
+    const { inhoud, breedte, hoogte } = await verwerk(b.png, FOTO_MAX_PX);
+    const id = crypto.randomUUID();
+    bewaarFoto(ctx.config, id, inhoud);
+    const nu = ctx.klok.iso();
+    const plan = wijzigSlot(ctx, c, d, 'boorprofiel', fotoSlotVoor('boorprofiel')!.slot, () => {
+      ctx.db.prepare("UPDATE fotos SET verwijderd_at = ? WHERE dossier_id = ? AND slot = 'boorprofiel' AND verwijderd_at IS NULL").run(nu, d.id);
+      ctx.db
+        .prepare("INSERT INTO fotos (id, dossier_id, slot, breedte, hoogte, created_at, created_by) VALUES (?, ?, 'boorprofiel', ?, ?, ?, ?)")
+        .run(id, d.id, breedte, hoogte, nu, c.get('actor').id);
+      // Reloaded here: other fields may have been saved during the lookup above.
+      const vers = laadDossier(ctx.db, d.id)!;
+      ctx.db.prepare('UPDATE dossiers SET data = ? WHERE id = ?').run(JSON.stringify({ ...vers.data, boorlocatie }), d.id);
+      auditWijzigingen(ctx, actorVan(c), d.id, { boorlocatie: [waarde(vers, 'boorlocatie'), boorlocatie] });
+    });
+    return c.json({ boring: { bron: b.bron, id: b.id, afstand_m: b.afstand_m }, dossier: laadDossier(ctx.db, d.id)!, plan_gewijzigd_at: plan }, 201);
   });
 }

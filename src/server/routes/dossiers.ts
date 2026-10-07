@@ -141,8 +141,9 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
   // Autosave: one key per request, so concurrent edits of different fields never overwrite each other.
   app.patch('/api/dossiers/:id', async (c) => {
     const ik = c.get('ik');
-    const d = haalDossier(ctx, c);
+    // The body is read first: an await between loading the data and writing it back would let a concurrent save of another field be overwritten.
     const b = await body<{ key: unknown; value: unknown }>(c);
+    const d = haalDossier(ctx, c);
     if (typeof b.key !== 'string') fout(400, 'Ongeldig verzoek');
     const key = b.key;
     const gevonden = veldVoor(key);
@@ -198,8 +199,9 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
 
   app.post('/api/dossiers/:id/mijlpaal', async (c) => {
     const ik = c.get('ik');
-    const d = haalDossier(ctx, c);
+    // Body first, as in the autosave: a double tap must see the first tap's milestone.
     const b = await body<{ mijlpaal: unknown; aan: unknown }>(c);
+    const d = haalDossier(ctx, c);
     const m = b.mijlpaal as Mijlpaal;
     const handmatig: Mijlpaal[] = ['bezoek_afgerond', 'klaar_voor_controle', 'corporatie_akkoord', 'klussendienst_gekozen', 'werk_opgeleverd'];
     if (!MIJLPALEN.includes(m) || !handmatig.includes(m)) fout(400, 'Onbekende mijlpaal');
@@ -214,8 +216,9 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
       return c.json({ dossier: laadDossier(ctx.db, d.id)! });
     }
     if ((m === 'corporatie_akkoord' && d.huur_koop !== 'huur') || (m === 'klussendienst_gekozen' && d.huur_koop !== 'koop')) fout(400, 'Deze stap hoort niet bij dit soort woning.');
-    if (!magMijlpaal(ik, d, m)) fout(403, 'Je kunt deze stap niet (meer) registreren. Vraag een beheerder.');
+    // Already set is checked first: setting Klaar voor controle ends the bezoeker's rights, so a repeat tap would otherwise be refused.
     if (d[at] !== null) return c.json({ dossier: d });
+    if (!magMijlpaal(ik, d, m)) fout(403, 'Je kunt deze stap niet (meer) registreren. Vraag een beheerder.');
     ctx.db.prepare(`UPDATE dossiers SET ${at} = ?, ${by} = ? WHERE id = ?`).run(ctx.klok.iso(), ik.id, d.id);
     audit(ctx, actorVan(c), d.id, 'mijlpaal', { mijlpaal: m, aan: true });
     // Only a klusser's own hand-off alerts the admins; an admin registering it (or acting as the klusser) already knows.

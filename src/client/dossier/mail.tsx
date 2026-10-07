@@ -1,5 +1,5 @@
 // Edit-and-send pop-up for one e-mail template. Tags stay as {tags} in the editor; the server fills them in.
-import { For, Show, createResource, createSignal } from 'solid-js';
+import { For, Show, createResource, createSignal, untrack } from 'solid-js';
 import { datum } from '../../shared/datum.ts';
 import { controleerTags, probleemTeksten, sjabloonDef } from '../../shared/sjablonen.ts';
 import type { Dossier, Verzending } from '../../shared/types.ts';
@@ -20,7 +20,7 @@ interface MailData {
 
 export function MailModal(props: { sjabloon: string; onSluit: () => void; onVerstuurd?: (d: Dossier) => void }) {
   const s = useDossier();
-  const def = sjabloonDef(props.sjabloon);
+  const def = sjabloonDef(untrack(() => props.sjabloon));
   const [data] = createResource(() => get<MailData>(`/api/dossiers/${s.id}/mail/${props.sjabloon}`));
   const [aan, setAan] = createSignal<string | null>(null);
   const [onderwerp, setOnderwerp] = createSignal<string | null>(null);

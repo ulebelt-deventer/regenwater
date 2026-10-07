@@ -1,5 +1,5 @@
 // Full-screen photo viewer and drawing tool. Zoom and pan move the SVG viewBox, so image coordinates never change.
-import { For, Show, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, Show, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
 import { afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
@@ -43,8 +43,9 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     if (!f) throw new Error(`Foto ${props.fotoId} niet gevonden`);
     return f;
   };
-  const isKaart = foto().slot === 'kaart';
-  const slot = fotoSlotVoor(foto().slot)!.slot;
+  const fotoSlot = untrack(foto).slot; // a photo never moves to another slot
+  const isKaart = fotoSlot === 'kaart';
+  const slot = fotoSlotVoor(fotoSlot)!.slot;
   const uit = () => !s.mag(slot.bewerkers);
   const W = () => foto().breedte;
   const H = () => foto().hoogte;
@@ -401,7 +402,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
           <div class="text-warning qa-kaart-vervangen">Je hebt de kaart vervangen, dus de tekeningen kloppen mogelijk niet meer. Verplaats of pas ze aan waar nodig.</div>
         </Show>
       </div>
-      <div class="stage" ref={stage} onPointerDown={neer} onPointerMove={beweeg} onPointerUp={op} onPointerCancel={op}>
+      <div class="stage qa-tekenvlak" ref={stage} onPointerDown={neer} onPointerMove={beweeg} onPointerUp={op} onPointerCancel={op}>
         <svg viewBox={viewBox()} preserveAspectRatio="xMinYMin meet" class="qa-tekenaar-svg">
           <image href={`/api/fotos/${props.fotoId}`} width={W()} height={H()} />
           {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}

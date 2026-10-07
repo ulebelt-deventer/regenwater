@@ -5,7 +5,7 @@ require_host
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> Local checks + build"
-( cd "${REPO_ROOT}" && npm run typecheck && npm run lint && npm test && npm run build )
+( cd "${REPO_ROOT}" && npm run typecheck && npm run lint && npm run test:vite && npm run build )
 
 remote_sudo "test -f '${ENV_FILE}'" || { echo "ERROR: ${ENV_FILE} is missing on the host. Run devops/push-env.sh first." >&2; exit 1; }
 

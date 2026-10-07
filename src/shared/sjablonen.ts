@@ -126,5 +126,5 @@ export function probleemTeksten(p: TagProblemen): string[] {
 }
 
 export function vulIn(s: string, waarden: Record<string, string>): string {
-  return s.replace(/\{([a-z_]+)\}/g, (m, t: string) => (t in waarden ? waarden[t] : m));
+  return s.replace(/\{([a-z_]+)\}/g, (m, t: string) => (Object.hasOwn(waarden, t) ? waarden[t] : m));
 }

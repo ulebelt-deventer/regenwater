@@ -36,7 +36,7 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 
 ## Photos and annotations
 
-- Resized in the browser before upload to 1200px (longest side) JPEG, roughly 150-250 KB each (canvas / `createImageBitmap`, which all modern phone browsers support). This also makes uploads fast on a mobile connection in a backyard. The luchtfoto is the exception: the server fetches it from the WMS itself.
+- Resized in the browser before upload to 1200px (longest side) JPEG, roughly 150-250 KB each (canvas / `createImageBitmap`, which all modern phone browsers support). This also makes uploads fast on a mobile connection in a backyard. The luchtfoto and the boorprofiel are the exceptions: the server fetches the luchtfoto from the WMS, and the boorprofiel as an SVG from whichever of BRO and DINOloket has the nearest boring with a layer description. The DINOloket endpoints are undocumented (taken from its `/uitgifteloket/api/config/properties`), so they may change without notice.
 - Accepted input: JPEG, PNG, WebP, GIF, HEIC where the browser can decode it (Safari), and SVG. SVGs are rasterized like the rest rather than stored as-is: an SVG can carry script, so storing one means sanitizing it, and one pipeline is simpler. Anything the browser can't decode gets an error pop-up.
 - Resizing strips EXIF data, GPS location included, which is good for privacy.
 - Upload queue in IndexedDB (localStorage holds only about 5 MB), so a photo taken without a connection, or during a reload, is sent when the connection returns.
@@ -53,7 +53,7 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 ## Testing
 
 - Exhaustive suite covering every conceivable edge case: thorough unit tests for each section of the spec, in addition to the end-to-end scenario tests listed in the UI spec.
-- Vitest for the shared rules and other unit tests; Playwright for the scenario tests.
+- Vitest for the shared rules and other unit tests; Playwright for the scenario tests and the browser-only behavior (offline queue, drawing, drag and drop). `npm test` runs both; `npm run test:vite` and `npm run test:e2e` run one. Run the full suite before deploying: `deploy.sh` runs only Vitest.
 - The server takes its clock from an injectable source, settable in tests, because the aandacht rules depend on elapsed days and Playwright's `page.clock` only moves the browser's clock.
 - Scenario tests assert PDF content on the rendered HTML; one smoke test prints a real PDF.
 
@@ -91,7 +91,7 @@ Scheduled jobs are systemd timers, defined in `provision.sh`, each running a sma
 Stop after each milestone with a summary, so the maintainer can review, commit and give feedback.
 
 1. Foundations: shared field and rule module, the status rules and the Statussen page, the autosave system, the audit trail and Alle activiteit. Login (link, code, rate limits), sessions, Gebruikers list and Gebruiker page with archiving and Inloggen als. Navbar, Account menu, install guide, footer with the privacy placeholder page, and the feedback pop-up and Feedback page.
-2. Dossiers: Overzicht, Dossiers list (filters, sort, pagination, CSV), the details page (status, notities, close, reopen, delete), and the Intake sub-page with PDOK address and parcel lookup, rioolkaart links, BRO boring lookup, photo slots with annotations, and the luchtfoto from the WMS. The email preview pop-up, E-mailsjablonen (seeded from the prototype's drafts, completed for the ones it lacks), the subsidie mail, the Signal oproep and assigning the bezoeker.
+2. Dossiers: Overzicht, Dossiers list (filters, sort, pagination, CSV), the details page (status, notities, close, reopen, delete), and the Intake sub-page with PDOK address and parcel lookup, rioolkaart links, nearest-boring lookup (BRO and DINO), photo slots with annotations, and the luchtfoto from the WMS. The email preview pop-up, E-mailsjablonen (seeded from the prototype's drafts, completed for the ones it lacks), the subsidie mail, the Signal oproep and assigning the bezoeker.
 3. Bezoek sub-page and the kaart editor; the printable and Leeg bezoekformulier PDFs.
 4. Plan van Aanpak sub-page and Materialen beheer, the concept-Plan and Plan PDF, Plan versturen & goedkeuring, assigning the uitvoerder.
 5. Uitvoering and Oplevering: the opleverrapport and the Materialen met prijzen page.

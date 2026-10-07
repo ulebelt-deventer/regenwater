@@ -1,5 +1,5 @@
 // Autosaving inputs, all driven by the field definitions in shared/velden.ts.
-import { For, type JSX, Match, Show, Switch, createEffect, createMemo, createSignal } from 'solid-js';
+import { For, type JSX, Match, Show, Switch, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import { euro } from '../../shared/datum.ts';
 import { kaartItems } from '../../shared/kaart.ts';
 import type { Json } from '../../shared/types.ts';
@@ -22,8 +22,9 @@ function Hint(props: { veld: Veld }) {
 
 export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string }) {
   const s = useDossier();
-  const def = veldVoor(props.k);
-  if (!def || def.anders) throw new Error(`Geen veld voor ${props.k}`);
+  const k = untrack(() => props.k); // a field's key is fixed for its life
+  const def = veldVoor(k);
+  if (!def || def.anders) throw new Error(`Geen veld voor ${k}`);
   const { veld: v, id } = def;
   const zichtbaar = () => !v.zichtbaar || v.zichtbaar(s.d, id);
   const fotoSlot = v.fotos === undefined ? null : id === null ? v.fotos : v.fotos.replace('*', id);
@@ -59,7 +60,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
   const w = () => waarde(s.d, props.k);
   const zet = (v: Json) => s.zet(props.k, v);
   const zetTekst = (t: string) => zet(t === '' ? null : t);
-  const andersKey = `${props.k}_anders`;
+  const andersKey = `${untrack(() => props.k)}_anders`;
   const anders = (gekozen: () => boolean) => (
     <Show when={props.veld.anders && gekozen()}>
       <input class="form-control mt-1 qa-anders" placeholder="Namelijk..." disabled={props.uit} value={tekst(waarde(s.d, andersKey))} onInput={(e) => s.zet(andersKey, e.currentTarget.value === '' ? null : e.currentTarget.value)} />
@@ -180,7 +181,7 @@ function DatumTijd(props: { waarde: string; uit: boolean; onZet: (v: string | nu
 
 function DakKeuze(props: { k: string; uit: boolean }) {
   const s = useDossier();
-  const pijpId = props.k.split('.')[1];
+  const pijpId = untrack(() => props.k).split('.')[1];
   const items = () => kaartItems(s.d);
   const pijp = () => {
     const p = items().regenpijpen.find((r) => r.id === pijpId);
@@ -242,8 +243,9 @@ export function VoorstelLijst() {
 
 export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
   const s = useDossier();
-  const item = props.lijst === 'materialen' ? 'materiaal' : 'gebruikt';
-  const v = veld(props.lijst);
+  const lijstKey = untrack(() => props.lijst);
+  const item = lijstKey === 'materialen' ? 'materiaal' : 'gebruikt';
+  const v = veld(lijstKey);
   const uit = () => !s.mag(v.bewerkers);
   const ids = () => lijst(s.d, props.lijst);
   const totaal = createMemo(() => materiaalTotaal(materiaalRijen(s.d, props.lijst)));

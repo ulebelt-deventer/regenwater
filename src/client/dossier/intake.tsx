@@ -6,7 +6,7 @@ import { datum } from '../../shared/datum.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, intakeOntbreekt, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { get, post } from '../api.ts';
-import { Modal, melding, probeer } from '../ui.tsx';
+import { Modal, bevestig, melding, probeer } from '../ui.tsx';
 import { MailKnop } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { SluitKnop, TerugLink } from './pagina.tsx';
@@ -187,22 +187,19 @@ function Boorprofiel() {
   const [tabel, setTabel] = createSignal(false);
   const [bezig, setBezig] = createSignal(false);
 
-  // The tab opens synchronously on the click, so popup blockers allow it; it's pointed at BROloket once the lookup answers.
   const zoekBoring = async () => {
-    const tab = window.open('about:blank', '_blank');
+    const gevuld = s.d.fotos.some((f) => f.slot === 'boorprofiel') || str(s.d, 'boorlocatie');
+    if (gevuld && !(await bevestig('Boorprofiel vervangen?', 'Het huidige boorprofiel en de boorlocatie worden vervangen door die van de dichtstbijzijnde boring.', { ja: 'Vervangen' }))) return;
     setBezig(true);
-    const ok = await probeer(async () => {
-      const r = await get<{ boring: { broId: string; afstand_m: number; url: string } | null }>(`/api/dossiers/${s.id}/boring`);
+    await probeer(async () => {
+      const r = await post<{ boring: { bron: string; id: string; afstand_m: number } | null; dossier: Dossier }>(`/api/dossiers/${s.id}/boring`, {});
       if (!r.boring) {
         melding('warning', 'Geen boring gevonden binnen 5 km. Zoek zelf op DINOloket.');
-        tab?.close();
         return;
       }
-      melding('success', `Dichtstbijzijnde boring ${r.boring.broId} ligt op ${r.boring.afstand_m} m.`);
-      if (tab) tab.location.href = r.boring.url;
-      else window.open(r.boring.url, '_blank');
+      s.vervang(r.dossier);
+      melding('success', `Boorprofiel van boring ${r.boring.id} (${r.boring.bron}, ${r.boring.afstand_m} m) toegevoegd.`);
     });
-    if (!ok) tab?.close();
     setBezig(false);
   };
 
@@ -211,7 +208,7 @@ function Boorprofiel() {
       <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
         <div class="form-label fw-semibold mb-0">Boorprofiel</div>
         <Show when={s.beheerder() && s.d.adres}>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-boring" disabled={bezig()} onClick={() => void zoekBoring()}>Dichtstbijzijnde boring</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-boring" disabled={bezig() || !s.mag([])} onClick={() => void zoekBoring()}>{bezig() ? 'Zoeken...' : 'Dichtstbijzijnde boring ophalen'}</button>
         </Show>
         <a href="https://www.dinoloket.nl/ondergrondgegevens" target="_blank" rel="noopener" class="small qa-dinoloket">DINOloket</a>
         <button type="button" class="btn btn-link btn-sm p-0 qa-doorlaatbaarheid" onClick={() => setTabel(true)}>Doorlaatbaarheid per grondsoort</button>

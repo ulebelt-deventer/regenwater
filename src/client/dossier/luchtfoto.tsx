@@ -47,14 +47,14 @@ export function Luchtfoto(props: { onSluit: () => void }) {
   const laad = () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
-      const k = kader();
-      const url = `/api/dossiers/${s.id}/luchtfoto?bbox=${bbox(k).join(',')}`;
+      const staticKader = kader(); // the frame as it was when this load started
+      const url = `/api/dossiers/${s.id}/luchtfoto?bbox=${bbox(staticKader).join(',')}`;
       const mijn = ++nr;
       setLaadt(true);
       const img = new Image();
       img.onload = () => {
         if (mijn !== nr) return;
-        setGeladen({ url, k });
+        setGeladen({ url, k: staticKader });
         setLaadt(false);
       };
       img.onerror = () => {

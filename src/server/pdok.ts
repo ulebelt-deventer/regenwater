@@ -6,6 +6,11 @@ const LOCATIESERVER = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1';
 const LUCHTFOTO_WMS = 'https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0';
 const KADASTER_WMS = 'https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0';
 const BRO_ZOEK = 'https://publiek.broservices.nl/sr/bhrgt/v2/characteristics/searches';
+const BRO_OBJECT = 'https://publiek.broservices.nl/sr/bhrgt/v2/objects/';
+const BRO_PROFIEL = 'https://publiek.broservices.nl/sr/bhrgt/v2/profile/graph/dispatch?language=nl&asNAP=false';
+// Not a documented API: these are what DINOloket's own map uses, found in its /uitgifteloket/api/config/properties.
+const DINO_ZOEK = 'https://www.broloket.nl/standalone/rest/services/uitgifteloket_gdn/lks_gbo_rd_v1/MapServer/0/query';
+const DINO_PROFIEL = 'https://www.dinoloket.nl/uitgifteloket/api/brh/profile/';
 
 async function json(ctx: Ctx, url: string): Promise<Record<string, unknown>> {
   const res = await ctx.haal(url);
@@ -103,33 +108,103 @@ export async function luchtfoto(ctx: Ctx, bbox: Bbox, w: number, h: number): Pro
 }
 
 export interface Boring {
-  broId: string;
+  bron: 'BRO' | 'DINO';
+  id: string;
+  ll: [number, number];
   afstand_m: number;
-  url: string;
 }
 
-// The nearest BHR-GT boring (geotechnical borehole description), searching wider circles until one is found.
-export async function dichtsteBoring(ctx: Ctx, rd: [number, number], ll: [number, number]): Promise<Boring | null> {
-  const vandaag = ctx.klok.iso().slice(0, 10);
-  for (const km of [0.5, 2, 5]) {
-    const res = await ctx.haal(BRO_ZOEK, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', accept: 'application/xml' },
-      body: JSON.stringify({
-        registrationPeriod: { beginDate: '1900-01-01', endDate: vandaag },
-        area: { enclosingCircle: { center: { lat: ll[1], lon: ll[0] }, radius: km } },
-      }),
+// Metres between two [lon, lat] points; flat-earth is exact enough within the 5 km we search.
+function meters(a: [number, number], b: [number, number]): number {
+  const dx = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180) * 111_320;
+  const dy = (b[1] - a[1]) * 110_574;
+  return Math.round(Math.hypot(dx, dy));
+}
+
+const broFout = (status: number | string): never => fout(502, `BRO gaf een fout (${status}). Probeer het later opnieuw.`);
+const dinoFout = (status: number | string): never => fout(502, `DINOloket gaf een fout (${status}). Probeer het later opnieuw.`);
+
+// BHR-GT: the geotechnical borings registered in BRO. Each one's standardizedLocation is always lat/lon; its deliveredLocation is in whatever system the supplier used, so only the first is read.
+async function broBoringen(ctx: Ctx, ll: [number, number], km: number): Promise<Boring[]> {
+  const res = await ctx.haal(BRO_ZOEK, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/xml' },
+    body: JSON.stringify({
+      registrationPeriod: { beginDate: '1900-01-01', endDate: ctx.klok.iso().slice(0, 10) },
+      area: { enclosingCircle: { center: { lat: ll[1], lon: ll[0] }, radius: km } },
+    }),
+  });
+  if (!res.ok) broFout(res.status);
+  return (await res.text())
+    .split('<dispatchDocument>')
+    .slice(1)
+    .map((doc) => {
+      const id = /<brocom:broId>([^<]+)<\/brocom:broId>/.exec(doc);
+      const pos = /<brocom:standardizedLocation[^>]*>\s*<gml:pos>([\d.-]+) ([\d.-]+)<\/gml:pos>/.exec(doc);
+      if (!id || !pos) throw new Error(`Onverwachte boring van BRO: ${doc.slice(0, 200)}`);
+      const plek: [number, number] = [Number(pos[2]), Number(pos[1])];
+      return { bron: 'BRO', id: id[1], ll: plek, afstand_m: meters(ll, plek) };
     });
-    if (!res.ok) fout(502, `BRO gaf een fout (${res.status}). Probeer het later opnieuw.`);
-    const xml = await res.text();
-    const boringen = [...xml.matchAll(/<brocom:broId>([^<]+)<\/brocom:broId>[\s\S]*?<gml:pos>([\d.]+) ([\d.]+)<\/gml:pos>/g)].map((m) => ({
-      broId: m[1],
-      afstand_m: Math.round(Math.hypot(Number(m[2]) - rd[0], Number(m[3]) - rd[1])),
-    }));
-    if (boringen.length) {
-      const b = boringen.sort((x, y) => x.afstand_m - y.afstand_m)[0];
-      return { ...b, url: `https://www.broloket.nl/ondergrondgegevens?bro-id=${b.broId}` };
+}
+
+// DINO's geological borings: TNO's archive, far denser than BRO's own registrations. This is the map layer behind DINOloket, which answers ArcGIS queries; it errors with a 200 and an `error` object.
+async function dinoBoringen(ctx: Ctx, ll: [number, number], km: number): Promise<Boring[]> {
+  const p = new URLSearchParams({
+    geometry: JSON.stringify({ x: ll[0], y: ll[1] }), geometryType: 'esriGeometryPoint', inSR: '4326', distance: String(km * 1000), units: 'esriSRUnit_Meter',
+    outFields: 'DINO_NR', returnGeometry: 'true', outSR: '4326', f: 'json',
+  });
+  const res = await ctx.haal(`${DINO_ZOEK}?${p}`);
+  if (!res.ok) dinoFout(res.status);
+  const r = (await res.json()) as { error?: { code: number }; exceededTransferLimit?: boolean; features: { attributes: { DINO_NR: string }; geometry: { x: number; y: number } }[] };
+  if (r.error) dinoFout(r.error.code);
+  if (r.exceededTransferLimit) throw new Error(`DINOloket gaf niet alle boringen binnen ${km} km`);
+  return r.features.map((f) => {
+    const plek: [number, number] = [f.geometry.x, f.geometry.y];
+    return { bron: 'DINO', id: f.attributes.DINO_NR, ll: plek, afstand_m: meters(ll, plek) };
+  });
+}
+
+// The profile drawing as SVG, or null when the boring has no layer description. BRO draws a boring from its own XML, so that is fetched first.
+async function profielSvg(ctx: Ctx, b: Boring): Promise<string | null> {
+  if (b.bron === 'DINO') {
+    const res = await ctx.haal(`${DINO_PROFIEL}${encodeURIComponent(b.id)}`);
+    if (!res.ok) dinoFout(res.status);
+    const svg = await res.text();
+    if (!svg.includes('<svg')) dinoFout('geen tekening');
+    return svg.includes('geen boormonsterbeschrijving') ? null : svg;
+  }
+  const obj = await ctx.haal(`${BRO_OBJECT}${encodeURIComponent(b.id)}`, { headers: { accept: 'application/xml' } });
+  if (!obj.ok) broFout(obj.status);
+  const res = await ctx.haal(BRO_PROFIEL, { method: 'POST', headers: { 'content-type': 'application/xml', accept: 'application/svg+xml' }, body: await obj.text() });
+  if (!res.ok) broFout(res.status);
+  const svg = await res.text();
+  if (!svg.includes('<svg')) broFout('geen tekening');
+  return svg;
+}
+
+// Searches BRO and DINO in wider circles until either holds a boring; within a circle both lists are complete, so the nearest there is the nearest anywhere.
+// A DINO boring without a layer description is skipped for the next nearest, up to MAX_ZONDER_BESCHRIJVING of them.
+const MAX_ZONDER_BESCHRIJVING = 5;
+export async function dichtsteBoring(ctx: Ctx, ll: [number, number]): Promise<(Boring & { png: Buffer }) | null> {
+  const { default: sharp } = await import('sharp');
+  for (const km of [0.5, 2, 5]) {
+    const [bro, dino] = await Promise.all([broBoringen(ctx, ll, km), dinoBoringen(ctx, ll, km)]);
+    const boringen = [...bro, ...dino].sort((x, y) => x.afstand_m - y.afstand_m);
+    if (!boringen.length) continue;
+    const kandidaten = boringen.slice(0, MAX_ZONDER_BESCHRIJVING);
+    for (const b of kandidaten) {
+      const svg = await profielSvg(ctx, b);
+      if (svg) return { ...b, png: await sharp(Buffer.from(svg), { density: 150 }).flatten({ background: '#ffffff' }).png().toBuffer() };
     }
+    fout(502, `Geen van de ${kandidaten.length} dichtstbijzijnde boringen heeft een beschrijving. Zoek zelf op DINOloket.`);
   }
   return null;
+}
+
+// The street nearest a point, as "Straat, Plaats".
+export async function straatBij(ctx: Ctx, ll: [number, number]): Promise<string> {
+  const p = new URLSearchParams({ lat: String(ll[1]), lon: String(ll[0]), type: 'weg', rows: '1' });
+  const [doc] = docs(await json(ctx, `${LOCATIESERVER}/reverse?${p}`));
+  if (!doc) fout(502, 'PDOK vond geen straat bij de boring.');
+  return doc.weergavenaam as string;
 }

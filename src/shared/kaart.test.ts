@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { annotatieLabels, annotatiesSvg, kaartItems, letter, oppervlakPx, waterberging } from './kaart.ts';
+import {
+  afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, binnen, dichtstbijzijndeDak, getal, isAnnotatieLijst, kaartItems, letter, oppervlakPx, waterberging, zijdeLengtes,
+} from './kaart.ts';
 import { ontbrekend } from './velden.ts';
 import { dossier } from './testhulp.ts';
 import type { Annotatie, Foto } from './types.ts';
@@ -24,8 +26,102 @@ describe('labels', () => {
     expect(annotatieLabels(a.slice(1)).get('y')).toBe('D1');
   });
 
-  it('continues past Z with AA', () => {
-    expect([letter(0), letter(25), letter(26)]).toEqual(['A', 'Z', 'AA']);
+  it('continues past Z with AA, and past ZZ with AAA', () => {
+    expect([letter(0), letter(25), letter(26), letter(27), letter(701), letter(702)]).toEqual(['A', 'Z', 'AA', 'AB', 'ZZ', 'AAA']);
+  });
+
+  it('labels pijlen and regenpijpen with separate letter sequences, and gives tekst no label', () => {
+    const a: Annotatie[] = [{ id: 'p1', type: 'pijl', p: [] }, { id: 'r1', type: 'regenpijp', p: [] }, { id: 'x1', type: 'tekst', p: [], tekst: 'hier' }, { id: 'p2', type: 'pijl', p: [] }];
+    expect([...annotatieLabels(a)]).toEqual([['p1', 'A'], ['r1', 'A'], ['p2', 'B']]);
+  });
+});
+
+describe('geometry', () => {
+  // An L shape whose notch, around (15, 15), lies outside it.
+  const L: [number, number][] = [[0, 0], [20, 0], [20, 10], [10, 10], [10, 20], [0, 20]];
+
+  it('measures the area of a polygon drawn either way round, and of fewer than three points as zero', () => {
+    expect(oppervlakPx(vierkant(0, 0, 10))).toBe(100);
+    expect(oppervlakPx(vierkant(0, 0, 10).reverse())).toBe(100);
+    expect(oppervlakPx(L)).toBe(300);
+    expect([oppervlakPx([]), oppervlakPx([[1, 1]]), oppervlakPx([[0, 0], [5, 5]])]).toEqual([0, 0, 0]);
+  });
+
+  it('tells inside from outside, also in the notch of a concave shape', () => {
+    expect(binnen([5, 5], L)).toBe(true);
+    expect(binnen([15, 5], L)).toBe(true);
+    expect(binnen([15, 15], L)).toBe(false);
+    expect(binnen([-1, 5], L)).toBe(false);
+    expect(binnen([5, 5], [])).toBe(false);
+  });
+
+  it('measures the distance to a segment from beside it, past its ends, and to a single point', () => {
+    expect(afstandTotLijn([5, 3], [0, 0], [10, 0])).toBe(3);
+    expect(afstandTotLijn([13, 4], [0, 0], [10, 0])).toBe(5);
+    expect(afstandTotLijn([-3, -4], [0, 0], [10, 0])).toBe(5);
+    expect(afstandTotLijn([3, 4], [0, 0], [0, 0])).toBe(5);
+  });
+
+  it('measures zero inside a polygon and the nearest edge outside it, also from the notch', () => {
+    expect(afstandTotPolygoon([5, 5], L)).toBe(0);
+    expect(afstandTotPolygoon([15, 13], L)).toBe(3);
+    expect(afstandTotPolygoon([25, 5], L)).toBe(5);
+  });
+
+  it('measures side lengths in meters, including the closing side', () => {
+    expect(zijdeLengtes([[0, 0], [30, 0], [30, 40]], 0.5)).toEqual([15, 20, 25]);
+  });
+
+  it('writes numbers the Dutch way with at most one decimal', () => {
+    expect([getal(1234.56), getal(12), getal(0.04)]).toEqual(['1.234,6', '12', '0']);
+  });
+});
+
+describe('dichtstbijzijndeDak', () => {
+  const dak = (id: string, p: [number, number][]): Annotatie => ({ id, type: 'dak', p });
+
+  it('picks no dak when there are none', () => {
+    expect(dichtstbijzijndeDak([0, 0], [])).toBeNull();
+  });
+
+  it('picks the dak the point lies in, over one whose edge is closer', () => {
+    const groot = dak('groot', vierkant(0, 0, 100));
+    const klein = dak('klein', vierkant(52, 52, 4));
+    expect(dichtstbijzijndeDak([50, 50], [groot, klein])).toBe('groot');
+  });
+
+  it('picks the nearest dak from outside, and the first one on a tie', () => {
+    const a = dak('a', vierkant(0, 0, 10));
+    const b = dak('b', vierkant(30, 0, 10));
+    expect(dichtstbijzijndeDak([25, 5], [a, b])).toBe('b');
+    expect(dichtstbijzijndeDak([20, 5], [a, b])).toBe('a');
+    expect(dichtstbijzijndeDak([20, 5], [b, a])).toBe('b');
+  });
+
+  it('ignores a dak without points', () => {
+    expect(dichtstbijzijndeDak([5, 5], [dak('leeg', []), dak('echt', vierkant(100, 100, 10))])).toBe('echt');
+  });
+});
+
+describe('isAnnotatieLijst', () => {
+  it('accepts an empty list and every annotation type', () => {
+    expect(isAnnotatieLijst([])).toBe(true);
+    expect(isAnnotatieLijst(['pijl', 'tekst', 'dak', 'tuin', 'regenpijp'].map((type, i) => ({ id: `a${i}`, type, p: [[1, 2]], ...(type === 'tekst' ? { tekst: 'x' } : {}) })))).toBe(true);
+  });
+
+  it('refuses anything that would break drawing or the PDFs', () => {
+    for (const fout of [
+      null, {}, 'x', [null], [[]],
+      [{ type: 'dak', p: [] }],
+      [{ id: 1, type: 'dak', p: [] }],
+      [{ id: 'a', type: 'cirkel', p: [] }],
+      [{ id: 'a', type: 'dak' }],
+      [{ id: 'a', type: 'dak', p: [[1]] }],
+      [{ id: 'a', type: 'dak', p: [[1, 2, 3]] }],
+      [{ id: 'a', type: 'dak', p: [[1, '2']] }],
+      [{ id: 'a', type: 'dak', p: [[1, null]] }],
+      [{ id: 'a', type: 'tekst', p: [[1, 2]], tekst: 5 }],
+    ]) expect(isAnnotatieLijst(fout), JSON.stringify(fout)).toBe(false);
   });
 });
 

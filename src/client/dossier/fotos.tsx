@@ -1,5 +1,5 @@
 // Photo slots: drop or pick images, see thumbnails with their drawings, tap one to open the drawing tool.
-import { For, Show, createSignal } from 'solid-js';
+import { For, Show, createSignal, untrack } from 'solid-js';
 import { KADASTRALE_KAART_URL } from '../../shared/constants.ts';
 import { annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Foto } from '../../shared/types.ts';
@@ -27,28 +27,34 @@ export function FotoDuim(props: { foto: Foto; onClick: () => void }) {
 
 export function FotoSlot(props: { k: string; label?: string }) {
   const s = useDossier();
-  const def = fotoSlotVoor(props.k);
-  if (!def) throw new Error(`Geen fotoslot voor ${props.k}`);
+  const k = untrack(() => props.k); // fixed for the life of the slot
+  const def = fotoSlotVoor(k);
+  if (!def) throw new Error(`Geen fotoslot voor ${k}`);
   const slot = def.slot;
   const uit = () => !s.mag(slot.bewerkers);
-  const fotos = () => s.d.fotos.filter((f) => f.slot === props.k);
-  const wachtend = () => wachtendeFotos().filter((w) => w.dossierId === s.id && w.slot === props.k);
+  const fotos = () => s.d.fotos.filter((f) => f.slot === k);
+  const wachtend = () => wachtendeFotos().filter((w) => w.dossierId === s.id && w.slot === k);
   const [open, setOpen] = createSignal<string | null>(null);
   const [sleep, setSleep] = createSignal(false);
   let kiezer!: HTMLInputElement;
   let camera!: HTMLInputElement;
 
+  const weiger = (naam: string) => melding('danger', `${naam} kon niet worden toegevoegd. Gebruik een JPG- of PNG-afbeelding.`);
   const zetOm = async (b: File) => {
     try {
       return await naarJpeg(b);
     } catch {
-      melding('danger', `${b.name} kon niet worden toegevoegd. Gebruik een JPG- of PNG-afbeelding.`);
+      weiger(b.name);
       return null;
     }
   };
 
-  const voegToe = async (bestanden: File[]) => {
-    if (!bestanden.length || uit()) return;
+  const voegToe = async (alle: File[]) => {
+    if (uit()) return;
+    // A file typed as something else (eg a PDF) is refused before the replace question; HEIC often has no type at all, so that is tried.
+    const bestanden = alle.filter((b) => !b.type || b.type.startsWith('image/'));
+    for (const b of alle) if (!bestanden.includes(b)) weiger(b.name);
+    if (!bestanden.length) return;
     const huidig = fotos();
     let vervang: string | null = null;
     let blobs: (Blob | null)[];
@@ -60,9 +66,9 @@ export function FotoSlot(props: { k: string; label?: string }) {
       if (vervangen) vervang = huidig[0].id;
       blobs = [blob];
     } else blobs = await Promise.all(bestanden.map(zetOm));
-    if (props.k === 'kaart' && vervang && kaartAnnotaties(s.d).length) s.setKaartVervangen(true);
+    if (k === 'kaart' && vervang && kaartAnnotaties(s.d).length) s.setKaartVervangen(true);
     for (const [i, blob] of blobs.entries()) {
-      if (blob) await fotoInWachtrij({ dossierId: s.id, slot: props.k, vervang: i === 0 ? vervang : null, naam: bestanden[i].name, blob });
+      if (blob) await fotoInWachtrij({ dossierId: s.id, slot: k, vervang: i === 0 ? vervang : null, naam: bestanden[i].name, blob });
     }
   };
   const uitInvoer = (e: Event & { currentTarget: HTMLInputElement }) => {
@@ -84,7 +90,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
       onDrop={(e) => {
         e.preventDefault();
         setSleep(false);
-        void voegToe([...e.dataTransfer!.files].filter((f) => f.type.startsWith('image/')));
+        void voegToe([...e.dataTransfer!.files]);
       }}
     >
       <Show when={props.label}>

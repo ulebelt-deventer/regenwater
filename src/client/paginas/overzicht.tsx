@@ -1,4 +1,4 @@
-import { A, useNavigate } from '@solidjs/router';
+import { A, Navigate, useNavigate } from '@solidjs/router';
 import { For, Show, createResource } from 'solid-js';
 import { datum } from '../../shared/datum.ts';
 import type { Gebruiker } from '../../shared/types.ts';
@@ -18,12 +18,16 @@ export function RolBadge(props: { rol: string }) {
 }
 
 export function Overzicht() {
+  return (
+    <Show when={sessie()!.ik.rol === 'beheerder'} fallback={<Navigate href="/dossiers" />}>
+      <OverzichtInhoud />
+    </Show>
+  );
+}
+
+function OverzichtInhoud() {
   titel('Overzicht');
   const navigate = useNavigate();
-  if (sessie()!.ik.rol !== 'beheerder') {
-    navigate('/dossiers', { replace: true });
-    return null;
-  }
   const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[] }>('/api/overzicht'));
   return (
     <>

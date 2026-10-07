@@ -64,6 +64,9 @@ export function wachtend(dossierId: number): Item[] {
   return rijen.map((r) => r.item).filter((i) => i.dossierId === dossierId);
 }
 
+// api() is already on its way to the login page; the queue stays put and is sent once the next page load starts it.
+const sessieVerlopen = (e: unknown) => e instanceof ApiFout && e.status === 401;
+
 let timer: ReturnType<typeof setTimeout> | null = null;
 let bezig = false;
 let pogingen = 0;
@@ -91,6 +94,7 @@ async function verwerk(): Promise<void> {
         for (const l of voor(it.dossierId)) l.opgeslagen(it, planAt);
         setOpgeslagenOm(new Date());
       } catch (e) {
+        if (sessieVerlopen(e)) return;
         if (isNetwerkFout(e)) {
           if (!mislukt()) melding('danger', 'Opslaan mislukt: er is geen verbinding met de server. Je wijzigingen blijven bewaard en worden opnieuw verstuurd.');
           setMislukt(true);
@@ -176,6 +180,7 @@ async function verwerkFotos(): Promise<void> {
         for (const l of voor(t.dossierId)) l.foto(r.foto, t.slot, t.vervang, r.plan_gewijzigd_at);
         setOpgeslagenOm(new Date());
       } catch (e) {
+        if (sessieVerlopen(e)) return;
         if (isNetwerkFout(e)) {
           fotoPogingen++;
           setTimeout(() => void verwerkFotos(), Math.min(30000, 1000 * 2 ** Math.min(fotoPogingen, 5)));

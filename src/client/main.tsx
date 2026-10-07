@@ -16,7 +16,7 @@ import { Activiteit } from './paginas/activiteit.tsx';
 import { Feedback, Materialen, Sjablonen } from './paginas/beheer.tsx';
 import { Dossiers } from './paginas/dossiers.tsx';
 import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
-import { Inloggen } from './paginas/inloggen.tsx';
+import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
 import { AandachtUitleg, Installeren, Privacy, Statussen } from './paginas/uitleg.tsx';
 
@@ -31,6 +31,7 @@ render(
     <Router root={Layout}>
       <Route path="/" component={Overzicht} />
       <Route path="/inloggen" component={Inloggen} />
+      <Route path="/inloggen/link" component={InloggenLink} />
       <Route path="/dossiers" component={Dossiers} />
       <Route path="/dossiers/:id" component={DossierRoute}>
         <Route path="/" component={Details} />

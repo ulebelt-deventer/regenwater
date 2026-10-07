@@ -161,6 +161,8 @@ export function Installeren() {
   return (
     <>
       <h1 class="h3">App op je telefoon zetten</h1>
+      {/* PLACEHOLDER: remove once the screenshots are in. */}
+      <div class="alert alert-danger fs-5 fw-semibold qa-screenshots-ontbreken">Let op: de schermafbeeldingen bij deze stappen zijn nog niet gemaakt. Werk samen met de ontwikkelaar om schermafbeeldingen van het installeren op een iPhone te maken.</div>
       <Show
         when={!geinstalleerd}
         fallback={<div class="alert alert-success qa-al-geinstalleerd">De app staat al op je telefoon.</div>}

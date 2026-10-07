@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { digestTekst } from './digest.ts';
-import { Klant, PDOK_ADRES, type TestApp, maakGebruiker, testApp } from './testapp.ts';
+import { Klant, type TestApp, maakGebruiker, nieuwDossier as maakDossier, testApp } from './testapp.ts';
 
 let t: TestApp;
 let beheerder: Klant;
@@ -17,16 +17,7 @@ beforeEach(async () => {
   t.mailer.verstuurd = [];
 });
 
-// A dossier with address, bewoner and huur/koop filled in.
-async function nieuwDossier(huurKoop: 'huur' | 'koop' = 'huur'): Promise<number> {
-  const { id } = await beheerder.json<{ id: number }>('POST', '/api/dossiers');
-  await beheerder.json('POST', `/api/dossiers/${id}/adres`, { id: PDOK_ADRES.id });
-  for (const [key, value] of [['bewoner_naam', 'Anna de Vries'], ['bewoner_email', 'anna@example.org'], ['huur_koop', huurKoop], ['rioolstelsel', 'gemengd']]) {
-    await beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
-  }
-  if (huurKoop === 'huur') await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'woningeigenaar', value: 'Ieder1' });
-  return id;
-}
+const nieuwDossier = (huurKoop: 'huur' | 'koop' = 'huur') => maakDossier(beheerder, huurKoop);
 
 const png = () => sharp({ create: { width: 40, height: 30, channels: 3, background: '#336699' } }).png().toBuffer();
 

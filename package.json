@@ -11,7 +11,8 @@
     "start": "node dist/server/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests",
-    "test": "vitest run",
+    "test": "npm run test:vite && npm run test:e2e",
+    "test:vite": "vitest run",
     "test:e2e": "npm run build && playwright test",
     "digest": "node dist/server/jobs.js digest"
   },
