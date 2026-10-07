@@ -23,7 +23,8 @@ function Lijst() {
   const navigate = useNavigate();
   const [gearchiveerd, setGearchiveerd] = createSignal(false);
   const [nieuw, setNieuw] = createSignal(false);
-  const [data, { refetch }] = createResource(gearchiveerd, (g) => get<{ gebruikers: GebruikerRij[] }>(`/api/gebruikers${query({ gearchiveerd: g ? 1 : null })}`));
+  // A source of `false` would skip the fetch, so the flag goes in as 0/1.
+  const [data, { refetch }] = createResource(() => Number(gearchiveerd()), (g) => get<{ gebruikers: GebruikerRij[] }>(`/api/gebruikers${query({ gearchiveerd: g || null })}`));
 
   return (
     <>

@@ -143,44 +143,43 @@ export function Installeren() {
     setPrompt(null);
   };
 
-  const iphone = (
-    <ol class="mb-0">
-      <li>Open deze pagina in Safari zelf, niet in de browser van je mail-app.</li>
-      <li>Tik op de Deel-knop (het vierkantje met de pijl omhoog).</li>
-      <li>Kies “Zet op beginscherm”.</li>
-      <li>Tik op “Voeg toe”.</li>
-    </ol>
+  const stappen = (kop: string, qa: string, items: string[]) => (
+    <section class="col-md-6">
+      <div class={`card card-body h-100 ${qa}`}>
+        <h2 class="h5">{kop}</h2>
+        <ol class="mb-0">
+          <For each={items}>{(s) => <li>{s}</li>}</For>
+        </ol>
+      </div>
+    </section>
   );
-  const androidStappen = (
-    <ol class="mb-0">
-      <li>Tik in Chrome op het menu ⋮ rechtsboven.</li>
-      <li>Kies “App installeren” (of “Toevoegen aan startscherm”).</li>
-    </ol>
-  );
+  const iphone = stappen('iPhone (Safari)', 'qa-stappen-iphone', [
+    'Open deze pagina in Safari zelf, niet in de browser van je mail-app.',
+    'Tik op de Deel-knop (het vierkantje met de pijl omhoog).',
+    'Kies “Zet op beginscherm”.',
+    'Tik op “Voeg toe”.',
+  ]);
+  const androidStappen = stappen('Android (Chrome)', 'qa-stappen-android', [
+    'Tik in Chrome op het menu ⋮ rechtsboven.',
+    'Kies “App installeren” (of “Toevoegen aan startscherm”).',
+  ]);
 
   return (
     <>
       <h1 class="h3">App op je telefoon zetten</h1>
       {/* PLACEHOLDER: remove once the screenshots are in. */}
-      <div class="alert alert-danger fs-5 fw-semibold qa-screenshots-ontbreken">Let op: de schermafbeeldingen bij deze stappen zijn nog niet gemaakt. Werk samen met de ontwikkelaar om schermafbeeldingen van het installeren op een iPhone te maken.</div>
+      <div class="alert alert-danger qa-screenshots-ontbreken">Let op: de schermafbeeldingen bij deze stappen zijn nog niet gemaakt. Werk samen met de ontwikkelaar om schermafbeeldingen van het installeren op een iPhone te maken.</div>
       <Show
         when={!geinstalleerd}
         fallback={<div class="alert alert-success qa-al-geinstalleerd">De app staat al op je telefoon.</div>}
       >
         <Show when={!ios && !android}>
-          <div class="alert alert-warning fs-5 qa-open-op-telefoon">Open deze pagina op je telefoon.</div>
+          <div class="alert alert-warning qa-open-op-telefoon">Open deze pagina op je telefoon.</div>
         </Show>
         <Show when={prompt()}>
           <button type="button" class="btn btn-primary btn-lg mb-3 qa-installeren" onClick={() => void installeer()}>Installeren</button>
         </Show>
-        <section class="card card-body mb-3">
-          <h2 class="h5">{android ? 'Android (Chrome)' : 'iPhone (Safari)'}</h2>
-          {android ? androidStappen : iphone}
-        </section>
-        <details class="card card-body mb-3">
-          <summary class="fw-semibold">{android ? 'iPhone (Safari)' : 'Android (Chrome)'}</summary>
-          <div class="pt-2">{android ? iphone : androidStappen}</div>
-        </details>
+        <div class="row g-3 mb-3">{android ? [androidStappen, iphone] : [iphone, androidStappen]}</div>
         <p class="mb-0">Open daarna de app via het nieuwe icoontje en log nog één keer in met je e-mailadres en code. De app op je beginscherm heeft een eigen login, los van die in je browser.</p>
       </Show>
     </>

@@ -14,6 +14,7 @@ export interface Bericht {
   replyTo: string;
   onderwerp: string;
   tekst: string;
+  html?: string; // without it, the HTML part is tekstNaarHtml(tekst)
   bijlagen?: Bijlage[];
 }
 
@@ -25,13 +26,19 @@ export function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+export function htmlMail(inhoud: string): string {
+  return `<!doctype html><html><body style="font-family: Figtree, Arial, sans-serif; font-size: 15px; color: #1a1a1a; line-height: 1.5">${inhoud}</body></html>`;
+}
+
 // Plain text with blank-line paragraphs; URLs become links.
 export function tekstNaarHtml(tekst: string): string {
   const alinea = (p: string) => escHtml(p).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>').replace(/\n/g, '<br>');
-  return `<!doctype html><html><body style="font-family: Figtree, Arial, sans-serif; font-size: 15px; color: #1a1a1a; line-height: 1.5">${tekst
-    .split(/\n{2,}/)
-    .map((p) => `<p>${alinea(p)}</p>`)
-    .join('')}</body></html>`;
+  return htmlMail(
+    tekst
+      .split(/\n{2,}/)
+      .map((p) => `<p>${alinea(p)}</p>`)
+      .join(''),
+  );
 }
 
 export class GeheugenMailer implements Mailer {
@@ -53,7 +60,7 @@ export class BestandMailer implements Mailer {
     const naam = `${new Date().toISOString().replace(/[:.]/g, '-')}-${b.aan.replace(/[^a-z0-9@.-]/gi, '_')}.html`;
     const pad = path.join(this.dir, naam);
     const kop = `<pre style="background:#f7f0e5;padding:8px">Aan: ${escHtml(b.aan)}\nCc: ${escHtml(b.cc ?? '')}\nReply-To: ${escHtml(b.replyTo)}\nOnderwerp: ${escHtml(b.onderwerp)}\nBijlagen: ${(b.bijlagen ?? []).map((x) => escHtml(x.naam)).join(', ')}</pre>`;
-    fs.writeFileSync(pad, kop + tekstNaarHtml(b.tekst));
+    fs.writeFileSync(pad, kop + (b.html ?? tekstNaarHtml(b.tekst)));
     for (const bijlage of b.bijlagen ?? []) fs.writeFileSync(`${pad}-${bijlage.naam}`, bijlage.inhoud);
     log.info(`email sent to ${b.aan}, subject ${b.onderwerp}, view at: ${pad}`);
   }
@@ -77,7 +84,7 @@ export class MailgunMailer implements Mailer {
     form.set('h:Reply-To', b.replyTo);
     form.set('subject', b.onderwerp);
     form.set('text', b.tekst);
-    form.set('html', tekstNaarHtml(b.tekst));
+    form.set('html', b.html ?? tekstNaarHtml(b.tekst));
     for (const x of b.bijlagen ?? []) form.append('attachment', new Blob([new Uint8Array(x.inhoud)], { type: 'application/pdf' }), x.naam);
     const res = await fetch(`https://api.eu.mailgun.net/v3/${this.domein}/messages`, {
       method: 'POST',

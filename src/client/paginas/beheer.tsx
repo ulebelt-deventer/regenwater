@@ -220,7 +220,8 @@ export function Feedback() {
 
 function FeedbackInhoud() {
   const [alle, setAlle] = createSignal(false);
-  const [data, { refetch }] = createResource(alle, (a) => get<{ feedback: FeedbackRij[]; gebruikers: Record<string, string> }>(`/api/feedback${query({ alle: a ? 1 : null })}`));
+  // A source of `false` would skip the fetch, so the flag goes in as 0/1.
+  const [data, { refetch }] = createResource(() => Number(alle()), (a) => get<{ feedback: FeedbackRij[]; gebruikers: Record<string, string> }>(`/api/feedback${query({ alle: a || null })}`));
   const naam = (id: number | null) => {
     if (id === null) return 'Onbekend';
     const n = data()!.gebruikers[id];

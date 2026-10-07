@@ -29,6 +29,17 @@ describe('requesting a code', () => {
     expect(m.tekst).toContain('15 minuten geldig');
   });
 
+  it('explains why the mail came and shows the code on its own, centered and monospace, in the HTML part', async () => {
+    await new Klant(t).json('POST', '/api/auth/request', { email: KEES });
+    const [m] = mailsAan(KEES);
+    const intro = 'Je krijgt deze e-mail omdat je inlogt op het Regenwater-portaal van De Ulebelt.';
+    expect(m.tekst.startsWith(intro)).toBe(true);
+    expect(m.html).toContain(intro);
+    const codeBlok = new RegExp(`<p style="([^"]*)">${laatsteCode(KEES)}</p>`).exec(m.html!)![1];
+    expect(codeBlok).toContain('text-align: center');
+    expect(codeBlok).toContain('monospace');
+  });
+
   it('accepts the address in other capitals and with spaces around it', async () => {
     const k = new Klant(t);
     await k.json('POST', '/api/auth/request', { email: '  Kees.Klus@Example.ORG ' });

@@ -10,6 +10,7 @@ import type { Gebruiker } from '../shared/types.ts';
 import { audit } from './audit.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from './context.ts';
 import { log } from './log.ts';
+import { escHtml, htmlMail } from './mail.ts';
 import { gebruiker } from './repo.ts';
 
 const COOKIE = 'sessie';
@@ -46,10 +47,17 @@ function controleerIp(ctx: Ctx, email: string, ipAdres: string): void {
   }
 }
 
-export function loginMail(code: string, link: string): { onderwerp: string; tekst: string } {
+export function loginMail(code: string, link: string): { onderwerp: string; tekst: string; html: string } {
+  const intro = 'Je krijgt deze e-mail omdat je inlogt op het Regenwater-portaal van De Ulebelt.';
+  const slot = `De code en de link zijn ${LOGIN_CODE_GELDIG_MIN} minuten geldig en werken één keer. Heb je niet geprobeerd in te loggen? Dan kun je deze e-mail negeren.`;
   return {
     onderwerp: `Je inlogcode voor ${APP_NAAM}: ${code}`,
-    tekst: `Je inlogcode is:\n\n${code}\n\nOp je telefoon: typ deze code in. Op een computer: klik op de link:\n${link}\n\nDe code en de link zijn ${LOGIN_CODE_GELDIG_MIN} minuten geldig en werken één keer. Heb je niet geprobeerd in te loggen? Dan kun je deze e-mail negeren.`,
+    tekst: `${intro}\n\nJe inlogcode is:\n\n${code}\n\nOp je telefoon: typ deze code in. Op een computer: klik op de link:\n${link}\n\n${slot}`,
+    html: htmlMail(
+      `<p>${intro}</p><p>Je inlogcode is:</p>` +
+        `<p style="text-align: center; font-family: Menlo, Consolas, 'Courier New', monospace; font-size: 36px; font-weight: bold; letter-spacing: 4px; margin: 24px 0">${code}</p>` +
+        `<p>Op je telefoon: typ deze code in. Op een computer: <a href="${escHtml(link)}">klik hier om in te loggen</a>.</p><p>${escHtml(slot)}</p>`,
+    ),
   };
 }
 
@@ -104,7 +112,7 @@ export function authRoutes(app: Hono<Env>, ctx: Ctx): void {
     })();
     poging(ctx, 'mail', g.email, ipAdres);
     const m = loginMail(code, `${ctx.config.basisUrl}/inloggen/link#${token}`);
-    await ctx.mailer.verstuur({ aan: g.email, replyTo: ULEBELT_CONTACT_EMAIL, onderwerp: m.onderwerp, tekst: m.tekst });
+    await ctx.mailer.verstuur({ aan: g.email, replyTo: ULEBELT_CONTACT_EMAIL, ...m });
     return c.json({ ok: true });
   });
 

@@ -117,7 +117,7 @@ export function Vragen() {
 
 // ---- Dropdown (Bootstrap markup, Solid state) ----
 
-export function Dropdown(props: { knop: JSX.Element; knopClass?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean }) {
+export function Dropdown(props: { knop: JSX.Element; knopClass?: string; menuClass?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean }) {
   const [open, setOpen] = createSignal(false);
   let el!: HTMLDivElement;
   const buiten = (e: MouseEvent) => {
@@ -130,7 +130,8 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; rechts?
       <button type="button" class={`dropdown-toggle ${props.knopClass ?? 'btn btn-outline-secondary'}`} aria-expanded={open()} onClick={() => setOpen(!open())}>
         {props.knop}
       </button>
-      <div class={`dropdown-menu ${props.rechts ? 'dropdown-menu-end' : ''}`} classList={{ show: open() }} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
+      {/* Bootstrap positions the menu (incl. -end alignment) only when data-bs-popper is set; "static" is its no-Popper mode. */}
+      <div class={`dropdown-menu ${props.rechts ? 'dropdown-menu-end' : ''} ${props.menuClass ?? ''}`} data-bs-popper="static" classList={{ show: open() }} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
         {props.children}
       </div>
     </div>

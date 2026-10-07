@@ -1,6 +1,7 @@
 import '@fontsource/figtree/400.css';
 import '@fontsource/figtree/600.css';
 import '@fontsource/figtree/800.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import './styles.scss';
 import { Route, Router } from '@solidjs/router';
 import { render } from 'solid-js/web';

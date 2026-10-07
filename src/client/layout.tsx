@@ -33,7 +33,7 @@ function Navbar() {
         <NavLink href="/dossiers" class="qa-nav-dossiers">{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
           <NavLink href="/gebruikers" class="qa-nav-gebruikers">Gebruikers</NavLink>
-          <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer">
+          <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" menuClass="shadow">
             <A class="dropdown-item" href="/beheer/materialen">Materialen</A>
             <A class="dropdown-item" href="/beheer/sjablonen">E-mailsjablonen</A>
             <A class="dropdown-item" href="/beheer/feedback">Feedback</A>
@@ -44,7 +44,7 @@ function Navbar() {
             <A class="dropdown-item" href="/uitleg/aandacht">Uitleg: aandacht</A>
           </Dropdown>
         </Show>
-        <Dropdown knop={s().ik.naam} knopClass="btn btn-link nav-link qa-nav-account" class="ms-auto" rechts>
+        <Dropdown knop={s().ik.naam} knopClass="btn btn-link nav-link qa-nav-account" menuClass="shadow" class="ms-auto" rechts>
           <A class="dropdown-item" href="/installeren">App op je telefoon zetten</A>
           <button type="button" class="dropdown-item qa-uitloggen" onClick={() => void uitloggen()}>Uitloggen</button>
         </Dropdown>

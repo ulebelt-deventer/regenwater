@@ -41,7 +41,7 @@ $min-contrast-ratio: 3;
 .als-banner a, .als-banner button { color: #fff; }
 
 // Who the next step lies with
-.bij { display: inline-block; padding: .1rem .5rem; border-radius: .3rem; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.bij { display: inline-block; padding: .1rem .5rem; border-radius: .3rem; font-size: $font-size-sm; font-weight: 600; white-space: nowrap; }
 .bij-beheerder { background: #d6e5f7; color: #1d4f8f; }
 .bij-klusser { background: #ffd9c9; color: #a53a12; }
 .bij-corporatie { background: #e9dbe0; color: $ub-aubergine; }
@@ -54,16 +54,16 @@ $min-contrast-ratio: 3;
 .missing { background: #ffe4dc; color: #b2400f; padding: 0 .25rem; border-radius: .2rem; font-style: italic; }
 .row-link { cursor: pointer; }
 
-.chip { white-space: nowrap; border: 1px solid #d8ccb6; border-radius: 2rem; padding: .3rem .8rem; font-size: .85rem; background: #fff; color: inherit; }
+.chip { white-space: nowrap; border: 1px solid #d8ccb6; border-radius: 2rem; padding: .3rem .8rem; font-size: $font-size-sm; background: #fff; color: inherit; }
 .chip.active { background: $ub-groen; border-color: $ub-groen; color: #fff; }
 
 .sectie { scroll-margin-top: 1rem; }
-.sectie > h2 { font-size: 1.15rem; }
+.sectie > h2 { font-size: $h5-font-size; }
 .flash { animation: flash 1.6s ease-out; }
 @keyframes flash { from { background: #fff3c4; } to { background: transparent; } }
 
 // Autosave indicator
-.opslag { position: fixed; right: .75rem; bottom: .75rem; z-index: 1080; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem .75rem; font-size: .85rem; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
+.opslag { position: fixed; right: .75rem; bottom: .75rem; z-index: 1080; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem .75rem; font-size: $font-size-sm; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
 .meldingen { position: fixed; top: .75rem; left: 50%; transform: translateX(-50%); z-index: 1090; width: min(32rem, calc(100% - 1.5rem)); }
 
 // Photo slots
@@ -77,7 +77,7 @@ $min-contrast-ratio: 3;
 .annot .tools { background: #fff; padding: .5rem; display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .annot .stage { flex: 1; position: relative; overflow: hidden; touch-action: none; user-select: none; }
 .annot .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.annot .hint { background: #2b2b2b; color: #f7f0e5; font-size: .9rem; padding: .35rem .75rem; }
+.annot .hint { background: #2b2b2b; color: #f7f0e5; font-size: $font-size-sm; padding: .35rem .75rem; }
 .annot .btn.active { background: $ub-groen; border-color: $ub-groen; color: #fff; }
 
 .big-touch .form-check-input { width: 1.3em; height: 1.3em; }

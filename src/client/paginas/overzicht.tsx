@@ -43,7 +43,7 @@ function OverzichtInhoud() {
                       <td class={KLEUR[t.key] ?? ''}>{t.label}</td>
                       <td class={`text-end fw-semibold qa-aantal ${KLEUR[t.key] ?? ''}`}>{t.aantal}</td>
                       <td>
-                        <A href={`/dossiers${t.query ? `?${t.query}` : ''}`} class="qa-lijst-link">Bekijk lijst</A>
+                        <A href={`/dossiers${t.query ? `?${t.query}` : ''}`} class="qa-lijst-link">details</A>
                       </td>
                     </tr>
                   )}
