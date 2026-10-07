@@ -91,7 +91,7 @@ export function Dossiers() {
         <h1 class="h3 mb-0 me-auto qa-titel">{beheerder() ? 'Alle dossiers' : 'Mijn dossiers'}</h1>
         <Show when={beheerder()}>
           <a class="btn btn-outline-secondary qa-csv" href={`/api/dossiers.csv${query(zoek())}`}>CSV downloaden</a>
-          <button type="button" class="btn btn-primary qa-nieuw-dossier" onClick={() => void nieuw()}>+ Nieuw dossier</button>
+          <button type="button" class="btn btn-primary qa-nieuw-dossier" onClick={() => void nieuw()}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuw dossier</button>
         </Show>
       </div>
 

@@ -293,7 +293,7 @@ export function Toewijzen(props: { rol: 'bezoeker' | 'uitvoerder' }) {
           <button type="button" class="dropdown-item text-muted qa-kandidaat-niemand" onClick={() => void wijs(null)}>Niemand</button>
         </Show>
         <div class="dropdown-divider" />
-        <button type="button" class="dropdown-item qa-nieuwe-klusser" onClick={() => setNieuw(true)}>+ Nieuwe klusser</button>
+        <button type="button" class="dropdown-item qa-nieuwe-klusser" onClick={() => setNieuw(true)}><i class="bi bi-plus-lg me-2" aria-hidden="true" />Nieuwe klusser</button>
       </Dropdown>
       <Show when={nieuw()}>
         <GebruikerForm

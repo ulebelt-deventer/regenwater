@@ -229,13 +229,13 @@ export function VoorstelLijst() {
             <span aria-hidden="true">•</span>
             <VeldInvoer k={`voorstel.${id}.tekst`} kaal class="flex-grow-1" />
             <Show when={!uit()}>
-              <button type="button" class="btn btn-sm btn-outline-danger qa-voorstel-weg" aria-label="Verwijderen" onClick={() => haalWeg(id)}>✕</button>
+              <button type="button" class="btn btn-sm btn-outline-danger qa-voorstel-weg" aria-label="Verwijderen" onClick={() => haalWeg(id)}><i class="bi bi-trash3" aria-hidden="true" /></button>
             </Show>
           </div>
         )}
       </For>
       <Show when={!uit()}>
-        <button type="button" class="btn btn-sm btn-outline-primary qa-voorstel-toevoegen" onClick={voegToe}>+ Werkzaamheid toevoegen</button>
+        <button type="button" class="btn btn-sm btn-outline-primary qa-voorstel-toevoegen" onClick={voegToe}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Werkzaamheid toevoegen</button>
       </Show>
     </div>
   );
@@ -292,7 +292,7 @@ export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
                     <td class="d-none d-sm-table-cell text-end text-nowrap qa-subtotaal">{subtotaal(id)}</td>
                     <td class="text-end">
                       <Show when={!uit()}>
-                        <button type="button" class="btn btn-sm btn-outline-danger qa-materiaal-weg" aria-label="Verwijderen" onClick={() => haalWeg(id)}>✕</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger qa-materiaal-weg" aria-label="Verwijderen" onClick={() => haalWeg(id)}><i class="bi bi-trash3" aria-hidden="true" /></button>
                       </Show>
                     </td>
                   </tr>
@@ -304,7 +304,7 @@ export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
       </div>
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
         <Show when={!uit()} fallback={<span />}>
-          <button type="button" class="btn btn-sm btn-outline-primary qa-materiaal-toevoegen" onClick={() => s.zet(props.lijst, [...ids(), nieuwId()])}>+ Ander materiaal</button>
+          <button type="button" class="btn btn-sm btn-outline-primary qa-materiaal-toevoegen" onClick={() => s.zet(props.lijst, [...ids(), nieuwId()])}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Ander materiaal</button>
         </Show>
         <div class="fw-semibold qa-materiaal-totaal">
           {props.lijst === 'materialen' ? 'Geschatte materiaalkosten' : 'Gebruikte materiaalkosten'}: {euro(totaal())}

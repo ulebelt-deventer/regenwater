@@ -26,3 +26,11 @@ test('Feedback toont bij openen meteen de openstaande feedback', async ({ page }
   await page.goto('/beheer/feedback');
   await expect(page.locator('.qa-feedback-item')).toContainText('De knop is te klein');
 });
+
+test('Gebruikers staat als eerste in het Beheer-menu', async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  await page.locator('.qa-nav-beheer').click();
+  await page.locator('.qa-nav-beheer + .dropdown-menu > :first-child.qa-nav-gebruikers').click();
+  await expect(page).toHaveURL(/\/gebruikers$/);
+});

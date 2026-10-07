@@ -386,7 +386,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
             <button type="button" class="btn btn-sm btn-primary qa-klaar" onClick={sluitVlak}>Klaar</button>
           </Show>
           <span class="vr mx-1" />
-          <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" disabled={!gekozen()} onClick={() => void verwijder()}>Verwijderen</button>
+          <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" disabled={!gekozen()} onClick={() => void verwijder()}><i class="bi bi-trash3 me-1" aria-hidden="true" />Verwijderen</button>
           <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" disabled={!geschiedenis().length} onClick={ongedaan}>Ongedaan maken</button>
           <button type="button" class="btn btn-sm btn-outline-secondary qa-alles-wissen" disabled={!opgeslagen().length} onClick={() => void allesWissen()}>Alles wissen</button>
           <button type="button" class="btn btn-sm btn-outline-danger qa-foto-verwijderen" onClick={() => void fotoVerwijderen()}>Foto verwijderen</button>

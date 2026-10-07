@@ -96,7 +96,7 @@ function MaterialenInhoud() {
                     <td class="text-nowrap text-end">
                       <button type="button" class="btn btn-sm btn-outline-secondary qa-omhoog" disabled={i() === 0} aria-label="Omhoog" onClick={() => void verplaats(i(), -1)}>↑</button>{' '}
                       <button type="button" class="btn btn-sm btn-outline-secondary qa-omlaag" disabled={i() === lijst().length - 1} aria-label="Omlaag" onClick={() => void verplaats(i(), 1)}>↓</button>{' '}
-                      <button type="button" class="btn btn-sm btn-outline-danger qa-verwijderen" aria-label="Verwijderen" onClick={() => void verwijder(m)}>✕</button>
+                      <button type="button" class="btn btn-sm btn-outline-danger qa-verwijderen" aria-label="Verwijderen" onClick={() => void verwijder(m)}><i class="bi bi-trash3" aria-hidden="true" /></button>
                     </td>
                   </tr>
                 )}

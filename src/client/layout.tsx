@@ -24,29 +24,40 @@ function Navbar() {
     <nav class="topbar no-print">
       <div class="container-lg d-flex flex-wrap align-items-center gap-3 py-2">
         <A href="/" class="d-flex align-items-center gap-2 text-decoration-none me-2">
-          <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo" />
-          <span class="wordmark">Regenwater</span>
+          <img src="/icon-192.png" alt="Ulebelt Regenwater" class="logo rounded d-md-none qa-logo-klein" />
+          <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo d-none d-md-block" />
+          <span class="wordmark d-none d-md-inline">Regenwater</span>
         </A>
         <Show when={beheerder()}>
-          <NavLink href="/" end class="qa-nav-overzicht">Overzicht</NavLink>
+          <NavLink href="/" end class="d-none d-md-block qa-nav-overzicht">Overzicht</NavLink>
         </Show>
         <NavLink href="/dossiers" class="qa-nav-dossiers">{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
-          <NavLink href="/gebruikers" class="qa-nav-gebruikers">Gebruikers</NavLink>
-          <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" menuClass="shadow">
+          <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer">
+            <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers">Gebruikers</A>
             <A class="dropdown-item" href="/beheer/materialen">Materialen</A>
             <A class="dropdown-item" href="/beheer/sjablonen">E-mailsjablonen</A>
             <A class="dropdown-item" href="/beheer/feedback">Feedback</A>
-            <a class="dropdown-item" href="/docs/bezoekformulier-leeg.pdf" target="_blank">Leeg bezoekformulier (PDF)</a>
+            <a class="dropdown-item" href="/docs/bezoekformulier-leeg.pdf" target="_blank"><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />Leeg bezoekformulier (PDF)</a>
             <A class="dropdown-item" href="/beheer/activiteit">Alle activiteit</A>
             <div class="dropdown-divider" />
             <A class="dropdown-item" href="/uitleg/statussen">Uitleg: statussen</A>
             <A class="dropdown-item" href="/uitleg/aandacht">Uitleg: aandacht</A>
           </Dropdown>
         </Show>
-        <Dropdown knop={s().ik.naam} knopClass="btn btn-link nav-link qa-nav-account" menuClass="shadow" class="ms-auto" rechts>
-          <A class="dropdown-item" href="/installeren">App op je telefoon zetten</A>
-          <button type="button" class="dropdown-item qa-uitloggen" onClick={() => void uitloggen()}>Uitloggen</button>
+        <Dropdown
+          knop={
+            <>
+              <i class="bi bi-person-circle" role="img" aria-label={s().ik.naam} />
+              <span class="d-none d-md-inline ms-2 qa-account-naam">{s().ik.naam}</span>
+            </>
+          }
+          knopClass="btn btn-link nav-link qa-nav-account"
+          class="ms-auto"
+          rechts
+        >
+          <A class="dropdown-item" href="/installeren"><i class="bi bi-phone me-2" aria-hidden="true" />App op je telefoon zetten</A>
+          <button type="button" class="dropdown-item qa-uitloggen" onClick={() => void uitloggen()}><i class="bi bi-box-arrow-right me-2" aria-hidden="true" />Uitloggen</button>
         </Dropdown>
       </div>
     </nav>
@@ -108,7 +119,7 @@ function Footer() {
       <div class="container-lg d-flex gap-3">
         <A href="/privacy" class="link-secondary">Privacy</A>
         <Show when={sessie()}>
-          <button type="button" class="btn btn-link link-secondary p-0 small align-baseline qa-feedback" onClick={() => setFeedback(true)}>Feedback geven</button>
+          <button type="button" class="btn btn-link btn-inline link-secondary qa-feedback" onClick={() => setFeedback(true)}>Feedback geven</button>
         </Show>
       </div>
       <Show when={feedback()}>

@@ -24,7 +24,7 @@ export function Uitvoering() {
       <section class="card card-body mb-3 qa-uitvoering">
         <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
           <h2 class="h5 mb-0">Uitvoering</h2>
-          <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="small qa-plan-pdf">Plan van Aanpak (PDF)</a>
+          <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="small qa-plan-pdf"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Plan van Aanpak (PDF)</a>
         </div>
         <VeldInvoer k="uitgevoerd" />
         <div id="veld-opleverfotos" class="mb-3 qa-veld-opleverfotos">

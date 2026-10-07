@@ -25,6 +25,8 @@ $min-contrast-ratio: 3;
 
 .btn-primary { --bs-btn-hover-bg: #004d2e; --bs-btn-hover-border-color: #004d2e; --bs-btn-active-bg: #003d24; --bs-btn-active-border-color: #003d24; }
 .form-check-input:checked { background-color: $ub-groen; border-color: $ub-groen; }
+// A button that reads as a link inside text: .btn would otherwise impose its own font size, line height and padding.
+.btn-inline { --bs-btn-font-size: inherit; --bs-btn-line-height: inherit; --bs-btn-padding-x: 0; --bs-btn-padding-y: 0; --bs-btn-border-width: 0; vertical-align: baseline; }
 .fw-xbold { font-weight: 800; }
 .text-groen { color: $ub-groen; }
 .cursor-pointer { cursor: pointer; }

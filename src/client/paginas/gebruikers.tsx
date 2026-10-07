@@ -30,7 +30,7 @@ function Lijst() {
     <>
       <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <h1 class="h3 mb-0 me-auto">Gebruikers</h1>
-        <button type="button" class="btn btn-primary qa-nieuwe-gebruiker" onClick={() => setNieuw(true)}>+ Nieuwe gebruiker</button>
+        <button type="button" class="btn btn-primary qa-nieuwe-gebruiker" onClick={() => setNieuw(true)}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuwe gebruiker</button>
       </div>
       <div class="form-check mb-3">
         <input id="toon-gearchiveerd" type="checkbox" class="form-check-input qa-toon-gearchiveerd" checked={gearchiveerd()} onChange={(e) => setGearchiveerd(e.currentTarget.checked)} />
@@ -149,14 +149,14 @@ function Pagina() {
                   <span class="badge text-bg-secondary qa-gearchiveerd">Gearchiveerd</span>
                 </Show>
                 <Dropdown knop="Acties" knopClass="btn btn-outline-secondary qa-gebruiker-menu" class="ms-auto" rechts>
-                  <button type="button" class="dropdown-item qa-bewerken" onClick={() => setBewerken(true)}>Bewerken</button>
+                  <button type="button" class="dropdown-item qa-bewerken" onClick={() => setBewerken(true)}><i class="bi bi-pencil me-2" aria-hidden="true" />Bewerken</button>
                   <Show when={!zelf()}>
-                    <Show when={g().archived_at} fallback={<button type="button" class="dropdown-item text-danger qa-archiveren" onClick={() => void archiveren(g())}>Archiveren</button>}>
-                      <button type="button" class="dropdown-item qa-dearchiveren" onClick={() => void dearchiveren(g())}>Dearchiveren</button>
+                    <Show when={g().archived_at} fallback={<button type="button" class="dropdown-item text-danger qa-archiveren" onClick={() => void archiveren(g())}><i class="bi bi-archive me-2" aria-hidden="true" />Archiveren</button>}>
+                      <button type="button" class="dropdown-item qa-dearchiveren" onClick={() => void dearchiveren(g())}><i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />Dearchiveren</button>
                     </Show>
                   </Show>
                   <Show when={g().rol === 'klusser' && !g().archived_at}>
-                    <button type="button" class="dropdown-item qa-inloggen-als" onClick={() => void inloggenAls(g())}>Inloggen als {g().naam}</button>
+                    <button type="button" class="dropdown-item qa-inloggen-als" onClick={() => void inloggenAls(g())}><i class="bi bi-box-arrow-in-right me-2" aria-hidden="true" />Inloggen als {g().naam}</button>
                   </Show>
                 </Dropdown>
               </div>

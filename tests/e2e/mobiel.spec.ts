@@ -42,3 +42,13 @@ test('een klusser ziet op een telefoon een kaart met de opdracht, nog niet aan z
   await expect(page.locator('.qa-bezoek')).toBeVisible();
   await geenZijwaartsScrollen(page);
 });
+
+test('op een telefoon is de navigatiebalk compact: klein logo, geen Overzicht en geen naam bij het accountmenu', async ({ page }) => {
+  await start(page);
+  await page.goto('/dossiers');
+  await expect(page.locator('.qa-logo-klein')).toBeVisible();
+  await expect(page.locator('.qa-nav-overzicht')).toBeHidden();
+  await expect(page.locator('.qa-account-naam')).toBeHidden();
+  await expect(page.locator('.qa-nav-account .bi-person-circle')).toBeVisible();
+  await geenZijwaartsScrollen(page);
+});

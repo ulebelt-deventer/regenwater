@@ -74,15 +74,15 @@ function Kop() {
         <h1 class="h3 mb-0 flex-grow-1 qa-dossier-titel">{adresRegel(s.d)}</h1>
         <Show when={s.beheerder()}>
           <Dropdown knop="" knopClass="btn btn-outline-secondary btn-sm qa-dossier-menu" rechts>
-            <Show when={!s.d.gesloten_at} fallback={<button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}>Dossier heropenen</button>}>
-              <button type="button" class="dropdown-item qa-menu-sluiten" onClick={() => setModal('sluiten')}>Dossier sluiten</button>
+            <Show when={!s.d.gesloten_at} fallback={<button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}><i class="bi bi-unlock me-2" aria-hidden="true" />Dossier heropenen</button>}>
+              <button type="button" class="dropdown-item qa-menu-sluiten" onClick={() => setModal('sluiten')}><i class="bi bi-lock me-2" aria-hidden="true" />Dossier sluiten</button>
             </Show>
             <Show when={stil()}>
-              <button type="button" class="dropdown-item qa-menu-uitstellen" onClick={() => setModal('uitstellen')}>Aandacht uitstellen</button>
+              <button type="button" class="dropdown-item qa-menu-uitstellen" onClick={() => setModal('uitstellen')}><i class="bi bi-alarm me-2" aria-hidden="true" />Aandacht uitstellen</button>
             </Show>
-            <A class="dropdown-item qa-menu-activiteit" href={`/dossiers/${s.id}/activiteit`}>Alle activiteit</A>
+            <A class="dropdown-item qa-menu-activiteit" href={`/dossiers/${s.id}/activiteit`}><i class="bi bi-clock-history me-2" aria-hidden="true" />Alle activiteit</A>
             <div class="dropdown-divider" />
-            <button type="button" class="dropdown-item text-danger qa-menu-verwijderen" onClick={() => setModal('verwijderen')}>Dossier verwijderen</button>
+            <button type="button" class="dropdown-item text-danger qa-menu-verwijderen" onClick={() => setModal('verwijderen')}><i class="bi bi-trash3 me-2" aria-hidden="true" />Dossier verwijderen</button>
           </Dropdown>
         </Show>
       </div>
@@ -315,7 +315,7 @@ export function Details() {
         <VeldInvoer k="afspraak" />
         <Show when={s.beheerder()}>
           <div class="mb-3">
-            <a href={`/docs/dossiers/${s.id}/bezoekformulier.pdf`} target="_blank" class="small qa-bezoekformulier">Printbaar bezoekformulier (PDF)</a>
+            <a href={`/docs/dossiers/${s.id}/bezoekformulier.pdf`} target="_blank" class="small qa-bezoekformulier"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Printbaar bezoekformulier (PDF)</a>
           </div>
         </Show>
         <div class="mb-2">
@@ -353,7 +353,7 @@ export function Details() {
       <Show when={s.beheerder()}>
         <Sectie id="sectie-versturen" titel="Plan versturen & goedkeuring">
           <div class="mb-3">
-            <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="qa-plan-pdf">Plan van Aanpak (PDF)</a>
+            <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="qa-plan-pdf"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Plan van Aanpak (PDF)</a>
           </div>
           <Show when={s.d.huur_koop} fallback={<div class="text-muted">Vul eerst bij de intake in of het een huur- of koopwoning is.</div>}>
             {(hk) => (
@@ -418,7 +418,7 @@ export function Details() {
 
         <Sectie id="sectie-uitvoering" titel="Uitvoering">
           <div class="mb-3">
-            <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="qa-plan-pdf-uitvoering">Plan van Aanpak (PDF)</a>
+            <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="qa-plan-pdf-uitvoering"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Plan van Aanpak (PDF)</a>
           </div>
           <VeldInvoer k="uitvoering_gepland" />
           <div class="mb-2">
@@ -437,8 +437,8 @@ export function Details() {
         <Show when={s.beheerder()}>
           <Sectie id="sectie-oplevering" titel="Oplevering">
             <div class="d-flex flex-wrap gap-3 mb-3">
-              <Show when={opgeleverd()} fallback={<span class="text-muted qa-opleverrapport-uit">Opleverrapport (PDF)</span>}>
-                <a href={`/docs/dossiers/${s.id}/opleverrapport.pdf`} target="_blank" class="qa-opleverrapport">Opleverrapport (PDF)</a>
+              <Show when={opgeleverd()} fallback={<span class="text-muted qa-opleverrapport-uit"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Opleverrapport (PDF)</span>}>
+                <a href={`/docs/dossiers/${s.id}/opleverrapport.pdf`} target="_blank" class="qa-opleverrapport"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Opleverrapport (PDF)</a>
               </Show>
               <Show when={opgeleverd()} fallback={<span class="text-muted">Materialen met prijzen (voor facturatie)</span>}>
                 <a href={`/docs/dossiers/${s.id}/materialen`} target="_blank" class="qa-facturatie">Materialen met prijzen (voor facturatie)</a>
