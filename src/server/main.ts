@@ -12,9 +12,9 @@ const ctx = maakCtx(config);
 stelHealthcheckIn(config.healthcheckUrl);
 const app = createApp(ctx);
 
-// The built SPA; every other GET falls back to index.html so client-side routes survive a reload.
+// The built SPA; every other GET falls back to index.html so client-side routes survive a reload. Development serves the client from Vite instead, so a stale build can't shadow it.
 const clientDir = path.resolve('dist/client');
-if (fs.existsSync(clientDir)) {
+if (config.modus !== 'development' && fs.existsSync(clientDir)) {
   const index = fs.readFileSync(path.join(clientDir, 'index.html'), 'utf8');
   app.use('/*', serveStatic({ root: path.relative(process.cwd(), clientDir) }));
   app.get('/*', (c) => c.html(index));
@@ -31,7 +31,7 @@ setInterval(onderhoud, 864e5).unref();
 
 const poort = Number(process.env.PORT ?? 3000);
 // HOST is set to 127.0.0.1 in production, behind Caddy; unset listens on every interface.
-const server = serve({ fetch: app.fetch, port: poort, hostname: process.env.HOST }, () => log.info(`${config.modus}: luistert op poort ${poort}`));
+const server = serve({ fetch: app.fetch, port: poort, hostname: process.env.HOST }, () => log.info(`${config.modus}: luistert op poort ${poort}, app op ${config.basisUrl}`));
 
 async function stop(): Promise<void> {
   server.close();

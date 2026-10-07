@@ -26,7 +26,7 @@ export function leesConfig(): Config {
   const productie = modus === 'production';
   return {
     modus,
-    basisUrl: productie ? verplicht('BASIS_URL') : (process.env.BASIS_URL ?? 'http://localhost:5173'),
+    basisUrl: productie ? verplicht('BASIS_URL') : (process.env.BASIS_URL ?? 'http://localhost:7425'),
     dataDir,
     fotoDir: path.join(dataDir, 'fotos'),
     emailDir: path.resolve('tmp/emails'),

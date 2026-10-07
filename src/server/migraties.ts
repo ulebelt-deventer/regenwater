@@ -152,4 +152,5 @@ export const MIGRATIES: string[] = [
     afgehandeld_by INTEGER REFERENCES gebruikers(id)
   );
   `,
+  `ALTER TABLE dossiers ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}';`,
 ];

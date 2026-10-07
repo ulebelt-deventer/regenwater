@@ -28,6 +28,22 @@ export interface Adres {
   perceel_bbox: [number, number, number, number] | null;
 }
 
+export type Stelsel = 'gemengd' | 'gescheiden';
+
+// stelsel null: the source could not tell; uitleg says why.
+export interface RioolUitslag {
+  stelsel: Stelsel | null;
+  uitleg: string;
+}
+
+// The app's own guess at the rioolstelsel from the gemeente's rioolkaart, made when the address is chosen.
+export type RioolDetectie = (({ soort: 'gevonden' } & RioolUitslag) | { soort: 'niet_ondersteund' } | { soort: 'fout'; bericht: string }) & { at: string };
+
+// Values the app derives itself, not entered by anyone.
+export interface Extra {
+  riool?: RioolDetectie;
+}
+
 export const MIJLPALEN = [
   'bezoeker_toegewezen',
   'bezoek_afgerond',
@@ -132,6 +148,7 @@ export interface Dossier {
   gesloten_toelichting: string | null;
   plan_gewijzigd_at: string | null;
   data: Record<string, Json>;
+  extra: Extra;
   verzendingen: Verzending[];
   uitstellen: Uitstel[];
   plan_acks: PlanAck[];

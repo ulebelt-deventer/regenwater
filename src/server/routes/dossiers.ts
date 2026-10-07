@@ -4,16 +4,18 @@ import { aandacht, klusserHerinnering, ligtStil } from '../../shared/aandacht.ts
 import { DOSSIERS_PER_PAGINA } from '../../shared/constants.ts';
 import { isBeheerder, magBewerken, magMijlpaal, magZien } from '../../shared/rechten.ts';
 import { STATUS_FILTERS, adresRegel, huidigeStap } from '../../shared/status.ts';
-import { MIJLPALEN, type Dossier, type Gebruiker, type Json, type Mijlpaal, type Ontvanger, SLUIT_REDENEN, type SluitReden } from '../../shared/types.ts';
+import { MIJLPALEN, type Dossier, type Gebruiker, type Json, type Mijlpaal, type Ontvanger, type RioolDetectie, SLUIT_REDENEN, type SluitReden } from '../../shared/types.ts';
 import { materiaalRijen, nieuwId, veldVoor, waarde } from '../../shared/velden.ts';
 import { audit, auditWijzigingen, type AuditRij } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
 import { SORTERINGEN, csvExport, filter, leesFilters, lijstRij, sorteer } from '../lijst.ts';
 import { fotoPad } from '../fotos.ts';
+import { log } from '../log.ts';
 import { dossierLink, melding } from '../meldingen.ts';
 import { suggesties, zoekAdres } from '../pdok.ts';
 import { gebruiker, gebruikersMap, laadDossier, laadDossiers } from '../repo.ts';
+import { detecteerRiool } from '../riool.ts';
 import { controleerWaarde } from '../veldwaarde.ts';
 
 const KOLOM_VELDEN = new Set(['huur_koop', 'afspraak', 'uitvoering_gepland']);
@@ -186,10 +188,17 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     const { id } = await body<{ id: unknown }>(c);
     if (typeof id !== 'string') fout(400, 'Ongeldig verzoek');
     const a = await zoekAdres(ctx, id);
+    // A broken rioolkaart must not block choosing the address: the failure is stored and shown where the detection would be.
+    const riool: RioolDetectie = await detecteerRiool(ctx, a).catch((e: unknown) => {
+      log.error(`rioolstelsel detecteren voor dossier ${d.id} (${a.gemeente}) mislukt`, e);
+      return { soort: 'fout', bericht: e instanceof Error ? e.message : String(e), at: ctx.klok.iso() };
+    });
+    // Re-read: the lookups above awaited, and another request may have changed extra_json meanwhile.
+    const extra = { ...laadDossier(ctx.db, d.id)!.extra, riool };
     ctx.db.transaction(() => {
       ctx.db
-        .prepare('UPDATE dossiers SET straat = ?, huisnummer = ?, huisletter = ?, toevoeging = ?, postcode = ?, plaats = ?, gemeente = ?, adres_json = ? WHERE id = ?')
-        .run(a.straat, a.huisnummer, a.huisletter, a.toevoeging, a.postcode, a.plaats, a.gemeente, JSON.stringify(a), d.id);
+        .prepare('UPDATE dossiers SET straat = ?, huisnummer = ?, huisletter = ?, toevoeging = ?, postcode = ?, plaats = ?, gemeente = ?, adres_json = ?, extra_json = ? WHERE id = ?')
+        .run(a.straat, a.huisnummer, a.huisletter, a.toevoeging, a.postcode, a.plaats, a.gemeente, JSON.stringify(a), JSON.stringify(extra), d.id);
       planGewijzigd(ctx, d.id);
       auditWijzigingen(ctx, actorVan(c), d.id, { adres: [d.adres ? adresRegel(d) : null, adresRegel({ ...d, adres: a })] });
     })();

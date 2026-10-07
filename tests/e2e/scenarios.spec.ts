@@ -217,6 +217,8 @@ test('koop, bewoner doet het zelf: gesloten na het plan', async ({ page }) => {
 test('niet subsidiabel: gescheiden riool, subsidiemail en gesloten bij de intake', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'huur', riool: 'gescheiden' });
+  // The autodetectie's gemengd stays a hint: the admin's own gescheiden is what counts.
+  await expect(page.locator('.qa-riool-auto .qa-riool-auto-gemengd')).toBeVisible();
   await expect(page.locator('.qa-veld-straatfoto')).toHaveCount(0);
   await mail(page, 'subsidie_niet');
   expect(await laatsteMail(page)).toMatchObject({ aan: 'bea@example.org', onderwerp: 'Uw aanmelding bij De Ulebelt' });

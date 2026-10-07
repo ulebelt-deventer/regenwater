@@ -1,8 +1,8 @@
-// Development: rebuilds the server on change and restarts it, next to the Vite dev server for the client. CLIENT_PORT (default 5173) is strict, because login links point at it.
+// Development: rebuilds the server on change and restarts it, next to the Vite dev server for the client. CLIENT_PORT (default 7425) is strict, because login links point at it.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 
-const clientPort = process.env.CLIENT_PORT ?? '5173';
+const clientPort = process.env.CLIENT_PORT ?? '7425';
 const env = { ...process.env, APP_MODUS: 'development', BASIS_URL: `http://localhost:${clientPort}` };
 const kinderen: ChildProcess[] = [];
 

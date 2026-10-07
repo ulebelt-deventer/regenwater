@@ -32,6 +32,7 @@ export function dossier(over: Partial<Dossier> = {}): Dossier {
     gesloten_toelichting: null,
     plan_gewijzigd_at: null,
     data: {},
+    extra: {},
     verzendingen: [],
     uitstellen: [],
     plan_acks: [],

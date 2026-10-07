@@ -1,7 +1,7 @@
 // Autosave edge cases: concurrent editors, value validation, and how edits merge in Alle activiteit.
 import sharp from 'sharp';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Klant, type TestApp, maakGebruiker, nieuwDossier, testApp } from './testapp.ts';
+import { Klant, PDOK_ADRES, type TestApp, maakGebruiker, nieuwDossier, testApp } from './testapp.ts';
 
 let t: TestApp;
 let bea: Klant;
@@ -218,5 +218,26 @@ describe('milestones', () => {
     await Promise.all([tik(), tik()]);
     expect((await items(vanaf)).map((i) => i.type)).toEqual(['mijlpaal', 'melding_verstuurd']);
     expect(t.mailer.verstuurd).toHaveLength(1);
+  });
+});
+
+describe('riool autodetectie', () => {
+  const dossier = async () => (await bea.json('GET', `/api/dossiers/${id}`)).dossier as { adres: { straat: string }; data: Record<string, unknown>; extra: { riool: unknown } };
+
+  it('stores the guess next to the address without touching the rioolstelsel field', async () => {
+    await zet(bea, 'rioolstelsel', 'gescheiden');
+    await bea.json('POST', `/api/dossiers/${id}/adres`, { id: PDOK_ADRES.id });
+    const d = await dossier();
+    expect(d.extra.riool).toEqual({ soort: 'gevonden', stelsel: 'gemengd', uitleg: 'Gemengd riool op 6 m, geen huisaansluiting gevonden', at: t.ctx.klok.iso() });
+    expect(d.data.rioolstelsel).toBe('gescheiden');
+  });
+
+  it('still saves the address when the rioolkaart fails, and stores the failure', async () => {
+    const echt = t.ctx.haal;
+    t.ctx.haal = async (invoer, init) => (String(invoer).includes('/Riool_leidingen_openbaar/') ? new Response('kapot', { status: 500 }) : echt(invoer, init));
+    await bea.json('POST', `/api/dossiers/${id}/adres`, { id: PDOK_ADRES.id });
+    const d = await dossier();
+    expect(d.adres.straat).toBe('Walstraat');
+    expect(d.extra.riool).toMatchObject({ soort: 'fout', bericht: 'De rioolkaart van de gemeente gaf een fout (500).' });
   });
 });

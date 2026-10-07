@@ -141,6 +141,7 @@
         - Deventer: https://deventer.maps.arcgis.com/apps/webappviewer/index.html?id=f981cd8df5744a18aa87f59998905764
         - Raalte: https://experience.arcgis.com/experience/8b52137b53714e35a54b3a4e8f1217e8
         - Olst-Wijhe: https://olst-wijhe.maps.arcgis.com/apps/instant/basic/index.html?appid=859f1b244196497e9f13df1f7c136676
+      - Below the label, the app's own guess from the gemeente's rioolkaart, looked up when the address is chosen: "Autodetectie denkt dat het riool op dit adres **gemengd** is." (green; gescheiden in red), followed by the evidence (eg "Gemengd riool op 6 m, geen huisaansluiting gevonden") and "Controleer dit zelf op de rioolkaart." It never fills in the field. When the source can't tell, it says so; for a gemeente without detection: "Autodetectie van het riool wordt voor {gemeente} nog niet ondersteund."; when the lookup fails, the error in red. Supported: Deventer (nearest house connection within 15 m, else nearest main within 40 m), Raalte and Olst-Wijhe (their subsidie category per pand, in their own words; in Olst-Wijhe some gescheiden panden are still subsidiabel).
       - *No "keuze wissen" field needed.*
     - 📧 Mail aan bewoner over subsidie
       - This is a label, but instead of an input field there's a "Mail bewoner: {variant}" button, shown once huur/koop and rioolstelsel are set. The variant follows from them: "subsidiabel, huurwoning", "subsidiabel, koopwoning" or "niet subsidiabel", each with its own template (the subsidiabel ones say a vrijwilliger will come by and link to the subsidie info; the niet subsidiabel one points to the info on the website). It opens the email preview pop-up. If already mailed, say "✅ Verstuurd op {datum} (subsidiabel, huurwoning)" in green italics but then show the button anyway so you can always re-mail.
@@ -505,7 +506,7 @@ Aandacht edge cases inside these: an afspraak in the future raises no flag, the 
 - UI things I'm uncertain about:
   - Maybe the bezoeker's post-onsite fields should be part of the same sub-form, for simplicity/clarity? With a clear "To fill in after the bezoek" heading.
 - Automatically grab a Street View photo to save admin the 10 seconds of screenshotting it.
-- Rioolkaart: can we pass it an address or coordinates, and can we detect the riool type automatically?
+- Rioolkaart: can we pass it an address or coordinates? Riool autodetectie for more gemeenten (Voorst publishes its pipes in PDOK's GWSW dataset; Zutphen unknown).
 - boormonsterprofiel (DINOloket): It should be possible to automate the process for locating the nearest sample and grabbing its SVG. Troubleshoot with Claude why it couldn't do this.
 - Stale-edit warning: when you save a field that someone else changed since you opened the page, show their value and ask which to keep (until then the last save wins).
 - Named dakdelen (eg "Dakdeel linksachter", as in the sample Plan van Aanpak) instead of only D1, D2.

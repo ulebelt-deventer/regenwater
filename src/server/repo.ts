@@ -1,4 +1,4 @@
-import type { Adres, Annotatie, Dossier, Foto, Gebruiker, Json, PlanAck, Uitstel, Verzending } from '../shared/types.ts';
+import type { Adres, Annotatie, Dossier, Extra, Foto, Gebruiker, Json, PlanAck, Uitstel, Verzending } from '../shared/types.ts';
 import type { DB } from './db.ts';
 
 export const DOSSIER_KOLOMMEN = [
@@ -9,7 +9,7 @@ export const DOSSIER_KOLOMMEN = [
   'werk_opgeleverd_at', 'werk_opgeleverd_by', 'gesloten_at', 'gesloten_by', 'gesloten_reden', 'gesloten_toelichting', 'plan_gewijzigd_at',
 ] as const;
 
-type Rij = Record<string, unknown> & { id: number; data: string; adres_json: string | null; laatste_activiteit_at: string | null };
+type Rij = Record<string, unknown> & { id: number; data: string; extra_json: string; adres_json: string | null; laatste_activiteit_at: string | null };
 
 const SELECT = `SELECT d.*, (SELECT MAX(a.updated_at) FROM audit a WHERE a.dossier_id = d.id) AS laatste_activiteit_at FROM dossiers d`;
 
@@ -43,6 +43,7 @@ function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; f: Fot
   for (const k of DOSSIER_KOLOMMEN) d[k] = r[k];
   d.adres = r.adres_json ? (JSON.parse(r.adres_json) as Adres) : null;
   d.data = JSON.parse(r.data) as Record<string, Json>;
+  d.extra = JSON.parse(r.extra_json) as Extra;
   d.verzendingen = rel.v;
   d.uitstellen = rel.u;
   d.plan_acks = rel.a;

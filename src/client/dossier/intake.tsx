@@ -4,7 +4,7 @@ import { For, Show, createSignal, onCleanup } from 'solid-js';
 import { BORING_MAX_KM, DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/constants.ts';
 import { datum } from '../../shared/datum.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, intakeOntbreekt, laatsteVerzending, str } from '../../shared/status.ts';
-import type { Dossier } from '../../shared/types.ts';
+import type { Dossier, RioolDetectie } from '../../shared/types.ts';
 import { get, post } from '../api.ts';
 import { Modal, bevestig, melding, probeer } from '../ui.tsx';
 import { MailKnop } from './acties.tsx';
@@ -54,6 +54,7 @@ export function Intake() {
             )}
           </Show>
         </div>
+        <RioolAutodetectie />
         <VeldInvoer k="rioolstelsel" kaal class="mb-3" />
 
         <div id="veld-subsidiemail" class="mb-3 qa-subsidiemail">
@@ -101,6 +102,40 @@ export function Intake() {
         </div>
       </section>
     </>
+  );
+}
+
+// The app's guess from the gemeente's rioolkaart: shown next to the field, never filled into it, so the admin still checks.
+function RioolAutodetectie() {
+  const s = useDossier();
+  const r = () => (s.d.adres ? s.d.extra.riool : undefined);
+  const soort = <K extends RioolDetectie['soort']>(k: K) => {
+    const x = r();
+    return x && x.soort === k ? (x as Extract<RioolDetectie, { soort: K }>) : null;
+  };
+  return (
+    <Show when={r()}>
+      <div class="small mb-1 qa-riool-auto">
+        <Show when={soort('niet_ondersteund')}>
+          <span class="text-muted qa-riool-auto-niet">Autodetectie van het riool wordt voor {s.d.adres!.gemeente} nog niet ondersteund.</span>
+        </Show>
+        <Show when={soort('fout')}>{(f) => <span class="text-danger qa-riool-auto-fout">Autodetectie van het riool is mislukt: {f().bericht}</span>}</Show>
+        <Show when={soort('gevonden')}>
+          {(g) => (
+            <>
+              <Show when={g().stelsel} fallback={<span class="text-warning qa-riool-auto-onbekend">Autodetectie kan niet zeggen of het riool op dit adres gemengd of gescheiden is.</span>}>
+                {(stelsel) => (
+                  <span>
+                    Autodetectie denkt dat het riool op dit adres <strong class={`qa-riool-auto-${stelsel()} ${stelsel() === 'gemengd' ? 'text-groen' : 'text-danger'}`}>{stelsel()}</strong> is.
+                  </span>
+                )}
+              </Show>{' '}
+              <span class="text-muted">({g().uitleg}.) Controleer dit zelf op de rioolkaart.</span>
+            </>
+          )}
+        </Show>
+      </div>
+    </Show>
   );
 }
 
