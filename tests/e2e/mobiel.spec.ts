@@ -45,13 +45,26 @@ test('een klusser ziet op een telefoon een kaart met de opdracht, nog niet aan z
   await geenZijwaartsScrollen(page);
 });
 
-test('op een telefoon is de navigatiebalk compact: klein logo en geen naam bij het accountmenu', async ({ page }) => {
+test('op een telefoon is de navigatiebalk compact: klein logo met druppel en geen naam bij het accountmenu', async ({ page }) => {
   await start(page);
   await page.goto('/dossiers');
   await expect(page.locator('.qa-logo-klein')).toBeVisible();
+  await expect(page.locator('.qa-merk-druppel')).toBeVisible();
   await expect(page.locator('.qa-account-naam')).toBeHidden();
   await expect(page.locator('.qa-nav-account .bi-person-circle')).toBeVisible();
   await geenZijwaartsScrollen(page);
+});
+
+test('op een smalle telefoon past de navigatiebalk van een beheerder met DEV-label op één regel', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await start(page);
+  await page.route('**/api/omgeving', (route) => route.fulfill({ json: { omgeving: 'dev' } }));
+  await page.goto('/dossiers');
+  await expect(page.locator('.qa-omgeving-label')).toBeVisible();
+  await expect(page.locator('.qa-nav-beheer')).toBeVisible();
+  const middens = await page.locator('.qa-navbar > div > *').evaluateAll((els) =>
+    els.map((el) => { const r = el.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
+  expect(new Set(middens).size).toBe(1);
 });
 
 test('op een telefoon tonen Gebruikers, een gebruiker en de uitlegpagina\'s kaarten zonder tabelkop en zonder zijwaarts scrollen', async ({ page }) => {

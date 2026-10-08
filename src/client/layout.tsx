@@ -18,7 +18,10 @@ function Merk() {
     <>
       <img src="/icon-192.png" alt="Ulebelt Regenwater" class="logo rounded d-md-none qa-logo-klein" />
       <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo d-none d-md-block" />
-      <span class="wordmark d-none d-md-inline">Regenwater</span>
+      <span class="wordmark ms-n1 ms-md-0">
+        <i class="bi bi-droplet qa-merk-druppel" aria-hidden="true" />
+        <span class="d-none d-md-inline ms-1">Regenwater</span>
+      </span>
     </>
   );
 }
@@ -40,8 +43,8 @@ function OmgevingLabel() {
 function KaleNavbar() {
   return (
     <nav class="topbar no-print qa-navbar-uitgelogd">
-      <div class="container-lg d-flex align-items-center gap-3 py-2">
-        <div class="d-flex align-items-center gap-2 me-2">
+      <div class="container-lg gx-2 gx-md-4 d-flex align-items-center gap-1 gap-md-3 py-2">
+        <div class="d-flex align-items-center gap-0 gap-md-2 me-md-2">
           <Merk />
         </div>
         <OmgevingLabel />
@@ -58,12 +61,14 @@ function Navbar() {
     location.assign('/inloggen');
   };
   return (
-    <nav class="topbar no-print">
-      <div class="container-lg d-flex flex-wrap align-items-center gap-3 py-2">
-        <A href="/" class="d-flex align-items-center gap-2 text-decoration-none me-2">
-          <Merk />
-        </A>
-        <OmgevingLabel />
+    <nav class="topbar no-print qa-navbar">
+      <div class="container-lg gx-2 gx-md-4 d-flex flex-wrap align-items-center gap-2 gap-md-3 py-2">
+        <div class="d-flex align-items-center gap-1 gap-md-3">
+          <A href="/" class="d-flex align-items-center gap-0 gap-md-2 text-decoration-none me-md-2">
+            <Merk />
+          </A>
+          <OmgevingLabel />
+        </div>
         <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
           <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>

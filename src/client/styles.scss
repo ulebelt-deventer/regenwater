@@ -55,6 +55,7 @@ $container-max-widths: (lg: 1200px);
 .sleep-greep { cursor: grab; touch-action: none; }
 // Lets a placeholder start with an icon glyph, eg ' Adres' for bi-search; the letters fall back to the text font.
 .placeholder-icoon::placeholder { font-family: bootstrap-icons, $font-family-sans-serif; }
+.ms-n1 { margin-left: -.25rem; }
 @include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } .w-md-9rem { width: 9rem; } .fw-md-normal { font-weight: normal !important; } }
 
 .topbar { background: $ub-creme; border-bottom: 1px solid $ub-rand; }
