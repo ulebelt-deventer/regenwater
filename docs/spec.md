@@ -30,7 +30,7 @@
     - A code and link stay valid for 15 minutes and for one use; requesting a new one invalidates the old. After 5 wrong codes the code is void and you request a new one. At most 5 login emails per address per hour, and at most 20 login requests or code attempts per IP address per hour. (All constants in code.)
     - Hitting any of these limits, a voided code included, records a "login geblokkeerd" audit event (e-mail address, IP address, which limit) and logs a warning, which trips the Healthchecks error alert to the maintainer (see Monitoring in `architecture.md`). A single wrong code doesn't.
 - "Overzicht" (admins only)
-  - Linked in the navbar, first. Admin landing page. Just a table of overall counts:
+  - Reached by clicking the logo (no navbar link). Admin landing page. Just a table of overall counts:
     - Open dossiers
     - Aandacht nodig (red text)
     - Wacht op bezoek (steps 3-4)
@@ -46,13 +46,13 @@
     - Title: "Alle dossiers"
     - Top-right: "+ Nieuw dossier" button ("+ Nieuw" on phones), & a caret-only menu holding "CSV downloaden" (admins only; the server refuses it for klussers). The CSV holds all dossiers matching the current filters, ignoring pagination, in the current sort order, one row per dossier: Dossier-ID, Aangemaakt op, Straat, Huisnummer, Postcode, Plaats, Gemeente, Huur/koop, Woningeigenaar, Woningtype, Rioolstelsel, Bewoner naam, e-mail and telefoon, Bezoeker, Uitvoerder, Status, Aandacht nodig (ja/nee), every milestone date (subsidiemail, bezoeker toegewezen, afspraak, bezoek afgerond, klaar voor controle, plan verstuurd naar bewoner, plan verstuurd naar woningcorporatie, akkoord, uitvoerder toegewezen, uitvoering gepland, werk opgeleverd, opleverrapport verstuurd, gesloten), Reden gesloten, Dak m² (totaal), Aantal regenpijpen, Regentonnen gewenst, Geschatte materiaalkosten, Gebruikte materiaalkosten. Dates as `YYYY-MM-DD`, amounts as plain numbers, so Excel can sum them.
     - Bar of overall stats: Open, Aandacht nodig, Uitgevoerd.
-    - Filters bar:
+    - Filters bar, one row on desktop (each select a fixed narrow width, labeled inside its value, eg "Plaats: alle"):
       - Adres (text filter/match)
       - Plaats
       - Bezoeker (all beheerders and klussers)
       - Uitvoerder (all beheerders and klussers)
       - Ligt bij: Beheerder, Klusser, Woningcorporatie, Bewoner
-      - Aandacht nodig (checkbox). Applies to closed dossiers too when Gesloten is "- alle -" or "Ja", so a closed dossier with a Klopt niet finding can be found.
+      - Aandacht (checkbox). Applies to closed dossiers too when Gesloten is "- alle -" or "Ja", so a closed dossier with a Klopt niet finding can be found.
       - "Status" dropdown (Bootstrap simulated dropdown) - clicking each item cycles its setting state between "Ja", "Nee", and "- alle -". Each item asks whether that milestone is recorded.
         - Bezoeker toegewezen (default: alle)
         - Bezoek gedaan (alle)
@@ -62,7 +62,7 @@
         - Werk opgeleverd (alle)
         - Gesloten (default: nee)
         - Uitgevoerd (alle)
-      - Sorteren: Aangemaakt (nieuwste eerst; default), Aangemaakt (oudste eerst), Laatste activiteit, Adres (A-Z), Status (in stap-volgorde), Afspraak (eerstvolgende eerst).
+      - Sorteren: a compact menu button showing a sort icon and the current choice: Nieuwste (default), Oudste, Laatste activiteit, Adres (A-Z), Stap (in stap-volgorde), Eerstvolgende afspraak.
     - 30 dossiers per page, with page links below the table.
     - Table of dossiers:
       - Adres
@@ -102,7 +102,7 @@
     - Red .alert.alert-danger at top if this email (same template, same dossier) was already sent, with the date.
     - CC'd to the admin who sends it (pending the team question about a shared inbox).
     - Attachments (the PDF) are listed by name; they're generated at send time.
-    - Bottom left, away from "Versturen", a link "Handmatig verstuurd...": for when the admin downloaded the PDF and emailed it themselves. Since it sends nothing, it first asks for confirmation that the app won't send this email and that they sent it themselves. It records a send at the current time exactly like "Versturen" does (it counts for the status, the aandacht clocks and Plan gewijzigd), shown as "Handmatig verstuurd op {datum}".
+    - On its own line below "Annuleren"/"Versturen", at the left, a link "Handmatig verstuurd...": for when the admin downloaded the PDF and emailed it themselves. Since it sends nothing, it first asks for confirmation that the app won't send this email and that they sent it themselves. It records a send at the current time exactly like "Versturen" does (it counts for the status, the aandacht clocks and Plan gewijzigd), shown as "Handmatig verstuurd op {datum}".
   - Title: this address
   - If the dossier is closed: a prominent gray banner directly under the title, "Gesloten op {datum}: {reden}" (green for Uitgevoerd).
   - If the dossier needs aandacht (closed ones included, for Klopt niet): one .alert.alert-danger banner directly under the title, one bullet per finding (Klopt niet findings first), each linking to the relevant field or section (see the Aandacht-criteria page).
@@ -369,6 +369,7 @@
   - The completion report (opleverrapport) uses the same header, plus an Uitvoering section: description of the work, opleverfoto's, and Gebruikte materialen (Materiaal and Aantal only, like the plan).
 - Statussen page
   - Linked from the "?" next to Volgende stap. Lists every status in order with its rule, generated from the same rule list the app uses, so docs and behavior can't drift apart.
+  - Columns #, Status (bold), Ligt bij (a label colored by role, as everywhere the app shows who the ball lies with), Huidig zolang.
   - The status is never set by hand; it's derived from the dossier's data. The first step whose rule matches is the current one:
 
     | \# | Ligt bij | Status | Current while |
@@ -429,6 +430,7 @@
   - Checkbox "Toon gearchiveerde gebruikers" (default off).
   - Table of users, beheerders first. Columns: Naam, E-mail, Telefoon, Rol, Laatst actief (date of their most recent request to the app), Open dossiers, Gesloten dossiers (counting the dossiers where they're bezoeker or uitvoerder). Click a row to open the user's page.
 - Gebruiker page (admins only)
+  - Breadcrumb back to Gebruikers.
   - Title: the user's name, with a Beheerder/Klusser badge, and a gray "Gearchiveerd" badge if archived.
   - Gegevens: Naam, E-mail, Telefoon, Rol, Aangemaakt op, Laatst actief.
   - Dossiers: the dossiers where they're bezoeker or uitvoerder, open first, then closed. Columns: Adres, Rol (Bezoeker, Uitvoerder or "Bezoeker + Uitvoerder"), Status, Laatste activiteit.
@@ -446,7 +448,7 @@
   - "E-mailsjablonen"
     - The templates: Subsidie: subsidiabel, huurwoning / subsidiabel, koopwoning / niet subsidiabel; Bezoeker toegewezen; Plan naar bewoner (huur); Plan naar bewoner (koop, asks Klussendienst of zelf); Plan naar woningcorporatie; Uitvoerder toegewezen; Opleverrapport naar woningcorporatie; Opleverrapport naar bewoner; Oproep Signal-groep (copied to the clipboard, no onderwerp). The login email is fixed in code.
     - Seeded at launch from the prototype's drafts, with texts written for the ones it lacks; admins edit them from then on.
-    - Lets admins configure each email template, each in a collapsible panel (collapsed by default; a "Niet opgeslagen" badge on the title marks unsaved edits). Each one has {...} tags, listed at the top so you know what tags are supported (required ones marked), and validated on save with warnings for unknown tags (eg a typo `{adress}`) and missing required tags (eg `{link}` in a klusser email).
+    - Lists the templates as buttons (three columns on desktop, stacked on phones), each opening the template's own edit page with a breadcrumb back to the list. Each one has {...} tags, listed at the top so you know what tags are supported (required ones marked), and validated on save with warnings for unknown tags (eg a typo `{adress}`) and missing required tags (eg `{link}` in a klusser email).
   - "Leeg bezoekformulier (PDF)" (see Bezoek)
   - "Alle activiteit"
     - An audit list of all recent changes in the app, most recent at top, cursor-paginated. With date/time, who, what dossier (link), summary of the change.

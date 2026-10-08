@@ -43,11 +43,10 @@ test('een klusser ziet op een telefoon een kaart met de opdracht, nog niet aan z
   await geenZijwaartsScrollen(page);
 });
 
-test('op een telefoon is de navigatiebalk compact: klein logo, geen Overzicht en geen naam bij het accountmenu', async ({ page }) => {
+test('op een telefoon is de navigatiebalk compact: klein logo en geen naam bij het accountmenu', async ({ page }) => {
   await start(page);
   await page.goto('/dossiers');
   await expect(page.locator('.qa-logo-klein')).toBeVisible();
-  await expect(page.locator('.qa-nav-overzicht')).toBeHidden();
   await expect(page.locator('.qa-account-naam')).toBeHidden();
   await expect(page.locator('.qa-nav-account .bi-person-circle')).toBeVisible();
   await geenZijwaartsScrollen(page);
@@ -73,10 +72,12 @@ test('op een telefoon tonen Gebruikers, een gebruiker en de uitlegpagina\'s kaar
   expect(Math.abs(rol.y + rol.height / 2 - (status.y + status.height / 2))).toBeLessThan(4);
 });
 
-test('op een telefoon past een opengeklapt e-mailsjabloon met zijn tags in de breedte', async ({ page }) => {
+test('op een telefoon passen de e-mailsjablonen en een sjabloon met zijn tags in de breedte', async ({ page }) => {
   await start(page);
   await page.goto('/beheer/sjablonen');
-  for (const knop of await page.locator('.qa-sjabloon-open').all()) await knop.click();
-  await expect(page.locator('.qa-tags').first()).toBeVisible();
+  await expect(page.locator('.qa-sjabloon').first()).toBeVisible();
+  await geenZijwaartsScrollen(page);
+  await page.goto('/beheer/sjablonen/plan_bewoner_koop');
+  await expect(page.locator('.qa-tags')).toBeVisible();
   await geenZijwaartsScrollen(page);
 });

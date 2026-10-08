@@ -44,7 +44,7 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
           <p>De app verstuurt deze e-mail <strong>niet</strong>.</p>
           <p class="mb-0">Je bevestigt dat je hem zelf al hebt verstuurd, bijvoorbeeld vanuit je eigen mailprogramma. Het dossier noteert hem dan als handmatig verstuurd.</p>
         </>,
-        { ja: 'Ja, ik heb hem zelf verstuurd' },
+        { ja: 'Ja, zelf verstuurd' },
       ))
     )
       return;
@@ -74,14 +74,16 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
       class="qa-mail"
       onSluit={() => props.onSluit()}
       voet={
-        // "Handmatig verstuurd" sends nothing, so it sits far from Versturen and asks first.
-        <div class="d-flex flex-wrap justify-content-between align-items-center w-100 gap-2">
-          <button type="button" class="btn btn-link btn-sm p-0 qa-mail-handmatig" disabled={bezig() || !data()} onClick={() => void verstuur(true)}>Handmatig verstuurd...</button>
-          <div class="d-flex gap-2 ms-auto">
+        // "Handmatig verstuurd" sends nothing, so it sits on its own line below Versturen, at the far side, and asks first.
+        <>
+          <div class="d-flex justify-content-end gap-2 w-100">
             <button type="button" class="btn btn-outline-secondary" onClick={() => props.onSluit()}>Annuleren</button>
             <button type="button" class="btn btn-primary qa-mail-versturen" disabled={bezig() || !data()} onClick={() => void verstuur(false)}>{bezig() ? 'Bezig...' : 'Versturen'}</button>
           </div>
-        </div>
+          <div class="w-100">
+            <button type="button" class="btn btn-link btn-sm p-0 qa-mail-handmatig" disabled={bezig() || !data()} onClick={() => void verstuur(true)}>Handmatig verstuurd...</button>
+          </div>
+        </>
       }
     >
       <Show when={data()} fallback={<Laden />}>

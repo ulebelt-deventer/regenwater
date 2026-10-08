@@ -22,3 +22,19 @@ test('Handmatig verstuurd vraagt eerst bevestiging; annuleren markeert niets, be
   await expect(page.locator('.qa-subsidie-verstuurd')).toBeVisible();
   expect((await emails(page)).length).toBe(voor);
 });
+
+test('Handmatig verstuurd staat onder Versturen, en de pop-up ligt boven de opslag-indicator', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 700 });
+  await start(page);
+  await nieuwDossier(page, { huurKoop: 'huur' });
+  await page.locator('.qa-mail-subsidie_huur').click();
+  const modal = page.locator('.qa-mail');
+  await expect(modal.locator('.qa-mail-aan')).toBeVisible();
+  const versturen = (await modal.locator('.qa-mail-versturen').boundingBox())!;
+  const handmatig = (await modal.locator('.qa-mail-handmatig').boundingBox())!;
+  expect(handmatig.y).toBeGreaterThanOrEqual(versturen.y + versturen.height);
+
+  const opslag = (await page.locator('.opslag').boundingBox())!;
+  const bovenste = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)!.closest('.opslag, .qa-mail')!.className, [opslag.x + opslag.width / 2, opslag.y + opslag.height / 2]);
+  expect(bovenste).toContain('qa-mail');
+});

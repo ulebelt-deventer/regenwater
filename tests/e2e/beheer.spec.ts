@@ -55,26 +55,33 @@ test('Inloggen als vraagt eerst om bevestiging; annuleren laat je beheerder blij
   await expect(page.locator('.qa-als-banner')).toBeVisible();
 });
 
-test('E-mailsjablonen zijn dichtgeklapt; open bewerken, en dichtgeklapt blijft een niet-opgeslagen wijziging zichtbaar', async ({ page }) => {
+test('E-mailsjablonen zijn knoppen naar een eigen bewerkpagina, met een kruimelpad terug naar de lijst', async ({ page }) => {
   await start(page);
   await page.goto('/beheer/sjablonen');
-  const sjabloon = page.locator('.qa-sjabloon-subsidie_huur');
-  await expect(sjabloon.locator('.qa-sjabloon-open')).toBeVisible();
   await expect(page.locator('.qa-tekst')).toHaveCount(0);
+  await page.locator('.qa-sjablonen .qa-sjabloon-subsidie_huur').click();
+  await expect(page).toHaveURL(/\/beheer\/sjablonen\/subsidie_huur$/);
 
-  await sjabloon.locator('.qa-sjabloon-open').click();
-  await sjabloon.locator('.qa-tekst').fill('Beste {bewoner}');
-  await sjabloon.locator('.qa-sjabloon-open').click();
-  await expect(sjabloon.locator('.qa-tekst')).toHaveCount(0);
-  await expect(sjabloon.locator('.qa-niet-opgeslagen')).toBeVisible();
+  await page.locator('.qa-tekst').fill('Beste {bewoner}');
+  await page.locator('.qa-opslaan').click();
+  await expect(page.locator('.qa-melding')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.qa-tekst')).toHaveValue('Beste {bewoner}');
 
-  await sjabloon.locator('.qa-sjabloon-open').click();
-  await expect(sjabloon.locator('.qa-tekst')).toHaveValue('Beste {bewoner}');
-  await sjabloon.locator('.qa-opslaan').click();
-  await expect(sjabloon.locator('.qa-niet-opgeslagen')).toHaveCount(0);
+  await page.locator('.qa-kruimel-terug').click();
+  await expect(page).toHaveURL(/\/beheer\/sjablonen$/);
+  await expect(page.locator('.qa-sjablonen')).toBeVisible();
 });
 
-test('de menuknoppen met alleen een pijltje hebben het pijltje in het midden', async ({ page }) => {
+test('een gebruiker heeft een kruimelpad terug naar Gebruikers', async ({ page }) => {
+  const { klusserId } = await start(page);
+  await page.goto(`/gebruikers/${klusserId}`);
+  await expect(page.locator('.qa-kruimels')).toContainText(KLUSSER.naam);
+  await page.locator('.qa-kruimel-terug').click();
+  await expect(page).toHaveURL(/\/gebruikers$/);
+});
+
+test('de menuknoppen met alleen een pijltje hebben het caret-down-fill-icoon in het midden', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'huur' });
   const pijlMarge = (knop: string) => page.locator(knop).evaluate((el) => getComputedStyle(el, '::after').marginLeft);
@@ -84,6 +91,7 @@ test('de menuknoppen met alleen een pijltje hebben het pijltje in het midden', a
   expect(await pijlMarge('.qa-gebruiker-menu')).toBe('0px');
   await page.goto('/dossiers');
   expect(await pijlMarge('.qa-dossiers-menu')).toBe('0px');
+  expect(await page.locator('.qa-dossiers-menu').evaluate((el) => getComputedStyle(el, '::after').content)).toBe('"\uF229"');
 });
 
 test('CSV downloaden staat in het menu naast Nieuw dossier en volgt de filters', async ({ page }) => {

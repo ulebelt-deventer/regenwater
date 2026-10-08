@@ -40,7 +40,7 @@ $container-max-widths: (lg: 1200px);
 .sleep-greep { cursor: grab; touch-action: none; }
 // Lets a placeholder start with an icon glyph, eg ' Adres' for bi-search; the letters fall back to the text font.
 .placeholder-icoon::placeholder { font-family: bootstrap-icons, $font-family-sans-serif; }
-@include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } .fw-md-normal { font-weight: normal !important; } }
+@include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } .w-md-9rem { width: 9rem; } .fw-md-normal { font-weight: normal !important; } }
 
 .topbar { background: $ub-creme; border-bottom: 1px solid $ub-rand; }
 .topbar .nav-link { color: $ub-zwart; padding: .25rem 0; }
@@ -74,7 +74,8 @@ $container-max-widths: (lg: 1200px);
 
 // Autosave indicator
 // Tucked partly past the corner; the extra right and bottom padding keeps the text clear of the edge.
-.opslag { position: fixed; right: -.5rem; bottom: -.25rem; z-index: 1080; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem 1.25rem .5rem .75rem; font-size: $font-size-sm; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
+// Above the photo viewer (1050), below pop-ups (.modal, 1055).
+.opslag { position: fixed; right: -.5rem; bottom: -.25rem; z-index: 1052; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem 1.25rem .5rem .75rem; font-size: $font-size-sm; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
 .meldingen { position: fixed; top: .75rem; left: 50%; transform: translateX(-50%); z-index: 1090; width: min(32rem, calc(100% - 1.5rem)); }
 
 // Photo slots
@@ -95,6 +96,8 @@ $container-max-widths: (lg: 1200px);
 .big-touch .form-check { margin-bottom: .35rem; }
 
 .dropdown-menu.show { display: block; }
+// The caret is Bootstrap Icons' caret-down-fill instead of Bootstrap's border triangle.
+.dropdown-toggle::after { border: 0; content: '\F229'; font-family: bootstrap-icons; font-size: .75em; vertical-align: -.1em; }
 // A select-like dropdown (Dropdown `kiezer`): the menu opens over the field, at least as wide as it.
 .kiezer > .form-select { min-width: 14rem; }
 .kiezer > .dropdown-menu[data-bs-popper] { top: 0; margin-top: 0; min-width: 100%; }

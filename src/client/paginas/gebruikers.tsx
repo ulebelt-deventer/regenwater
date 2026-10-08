@@ -6,7 +6,7 @@ import type { Gebruiker } from '../../shared/types.ts';
 import { ApiFout, get, post, query } from '../api.ts';
 import { GebruikerForm } from '../gebruikerform.tsx';
 import { ik } from '../sessie.ts';
-import { AlleenBeheerder, Dropdown, Laden, StatusLabel, bevestig, melding, probeer, titel } from '../ui.tsx';
+import { AlleenBeheerder, Dropdown, Kruimels, Laden, StatusLabel, bevestig, melding, probeer, titel } from '../ui.tsx';
 import type { LijstRij } from './dossiers.tsx';
 import { type GebruikerRij, RolBadge } from './overzicht.tsx';
 
@@ -152,6 +152,7 @@ function Pagina() {
           const zelf = () => g().id === ik().id;
           return (
             <>
+              <Kruimels terug={{ href: '/gebruikers', label: 'Gebruikers' }} huidig={g().naam} />
               <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                 <h1 class="h3 mb-0 qa-gebruiker-naam">{g().naam}</h1>
                 <RolBadge rol={g().rol} />

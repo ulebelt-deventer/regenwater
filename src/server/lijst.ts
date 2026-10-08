@@ -104,12 +104,12 @@ export interface Filters {
 }
 
 export const SORTERINGEN: [string, string][] = [
-  ['nieuw', 'Aangemaakt (nieuwste eerst)'],
-  ['oud', 'Aangemaakt (oudste eerst)'],
+  ['nieuw', 'Nieuwste'],
+  ['oud', 'Oudste'],
   ['activiteit', 'Laatste activiteit'],
-  ['adres', 'Adres (A-Z)'],
-  ['status', 'Status (in stap-volgorde)'],
-  ['afspraak', 'Afspraak (eerstvolgende eerst)'],
+  ['adres', 'Adres'],
+  ['status', 'Stap'],
+  ['afspraak', 'Eerstvolgende afspraak'],
 ];
 
 export function leesFilters(q: Record<string, string>): Filters {

@@ -5,9 +5,9 @@ import { opgeslagenOm, opslagStatus } from './opslag.ts';
 import { laadSessie, sessie } from './sessie.ts';
 import { Dropdown, Meldingen, Modal, Opgeslagen, Vragen, melding, probeer } from './ui.tsx';
 
-function NavLink(props: { href: string; end?: boolean; children: JSX.Element; class?: string }) {
+function NavLink(props: { href: string; children: JSX.Element; class?: string }) {
   return (
-    <A href={props.href} end={props.end} class={`nav-link ${props.class ?? ''}`} activeClass="active">
+    <A href={props.href} class={`nav-link ${props.class ?? ''}`} activeClass="active">
       {props.children}
     </A>
   );
@@ -28,9 +28,6 @@ function Navbar() {
           <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo d-none d-md-block" />
           <span class="wordmark d-none d-md-inline">Regenwater</span>
         </A>
-        <Show when={beheerder()}>
-          <NavLink href="/" end class="d-none d-md-block qa-nav-overzicht">Overzicht</NavLink>
-        </Show>
         <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
           <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>

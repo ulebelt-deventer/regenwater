@@ -68,6 +68,7 @@ export function Dossiers() {
   };
   const [lijst] = createResource(zoek, (q) => get<Lijst>(`/api/dossiers${query(q)}`));
   const zet = (k: string, v: string | null) => setParams({ [k]: v || undefined, pagina: undefined });
+  const sorteer = () => params.sorteer ?? 'nieuw';
   const [adres, setAdres] = createSignal(params.adres ?? '');
   let adresTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -109,11 +110,12 @@ export function Dossiers() {
 
       <Show when={lijst.latest}>
         {(l) => (
-          <div class="row g-2 align-items-end mb-3 qa-filters">
-            <div class="col-12 col-md-3">
+          // Option lists come fresh with every reload, which would reset a select's value; each option marks itself selected instead.
+          <div class="row g-2 align-items-center mb-3 qa-filters">
+            <div class="col-12 col-md-auto">
               <input
-                class="form-control form-control-sm placeholder-icoon qa-filter-adres"
-                placeholder={' Adres'}
+                class="form-control form-control-sm placeholder-icoon w-md-9rem qa-filter-adres"
+                placeholder={'\uF52A Adres'}
                 value={adres()}
                 onInput={(e) => {
                   setAdres(e.currentTarget.value);
@@ -122,36 +124,36 @@ export function Dossiers() {
                 }}
               />
             </div>
-            <div class="col-6 col-md-2">
-              <select class="form-select form-select-sm qa-filter-plaats" value={params.plaats ?? ''} onChange={(e) => zet('plaats', e.currentTarget.value)}>
+            <div class="col-6 col-md-auto">
+              <select class="form-select form-select-sm w-md-9rem qa-filter-plaats" onChange={(e) => zet('plaats', e.currentTarget.value)}>
                 <option value="">Plaats: alle</option>
-                <For each={l().opties.plaatsen}>{(p) => <option value={p}>{p}</option>}</For>
+                <For each={l().opties.plaatsen}>{(p) => <option value={p} selected={params.plaats === p}>{p}</option>}</For>
               </select>
             </div>
             <Show when={beheerder()}>
-              <div class="col-6 col-md-2">
-                <select class="form-select form-select-sm qa-filter-bezoeker" value={params.bezoeker ?? ''} onChange={(e) => zet('bezoeker', e.currentTarget.value)}>
+              <div class="col-6 col-md-auto">
+                <select class="form-select form-select-sm w-md-9rem qa-filter-bezoeker" onChange={(e) => zet('bezoeker', e.currentTarget.value)}>
                   <option value="">Bezoeker: alle</option>
-                  <For each={l().opties.klussers}>{(k) => <option value={k.id}>{k.naam}</option>}</For>
+                  <For each={l().opties.klussers}>{(k) => <option value={k.id} selected={params.bezoeker === String(k.id)}>{k.naam}</option>}</For>
                 </select>
               </div>
-              <div class="col-6 col-md-2">
-                <select class="form-select form-select-sm qa-filter-uitvoerder" value={params.uitvoerder ?? ''} onChange={(e) => zet('uitvoerder', e.currentTarget.value)}>
+              <div class="col-6 col-md-auto">
+                <select class="form-select form-select-sm w-md-9rem qa-filter-uitvoerder" onChange={(e) => zet('uitvoerder', e.currentTarget.value)}>
                   <option value="">Uitvoerder: alle</option>
-                  <For each={l().opties.klussers}>{(k) => <option value={k.id}>{k.naam}</option>}</For>
+                  <For each={l().opties.klussers}>{(k) => <option value={k.id} selected={params.uitvoerder === String(k.id)}>{k.naam}</option>}</For>
                 </select>
               </div>
-              <div class="col-6 col-md-2">
-                <select class="form-select form-select-sm qa-filter-ligt-bij" value={params.ligt_bij ?? ''} onChange={(e) => zet('ligt_bij', e.currentTarget.value)}>
-                  <option value="">Ligt bij: iedereen</option>
-                  <For each={Object.entries(LIGT_BIJ_LABEL)}>{([k, v]) => <option value={k}>{v}</option>}</For>
+              <div class="col-6 col-md-auto">
+                <select class="form-select form-select-sm w-md-9rem qa-filter-ligt-bij" onChange={(e) => zet('ligt_bij', e.currentTarget.value)}>
+                  <option value="">Ligt bij: alle</option>
+                  <For each={Object.entries(LIGT_BIJ_LABEL)}>{([k, v]) => <option value={k} selected={params.ligt_bij === k}>{v}</option>}</For>
                 </select>
               </div>
             </Show>
             <div class="col-auto">
-              <div class="form-check mb-1">
+              <div class="form-check mb-0">
                 <input id="f-aandacht" type="checkbox" class="form-check-input qa-filter-aandacht" checked={params.aandacht === '1'} onChange={(e) => zet('aandacht', e.currentTarget.checked ? '1' : null)} />
-                <label class="form-check-label small" for="f-aandacht">Aandacht nodig</label>
+                <label class="form-check-label small" for="f-aandacht">Aandacht</label>
               </div>
             </div>
             <div class="col-auto">
@@ -171,9 +173,18 @@ export function Dossiers() {
               </Dropdown>
             </div>
             <div class="col-auto">
-              <select class="form-select form-select-sm qa-sorteer" value={params.sorteer ?? 'nieuw'} onChange={(e) => zet('sorteer', e.currentTarget.value)}>
-                <For each={l().opties.sorteringen}>{([k, v]) => <option value={k}>{v}</option>}</For>
-              </select>
+              <Dropdown
+                knop={<><i class="bi bi-sort-down me-1" aria-hidden="true" />{l().opties.sorteringen.find(([k]) => k === sorteer())![1]}</>}
+                label="Sorteren"
+                knopClass="btn btn-sm btn-outline-secondary qa-sorteer"
+              >
+                <h6 class="dropdown-header">Sorteren op</h6>
+                <For each={l().opties.sorteringen}>
+                  {([k, v]) => (
+                    <button type="button" class={`dropdown-item qa-sorteer-${k}`} classList={{ active: k === sorteer() }} onClick={() => zet('sorteer', k === 'nieuw' ? null : k)}>{v}</button>
+                  )}
+                </For>
+              </Dropdown>
             </div>
             <Show when={params.stap}>
               <div class="col-auto small">

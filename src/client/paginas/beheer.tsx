@@ -1,10 +1,10 @@
 // Beheer pages (admin): Materialen, E-mailsjablonen and Feedback.
-import { A } from '@solidjs/router';
+import { A, useParams } from '@solidjs/router';
 import { For, Show, createResource, createSignal } from 'solid-js';
 import { datumTijd } from '../../shared/datum.ts';
 import { controleerTags, probleemTeksten, sjabloonDef } from '../../shared/sjablonen.ts';
 import { del, get, patch, post, put, query } from '../api.ts';
-import { AlleenBeheerder, Laden, bevestig, melding, probeer, titel } from '../ui.tsx';
+import { AlleenBeheerder, Kruimels, Laden, bevestig, melding, probeer, titel } from '../ui.tsx';
 
 // ---- Materialen ----
 
@@ -116,7 +116,7 @@ function MaterialenInhoud() {
               <tr>
                 <th class="w-1px" />
                 <th>Materiaal</th>
-                <th style={{ width: '6rem' }}>Prijs (€)</th>
+                <th style={{ width: '5.25rem' }}>Prijs (€)</th>
                 <th class="w-1px" />
               </tr>
             </thead>
@@ -175,6 +175,10 @@ interface Sjabloon {
   onderwerp: string;
   tekst: string;
 }
+interface SjablonenData {
+  sjablonen: Sjabloon[];
+  uitleg: Record<string, string>;
+}
 
 export function Sjablonen() {
   titel('E-mailsjablonen');
@@ -186,15 +190,24 @@ export function Sjablonen() {
 }
 
 function SjablonenInhoud() {
-  const [data] = createResource(() => get<{ sjablonen: Sjabloon[]; uitleg: Record<string, string> }>('/api/sjablonen'));
+  const [data] = createResource(() => get<SjablonenData>('/api/sjablonen'));
   return (
     <>
       <h1 class="h3">E-mailsjablonen</h1>
       <p class="text-muted">Tags tussen accolades, zoals <code>{'{bewoner}'}</code>, worden bij het versturen ingevuld. Per sjabloon staat welke tags je kunt gebruiken; tags met een * zijn verplicht.</p>
       <Show when={data()} fallback={<Laden />}>
         {(d) => (
-          <div class="accordion">
-            <For each={d().sjablonen}>{(s) => <SjabloonKaart sjabloon={s} uitleg={d().uitleg} />}</For>
+          <div class="row row-cols-1 row-cols-md-3 g-2 qa-sjablonen">
+            <For each={d().sjablonen}>
+              {(s) => (
+                <div class="col">
+                  <A href={`/beheer/sjablonen/${s.key}`} class={`btn btn-outline-primary w-100 h-100 text-start qa-sjabloon qa-sjabloon-${s.key}`}>
+                    <div class="fw-semibold">{s.naam}</div>
+                    <div class="small opacity-75">{s.ontvanger === null ? 'Wordt gekopieerd' : `Aan: ${s.ontvanger}`}</div>
+                  </A>
+                </div>
+              )}
+            </For>
           </div>
         )}
       </Show>
@@ -202,13 +215,36 @@ function SjablonenInhoud() {
   );
 }
 
-function SjabloonKaart(props: { sjabloon: Sjabloon; uitleg: Record<string, string> }) {
+export function SjabloonPagina() {
+  titel('E-mailsjabloon');
+  return (
+    <AlleenBeheerder>
+      <SjabloonInhoud />
+    </AlleenBeheerder>
+  );
+}
+
+function SjabloonInhoud() {
+  const params = useParams();
+  const [data] = createResource(() => get<SjablonenData>('/api/sjablonen'));
+  return (
+    <Show when={data()} fallback={<Laden />}>
+      {(d) => (
+        <Show when={d().sjablonen.find((s) => s.key === params.key)} fallback={<div class="alert alert-warning qa-niet-gevonden">Dit sjabloon bestaat niet.</div>}>
+          {(s) => <SjabloonBewerken sjabloon={s()} uitleg={d().uitleg} />}
+        </Show>
+      )}
+    </Show>
+  );
+}
+
+function SjabloonBewerken(props: { sjabloon: Sjabloon; uitleg: Record<string, string> }) {
   // eslint-disable-next-line solid/reactivity -- the editor starts from the saved text and owns it afterwards
   const s = props.sjabloon;
+  titel(s.naam);
   const def = sjabloonDef(s.key);
   const [onderwerp, setOnderwerp] = createSignal(s.onderwerp);
   const [tekst, setTekst] = createSignal(s.tekst);
-  const [open, setOpen] = createSignal(false);
   const [opgeslagen, setOpgeslagen] = createSignal({ onderwerp: s.onderwerp, tekst: s.tekst });
   const gewijzigd = () => onderwerp() !== opgeslagen().onderwerp || tekst() !== opgeslagen().tekst;
   const problemen = () => probleemTeksten(controleerTags(def, onderwerp(), tekst()));
@@ -221,45 +257,32 @@ function SjabloonKaart(props: { sjabloon: Sjabloon; uitleg: Record<string, strin
   };
 
   return (
-    <section class={`accordion-item qa-sjabloon qa-sjabloon-${s.key}`}>
-      <h2 class="accordion-header">
-        <button type="button" class="accordion-button fw-semibold qa-sjabloon-open" classList={{ collapsed: !open() }} aria-expanded={open()} onClick={() => setOpen(!open())}>
-          {s.naam}
-          {/* Collapsing hides the editor, so unsaved edits stay visible in the title. */}
-          <Show when={gewijzigd()}>
-            <span class="badge text-bg-warning ms-2 qa-niet-opgeslagen">Niet opgeslagen</span>
-          </Show>
-        </button>
-      </h2>
-      <Show when={open()}>
-        <div class="accordion-body">
-          <div class="small text-muted mb-2">{s.ontvanger === null ? 'Wordt gekopieerd, niet gemaild.' : `Aan: ${s.ontvanger}`}</div>
-          <div class="small mb-2 qa-tags">
-            <For each={s.tags}>
-              {(t) => (
-                <span class="d-inline-block me-3">
-                  <code>{`{${t}}`}</code>
-                  {s.verplicht.includes(t) ? '*' : ''} <span class="text-muted">{props.uitleg[t]}</span>
-                </span>
-              )}
-            </For>
-          </div>
-          <Show when={s.ontvanger !== null}>
-            <label class="form-label fw-semibold mb-1" for={`onderwerp-${s.key}`}>Onderwerp</label>
-            <input id={`onderwerp-${s.key}`} class="form-control mb-2 qa-onderwerp" value={onderwerp()} onInput={(e) => setOnderwerp(e.currentTarget.value)} />
-          </Show>
-          <label class="form-label fw-semibold mb-1" for={`tekst-${s.key}`}>Tekst</label>
-          <textarea id={`tekst-${s.key}`} class="form-control mb-2 qa-tekst" rows="10" value={tekst()} onInput={(e) => setTekst(e.currentTarget.value)} />
-          <Show when={problemen().length}>
-            <div class="alert alert-warning py-2 small qa-tag-problemen">
-              <For each={problemen()}>{(p) => <div>{p}</div>}</For>
-            </div>
-          </Show>
-          <div>
-            <button type="button" class="btn btn-primary qa-opslaan" disabled={!gewijzigd()} onClick={() => void opslaan()}>Opslaan</button>
-          </div>
+    <section class={`qa-sjabloon-bewerken qa-sjabloon-${s.key}`}>
+      <Kruimels terug={{ href: '/beheer/sjablonen', label: 'E-mailsjablonen' }} huidig={s.naam} />
+      <h1 class="h3">{s.naam}</h1>
+      <div class="small text-muted mb-2">{s.ontvanger === null ? 'Wordt gekopieerd, niet gemaild.' : `Aan: ${s.ontvanger}`}</div>
+      <div class="small mb-2 qa-tags">
+        <For each={s.tags}>
+          {(t) => (
+            <span class="d-inline-block me-3">
+              <code>{`{${t}}`}</code>
+              {s.verplicht.includes(t) ? '*' : ''} <span class="text-muted">{props.uitleg[t]}</span>
+            </span>
+          )}
+        </For>
+      </div>
+      <Show when={s.ontvanger !== null}>
+        <label class="form-label fw-semibold mb-1" for="sjabloon-onderwerp">Onderwerp</label>
+        <input id="sjabloon-onderwerp" class="form-control mb-2 qa-onderwerp" value={onderwerp()} onInput={(e) => setOnderwerp(e.currentTarget.value)} />
+      </Show>
+      <label class="form-label fw-semibold mb-1" for="sjabloon-tekst">Tekst</label>
+      <textarea id="sjabloon-tekst" class="form-control mb-2 qa-tekst" rows="14" value={tekst()} onInput={(e) => setTekst(e.currentTarget.value)} />
+      <Show when={problemen().length}>
+        <div class="alert alert-warning py-2 small qa-tag-problemen">
+          <For each={problemen()}>{(p) => <div>{p}</div>}</For>
         </div>
       </Show>
+      <button type="button" class="btn btn-primary qa-opslaan" disabled={!gewijzigd()} onClick={() => void opslaan()}>Opslaan</button>
     </section>
   );
 }

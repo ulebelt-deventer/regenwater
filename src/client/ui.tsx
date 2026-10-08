@@ -1,3 +1,4 @@
+import { A } from '@solidjs/router';
 import { For, type JSX, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { tijd } from '../shared/datum.ts';
@@ -156,9 +157,22 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?:
   );
 }
 
+// ---- Breadcrumb ----
+
+export function Kruimels(props: { terug: { href: string; label: string }; huidig: string }) {
+  return (
+    <nav aria-label="Kruimelpad">
+      <ol class="breadcrumb small mb-2 qa-kruimels">
+        <li class="breadcrumb-item"><A href={props.terug.href} class="qa-kruimel-terug">{props.terug.label}</A></li>
+        <li class="breadcrumb-item active" aria-current="page">{props.huidig}</li>
+      </ol>
+    </nav>
+  );
+}
+
 // ---- Status labels ----
 
-export function StatusLabel(props: { label: JSX.Element; ligtBij: LigtBij | null }) {
+export function StatusLabel(props: { label: string; ligtBij: LigtBij | null }) {
   return <span class={`bij bij-${props.ligtBij ?? 'gesloten'} qa-status`}>{props.label}</span>;
 }
 

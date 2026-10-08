@@ -32,10 +32,10 @@ export function Statussen() {
             <For each={STAPPEN}>
               {(s) => (
                 <tr class={`qa-stap-${s.key}`}>
-                  {/* On phones the step number moves into the status label. */}
+                  {/* On phones the step number moves into the status cell. */}
                   <td class="d-none d-md-table-cell">{s.nr}</td>
-                  <td><StatusLabel label={<><span class="d-md-none">{s.nr}: </span>{s.label}</>} ligtBij={s.ligtBij} /></td>
-                  <td data-label="Ligt bij">{LIGT_BIJ_LABEL[s.ligtBij]}</td>
+                  <td class="fw-semibold"><span class="d-md-none">{s.nr}: </span>{s.label}</td>
+                  <td data-label="Ligt bij"><span class={`bij bij-${s.ligtBij}`}>{LIGT_BIJ_LABEL[s.ligtBij]}</span></td>
                   <td data-label="Huidig zolang">{s.regel}</td>
                 </tr>
               )}
