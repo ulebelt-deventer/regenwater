@@ -38,7 +38,7 @@ describe('kloptNiet', () => {
     const d = naIntake('koop');
     d.data.rioolstelsel = 'gescheiden';
     expect(kloptNiet(d, geen, nu)).toHaveLength(1);
-    d.verzendingen = [];
+    d.intake_afgerond_at = null;
     expect(kloptNiet(d, geen, nu)).toHaveLength(0);
   });
 
@@ -63,14 +63,19 @@ describe('kloptNiet', () => {
 describe('ligtStil', () => {
   it('flags an Intake open for more than 3 days, listing what is missing', () => {
     const d = dossier({ created_at: '2026-03-16T09:00:00.000Z' });
-    expect(ligtStil(d, geen, nu)?.tekst).toBe('Intake al 4 dagen open. Nog nodig: adres, naam bewoner, e-mail bewoner, huur/koop, rioolstelsel, subsidiemail.');
+    expect(ligtStil(d, geen, nu)?.tekst).toBe('Intake al 4 dagen open. Nog niet ingevuld: adres, naam bewoner, e-mail bewoner, huur/koop, rioolstelsel, subsidiemail.');
     expect(ligtStil(dossier({ created_at: '2026-03-17T13:00:00.000Z' }), geen, nu)).toBeNull();
   });
 
-  it('runs the Bezoeker toewijzen clock from the first subsidiemail, not a re-mail', () => {
-    const d = naIntake('koop');
+  it('says an Intake with nothing missing is still waiting to be marked complete', () => {
+    const d = naIntake('koop', { intake_afgerond_at: null, intake_afgerond_by: null });
+    expect(ligtStil(d, geen, nu)?.tekst).toBe('Intake al 19 dagen open. Nog niet als compleet gemarkeerd.');
+  });
+
+  it('runs the Bezoeker toewijzen clock from when the intake was marked complete, not from a later subsidiemail', () => {
+    const d = naIntake('koop', { intake_afgerond_at: '2026-03-10T09:00:00.000Z' });
     d.verzendingen.push(verzending('subsidie_koop', '2026-03-19T09:00:00.000Z'));
-    expect(ligtStil(d, geen, nu)?.tekst).toBe('Al 18 dagen geen bezoeker. Nieuwe oproep in de Signal-groep?');
+    expect(ligtStil(d, geen, nu)?.tekst).toBe('Al 10 dagen geen bezoeker. Nieuwe oproep in de Signal-groep?');
   });
 
   it('raises no flag for an afspraak in the future, and does 3 days past', () => {

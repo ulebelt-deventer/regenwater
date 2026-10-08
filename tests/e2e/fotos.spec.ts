@@ -149,3 +149,30 @@ async function tekenRegenpijp(page: Page): Promise<void> {
   await page.locator('.qa-tekenaar-sluiten').click();
   await opslagKlaar(page);
 }
+
+test('tijdens het uploaden staat er Uploaden... bij het vak, de wachtende foto blijft duimnagelgroot, en de pagina blijft op dezelfde plek staan', async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 700 });
+  const id = await nieuwBezoekDossier(page);
+  // Holds the upload until the test has seen the indicator.
+  let laatGaan!: () => void;
+  const losgelaten = new Promise<void>((ok) => (laatGaan = ok));
+  await page.route(`**/api/dossiers/${id}/fotos/**`, async (r) => {
+    await losgelaten;
+    await r.continue();
+  });
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  await slot.evaluate((el) => window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 200, behavior: 'instant' }));
+  const voor = await page.evaluate(() => window.scrollY);
+  expect(voor).toBeGreaterThan(0);
+
+  const groot = (await sharp({ create: { width: 3000, height: 2000, channels: 3, background: '#462832' } }).png().toBuffer()).toString('base64');
+  await sleep(page, slot, [{ naam: 'tuin.png', type: 'image/png', base64: groot }]);
+  await expect(slot.locator('.qa-uploaden')).toContainText('Uploaden...');
+  const wacht = (await slot.locator('.qa-foto-wacht img').boundingBox())!;
+  expect(Math.max(wacht.width, wacht.height)).toBeLessThan(100);
+  expect(await page.evaluate(() => window.scrollY)).toBe(voor);
+  laatGaan();
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await expect(slot.locator('.qa-uploaden')).toHaveCount(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(voor);
+});

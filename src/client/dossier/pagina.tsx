@@ -2,16 +2,16 @@
 import { A, type RouteSectionProps, useLocation, useNavigate, useParams } from '@solidjs/router';
 import { For, type JSX, Match, Show, Switch, createEffect, createResource, createSignal, onMount } from 'solid-js';
 import { KLOPT_NIET_KOP } from '../../shared/aandacht.ts';
-import { datum, datumTijd, euro } from '../../shared/datum.ts';
-import { getal, kaartItems } from '../../shared/kaart.ts';
-import { PLAN_BEWONER_SJABLONEN, SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
+import { datum, datumTijd } from '../../shared/datum.ts';
+import { PLAN_BEWONER_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { SluitReden } from '../../shared/types.ts';
-import { lijst, materiaalRijen, materiaalTotaal, optieLabel, veld } from '../../shared/velden.ts';
+import { veld } from '../../shared/velden.ts';
 import { ApiFout, get } from '../api.ts';
 import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, titel } from '../ui.tsx';
-import { MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerwijderModal, VerzendRegel, actie, zetMijlpaal } from './acties.tsx';
+import { MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerwijderModal, VerzendRegel, actie, verstuurdSinds, zetMijlpaal } from './acties.tsx';
 import { type Antwoord, DossierCtx, haalDossier, maakStaat, useDossier } from './staat.ts';
-import { Regel, VeldInvoer } from './velden.tsx';
+import { BezoekSamenvatting, IntakeSamenvatting, PlanSamenvatting, UitvoeringSamenvatting } from './samenvatting.tsx';
+import { VeldInvoer } from './velden.tsx';
 
 export function DossierRoute(props: RouteSectionProps) {
   const params = useParams();
@@ -160,10 +160,13 @@ function Kop() {
 
 // ---- Details page ----
 
-function Sectie(props: { id: string; titel: string; children: JSX.Element }) {
+function Sectie(props: { id: string; titel: string; actie?: JSX.Element; children: JSX.Element }) {
   return (
     <section id={props.id} class={`sectie card card-body mb-3 qa-${props.id}`}>
-      <h2>{props.titel}</h2>
+      <div class="d-flex align-items-start gap-2 mb-2">
+        <h2 class="flex-grow-1 mb-0">{props.titel}</h2>
+        {props.actie}
+      </div>
       {props.children}
     </section>
   );
@@ -182,20 +185,51 @@ export function SluitKnop(props: { reden: SluitReden; label: string; class: stri
   );
 }
 
-// "Bewerken" for whoever may still edit that sub-page, "Bekijken" for the rest.
-function SubpaginaKnop(props: { pad: string; eerst: string; gestart: boolean; mag: boolean }) {
+// "Bewerken" for whoever may still edit that sub-page, "Bekijken" for the rest. Once the step is done it moves to the
+// section's top right corner (`kop`), out of the way of the summary.
+function SubpaginaKnop(props: { pad: string; eerst: string; gestart: boolean; mag: boolean; kop?: boolean }) {
   const s = useDossier();
   const label = () => (!props.mag ? 'Bekijken' : props.gestart ? 'Bewerken' : props.eerst);
+  const icoon = () => (!props.mag ? 'bi-eye' : props.gestart ? 'bi-pencil' : null);
   return (
-    <A href={`/dossiers/${s.id}/${props.pad}`} class={`btn ${props.mag && !props.gestart ? 'btn-primary' : 'btn-outline-primary'} btn-sm qa-naar-${props.pad}`}>{label()}</A>
+    <Show when={!!props.kop === props.gestart}>
+      <A href={`/dossiers/${s.id}/${props.pad}`} class={`btn ${props.mag && !props.gestart ? 'btn-primary' : 'btn-outline-primary'} btn-sm text-nowrap qa-naar-${props.pad}`}>
+        <Show when={icoon()}>{(i) => <i class={`bi ${i()} me-1`} aria-hidden="true" />}</Show>
+        {label()}
+      </A>
+    </Show>
   );
 }
 
-const SUBSIDIE_VARIANT: Record<string, string> = {
-  subsidie_huur: 'subsidiabel, huurwoning',
-  subsidie_koop: 'subsidiabel, koopwoning',
-  subsidie_niet: 'niet subsidiabel',
-};
+// Notities as text, opening into an autosaving textarea on "Bewerken" until it loses focus.
+function Notities() {
+  const s = useDossier();
+  const [open, setOpen] = createSignal(false);
+  const tekst = () => str(s.d, 'notities');
+  return (
+    <Show
+      when={open()}
+      fallback={
+        <div class="qa-notities">
+          <span class="fw-semibold me-2">Notities</span>
+          <Show when={tekst()} fallback={<span class="text-muted">--</span>}>{(t) => <span class="pre-wrap">{t()}</span>}</Show>
+          <Show when={s.mag(veld('notities').bewerkers)}>
+            <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline qa-notities-bewerken" onClick={() => setOpen(true)}>
+              <i class="bi bi-pencil me-1" aria-hidden="true" />Bewerken
+            </button>
+          </Show>
+        </div>
+      }
+    >
+      <div
+        ref={(el) => requestAnimationFrame(() => el.querySelector('textarea')!.focus())}
+        onFocusOut={(e) => !e.currentTarget.contains(e.relatedTarget as Node | null) && setOpen(false)}
+      >
+        <VeldInvoer k="notities" class="mb-0" />
+      </div>
+    </Show>
+  );
+}
 
 export function Details() {
   const s = useDossier();
@@ -208,11 +242,9 @@ export function Details() {
     if (anker) requestAnimationFrame(() => document.getElementById(anker) && gaNaar(anker));
   });
 
-  const optie = (key: string) => optieLabel(veld(key), s.d, key);
   const open = () => !s.d.gesloten_at;
   const huur = () => s.d.huur_koop === 'huur';
   const koop = () => s.d.huur_koop === 'koop';
-  const items = () => kaartItems(s.d);
   const naam = (id: number | null) => s.naam(id);
 
   const stapActie = () => {
@@ -237,6 +269,11 @@ export function Details() {
     if (await actie(s, 'sluiten', { reden: 'Uitgevoerd', toelichting: '' })) melding('success', 'Dossier gesloten als uitgevoerd.');
   };
 
+  const intakeKnop = (kop: boolean) => <SubpaginaKnop pad="intake" eerst="Intake invullen" gestart={s.d.intake_afgerond_at !== null} mag={open()} kop={kop} />;
+  const bezoekKnop = (kop: boolean) => <SubpaginaKnop pad="bezoek" eerst="Start bezoek" gestart={s.d.bezoek_afgerond_at !== null} mag={s.mag(['bezoeker'])} kop={kop} />;
+  const planKnop = (kop: boolean) => <SubpaginaKnop pad="plan" eerst="Plan van Aanpak invullen" gestart={s.d.klaar_voor_controle_at !== null} mag={s.mag(['bezoeker'])} kop={kop} />;
+  const uitvoeringKnop = (kop: boolean) => <SubpaginaKnop pad="uitvoering" eerst="Uitvoering invullen" gestart={opgeleverd()} mag={s.mag(['uitvoerder'])} kop={kop} />;
+
   const naUitvoerder = () => s.d.corporatie_akkoord_at || s.d.klussendienst_gekozen_at || s.d.uitvoerder_id !== null || s.d.werk_opgeleverd_at || s.status().stap.nr >= 9;
   const opgeleverd = () => s.d.werk_opgeleverd_at !== null;
 
@@ -260,59 +297,52 @@ export function Details() {
             </Show>
           </Show>
         </div>
-        <VeldInvoer k="notities" />
+        <Notities />
       </Sectie>
 
-      <Sectie id="sectie-intake" titel="Intake">
+      <Sectie id="sectie-intake" titel="Intake" actie={<Show when={s.beheerder()}>{intakeKnop(true)}</Show>}>
         <div class="mb-2">
-          <Regel label="Adres" leeg={!s.d.adres}>
-            {s.d.adres ? `${adresRegel(s.d)} (${s.d.adres.postcode}, gemeente ${s.d.adres.gemeente})` : ''}
-          </Regel>
-          <Regel label="Bewoner" leeg={!str(s.d, 'bewoner_naam')}>{str(s.d, 'bewoner_naam')}</Regel>
-          <Regel label="Telefoon" leeg={!str(s.d, 'bewoner_telefoon')}>
-            <a href={`tel:${str(s.d, 'bewoner_telefoon')}`} class="qa-tel">{str(s.d, 'bewoner_telefoon')}</a>
-          </Regel>
-          <Regel label="E-mail" leeg={!str(s.d, 'bewoner_email')}>
-            <a href={`mailto:${str(s.d, 'bewoner_email')}`} class="qa-mailto">{str(s.d, 'bewoner_email')}</a>
-          </Regel>
-          <Regel label="Woning" leeg={!s.d.huur_koop}>
-            {[optie('huur_koop'), huur() ? optie('woningeigenaar') : null, optie('woningtype')].filter(Boolean).join(', ')}
-          </Regel>
-          <Regel label="Rioolstelsel" leeg={!optie('rioolstelsel')}>{optie('rioolstelsel')}</Regel>
-          <Regel label="Bodemsituatie" leeg={!optie('bodemsituatie')}>{optie('bodemsituatie')}</Regel>
-          <Regel label="Subsidiemail">
-            <Show when={laatsteVerzending(s.d, SUBSIDIE_SJABLONEN)} fallback={<span class="text-muted qa-subsidie-niet-verstuurd">Nog niet verstuurd</span>}>
-              {(v) => <span class="text-groen fst-italic qa-subsidie-verstuurd">✅ {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)} ({SUBSIDIE_VARIANT[v().sjabloon]})</span>}
-            </Show>
-          </Regel>
+          <IntakeSamenvatting />
         </div>
-        <Show when={s.beheerder()}>
-          <div>
-            <SubpaginaKnop pad="intake" eerst="Intake invullen" gestart={s.status().stap.nr > 1} mag={open()} />
-          </div>
+        <MijlpaalRegel mijlpaal="intake_afgerond" label="Intake is compleet" />
+        <Show when={s.beheerder() && s.d.intake_afgerond_at === null}>
+          <div class="mt-2">{intakeKnop(false)}</div>
         </Show>
       </Sectie>
 
       <Sectie id="sectie-bezoeker" titel="Bezoeker">
-        <Show when={s.beheerder() && open()} fallback={<div class="qa-bezoeker-naam">{naam(s.d.bezoeker_id) ?? <span class="text-muted">Nog niemand</span>}</div>}>
+        <Show
+          when={s.beheerder() && open() && s.d.intake_afgerond_at}
+          fallback={
+            <div class="qa-bezoeker-naam">
+              {naam(s.d.bezoeker_id) ?? <span class="text-muted">Nog niemand</span>}
+              <Show when={s.beheerder() && open() && s.d.bezoeker_id === null}>
+                <div class="small text-muted qa-bezoeker-na-intake">Je kunt een bezoeker toewijzen zodra de intake compleet is.</div>
+              </Show>
+            </div>
+          }
+        >
           <div class="d-flex flex-wrap align-items-center gap-2">
             <Toewijzen rol="bezoeker" />
             <Show when={s.d.bezoeker_id !== null}>
-              <MailKnop sjabloon="bezoeker_toegewezen" label="Bezoeker mailen" class="btn-outline-primary btn-sm" />
+              <Show when={!verstuurdSinds(s.d, ['bezoeker_toegewezen'], s.d.bezoeker_toegewezen_at)}>
+                <MailKnop sjabloon="bezoeker_toegewezen" label="Bezoeker mailen" class="btn-outline-primary btn-sm" />
+              </Show>
+              <VerzendRegel sjablonen={['bezoeker_toegewezen']} sinds={s.d.bezoeker_toegewezen_at} opnieuw="bezoeker_toegewezen" />
             </Show>
             <Show when={s.d.bezoeker_id === null}>
               <button type="button" class="btn btn-sm btn-outline-secondary qa-oproep" onClick={() => void oproep()}>Kopieer oproep voor Signal-groep</button>
             </Show>
           </div>
         </Show>
-        <Show when={s.beheerder() && s.d.bezoeker_id !== null}>
+        <Show when={s.beheerder() && s.d.bezoeker_id !== null && !(open() && s.d.intake_afgerond_at)}>
           <div class="mt-1">
             <VerzendRegel sjablonen={['bezoeker_toegewezen']} sinds={s.d.bezoeker_toegewezen_at} />
           </div>
         </Show>
       </Sectie>
 
-      <Sectie id="sectie-bezoek" titel="Bezoek">
+      <Sectie id="sectie-bezoek" titel="Bezoek" actie={bezoekKnop(true)}>
         <VeldInvoer k="afspraak" />
         <Show when={s.beheerder()}>
           <div class="mb-3">
@@ -320,33 +350,21 @@ export function Details() {
           </div>
         </Show>
         <div class="mb-2">
-          <Regel label="Daken" leeg={!items().daken.length}>
-            {items().daken.map((d) => `${d.label}${d.m2 === null ? '' : ` (${getal(d.m2)} m²)`}`).join(', ')}
-          </Regel>
-          <Regel label="Regenpijpen" leeg={!items().regenpijpen.length}>{items().regenpijpen.map((r) => r.label).join(', ')}</Regel>
-          <Regel label="Wensen bewoner" leeg={!str(s.d, 'wensen')}>
-            <span class="pre-wrap">{str(s.d, 'wensen')}</span>
-          </Regel>
+          <BezoekSamenvatting />
         </div>
         <MijlpaalRegel mijlpaal="bezoek_afgerond" label="Bezoek afgerond" />
-        <div class="mt-2">
-          <SubpaginaKnop pad="bezoek" eerst="Start bezoek" gestart={s.d.bezoek_afgerond_at !== null} mag={s.mag(['bezoeker'])} />
-        </div>
+        <Show when={s.d.bezoek_afgerond_at === null}>
+          <div class="mt-2">{bezoekKnop(false)}</div>
+        </Show>
       </Sectie>
 
-      <Sectie id="sectie-plan" titel="Plan van Aanpak">
+      <Sectie id="sectie-plan" titel="Plan van Aanpak" actie={planKnop(true)}>
         <div class="mb-2">
-          <Regel label="Beoordeling" leeg={!optie('beoordeling')}>{optie('beoordeling')}</Regel>
-          <Regel label="Werkzaamheden" leeg={!lijst(s.d, 'voorstel').length}>
-            <ul class="mb-0 ps-3">
-              <For each={lijst(s.d, 'voorstel').map((id) => str(s.d, `voorstel.${id}.tekst`)).filter((t) => t !== null)}>{(t) => <li>{t}</li>}</For>
-            </ul>
-          </Regel>
-          <Regel label="Materiaalkosten">{euro(materiaalTotaal(materiaalRijen(s.d, 'materialen')))} (geschat)</Regel>
+          <PlanSamenvatting />
         </div>
         <MijlpaalRegel mijlpaal="klaar_voor_controle" label="Klaar voor controle" />
         <div class="d-flex flex-wrap align-items-center gap-3 mt-2">
-          <SubpaginaKnop pad="plan" eerst="Plan van Aanpak invullen" gestart={s.d.klaar_voor_controle_at !== null} mag={s.mag(['bezoeker'])} />
+          {planKnop(false)}
           <a href={`/docs/dossiers/${s.id}/concept-plan`} target="_blank" class="small qa-concept-plan">Bekijk concept-Plan</a>
         </div>
       </Sectie>
@@ -403,36 +421,35 @@ export function Details() {
             <div class="d-flex flex-wrap align-items-center gap-2">
               <Toewijzen rol="uitvoerder" />
               <Show when={s.d.uitvoerder_id !== null}>
-                <MailKnop sjabloon="uitvoerder_toegewezen" label="Uitvoerder mailen" class="btn-outline-primary btn-sm" />
+                <Show when={!verstuurdSinds(s.d, ['uitvoerder_toegewezen'], s.d.uitvoerder_toegewezen_at)}>
+                  <MailKnop sjabloon="uitvoerder_toegewezen" label="Uitvoerder mailen" class="btn-outline-primary btn-sm" />
+                </Show>
+                <VerzendRegel sjablonen={['uitvoerder_toegewezen']} ontvanger="uitvoerder" sinds={s.d.uitvoerder_toegewezen_at} opnieuw="uitvoerder_toegewezen" />
               </Show>
             </div>
           </Show>
           <Show when={s.d.bezoeker_id !== null}>
             <div class="small text-muted mt-1">Bezoeker was {naam(s.d.bezoeker_id)}.</div>
           </Show>
-          <Show when={s.beheerder() && s.d.uitvoerder_id !== null}>
+          <Show when={s.beheerder() && s.d.uitvoerder_id !== null && !open()}>
             <div class="mt-1">
               <VerzendRegel sjablonen={['uitvoerder_toegewezen']} ontvanger="uitvoerder" sinds={s.d.uitvoerder_toegewezen_at} />
             </div>
           </Show>
         </Sectie>
 
-        <Sectie id="sectie-uitvoering" titel="Uitvoering">
+        <Sectie id="sectie-uitvoering" titel="Uitvoering" actie={uitvoeringKnop(true)}>
           <div class="mb-3">
             <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="qa-plan-pdf-uitvoering"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Plan van Aanpak (PDF)</a>
           </div>
           <VeldInvoer k="uitvoering_gepland" />
           <div class="mb-2">
-            <Regel label="Uitgevoerd" leeg={!str(s.d, 'uitgevoerd')}>
-              <span class="pre-wrap">{str(s.d, 'uitgevoerd')}</span>
-            </Regel>
-            <Regel label="Opleverfoto's">{s.d.fotos.filter((f) => f.slot === 'opleverfotos').length}</Regel>
-            <Regel label="Materiaalkosten">{euro(materiaalTotaal(materiaalRijen(s.d, 'gebruikt')))} (gebruikt)</Regel>
+            <UitvoeringSamenvatting />
           </div>
           <MijlpaalRegel mijlpaal="werk_opgeleverd" label="Werk opgeleverd" />
-          <div class="mt-2">
-            <SubpaginaKnop pad="uitvoering" eerst="Uitvoering invullen" gestart={opgeleverd()} mag={s.mag(['uitvoerder'])} />
-          </div>
+          <Show when={!opgeleverd()}>
+            <div class="mt-2">{uitvoeringKnop(false)}</div>
+          </Show>
         </Sectie>
 
         <Show when={s.beheerder()}>

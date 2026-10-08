@@ -153,4 +153,12 @@ export const MIGRATIES: string[] = [
   );
   `,
   `ALTER TABLE dossiers ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}';`,
+  // Existing dossiers count as intake complete from their first successful subsidiemail, as the step rule had it.
+  `
+  ALTER TABLE dossiers ADD COLUMN intake_afgerond_at TEXT;
+  ALTER TABLE dossiers ADD COLUMN intake_afgerond_by INTEGER;
+  UPDATE dossiers SET
+    intake_afgerond_at = (SELECT v.created_at FROM verzendingen v WHERE v.dossier_id = dossiers.id AND v.mislukt_at IS NULL AND v.sjabloon IN ('subsidie_huur', 'subsidie_koop', 'subsidie_niet') ORDER BY v.id LIMIT 1),
+    intake_afgerond_by = (SELECT v.created_by FROM verzendingen v WHERE v.dossier_id = dossiers.id AND v.mislukt_at IS NULL AND v.sjabloon IN ('subsidie_huur', 'subsidie_koop', 'subsidie_niet') ORDER BY v.id LIMIT 1);
+  `,
 ];

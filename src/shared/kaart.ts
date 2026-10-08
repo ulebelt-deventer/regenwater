@@ -21,7 +21,7 @@ export function annotatieLabels(annots: Annotatie[]): Map<string, string> {
     const i = tel[a.type]++;
     if (a.type === 'dak') labels.set(a.id, `D${i + 1}`);
     else if (a.type === 'tuin') labels.set(a.id, `T${i + 1}`);
-    else if (a.type === 'pijl' || a.type === 'regenpijp') labels.set(a.id, letter(i));
+    else if (a.type === 'regenpijp') labels.set(a.id, letter(i));
   }
   return labels;
 }
@@ -217,9 +217,10 @@ export function annotatiesSvg(annots: Annotatie[], opts: { schaal: number; mPerP
       const hoek = Math.atan2(y2 - y1, x2 - x1);
       const k = 14 * u;
       const punt = (h: number) => `${x2 - k * Math.cos(hoek + h)},${y2 - k * Math.sin(hoek + h)}`;
-      out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${KLEUR.pijl}" stroke-width="${breed}" stroke-linecap="round"/>`);
+      // The line stops inside the head: its round cap would otherwise poke out past the tip.
+      const [lx, ly] = [x2 - 0.6 * k * Math.cos(hoek), y2 - 0.6 * k * Math.sin(hoek)];
+      out.push(`<line x1="${x1}" y1="${y1}" x2="${lx}" y2="${ly}" stroke="${KLEUR.pijl}" stroke-width="${breed}" stroke-linecap="round"/>`);
       out.push(`<polygon points="${x2},${y2} ${punt(0.45)} ${punt(-0.45)}" fill="${KLEUR.pijl}"/>`);
-      out.push(tekst(x1 - 10 * u * Math.cos(hoek), y1 - 10 * u * Math.sin(hoek), label!, KLEUR.pijl));
     } else {
       const [x, y] = a.p[0];
       out.push(tekst(x, y, a.tekst ?? '', sel ? '#ffd84d' : '#ffffff', 1.1));

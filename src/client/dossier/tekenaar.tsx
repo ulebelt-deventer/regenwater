@@ -1,5 +1,5 @@
 // Full-screen photo viewer and drawing tool. Zoom and pan move the SVG viewBox, so image coordinates never change.
-import { For, Show, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
+import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
 import { afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
@@ -215,9 +215,17 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     }
   };
 
+  // A mouse hovering in select mode shows the hand over anything it can pick or drag.
+  const [opTekening, setOpTekening] = createSignal(false);
   const beweeg = (e: PointerEvent) => {
-    if (!wijzers.has(e.pointerId)) return;
     const sp = scherm(e);
+    if (!wijzers.has(e.pointerId)) {
+      if (e.pointerType === 'mouse') {
+        const p = naarBeeld(...sp);
+        setOpTekening(!uit() && (handvatOp(p) !== null || treffers(p).length > 0));
+      }
+      return;
+    }
     const vorig = wijzers.get(e.pointerId)!;
     wijzers.set(e.pointerId, sp);
     if (!actie) return;
@@ -329,10 +337,6 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     }
     wisMet([a]);
   };
-  const allesWissen = async () => {
-    const ok = await bevestig('Alle tekeningen wissen?', isKaart ? 'Alle daken, tuinen, regenpijpen, pijlen en teksten en wat je daarbij hebt ingevuld worden gewist.' : 'Alle pijlen en teksten op deze foto worden gewist.', { ja: 'Alles wissen', gevaar: true });
-    if (ok) wisMet([...opgeslagen()]);
-  };
   const fotoVerwijderen = async () => {
     const ok = await bevestig('Foto verwijderen?', isKaart ? 'De tekeningen blijven bewaard voor een nieuwe kaart.' : 'De foto en de tekeningen erop worden verwijderd.', { ja: 'Verwijderen', gevaar: true });
     if (!ok) return;
@@ -376,25 +380,29 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     <div class="annot qa-tekenaar">
       <div class="tools">
         <Show when={!uit()}>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-gereedschap-kies" classList={{ active: gereedschap() === null }} onClick={() => kies(null)}>Kiezen</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-gereedschap-kies" classList={{ active: gereedschap() === null }} aria-label="Kiezen" title="Kiezen" onClick={() => kies(null)}><i class="bi bi-hand-index" aria-hidden="true" /></button>
           <For each={gereedschappen()}>
             {(g) => (
-              <button type="button" class={`btn btn-sm btn-outline-secondary qa-gereedschap-${g}`} classList={{ active: gereedschap() === g }} onClick={() => kies(g)}>{NAAM[g]}</button>
+              <button type="button" class={`btn btn-sm btn-outline-secondary qa-gereedschap-${g}`} classList={{ active: gereedschap() === g }} aria-label={NAAM[g]} title={NAAM[g]} onClick={() => kies(g)}>
+                <Switch fallback={NAAM[g]}>
+                  <Match when={g === 'pijl'}><i class="bi bi-arrow-up-right" aria-hidden="true" /></Match>
+                  <Match when={g === 'tekst'}><span class="fw-bold font-serif" aria-hidden="true">T</span></Match>
+                </Switch>
+              </button>
             )}
           </For>
           <Show when={inWording().length >= 3}>
             <button type="button" class="btn btn-sm btn-primary qa-klaar" onClick={sluitVlak}>Klaar</button>
           </Show>
           <span class="vr mx-1" />
-          <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" disabled={!gekozen()} onClick={() => void verwijder()}><i class="bi bi-trash3 me-1" aria-hidden="true" />Verwijderen</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" disabled={!geschiedenis().length} onClick={ongedaan}>Ongedaan maken</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-alles-wissen" disabled={!opgeslagen().length} onClick={() => void allesWissen()}>Alles wissen</button>
-          <button type="button" class="btn btn-sm btn-outline-danger qa-foto-verwijderen" onClick={() => void fotoVerwijderen()}>Foto verwijderen</button>
+          <Show when={gekozen()}>
+            <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" aria-label="Verwijderen" title="Verwijderen" onClick={() => void verwijder()}><i class="bi bi-eraser" aria-hidden="true" /></button>
+          </Show>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" aria-label="Ongedaan maken" title="Ongedaan maken" disabled={!geschiedenis().length} onClick={ongedaan}><i class="bi bi-arrow-counterclockwise" aria-hidden="true" /></button>
+          <button type="button" class="btn btn-sm btn-outline-danger qa-foto-verwijderen" onClick={() => void fotoVerwijderen()}><i class="bi bi-trash3 me-1" aria-hidden="true" />Foto<span class="d-none d-sm-inline"> verwijderen</span></button>
         </Show>
         <span class="ms-auto small d-none d-sm-inline"><Opgeslagen status={opslagStatus()} om={opgeslagenOm()} /></span>
-        <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Uitzoomen" onClick={() => zoomOp(maat().b / 2, maat().h / 2, 1 / 1.5)}>−</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Inzoomen" onClick={() => zoomOp(maat().b / 2, maat().h / 2, 1.5)}>+</button>
-        <button type="button" class="btn btn-sm btn-success qa-tekenaar-sluiten" aria-label="Sluiten" onClick={() => props.onSluit()}>✕</button>
+        <button type="button" class="btn btn-sm btn-success ms-auto ms-sm-0 qa-tekenaar-sluiten" aria-label="Sluiten" onClick={() => props.onSluit()}>✕</button>
       </div>
       <div class="hint qa-hint">
         {hint()}
@@ -402,7 +410,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
           <div class="text-warning qa-kaart-vervangen">Je hebt de kaart vervangen, dus de tekeningen kloppen mogelijk niet meer. Verplaats of pas ze aan waar nodig.</div>
         </Show>
       </div>
-      <div class="stage qa-tekenvlak" ref={stage} onPointerDown={neer} onPointerMove={beweeg} onPointerUp={op} onPointerCancel={op}>
+      <div class="stage qa-tekenvlak" classList={{ 'cursor-pointer': opTekening() && gereedschap() === null }} ref={stage} onPointerDown={neer} onPointerMove={beweeg} onPointerUp={op} onPointerCancel={op}>
         <svg viewBox={viewBox()} preserveAspectRatio="xMinYMin meet" class="qa-tekenaar-svg">
           <image href={`/api/fotos/${props.fotoId}`} width={W()} height={H()} />
           {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}

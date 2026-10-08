@@ -79,6 +79,14 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
       <Match when={props.veld.type === 'number'}>
         <GetalInvoer waarde={w()} min={props.veld.min} max={props.veld.max} uit={props.uit} onZet={zet} />
       </Match>
+      <Match when={props.veld.type === 'radio' && props.veld.lijst}>
+        {/* Per-option `selected`: a select's `value` is lost when its options re-render. */}
+        <select class="form-select w-auto mw-100 qa-invoer" disabled={props.uit} onChange={(e) => zet(e.currentTarget.value === '' ? null : e.currentTarget.value)}>
+          <option value="" selected={!w()}>- kies -</option>
+          <For each={props.opties}>{([k, label]) => <option value={k} selected={w() === k}>{label.replace(/, namelijk:$/, '...')}</option>}</For>
+        </select>
+        {anders(() => w() === 'anders')}
+      </Match>
       <Match when={props.veld.type === 'radio'}>
         <div class="big-touch">
           <For each={props.opties}>
@@ -318,7 +326,7 @@ export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
 export function Regel(props: { label: string; children: JSX.Element; leeg?: boolean; class?: string }) {
   return (
     <div class={`d-flex gap-2 ${props.class ?? ''}`}>
-      <span class="text-muted flex-shrink-0" style={{ width: '11rem' }}>{props.label}</span>
+      <span class="text-muted flex-shrink-0 regel-label">{props.label}</span>
       <span class="min-w-0">{props.leeg ? <span class="text-muted">--</span> : props.children}</span>
     </div>
   );

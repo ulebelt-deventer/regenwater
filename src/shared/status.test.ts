@@ -9,10 +9,20 @@ describe('huidigeStap', () => {
     expect(huidigeStap(dossier()).key).toBe('intake');
   });
 
-  it('stays at Intake until the subsidiemail is sent, even with all fields filled', () => {
-    const d = naIntake('huur', { verzendingen: [] });
-    expect(intakeOntbreekt(d)).toEqual(['subsidiemail']);
+  it('stays at Intake until an admin marks it complete, even with nothing missing', () => {
+    const d = naIntake('huur', { intake_afgerond_at: null });
+    expect(intakeOntbreekt(d)).toEqual([]);
     expect(huidigeStap(d).key).toBe('intake');
+  });
+
+  it('leaves Intake once marked complete, even with fields missing', () => {
+    const d = dossier({ intake_afgerond_at: T });
+    expect(intakeOntbreekt(d)).toContain('subsidiemail');
+    expect(huidigeStap(d).key).toBe('bezoeker');
+  });
+
+  it('lists the subsidiemail as missing until it is sent', () => {
+    expect(intakeOntbreekt(naIntake('huur', { verzendingen: [] }))).toEqual(['subsidiemail']);
   });
 
   it('needs both naam and e-mail of the bewoner to finish Intake', () => {
@@ -23,7 +33,7 @@ describe('huidigeStap', () => {
 
   it('does not count a failed subsidiemail as sent', () => {
     const d = naIntake('koop', { verzendingen: [verzending('subsidie_koop', T, { mislukt_at: T })] });
-    expect(huidigeStap(d).key).toBe('intake');
+    expect(intakeOntbreekt(d)).toEqual(['subsidiemail']);
   });
 
   it('walks the huur path through every step to closed as Uitgevoerd', () => {

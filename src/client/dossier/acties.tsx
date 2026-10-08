@@ -184,19 +184,30 @@ export function MijlpaalRegel(props: { mijlpaal: Mijlpaal; label: string }) {
   );
 }
 
+// The latest successful send of these templates, if it was at or after `sinds`.
+export function verstuurdSinds(d: Dossier, sjablonen: string[], sinds?: string | null) {
+  const v = laatsteVerzending(d, sjablonen);
+  return v && (!sinds || v.created_at >= sinds) ? v : null;
+}
+
 // The latest send of these templates since `sinds`: green when it arrived, red when it failed. For a plan send (`ontvanger`), amber once the plan changed after it.
-export function VerzendRegel(props: { sjablonen: string[]; ontvanger?: Ontvanger; sinds?: string | null }) {
+// With `opnieuw`, a sent line ends in an "Opnieuw mailen" link that opens that template's send pop-up.
+export function VerzendRegel(props: { sjablonen: string[]; ontvanger?: Ontvanger; sinds?: string | null; opnieuw?: string }) {
   const s = useDossier();
   const [ack, setAck] = createSignal(false);
+  const [mail, setMail] = createSignal(false);
   const na = (v: { created_at: string }) => !props.sinds || v.created_at >= props.sinds;
   const poging = () => {
     const v = s.d.verzendingen.filter((x) => props.sjablonen.includes(x.sjabloon) && na(x));
     return v.length ? v[v.length - 1] : null;
   };
-  const gelukt = () => {
-    const v = laatsteVerzending(s.d, props.sjablonen);
-    return v && na(v) ? v : null;
-  };
+  const gelukt = () => verstuurdSinds(s.d, props.sjablonen, props.sinds);
+  const opnieuw = () => (
+    <Show when={props.opnieuw}>
+      {' · '}
+      <button type="button" class="btn btn-link btn-sm p-0 align-baseline qa-opnieuw-mailen" onClick={() => setMail(true)}>Opnieuw mailen</button>
+    </Show>
+  );
   const gewijzigd = () => {
     if (!props.ontvanger) return null;
     const p = planStatus(s.d, props.ontvanger);
@@ -211,12 +222,13 @@ export function VerzendRegel(props: { sjablonen: string[]; ontvanger?: Ontvanger
         {(v) => (
           <Show
             when={gewijzigd()}
-            fallback={<div class="text-groen fst-italic qa-verstuurd">✅ {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)}</div>}
+            fallback={<div><span class="text-groen fst-italic qa-verstuurd">✅ {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)}</span>{opnieuw()}</div>}
           >
             {(g) => (
               <div class="text-warning qa-plan-gewijzigd">
                 {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)}, plan daarna gewijzigd op {datum(g())}.{' '}
                 <A href={`/dossiers/${s.id}/activiteit?sinds=${encodeURIComponent(v().created_at)}`} class="qa-wijzigingen">Wat is er gewijzigd?</A>
+                {opnieuw()}
                 <Show when={s.beheerder() && !s.d.gesloten_at}>
                   {' · '}
                   <button type="button" class="btn btn-link btn-sm p-0 align-baseline qa-niet-nodig" onClick={() => setAck(true)}>Opnieuw versturen niet nodig</button>
@@ -229,6 +241,7 @@ export function VerzendRegel(props: { sjablonen: string[]; ontvanger?: Ontvanger
           </Show>
         )}
       </Show>
+      <Show when={mail() && props.opnieuw}>{(sj) => <MailModal sjabloon={sj()} onSluit={() => setMail(false)} />}</Show>
     </div>
   );
 }

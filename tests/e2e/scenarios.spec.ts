@@ -313,7 +313,7 @@ test('bewoner haakt af na het bezoek: niets bewerkbaar zolang gesloten, na herop
 
   await sluit(page, 'bewoner-afgehaakt', 'Bewoner wil toch geen regenton.');
   await status(page, 'Gesloten: Bewoner afgehaakt');
-  await expect(veld(page, 'notities').locator('.qa-invoer')).toBeDisabled();
+  await expect(page.locator('.qa-notities-bewerken')).toHaveCount(0);
   await expect(veld(page, 'afspraak').locator('.qa-datum')).toBeDisabled();
   await expect(page.locator('.qa-bezoeker-naam')).toHaveText(KLUSSER.naam);
   await expect(page.locator('.qa-naar-plan')).toHaveText('Bekijken');
@@ -331,7 +331,8 @@ test('bewoner haakt af na het bezoek: niets bewerkbaar zolang gesloten, na herop
   await page.locator('.qa-heropenen').click();
   await status(page, 'Plan van Aanpak afronden');
   await expect(page.locator('.qa-gesloten')).toHaveCount(0);
-  await expect(veld(page, 'notities').locator('.qa-invoer')).toBeEnabled();
+  await page.locator('.qa-notities-bewerken').click();
+  await expect(veld(page, 'notities').locator('.qa-invoer')).toBeFocused();
 });
 
 test('papieren bezoek: bezoeker toegewezen zonder mail, PDF met Schouw door en Auteur, plan handmatig verstuurd', async ({ page }) => {

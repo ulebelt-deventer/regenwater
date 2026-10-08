@@ -45,6 +45,7 @@ export interface Extra {
 }
 
 export const MIJLPALEN = [
+  'intake_afgerond',
   'bezoeker_toegewezen',
   'bezoek_afgerond',
   'klaar_voor_controle',
@@ -128,6 +129,8 @@ export interface Dossier {
   uitvoerder_id: number | null;
   afspraak: string | null; // YYYY-MM-DDTHH:MM, local time
   uitvoering_gepland: string | null; // YYYY-MM-DD
+  intake_afgerond_at: string | null;
+  intake_afgerond_by: number | null;
   bezoeker_toegewezen_at: string | null;
   bezoeker_toegewezen_by: number | null;
   bezoek_afgerond_at: string | null;

@@ -3,7 +3,7 @@ import type { DB } from './db.ts';
 
 export const DOSSIER_KOLOMMEN = [
   'huur_koop', 'bezoeker_id', 'uitvoerder_id', 'afspraak', 'uitvoering_gepland',
-  'bezoeker_toegewezen_at', 'bezoeker_toegewezen_by', 'bezoek_afgerond_at', 'bezoek_afgerond_by',
+  'intake_afgerond_at', 'intake_afgerond_by', 'bezoeker_toegewezen_at', 'bezoeker_toegewezen_by', 'bezoek_afgerond_at', 'bezoek_afgerond_by',
   'klaar_voor_controle_at', 'klaar_voor_controle_by', 'corporatie_akkoord_at', 'corporatie_akkoord_by',
   'klussendienst_gekozen_at', 'klussendienst_gekozen_by', 'uitvoerder_toegewezen_at', 'uitvoerder_toegewezen_by',
   'werk_opgeleverd_at', 'werk_opgeleverd_by', 'gesloten_at', 'gesloten_by', 'gesloten_reden', 'gesloten_toelichting', 'plan_gewijzigd_at',

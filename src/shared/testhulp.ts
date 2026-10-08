@@ -12,6 +12,8 @@ export function dossier(over: Partial<Dossier> = {}): Dossier {
     uitvoerder_id: null,
     afspraak: null,
     uitvoering_gepland: null,
+    intake_afgerond_at: null,
+    intake_afgerond_by: null,
     bezoeker_toegewezen_at: null,
     bezoeker_toegewezen_by: null,
     bezoek_afgerond_at: null,
@@ -65,13 +67,15 @@ export const ADRES = {
   percelen: ['DVT00-E-11907'], rd: [207965.881, 474195.177] as [number, number], ll: [52.25324535, 6.1628876] as [number, number], perceel_bbox: null,
 };
 
-// A dossier with a complete intake, mailed on 2 March.
+// A dossier with a complete intake, mailed and marked complete on 2 March.
 export function naIntake(huur_koop: 'huur' | 'koop', over: Partial<Dossier> = {}): Dossier {
   return dossier({
     adres: ADRES,
     huur_koop,
     data: { bewoner_naam: 'Anna de Vries', bewoner_email: 'anna@example.org', rioolstelsel: 'gemengd', woningeigenaar: huur_koop === 'huur' ? 'Ieder1' : null },
     verzendingen: [verzending(huur_koop === 'huur' ? 'subsidie_huur' : 'subsidie_koop', '2026-03-02T09:00:00.000Z')],
+    intake_afgerond_at: '2026-03-02T09:00:00.000Z',
+    intake_afgerond_by: 1,
     ...over,
   });
 }

@@ -1,5 +1,6 @@
 import { CORPORATIES } from './constants.ts';
-import { kaartItems } from './kaart.ts';
+import { datum, datumTijd } from './datum.ts';
+import { getal, kaartItems } from './kaart.ts';
 import type { Dossier, Json } from './types.ts';
 
 export type Pagina = 'intake' | 'details' | 'bezoek' | 'plan' | 'uitvoering';
@@ -14,6 +15,7 @@ export interface Veld {
   pagina: Pagina;
   bewerkers: Bewerker[];
   opties?: [string, string][];
+  lijst?: boolean; // a radio shown as a dropdown, for long option lists
   anders?: boolean; // the last option is "Anders, namelijk:" with a write-in stored under `${key}_anders`
   inPlan?: boolean;
   inOplever?: boolean;
@@ -52,9 +54,9 @@ export const VELDEN: Veld[] = [
   { key: 'bewoner_email', label: 'E-mail bewoner', type: 'email', pagina: 'intake', bewerkers: [] },
   { key: 'bewoner_telefoon', label: 'Telefoon bewoner', type: 'tel', pagina: 'intake', bewerkers: [] },
   { key: 'huur_koop', label: 'Huurwoning of koopwoning', type: 'radio', pagina: 'intake', bewerkers: [], kolom: true, inPlan: true, inOplever: true, opties: [['huur', 'Huurwoning'], ['koop', 'Koopwoning']] },
-  { key: 'woningeigenaar', label: 'Woningeigenaar', type: 'radio', pagina: 'intake', bewerkers: [], inPlan: true, inOplever: true, anders: true, zichtbaar: isHuur, opties: [...CORPORATIES.map((c): [string, string] => [c, c]), ['anders', 'Anders, namelijk:']] },
+  { key: 'woningeigenaar', label: 'Woningeigenaar', type: 'radio', lijst: true, pagina: 'intake', bewerkers: [], inPlan: true, inOplever: true, anders: true, zichtbaar: isHuur, opties: [...CORPORATIES.map((c): [string, string] => [c, c]), ['anders', 'Anders, namelijk:']] },
   {
-    key: 'woningtype', label: 'Woningtype', type: 'radio', pagina: 'intake', bewerkers: [], inPlan: true, anders: true,
+    key: 'woningtype', label: 'Woningtype', type: 'radio', lijst: true, pagina: 'intake', bewerkers: [], inPlan: true, anders: true,
     opties: [['tussenwoning', 'Tussenwoning'], ['hoekwoning', 'Hoekwoning'], ['geschakeld', 'Geschakeld'], ['2-onder-1-kap', '2-onder-1-kap'], ['vrijstaand', 'Vrijstaand'], ['benedenwoning', 'Benedenwoning'], ['anders', 'Anders, namelijk:']],
   },
   { key: 'rioolstelsel', label: 'Rioolstelsel', type: 'radio', pagina: 'intake', bewerkers: [], opties: [['gemengd', 'Gemengd'], ['gescheiden', 'Gescheiden']] },
@@ -195,6 +197,32 @@ export function optieLabel(veldDef: Veld, d: Dossier, key: string): string | nul
   };
   if (Array.isArray(v)) return v.map((w) => labelVan(w as string)).join(', ');
   return labelVan(v as string);
+}
+
+// A field's value as read-only text for the details page summaries, or null when empty.
+export function veldTekst(d: Dossier, key: string): string | null {
+  const gevonden = veldVoor(key);
+  if (!gevonden) throw new Error(`Onbekend veld: ${key}`);
+  const v = gevonden.veld;
+  const w = waarde(d, key);
+  if (isLeeg(w)) return null;
+  switch (v.type) {
+    case 'radio':
+    case 'checks':
+      return optieLabel(v, d, key);
+    case 'number':
+      return `${getal(w as number)}${key === 'verhard' ? '%' : ''}`;
+    case 'date':
+      return datum(w as string);
+    case 'datetime':
+      return datumTijd(w as string);
+    case 'select': // a regenpijp's dak: kaartItems knows the effective one, also when none was chosen
+    case 'ids':
+    case 'annotaties':
+      throw new Error(`${key} heeft geen losse tekstwaarde`);
+    default:
+      return (w as string).trim();
+  }
 }
 
 export function lijst(d: Dossier, key: string): string[] {

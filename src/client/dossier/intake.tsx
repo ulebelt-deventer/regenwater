@@ -1,13 +1,13 @@
 // Intake sub-page (admin, at the desk): address, bewoner, woning, subsidie mail, straatfoto, kaart and bodem.
-import { A } from '@solidjs/router';
+import { A, useNavigate } from '@solidjs/router';
 import { For, Show, createSignal, onCleanup } from 'solid-js';
 import { BORING_MAX_KM, DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/constants.ts';
 import { datum } from '../../shared/datum.ts';
-import { SUBSIDIE_SJABLONEN, adresRegel, intakeOntbreekt, laatsteVerzending, str } from '../../shared/status.ts';
+import { SUBSIDIE_SJABLONEN, intakeOntbreekt, laatsteVerzending, str, straatNummer } from '../../shared/status.ts';
 import type { Dossier, RioolDetectie } from '../../shared/types.ts';
 import { get, post } from '../api.ts';
 import { Modal, bevestig, melding, probeer } from '../ui.tsx';
-import { MailKnop } from './acties.tsx';
+import { MailKnop, MijlpaalRegel, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { SluitKnop, TerugLink } from './pagina.tsx';
 import { useDossier } from './staat.ts';
@@ -30,6 +30,13 @@ export function Intake() {
   const verstuurd = () => laatsteVerzending(s.d, SUBSIDIE_SJABLONEN);
   const nietSubsidiabel = () => str(s.d, 'rioolstelsel') === 'gescheiden';
   const ontbreekt = () => intakeOntbreekt(s.d);
+  const navigate = useNavigate();
+  const naarBezoeker = () => navigate(`/dossiers/${s.id}#sectie-bezoeker`);
+  const afronden = async () => {
+    const mist = ontbreekt();
+    if (mist.length && !(await bevestig('Intake afronden?', `Nog niet ingevuld: ${mist.join(', ')}. Toch als compleet markeren?`, { ja: 'Toch afronden' }))) return;
+    if (await zetMijlpaal(s, 'intake_afgerond')) naarBezoeker();
+  };
 
   return (
     <>
@@ -70,11 +77,12 @@ export function Intake() {
         <Show
           when={!nietSubsidiabel()}
           fallback={
-            <Show when={!s.d.gesloten_at}>
-              <div class="mb-2">
+            <div class="mb-3">
+              <p class="text-muted mb-2 qa-niet-subsidiabel-uitleg">Met een gescheiden riool is dit adres niet subsidiabel, dus straatfoto, kaart, boorprofiel en bodemsituatie zijn niet nodig. Ze komen terug als je het rioolstelsel op Gemengd zet.</p>
+              <Show when={!s.d.gesloten_at}>
                 <SluitKnop reden="Niet subsidiabel" label="Dossier sluiten: niet subsidiabel" class="btn btn-danger qa-sluiten-niet-subsidiabel" />
-              </div>
-            </Show>
+              </Show>
+            </div>
           }
         >
           <div id="veld-straatfoto" class="mb-3 qa-veld-straatfoto">
@@ -95,10 +103,20 @@ export function Intake() {
         </Show>
 
         <div class="border-top pt-3 qa-controle">
-          <Show when={ontbreekt().length} fallback={<div class="text-groen qa-intake-compleet">✅ De intake is compleet. Wijs nu een bezoeker toe.</div>}>
-            <div class="text-warning qa-intake-ontbreekt">Nog nodig: {ontbreekt().join(', ')}.</div>
+          <Show
+            when={!s.d.intake_afgerond_at}
+            fallback={
+              <>
+                <MijlpaalRegel mijlpaal="intake_afgerond" label="Intake is compleet" />
+                <button type="button" class="btn btn-outline-primary mt-2 qa-naar-dossier" onClick={naarBezoeker}>Naar het dossier</button>
+              </>
+            }
+          >
+            <Show when={ontbreekt().length}>
+              <div class="text-warning qa-intake-ontbreekt">Nog niet ingevuld: {ontbreekt().join(', ')}.</div>
+            </Show>
+            <button type="button" class="btn btn-primary mt-2 qa-intake-klaar" disabled={uit()} onClick={() => void afronden()}><i class="bi bi-check-lg me-1" aria-hidden="true" />Intake is compleet</button>
           </Show>
-          <A href={`/dossiers/${s.id}#sectie-bezoeker`} class="btn btn-primary mt-2 qa-intake-klaar">Naar het dossier</A>
         </div>
       </section>
     </>
@@ -149,6 +167,8 @@ function AdresVeld() {
   const uit = () => !s.mag([]);
   const [q, setQ] = createSignal('');
   const [suggesties, setSuggesties] = createSignal<Suggestie[]>([]);
+  // With an address chosen, the search field only shows after tapping the pencil.
+  const [zoeken, setZoeken] = createSignal(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let laatste = 0;
   onCleanup(() => clearTimeout(timer));
@@ -168,6 +188,7 @@ function AdresVeld() {
   const kies = async (sug: Suggestie) => {
     setSuggesties([]);
     setQ('');
+    setZoeken(false);
     await probeer(async () => {
       const r = await post<{ dossier: Dossier; dubbel: { id: number; gesloten: boolean }[] }>(`/api/dossiers/${s.id}/adres`, { id: sug.id });
       s.vervang(r.dossier);
@@ -180,16 +201,20 @@ function AdresVeld() {
       <div class="form-label fw-semibold mb-1">Adres</div>
       <Show when={s.d.adres}>
         {(a) => (
-          <div class="mb-1 qa-adres-gekozen">
-            <div>{adresRegel(s.d)}</div>
-            <div>{a().postcode} {a().plaats}</div>
-            <div class="small text-muted">Gemeente {a().gemeente}</div>
+          <div class="mb-1">
+            <span class="qa-adres-gekozen">{straatNummer(a())}, {a().postcode} {a().plaats}</span>
+            <Show when={!uit()}>
+              <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline qa-adres-wijzigen" title="Ander adres zoeken" aria-label="Ander adres zoeken" onClick={() => setZoeken(!zoeken())}>
+                <i class="bi bi-pencil" aria-hidden="true" />
+              </button>
+            </Show>
           </div>
         )}
       </Show>
-      <Show when={!uit()}>
+      <Show when={!uit() && (!s.d.adres || zoeken())}>
         <div class="position-relative">
           <input
+            ref={(el) => s.d.adres && queueMicrotask(() => el.focus())}
             class="form-control qa-adres-zoek"
             placeholder={s.d.adres ? 'Ander adres zoeken: straat, huisnummer, plaats of postcode' : 'Straat, huisnummer, plaats of postcode'}
             value={q()}

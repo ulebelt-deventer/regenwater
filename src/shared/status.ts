@@ -39,6 +39,7 @@ export function str(d: Dossier, key: string): string | null {
   return typeof v === 'string' && v.trim() !== '' ? v : null;
 }
 
+// Shown as a warning on the intake page; the admin decides when the intake is complete.
 export function intakeOntbreekt(d: Dossier): string[] {
   const uit: string[] = [];
   if (!d.adres) uit.push('adres');
@@ -65,9 +66,9 @@ export interface Stap {
 export const STAPPEN: Stap[] = [
   {
     nr: 1, key: 'intake', ligtBij: 'beheerder', label: 'Intake', anker: 'sectie-intake',
-    regel: 'Adres (gevalideerd), naam of e-mail bewoner, huur/koop of rioolstelsel ontbreekt, of de subsidiemail is nog niet verstuurd',
+    regel: '"Intake is compleet" is nog niet aangetikt',
     geldt: () => true,
-    gedaan: (d) => (intakeOntbreekt(d).length === 0 ? eersteVerzending(d, SUBSIDIE_SJABLONEN)!.created_at : null),
+    gedaan: (d) => d.intake_afgerond_at,
   },
   {
     nr: 2, key: 'bezoeker', ligtBij: 'beheerder', label: 'Bezoeker toewijzen', anker: 'sectie-bezoeker',
@@ -192,7 +193,11 @@ export function adresRegel(d: Dossier): string {
 }
 
 export function adresTekst(a: Adres): string {
-  return `${a.straat} ${a.huisnummer}${a.huisletter}${a.toevoeging ? `-${a.toevoeging}` : ''}, ${a.plaats}`;
+  return `${straatNummer(a)}, ${a.plaats}`;
+}
+
+export function straatNummer(a: Adres): string {
+  return `${a.straat} ${a.huisnummer}${a.huisletter}${a.toevoeging ? `-${a.toevoeging}` : ''}`;
 }
 
 // Whose turn it is from a klusser's point of view, for the Mijn dossiers list.

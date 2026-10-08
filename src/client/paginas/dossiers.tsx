@@ -166,7 +166,7 @@ export function Dossiers() {
                       onClick={() => zet(`s_${f.key}`, volgende(statusWaarde(f.key, f.standaard)))}
                     >
                       <span>{f.label}</span>
-                      <span class="text-muted qa-waarde">{tekst(statusWaarde(f.key, f.standaard))}</span>
+                      <span class={`qa-waarde ${{ ja: 'text-groen', nee: 'text-danger', alle: 'text-muted' }[statusWaarde(f.key, f.standaard) ?? 'alle']}`}>{tekst(statusWaarde(f.key, f.standaard))}</span>
                     </button>
                   )}
                 </For>
@@ -199,7 +199,7 @@ export function Dossiers() {
         {(l) => (
           <>
             <Show when={l().rijen.length === 0}>
-              <p class="text-muted qa-leeg">Geen dossiers gevonden.</p>
+              <p class="text-secondary text-center mt-5 qa-leeg">Geen dossiers gevonden.</p>
             </Show>
             <Show when={l().rijen.length > 0}>
               <Show when={beheerder()} fallback={<KlusserTabel rijen={l().rijen} />}>

@@ -10,7 +10,7 @@ const vierkant = (x: number, y: number, s: number): [number, number][] => [[x, y
 const kaart = (m_per_px: number | null): Foto => ({ id: 'f1', slot: 'kaart', breedte: 1000, hoogte: 1000, m_per_px, annotaties: [], created_at: '2026-03-01T00:00:00.000Z' });
 
 describe('labels', () => {
-  it('numbers daken and tuinen and letters regenpijpen and pijlen by order', () => {
+  it('numbers daken and tuinen and letters regenpijpen by order', () => {
     const a: Annotatie[] = [
       { id: 'd1', type: 'dak', p: vierkant(0, 0, 10) },
       { id: 'r1', type: 'regenpijp', p: [[1, 1]] },
@@ -30,9 +30,9 @@ describe('labels', () => {
     expect([letter(0), letter(25), letter(26), letter(27), letter(701), letter(702)]).toEqual(['A', 'Z', 'AA', 'AB', 'ZZ', 'AAA']);
   });
 
-  it('labels pijlen and regenpijpen with separate letter sequences, and gives tekst no label', () => {
-    const a: Annotatie[] = [{ id: 'p1', type: 'pijl', p: [] }, { id: 'r1', type: 'regenpijp', p: [] }, { id: 'x1', type: 'tekst', p: [], tekst: 'hier' }, { id: 'p2', type: 'pijl', p: [] }];
-    expect([...annotatieLabels(a)]).toEqual([['p1', 'A'], ['r1', 'A'], ['p2', 'B']]);
+  it('letters regenpijpen and gives pijlen and tekst no label', () => {
+    const a: Annotatie[] = [{ id: 'p1', type: 'pijl', p: [] }, { id: 'r1', type: 'regenpijp', p: [] }, { id: 'x1', type: 'tekst', p: [], tekst: 'hier' }, { id: 'r2', type: 'regenpijp', p: [] }];
+    expect([...annotatieLabels(a)]).toEqual([['r1', 'A'], ['r2', 'B']]);
   });
 });
 
@@ -177,6 +177,15 @@ describe('annotatiesSvg', () => {
     expect(svg).toContain('>D1</text>');
     expect(svg).toContain('>36 m²</text>');
     expect(svg).toContain('>6 m</text>');
+  });
+
+  it('draws a pijl without a label, its line ending inside the head so the round cap stays behind the tip', () => {
+    const svg = annotatiesSvg([{ id: 'p', type: 'pijl', p: [[0, 0], [100, 0]] }], { schaal: 1, mPerPx: null });
+    expect(svg).not.toContain('<text');
+    const x2 = Number(/<line [^>]*x2="([\d.]+)"/.exec(svg)![1]);
+    const breed = Number(/<line [^>]*stroke-width="([\d.]+)"/.exec(svg)![1]);
+    expect(x2 + breed / 2).toBeLessThan(100);
+    expect(x2).toBeGreaterThan(100 - 14 * Math.cos(0.45));
   });
 
   it('escapes free text', () => {

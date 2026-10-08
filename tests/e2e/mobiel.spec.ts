@@ -1,6 +1,6 @@
 // Phone-width layout: the dossier lists turn into cards and no page scrolls sideways.
 import { type Page, expect, test } from '@playwright/test';
-import { ADRES, KLUSSER, login, naarDossier, nieuwDossier, start, wijsToe } from './hulp.ts';
+import { ADRES, KLUSSER, login, nieuwDossier, post, start, subsidieMail, wijsToe } from './hulp.ts';
 
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -26,8 +26,10 @@ test('een beheerder ziet op een telefoon kaarten in plaats van de tabel, en een 
 test('een klusser ziet op een telefoon een kaart met de opdracht, nog niet aan zet tijdens de intake', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
-  await naarDossier(page, id);
+  await subsidieMail(page, 'koop');
   await wijsToe(page, 'bezoeker', klusserId, false);
+  // Back in the intake: an admin undid "Intake is compleet" after assigning.
+  await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'intake_afgerond', aan: false });
 
   await login(page, KLUSSER.email);
   await page.goto('/dossiers');
@@ -55,7 +57,7 @@ test('op een telefoon is de navigatiebalk compact: klein logo en geen naam bij h
 test('op een telefoon tonen Gebruikers, een gebruiker en de uitlegpagina\'s kaarten zonder tabelkop en zonder zijwaarts scrollen', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
-  await naarDossier(page, id);
+  await subsidieMail(page, 'koop');
   await wijsToe(page, 'bezoeker', klusserId, false);
 
   for (const pad of ['/gebruikers', `/gebruikers/${klusserId}`, '/uitleg/statussen', '/uitleg/aandacht']) {

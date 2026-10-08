@@ -212,7 +212,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     const b = await body<{ mijlpaal: unknown; aan: unknown }>(c);
     const d = haalDossier(ctx, c);
     const m = b.mijlpaal as Mijlpaal;
-    const handmatig: Mijlpaal[] = ['bezoek_afgerond', 'klaar_voor_controle', 'corporatie_akkoord', 'klussendienst_gekozen', 'werk_opgeleverd'];
+    const handmatig: Mijlpaal[] = ['intake_afgerond', 'bezoek_afgerond', 'klaar_voor_controle', 'corporatie_akkoord', 'klussendienst_gekozen', 'werk_opgeleverd'];
     if (!MIJLPALEN.includes(m) || !handmatig.includes(m)) fout(400, 'Onbekende mijlpaal');
     nietGesloten(d);
     const at = `${m}_at` as const;

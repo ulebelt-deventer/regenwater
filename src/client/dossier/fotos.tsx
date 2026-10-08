@@ -10,18 +10,33 @@ import { Luchtfoto } from './luchtfoto.tsx';
 import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
 
-export function FotoDuim(props: { foto: Foto; onClick: () => void }) {
+export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean }) {
   const s = useDossier();
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
   const svg = () => annotatiesSvg(annots(), { schaal: Math.max(props.foto.breedte, props.foto.hoogte) / 450, mPerPx: null });
   return (
-    <button type="button" class="thumb p-0 border-0 qa-foto" onClick={() => props.onClick()} aria-label="Foto bekijken">
+    <button type="button" class="thumb p-0 border-0 qa-foto" classList={{ 'thumb-klein': props.klein }} onClick={() => props.onClick()} aria-label="Foto bekijken">
       <svg viewBox={`0 0 ${props.foto.breedte} ${props.foto.hoogte}`} preserveAspectRatio="xMidYMid slice" width="100%" height="100%">
         <image href={`/api/fotos/${props.foto.id}`} width={props.foto.breedte} height={props.foto.hoogte} />
         {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
         <g innerHTML={svg()} />
       </svg>
     </button>
+  );
+}
+
+// A slot's photos as small thumbnails for the details page summaries; tapping one opens the drawing tool.
+export function FotoDuimen(props: { slot: string }) {
+  const s = useDossier();
+  const [open, setOpen] = createSignal<string | null>(null);
+  const fotos = () => s.d.fotos.filter((f) => f.slot === props.slot);
+  return (
+    <Show when={fotos().length}>
+      <div class={`d-flex flex-wrap gap-1 my-1 qa-duimen qa-duimen-${props.slot.replace(/\./g, '-')}`}>
+        <For each={fotos()}>{(f) => <FotoDuim foto={f} klein onClick={() => setOpen(f.id)} />}</For>
+      </div>
+      <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} />}</Show>
+    </Show>
   );
 }
 
@@ -36,6 +51,8 @@ export function FotoSlot(props: { k: string; label?: string }) {
   const wachtend = () => wachtendeFotos().filter((w) => w.dossierId === s.id && w.slot === k);
   const [open, setOpen] = createSignal<string | null>(null);
   const [sleep, setSleep] = createSignal(false);
+  // Photos being converted to JPEG, before they reach the upload queue.
+  const [omzetten, setOmzetten] = createSignal(0);
   let kiezer!: HTMLInputElement;
   let camera!: HTMLInputElement;
 
@@ -55,6 +72,14 @@ export function FotoSlot(props: { k: string; label?: string }) {
     const bestanden = alle.filter((b) => !b.type || b.type.startsWith('image/'));
     for (const b of alle) if (!bestanden.includes(b)) weiger(b.name);
     if (!bestanden.length) return;
+    setOmzetten((n) => n + 1);
+    try {
+      await zetInWachtrij(bestanden);
+    } finally {
+      setOmzetten((n) => n - 1);
+    }
+  };
+  const zetInWachtrij = async (bestanden: File[]) => {
     const huidig = fotos();
     let vervang: string | null = null;
     let blobs: (Blob | null)[];
@@ -101,10 +126,16 @@ export function FotoSlot(props: { k: string; label?: string }) {
         <For each={wachtend()}>
           {(w) => (
             <div class="thumb wacht qa-foto-wacht">
-              <img src={w.url} alt="" />
+              <img src={w.url} alt="" class="w-100 h-100 object-fit-cover rounded" />
             </div>
           )}
         </For>
+        <Show when={omzetten() > 0 || wachtend().length > 0}>
+          <div class="d-flex align-items-center small text-muted qa-uploaden">
+            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+            Uploaden...
+          </div>
+        </Show>
       </div>
       <Show when={!uit()}>
         <div class="d-flex flex-wrap gap-2">

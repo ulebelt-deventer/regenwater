@@ -36,8 +36,8 @@ async function openKaart(page: Page): Promise<number> {
 }
 
 // Opens a slot's first photo and waits until the view matches the drawing area's measured size; until then taps map to the wrong image spot.
-async function openTekenaar(page: Page, slot: string): Promise<void> {
-  await page.locator(`.qa-fotoslot-${slot} .qa-foto`).first().click();
+async function openTekenaar(page: Page, slot: string, duim = page.locator(`.qa-fotoslot-${slot} .qa-foto`)): Promise<void> {
+  await duim.first().click();
   await expect
     .poll(() =>
       page.locator('.qa-tekenaar-svg').evaluate((svg: SVGSVGElement) => {
@@ -48,17 +48,22 @@ async function openTekenaar(page: Page, slot: string): Promise<void> {
     .toBe(true);
 }
 
-// Taps a spot given as a fraction of the photo. The toolbar can wrap and resize the drawing area between taps, so a fixed screen spot would drift.
-async function tik(page: Page, fx: number, fy: number): Promise<void> {
-  const [x, y] = await page.locator('.qa-tekenaar-svg').evaluate(
+// The screen spot of a fraction of the photo. The toolbar can wrap and resize the drawing area between taps, so a fixed screen spot would drift.
+async function schermPunt(page: Page, fx: number, fy: number): Promise<[number, number]> {
+  return page.locator('.qa-tekenaar-svg').evaluate(
     (svg: SVGSVGElement, [fx, fy]) => {
       const img = svg.querySelector('image')!;
       const p = new DOMPoint(img.width.baseVal.value * fx, img.height.baseVal.value * fy).matrixTransform(svg.getScreenCTM()!);
-      return [p.x, p.y];
+      return [p.x, p.y] as [number, number];
     },
     [fx, fy],
   );
-  await page.mouse.click(x, y);
+}
+
+async function tik(page: Page, fx: number, fy: number, vinger = false): Promise<void> {
+  const [x, y] = await schermPunt(page, fx, fy);
+  if (vinger) await page.touchscreen.tap(x, y);
+  else await page.mouse.click(x, y);
 }
 
 async function gereedschap(page: Page, naam: string): Promise<void> {
@@ -161,6 +166,27 @@ test('een regenpijp hoort automatisch bij het dichtstbijzijnde dak', async ({ pa
   await expect(rijen.nth(1).locator('td').nth(2)).toHaveText('A');
 });
 
+test('de gum staat er pas als er iets gekozen is, en in kiesmodus wordt de muis een handje boven een tekening', async ({ page }) => {
+  await openKaart(page);
+  await gereedschap(page, 'regenpijp');
+  await tik(page, 0.5, 0.5);
+  const cursor = async (fx: number, fy: number) => {
+    await page.mouse.move(...(await schermPunt(page, fx, fy)));
+    return page.locator('.qa-tekenvlak').evaluate((el) => getComputedStyle(el).cursor);
+  };
+  expect(await cursor(0.5, 0.5)).toBe('auto');
+
+  await gereedschap(page, 'kies');
+  await expect(page.locator('.qa-verwijder')).toHaveCount(0);
+  expect(await cursor(0.5, 0.5)).toBe('pointer');
+  expect(await cursor(0.2, 0.2)).toBe('auto');
+
+  await tik(page, 0.5, 0.5);
+  await expect(page.locator('.qa-verwijder')).toBeVisible();
+  await tik(page, 0.2, 0.2);
+  await expect(page.locator('.qa-verwijder')).toHaveCount(0);
+});
+
 test('een regenpijp met ingevulde gegevens verwijderen vraagt bevestiging, en ongedaan maken brengt alles terug', async ({ page }) => {
   const id = await openKaart(page);
   await gereedschap(page, 'regenpijp');
@@ -172,7 +198,7 @@ test('een regenpijp met ingevulde gegevens verwijderen vraagt bevestiging, en on
 
   await openTekenaar(page, 'kaart');
   await tik(page, 0.5, 0.5);
-  await expect(page.locator('.qa-verwijder')).toBeEnabled();
+  await expect(page.locator('.qa-verwijder')).toBeVisible();
   await page.keyboard.press('Delete');
   await expect(page.locator('.qa-bevestig')).toContainText('Regenpijp A verwijderen?');
   await page.locator('.qa-bevestig .qa-nee').click();
@@ -228,8 +254,9 @@ test('op een gewone foto zijn alleen pijl en tekst te tekenen, en een lege tekst
   await slot.locator('.qa-foto-invoer').setInputFiles({ name: 'tuin.png', mimeType: 'image/png', buffer: PNG });
   await openTekenaar(page, 'tuinsituatie');
 
-  await expect(page.locator('.qa-gereedschap-pijl')).toBeVisible();
-  await expect(page.locator('.qa-gereedschap-tekst')).toBeVisible();
+  await expect(page.locator('.qa-gereedschap-pijl .bi-arrow-up-right')).toBeVisible();
+  await expect(page.locator('.qa-gereedschap-tekst')).toHaveText('T');
+  await expect(page.locator('.qa-tekenaar [aria-label="Inzoomen"], .qa-tekenaar [aria-label="Uitzoomen"]')).toHaveCount(0);
   for (const g of ['dak', 'tuin', 'regenpijp']) await expect(page.locator(`.qa-gereedschap-${g}`)).toHaveCount(0);
 
   await gereedschap(page, 'tekst');
@@ -243,4 +270,43 @@ test('op een gewone foto zijn alleen pijl en tekst te tekenen, en een lege tekst
 
   const foto = (await serverDossier(page, id)).fotos.find((f) => f.slot === 'tuinsituatie')!;
   expect(foto.annotaties.map((a) => [a.type, a.tekst])).toEqual([['tekst', 'Put']]);
+});
+
+test('een foto op de dossierpagina opent als duimpje in de tekenaar, en wat je tekent wordt opgeslagen', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.locator('.qa-fotoslot-straatfoto .qa-foto-invoer').setInputFiles({ name: 'straat.png', mimeType: 'image/png', buffer: PNG });
+  await expect(page.locator('.qa-fotoslot-straatfoto .qa-foto')).toHaveCount(1);
+  await page.goto(`/dossiers/${id}`);
+  await openTekenaar(page, 'straatfoto', page.locator('.qa-sv-straatfoto .qa-duimen .qa-foto'));
+  await gereedschap(page, 'tekst');
+  await tik(page, 0.5, 0.5);
+  await page.locator('.qa-tekst-invoer').fill('Voordeur');
+  await page.locator('.qa-tekst-invoer').press('Enter');
+  await tekenaarOpgeslagen(page);
+  await sluitTekenaar(page);
+
+  const foto = (await serverDossier(page, id)).fotos.find((f) => f.slot === 'straatfoto')!;
+  expect(foto.annotaties.map((a) => [a.type, a.tekst])).toEqual([['tekst', 'Voordeur']]);
+});
+
+test.describe('op een touchscreen', () => {
+  test.use({ hasTouch: true });
+
+  test('een tik met Tekst opent het tekstvak, dat open blijft tot je OK tikt', async ({ page }) => {
+    await start(page);
+    const id = await nieuwDossier(page, { huurKoop: 'koop' });
+    await page.goto(`/dossiers/${id}/bezoek`);
+    await page.locator('.qa-fotoslot-tuinsituatie .qa-foto-invoer').setInputFiles({ name: 'tuin.png', mimeType: 'image/png', buffer: PNG });
+    await openTekenaar(page, 'tuinsituatie');
+    await gereedschap(page, 'tekst');
+    await tik(page, 0.5, 0.5, true);
+    await page.waitForTimeout(300);
+    await expect(page.locator('.qa-tekst-invoer')).toBeVisible();
+    await page.locator('.qa-tekst-invoer').fill('Put');
+    await page.locator('.qa-tekst-ok').tap();
+    await sluitTekenaar(page);
+    const foto = (await serverDossier(page, id)).fotos.find((f) => f.slot === 'tuinsituatie')!;
+    expect(foto.annotaties.map((a) => [a.type, a.tekst])).toEqual([['tekst', 'Put']]);
+  });
 });

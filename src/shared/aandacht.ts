@@ -1,6 +1,6 @@
 import { datum, dagenSinds, lokaal, isoDatum } from './datum.ts';
 import {
-  STAPPEN, PLAN_SJABLONEN, SUBSIDIE_SJABLONEN, afspraakDatum, corporatieNaam, eersteVerzending, huidigeStap, intakeOntbreekt,
+  STAPPEN, PLAN_SJABLONEN, afspraakDatum, corporatieNaam, huidigeStap, intakeOntbreekt,
   laatsteVerzending, str, type Stap,
 } from './status.ts';
 import type { Dossier, Gebruiker, Ontvanger } from './types.ts';
@@ -41,8 +41,8 @@ export interface LigtStilRegel {
 }
 
 export const LIGT_STIL_REGELS: LigtStilRegel[] = [
-  { stap: 'intake', wanneer: `> ${DREMPELS.intake} dagen sinds aangemaakt`, tekst: 'Intake al {n} dagen open. Nog nodig: {ontbrekende velden}.' },
-  { stap: 'bezoeker', wanneer: `> ${DREMPELS.bezoeker} dagen sinds de eerste subsidiemail`, tekst: 'Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?' },
+  { stap: 'intake', wanneer: `> ${DREMPELS.intake} dagen sinds aangemaakt`, tekst: 'Intake al {n} dagen open. Nog niet ingevuld: {ontbrekende velden}.' },
+  { stap: 'bezoeker', wanneer: `> ${DREMPELS.bezoeker} dagen sinds de intake compleet is`, tekst: 'Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?' },
   { stap: 'afspraak', wanneer: `> ${DREMPELS.afspraak} dagen sinds de bezoeker is toegewezen`, tekst: '{bezoeker} heeft na {n} dagen nog geen afspraak gepland.' },
   { stap: 'bezoek', wanneer: `> ${DREMPELS.bezoek} dagen na de afspraak; nooit zolang de afspraak in de toekomst ligt`, tekst: 'Afspraak was op {datum}, maar het bezoek is niet afgerond. Doorgegaan?' },
   { stap: 'plan', wanneer: `> ${DREMPELS.plan} dagen sinds bezoek afgerond`, tekst: 'Bezoek was {n} dagen geleden; plan nog niet klaar voor controle.' },
@@ -117,7 +117,7 @@ export function kloptNiet(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Da
 function startVan(d: Dossier, s: Stap): string | Date | null {
   switch (s.key) {
     case 'intake': return d.created_at;
-    case 'bezoeker': { const v = eersteVerzending(d, SUBSIDIE_SJABLONEN); return v ? v.created_at : null; }
+    case 'bezoeker': return d.intake_afgerond_at;
     case 'afspraak': return d.bezoeker_toegewezen_at;
     case 'bezoek': return afspraakDatum(d);
     case 'plan': return d.bezoek_afgerond_at;
@@ -141,7 +141,10 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
   let tekst: string | null = null;
   switch (s.key) {
     case 'intake':
-      if (n > DREMPELS.intake) tekst = `Intake al ${n} dagen open. Nog nodig: ${intakeOntbreekt(d).join(', ')}.`;
+      if (n > DREMPELS.intake) {
+        const mist = intakeOntbreekt(d);
+        tekst = `Intake al ${n} dagen open.${mist.length ? ` Nog niet ingevuld: ${mist.join(', ')}.` : ' Nog niet als compleet gemarkeerd.'}`;
+      }
       break;
     case 'bezoeker':
       if (n > DREMPELS.bezoeker) tekst = `Al ${n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?`;

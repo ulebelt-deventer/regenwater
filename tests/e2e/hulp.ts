@@ -94,8 +94,11 @@ export async function vul(page: Page, naam: string, waarde: string): Promise<voi
   await veld(page, naam).locator('.qa-invoer').fill(waarde);
 }
 
+// Radio buttons, or the dropdown of a field with a long option list.
 export async function kies(page: Page, naam: string, optie: string): Promise<void> {
-  await veld(page, naam).locator(`.qa-optie-${optie}`).check();
+  const lijst = veld(page, naam).locator('select.qa-invoer');
+  if (await lijst.count()) await lijst.selectOption(optie);
+  else await veld(page, naam).locator(`.qa-optie-${optie}`).check();
 }
 
 // Sends the open mail pop-up as it is, or marks it as sent by hand; waits until it closes.
@@ -141,22 +144,24 @@ export async function nieuwDossier(page: Page, opts: { huurKoop: 'huur' | 'koop'
 
   await page.locator('.qa-adres-zoek').fill('Walstraat 74');
   await page.locator('.qa-adres-suggestie').first().click();
-  await expect(page.locator('.qa-adres-gekozen')).toContainText(ADRES);
+  await expect(page.locator('.qa-adres-gekozen')).toHaveText('Walstraat 74, 7411GK Deventer');
   await vul(page, 'bewoner_naam', 'Bea Bewoner');
   await vul(page, 'bewoner_email', 'bea@example.org');
   await kies(page, 'huur_koop', opts.huurKoop);
-  if (opts.huurKoop === 'huur') await veld(page, 'woningeigenaar').locator(`.qa-optie-${opts.corporatie ?? 'Ieder1'}`).check();
+  if (opts.huurKoop === 'huur') await kies(page, 'woningeigenaar', opts.corporatie ?? 'Ieder1');
   await kies(page, 'woningtype', 'tussenwoning');
   await kies(page, 'rioolstelsel', opts.riool ?? 'gemengd');
   await opslagKlaar(page);
   return id;
 }
 
-// The rest of the intake: the subsidie mail, after which the intake is complete.
+// The rest of the intake: the subsidie mail, then "Intake is compleet", which lands on the dossier.
 export async function subsidieMail(page: Page, huurKoop: 'huur' | 'koop'): Promise<void> {
   await mail(page, `subsidie_${huurKoop}`);
   await expect(page.locator('.qa-subsidiemail .qa-subsidie-verstuurd')).toBeVisible();
-  await expect(page.locator('.qa-intake-compleet')).toBeVisible();
+  await expect(page.locator('.qa-intake-ontbreekt')).toHaveCount(0);
+  await page.locator('.qa-intake-klaar').click();
+  await expect(page).toHaveURL(/\/dossiers\/\d+#sectie-bezoeker$/);
 }
 
 // Picks a user in the bezoeker/uitvoerder dropdown (whose search field gets the focus on opening); the mail pop-up that follows is sent or cancelled.

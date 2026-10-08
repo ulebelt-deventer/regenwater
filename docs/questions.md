@@ -41,3 +41,4 @@
 - Are you comfortable with this app code being open-source? Just the source code on Github, not any database content, user data, or confidential details.
 - Rioolkaart: it looks like some houses in Olst/Wijhe have gescheiden riool but are marked as toch subsidiabel. Is this common, should we count this as subsidizable for the purposes of the app?
 - You'll want to review each of the email templates and fill in, for example, the "More information" link that's in the email sent to bewoners when they're eligible for subsidy.
+- Can you still do work with a household that wants a rain capture system, even if they don't get a subsidy for it? or do we immediately close dossiers that don't have a subsidy available?

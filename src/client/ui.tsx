@@ -59,9 +59,17 @@ export function Modal(props: { titel: string; onSluit: () => void; children: JSX
   const esc = (e: KeyboardEvent) => e.key === 'Escape' && props.onSluit();
   onMount(() => document.addEventListener('keydown', esc));
   onCleanup(() => document.removeEventListener('keydown', esc));
+  // Only a press that also began on the backdrop closes: the click after a touch tap lands on a pop-up that the tap itself just opened.
+  let opAchtergrond = false;
   return (
     <Portal>
-      <div class={`modal d-block ${props.class ?? ''}`} tabindex="-1" role="dialog" onClick={(e) => e.target === e.currentTarget && props.onSluit()}>
+      <div
+        class={`modal d-block ${props.class ?? ''}`}
+        tabindex="-1"
+        role="dialog"
+        onPointerDown={(e) => (opAchtergrond = e.target === e.currentTarget)}
+        onClick={(e) => e.target === e.currentTarget && opAchtergrond && props.onSluit()}
+      >
         <div class={`modal-dialog ${props.groot ? 'modal-lg' : ''}`}>
           <div class="modal-content">
             <div class="modal-header">
