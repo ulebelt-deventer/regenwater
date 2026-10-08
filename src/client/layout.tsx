@@ -28,6 +28,9 @@ function Navbar() {
           <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo d-none d-md-block" />
           <span class="wordmark d-none d-md-inline">Regenwater</span>
         </A>
+        <Show when={s().staging}>
+          <span class="badge text-bg-warning qa-staging-label">TEST</span>
+        </Show>
         <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
           <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>

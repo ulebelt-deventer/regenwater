@@ -5,6 +5,7 @@ import { ApiFout, get } from './api.ts';
 export interface Sessie {
   ik: Gebruiker; // whose view this is (the klusser during "Inloggen als")
   actor: Gebruiker | null; // the admin behind "Inloggen als", else null
+  staging: boolean;
 }
 
 const [sessie, setSessie] = createSignal<Sessie | null>(null);
@@ -21,9 +22,9 @@ export function zetServerTijd(iso: string): void {
 
 export async function laadSessie(): Promise<Sessie | null> {
   try {
-    const me = await get<{ ik: Gebruiker; actor: Gebruiker | null; nu: string }>('/api/auth/me');
+    const me = await get<{ ik: Gebruiker; actor: Gebruiker | null; nu: string; staging: boolean }>('/api/auth/me');
     zetServerTijd(me.nu);
-    setSessie({ ik: me.ik, actor: me.actor });
+    setSessie({ ik: me.ik, actor: me.actor, staging: me.staging });
   } catch (e) {
     if (!(e instanceof ApiFout && e.status === 401)) throw e;
     setSessie(null);

@@ -2,6 +2,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { leesConfig } from './config.ts';
 import { MailgunMailer } from './mail.ts';
 
+describe('STAGING', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('is off when unset, empty or blank, and on for any other value', () => {
+    expect(leesConfig().staging).toBe(false);
+    for (const leeg of ['', '  ']) {
+      vi.stubEnv('STAGING', leeg);
+      expect(leesConfig().staging).toBe(false);
+    }
+    vi.stubEnv('STAGING', '1');
+    expect(leesConfig().staging).toBe(true);
+  });
+});
+
 describe('MAILGUN_REGIO', () => {
   let urls: string[];
   beforeEach(() => {

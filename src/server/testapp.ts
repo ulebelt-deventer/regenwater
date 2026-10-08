@@ -27,7 +27,7 @@ export function testApp(): TestApp {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'regenton-test-'));
   const config: Config = {
     modus: 'test', basisUrl: 'https://regenton.test', dataDir, fotoDir: path.join(dataDir, 'fotos'), emailDir: path.join(dataDir, 'emails'),
-    mailgun: null, afzender: 'Test <test@example.org>', healthcheckUrl: null,
+    mailgun: null, afzender: 'Test <test@example.org>', healthcheckUrl: null, staging: false,
   };
   fs.mkdirSync(config.fotoDir);
   const klok = new VerstelbareKlok();

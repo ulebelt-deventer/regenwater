@@ -165,7 +165,7 @@ export function authRoutes(app: Hono<Env>, ctx: Ctx): void {
   app.get('/api/auth/me', (c) => {
     const ik = c.get('ik');
     const actor = c.get('actor');
-    return c.json({ ik, actor: actor.id === ik.id ? null : actor, nu: ctx.klok.iso() });
+    return c.json({ ik, actor: actor.id === ik.id ? null : actor, nu: ctx.klok.iso(), staging: ctx.config.staging });
   });
 
   // Registered before /als/:id, which would otherwise match "stop".

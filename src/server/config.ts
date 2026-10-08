@@ -11,6 +11,7 @@ export interface Config {
   mailgun: { sleutel: string; domein: string; api: string } | null;
   afzender: string; // From address
   healthcheckUrl: string | null;
+  staging: boolean; // A test or demo install; the navbar says TEST.
 }
 
 function verplicht(naam: string): string {
@@ -41,5 +42,6 @@ export function leesConfig(): Config {
     mailgun: productie ? { sleutel: verplicht('MAILGUN_API_KEY'), domein: verplicht('MAILGUN_DOMEIN'), api: mailgunApi() } : null,
     afzender: productie ? verplicht('MAIL_AFZENDER') : 'Ulebelt Regenwater <regenwater@example.org>',
     healthcheckUrl: process.env.HEALTHCHECK_URL ?? null,
+    staging: (process.env.STAGING ?? '').trim() !== '',
   };
 }
