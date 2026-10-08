@@ -21,14 +21,16 @@ rsync -az --delete --delay-updates --rsync-path="${RSYNC_PATH}" -e "ssh -p ${SSH
   "${REPO_ROOT}/" "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/"
 
 echo "==> Permissions + runtime deps"
-remote_sudo "env SERVICE_USER='${SERVICE_USER}' SERVICE_NAME='${SERVICE_NAME}' APP_DIR='${APP_DIR}' BROWSERS_DIR='${BROWSERS_DIR}' bash -s" <<'REMOTE'
+remote_sudo "env SERVICE_USER='${SERVICE_USER}' SERVICE_NAME='${SERVICE_NAME}' APP_DIR='${APP_DIR}' BROWSERS_DIR='${BROWSERS_DIR}' NODE_BIN='${NODE_BIN}' bash -s" <<'REMOTE'
 set -euo pipefail
+# npm and npx resolve node through PATH; the wrong one builds better-sqlite3 and sharp for the wrong Node ABI.
+export PATH="$(dirname "${NODE_BIN}"):${PATH}"
 chown -R "${SERVICE_USER}:${SERVICE_USER}" "${APP_DIR}"
 find "${APP_DIR}" -path "${APP_DIR}/node_modules" -prune -o -type d -exec chmod 755 {} + -o -type f -exec chmod 644 {} +
 cd "${APP_DIR}"
 if ! cmp -s package-lock.json node_modules/.deployed-lock; then
   install -d -o "${SERVICE_USER}" -g "${SERVICE_USER}" "/tmp/${SERVICE_NAME}-home" "/tmp/${SERVICE_NAME}-npm-cache"
-  as_app() { runuser -u "${SERVICE_USER}" -- env HOME="/tmp/${SERVICE_NAME}-home" NPM_CONFIG_CACHE="/tmp/${SERVICE_NAME}-npm-cache" PLAYWRIGHT_BROWSERS_PATH="${BROWSERS_DIR}" "$@"; }
+  as_app() { runuser -u "${SERVICE_USER}" -- env PATH="${PATH}" HOME="/tmp/${SERVICE_NAME}-home" NPM_CONFIG_CACHE="/tmp/${SERVICE_NAME}-npm-cache" PLAYWRIGHT_BROWSERS_PATH="${BROWSERS_DIR}" "$@"; }
   as_app npm ci --omit=dev --no-audit --no-fund
   # Chromium's system libraries need root; the browser itself goes where the unit's PLAYWRIGHT_BROWSERS_PATH points.
   npx playwright install-deps chromium
@@ -41,7 +43,7 @@ REMOTE
 
 echo "==> Restart"
 remote_sudo systemctl restart "${SERVICE_NAME}.service"
-remote_sudo systemctl start "${SERVICE_NAME}-litestream.service"
+if [ "${BACKUPS}" = s3 ]; then remote_sudo systemctl start "${SERVICE_NAME}-litestream.service"; fi
 health_ok=0
 for attempt in $(seq 1 20); do
   if health_body="$(curl -fsS --max-time 5 "https://${DOMAIN}/health" 2>/dev/null)"; then

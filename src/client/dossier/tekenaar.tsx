@@ -4,8 +4,7 @@ import { TEKST_PX, afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotati
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
 import { del } from '../api.ts';
-import { opgeslagenOm, opslagStatus } from '../opslag.ts';
-import { Modal, Opgeslagen, bevestig, probeer } from '../ui.tsx';
+import { Modal, bevestig, probeer } from '../ui.tsx';
 import { useDossier } from './staat.ts';
 
 type Pt = [number, number];
@@ -401,8 +400,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
           <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" aria-label="Ongedaan maken" title="Ongedaan maken" disabled={!geschiedenis().length} onClick={ongedaan}><i class="bi bi-arrow-counterclockwise" aria-hidden="true" /></button>
           <button type="button" class="btn btn-sm btn-outline-danger qa-foto-verwijderen" onClick={() => void fotoVerwijderen()}><i class="bi bi-trash3 me-1" aria-hidden="true" />Foto<span class="d-none d-sm-inline"> verwijderen</span></button>
         </Show>
-        <span class="ms-auto small d-none d-sm-inline"><Opgeslagen status={opslagStatus()} om={opgeslagenOm()} /></span>
-        <button type="button" class="btn btn-sm btn-success ms-auto ms-sm-0 qa-tekenaar-sluiten" aria-label="Sluiten" onClick={() => props.onSluit()}>✕</button>
+        <button type="button" class="btn btn-sm btn-success ms-auto qa-tekenaar-sluiten" aria-label="Sluiten" onClick={() => props.onSluit()}>✕</button>
       </div>
       <div class="hint qa-hint">
         {hint()}

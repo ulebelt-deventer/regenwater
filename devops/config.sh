@@ -12,6 +12,11 @@ SERVICE_NAME=regenton
 SERVICE_USER=regenton
 APP_PORT=3000
 NODE_MAJOR=26
+# The Node the units and npm run. A shared host whose system Node is older points this at a private install.
+NODE_BIN="${NODE_BIN:-/usr/bin/node}"
+# s3: Litestream, the photo sync and the daily backup check. none: no backups, for a throwaway prototype host.
+BACKUPS="${BACKUPS:-s3}"
+case "${BACKUPS}" in s3|none) ;; *) echo "ERROR: BACKUPS must be s3 or none, got '${BACKUPS}'." >&2; exit 1 ;; esac
 REMOTE_DIR="/srv/${SERVICE_NAME}"
 # Code is replaced on every deploy; data/ (SQLite and data/fotos) is never touched by rsync.
 APP_DIR="${REMOTE_DIR}/app"

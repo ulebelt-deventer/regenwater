@@ -104,7 +104,7 @@ function FeedbackModal(props: { onSluit: () => void }) {
       }
     >
       <p class="text-muted small">Wat werkt er niet, wat is onduidelijk, of wat zou je graag anders zien? De beheerders en de ontwikkelaar krijgen je bericht, met de pagina waar je nu bent.</p>
-      <textarea class="form-control qa-feedback-tekst" rows="6" value={tekst()} onInput={(e) => setTekst(e.currentTarget.value)} />
+      <textarea ref={(el) => requestAnimationFrame(() => el.focus())} class="form-control qa-feedback-tekst" rows="6" value={tekst()} onInput={(e) => setTekst(e.currentTarget.value)} />
     </Modal>
   );
 }

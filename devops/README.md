@@ -20,8 +20,10 @@ One Node process (`dist/server/main.js`) serves the SPA, the API, photos and PDF
 4. `bash devops/host-setup.sh`, then `bash devops/provision.sh`.
 5. `cp devops/production.env.example devops/production.env`, fill it in, then `bash devops/push-env.sh`.
 6. `bash devops/deploy.sh`.
-7. The first admin: `ssh <host> "cd /srv/regenton/app && sudo -u regenton env \$(sudo cat /etc/regenton.env | xargs) APP_MODUS=production DATA_DIR=/srv/regenton/data node dist/server/jobs.js beheerder 'Naam' naam@example.org"`. Everyone else is added in the app.
+7. The first admin, run with the unit's user and env file: `ssh <host> "systemd-run --pipe --wait --quiet -p User=regenton -p WorkingDirectory=/srv/regenton/app -p EnvironmentFile=/etc/regenton.env -E APP_MODUS=production -E DATA_DIR=/srv/regenton/data -E TZ=Europe/Amsterdam <NODE_BIN> dist/server/jobs.js beheerder 'Naam' naam@example.org"`. Everyone else is added in the app.
 8. Once before launch: restore to a fresh VPS (host-setup, provision, push-env, then `litestream restore -config /etc/regenton-litestream.yml /srv/regenton/data/app.db` and `rclone copy` of `fotos/` before the first deploy) and write down what differed.
+
+**Shared host** (the prototype on racknerd1, which already runs other apps behind one Caddy): skip `host-setup.sh` and step 2, and set `NODE_BIN=/opt/node26/bin/node` and `BACKUPS=none` in `deploy.env`. `provision.sh` adds only `/etc/caddy/sites/regenton.caddy` and `/srv/registry/regenton.app`. Check that port 3000 is still free in `/srv/registry/*.app`.
 
 ## Operate
 

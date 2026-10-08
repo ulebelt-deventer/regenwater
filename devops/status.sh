@@ -4,7 +4,7 @@
 require_host
 
 # One SSH round trip prints KEY=value facts; epochs are computed on the host so clock skew can't matter.
-facts="$(remote_sudo "env SERVICE_NAME='${SERVICE_NAME}' APP_PORT='${APP_PORT}' APP_DIR='${APP_DIR}' DATA_DIR='${DATA_DIR}' bash -s" <<'REMOTE'
+facts="$(remote_sudo "env SERVICE_NAME='${SERVICE_NAME}' APP_PORT='${APP_PORT}' APP_DIR='${APP_DIR}' DATA_DIR='${DATA_DIR}' NODE_BIN='${NODE_BIN}' bash -s" <<'REMOTE'
 epoch() { [ -n "$1" ] && [ "$1" != n/a ] && date -d "$1" +%s 2>/dev/null || true; }
 prop() { systemctl show "$1" -p "$2" --value; }
 echo "NOW=$(date +%s)"
@@ -15,7 +15,7 @@ echo "MEM_CUR=$(prop "${SERVICE_NAME}" MemoryCurrent)"
 echo "MEM_MAX=$(prop "${SERVICE_NAME}" MemoryMax)"
 echo "LISTEN=$(ss -tln | awk -v p=":${APP_PORT}\$" '$4 ~ p {print $4}' | paste -sd, -)"
 echo "HEALTH_LOCAL=$(curl -fsS --max-time 5 "http://127.0.0.1:${APP_PORT}/health" 2>/dev/null)"
-echo "NODE=$(node -v 2>/dev/null)"
+echo "NODE=$("${NODE_BIN}" -v 2>/dev/null)"
 echo "DEPLOYED=$(stat -c %Y "${APP_DIR}/dist/client/index.html" 2>/dev/null)"
 echo "DB_BYTES=$(stat -c %s "${DATA_DIR}/app.db" 2>/dev/null)"
 echo "FOTOS=$(du -sh "${DATA_DIR}/fotos" 2>/dev/null | cut -f1)"
@@ -91,10 +91,12 @@ else row OK "Errors (24h)" "none"; fi
 
 if [ -n "${S_DB_BYTES}" ]; then row OK Database "$(( S_DB_BYTES / 1024 ))KB, photos ${S_FOTOS:-0}"; else row FAIL Database "missing: ${DATA_DIR}/app.db"; fi
 
-if [ "${S_LITESTREAM}" = active/running ]; then row OK Litestream "${S_LITESTREAM}"; else row FAIL Litestream "${S_LITESTREAM}; see devops/logs.sh"; fi
-
 check_val="last $(ago "${S_CHECK_LAST}"), next in $(( (${S_CHECK_NEXT:-$S_NOW} - S_NOW) / 3600 ))h"
-if [ -z "${S_CHECK_LAST}" ]; then row WARN "Backup check" "never ran (${check_val})"
+if [ "${BACKUPS}" = none ]; then row WARN Backups "none (BACKUPS=none in deploy.env)"
+elif [ "${S_LITESTREAM}" != active/running ]; then row FAIL Litestream "${S_LITESTREAM}; see devops/logs.sh"
+else row OK Litestream "${S_LITESTREAM}"; fi
+if [ "${BACKUPS}" = none ]; then :
+elif [ -z "${S_CHECK_LAST}" ]; then row WARN "Backup check" "never ran (${check_val})"
 elif [ "${S_CHECK_RESULT}" != success ]; then row FAIL "Backup check" "${S_CHECK_RESULT}, ${check_val}"
 elif [ $(( S_NOW - S_CHECK_LAST )) -gt 180000 ]; then row FAIL "Backup check" "${check_val}"
 else row OK "Backup check" "${check_val}"; fi

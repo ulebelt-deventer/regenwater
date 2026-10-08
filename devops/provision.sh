@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Idempotent; rerun whenever the units change. System user, directories, the app and Litestream services, the digest, backup-check and log-archive timers, and the Caddy site.
+# Idempotent; rerun whenever the units change. System user, directories, the app service, the digest and log-archive timers, Litestream and the backup-check timer (BACKUPS=s3), the Caddy site in /etc/caddy/sites, and the host's app registry if it has one.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
 echo "==> Provisioning ${SERVICE_NAME}: ${DOMAIN} -> 127.0.0.1:${APP_PORT}, ${REMOTE_DIR}"
-remote_sudo "env SERVICE_NAME='${SERVICE_NAME}' SERVICE_USER='${SERVICE_USER}' DOMAIN='${DOMAIN}' APP_PORT='${APP_PORT}' REMOTE_DIR='${REMOTE_DIR}' APP_DIR='${APP_DIR}' DATA_DIR='${DATA_DIR}' BROWSERS_DIR='${BROWSERS_DIR}' LOG_DIR='${LOG_DIR}' ENV_FILE='${ENV_FILE}' bash -s" <<'REMOTE'
+remote_sudo "env SERVICE_NAME='${SERVICE_NAME}' SERVICE_USER='${SERVICE_USER}' DOMAIN='${DOMAIN}' APP_PORT='${APP_PORT}' REMOTE_DIR='${REMOTE_DIR}' APP_DIR='${APP_DIR}' DATA_DIR='${DATA_DIR}' BROWSERS_DIR='${BROWSERS_DIR}' LOG_DIR='${LOG_DIR}' ENV_FILE='${ENV_FILE}' NODE_BIN='${NODE_BIN}' BACKUPS='${BACKUPS}' bash -s" <<'REMOTE'
 set -euo pipefail
+"${NODE_BIN}" -v >/dev/null || { echo "ERROR: NODE_BIN ${NODE_BIN} does not run" >&2; exit 1; }
+grep -Fq 'import /etc/caddy/sites/*.caddy' /etc/caddy/Caddyfile || { echo "ERROR: /etc/caddy/Caddyfile does not import /etc/caddy/sites/*.caddy; run host-setup.sh" >&2; exit 1; }
 if ! id -u "${SERVICE_USER}" >/dev/null 2>&1; then
   adduser --system --group --home "${REMOTE_DIR}" --no-create-home --shell /usr/sbin/nologin "${SERVICE_USER}"
 fi
@@ -42,7 +44,7 @@ Group=${SERVICE_USER}
 WorkingDirectory=${APP_DIR}
 # Required: the unit refuses to start until push-env.sh has written it.
 ${APP_ENV}
-ExecStart=/usr/bin/node dist/server/main.js
+ExecStart=${NODE_BIN} dist/server/main.js
 Restart=on-failure
 RestartSec=2
 ${HARDENING}
@@ -53,6 +55,7 @@ MemoryMax=1200M
 WantedBy=multi-user.target
 UNIT
 
+if [ "${BACKUPS}" = s3 ]; then
 cat > "/etc/${SERVICE_NAME}-litestream.yml" <<YML
 # Litestream expands the \$S3_* variables from ${ENV_FILE}.
 dbs:
@@ -85,6 +88,7 @@ ${HARDENING}
 [Install]
 WantedBy=multi-user.target
 UNIT
+fi
 
 cat > "/etc/systemd/system/${SERVICE_NAME}-digest.service" <<UNIT
 [Unit]
@@ -96,7 +100,7 @@ User=${SERVICE_USER}
 Group=${SERVICE_USER}
 WorkingDirectory=${APP_DIR}
 ${APP_ENV}
-ExecStart=/usr/bin/node dist/server/jobs.js digest
+ExecStart=${NODE_BIN} dist/server/jobs.js digest
 ${HARDENING}
 UNIT
 cat > "/etc/systemd/system/${SERVICE_NAME}-digest.timer" <<UNIT
@@ -111,6 +115,7 @@ Persistent=true
 WantedBy=timers.target
 UNIT
 
+if [ "${BACKUPS}" = s3 ]; then
 # Proves the backup works: syncs the photos, restores the latest replica and checks it against the live database. Pings Healthchecks check 2 either way.
 install -m 755 /dev/stdin "/usr/local/sbin/${SERVICE_NAME}-backup-check" <<SCRIPT
 #!/bin/bash
@@ -123,7 +128,7 @@ tmp="\$(mktemp -d)"
 trap 'rm -rf "\${tmp}"' EXIT
 if rclone sync "${DATA_DIR}/fotos" "backup:\${S3_BUCKET}/fotos" \\
   && litestream restore -config "/etc/${SERVICE_NAME}-litestream.yml" -o "\${tmp}/app.db" "${DATA_DIR}/app.db" \\
-  && node dist/server/jobs.js backupcheck "\${tmp}/app.db"; then
+  && "${NODE_BIN}" dist/server/jobs.js backupcheck "\${tmp}/app.db"; then
   ping ""
 else
   ping /fail
@@ -155,6 +160,7 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 UNIT
+fi
 
 # journald is size-capped, so warnings and errors are copied out daily into files nothing deletes.
 install -m 755 /dev/stdin "/usr/local/sbin/${SERVICE_NAME}-archive-logs" <<'SCRIPT'
@@ -192,10 +198,15 @@ WantedBy=timers.target
 UNIT
 
 systemctl daemon-reload
-systemctl enable "${SERVICE_NAME}.service" "${SERVICE_NAME}-litestream.service"
-systemctl enable --now "${SERVICE_NAME}-digest.timer" "${SERVICE_NAME}-backup-check.timer" "${SERVICE_NAME}-archive-logs.timer"
+systemctl enable "${SERVICE_NAME}.service"
+systemctl enable --now "${SERVICE_NAME}-digest.timer" "${SERVICE_NAME}-archive-logs.timer"
+if [ "${BACKUPS}" = s3 ]; then
+  systemctl enable "${SERVICE_NAME}-litestream.service"
+  systemctl enable --now "${SERVICE_NAME}-backup-check.timer"
+fi
 
-cat > /etc/caddy/Caddyfile <<CADDY
+install -d -m 755 /etc/caddy/sites
+cat > "/etc/caddy/sites/${SERVICE_NAME}.caddy" <<CADDY
 # Written by devops/provision.sh. One Node process serves the SPA, API, photos and PDFs.
 ${DOMAIN} {
 	encode zstd gzip
@@ -208,5 +219,12 @@ ${DOMAIN} {
 CADDY
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 systemctl reload caddy
+# Shared hosts keep a registry of their apps (see /srv/README.md there).
+if [ -d /srv/registry ]; then
+  printf '%s\n' "# ${SERVICE_NAME} -- registered by provision.sh. Discover all apps with: cat /srv/registry/*.app" \
+    "SERVICE_NAME=${SERVICE_NAME}" "DOMAIN=${DOMAIN}" "APP_PORT=${APP_PORT}" "SERVICE_USER=${SERVICE_USER}" "REMOTE_DIR=${REMOTE_DIR}" \
+    "UNIT=${SERVICE_NAME}.service" "CADDY_SITE=/etc/caddy/sites/${SERVICE_NAME}.caddy" "ENV_FILE=${ENV_FILE}" "DATABASE=${DATA_DIR}/app.db" \
+    "BACKUPS=${BACKUPS}" "NODE=${NODE_BIN}" "PROVISIONED=$(date -u +%FT%TZ)" > "/srv/registry/${SERVICE_NAME}.app"
+fi
 echo "==> Provisioned. Next: devops/push-env.sh, then devops/deploy.sh"
 REMOTE

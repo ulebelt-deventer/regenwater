@@ -16,6 +16,14 @@ export async function post<T = Record<string, unknown>>(r: APIRequestContext, pa
   return ok<T>(await r.post(pad, { data }));
 }
 
+// Sets dossier fields through the API, one PATCH per field.
+export async function zet(page: Page, id: number, velden: Record<string, unknown>): Promise<void> {
+  for (const [key, value] of Object.entries(velden)) {
+    const res = await page.request.patch(`/api/dossiers/${id}`, { data: { key, value } });
+    if (!res.ok()) throw new Error(`${key}: ${res.status()} ${await res.text()}`);
+  }
+}
+
 // Empties the database (which reseeds the standard materials), mailbox and recorded documents, sets the clock to BEGIN and logs in a fresh admin.
 export async function start(page: Page): Promise<{ beheerderId: number; klusserId: number }> {
   const r = page.request;

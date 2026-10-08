@@ -74,14 +74,17 @@ function Kop() {
         <h1 class="h3 mb-0 flex-grow-1 qa-dossier-titel">{adresRegel(s.d)}</h1>
         <Show when={s.beheerder()}>
           <Dropdown knop="" label="Acties" knopClass="btn btn-outline-primary btn-sm qa-dossier-menu" rechts>
-            <Show when={!s.d.gesloten_at} fallback={<button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}><i class="bi bi-unlock me-2" aria-hidden="true" />Dossier heropenen</button>}>
-              <button type="button" class="dropdown-item qa-menu-sluiten" onClick={() => setModal('sluiten')}><i class="bi bi-lock me-2" aria-hidden="true" />Dossier sluiten</button>
+            <Show when={s.d.gesloten_at}>
+              <button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}><i class="bi bi-unlock me-2" aria-hidden="true" />Dossier heropenen</button>
             </Show>
             <Show when={stil()}>
               <button type="button" class="dropdown-item qa-menu-uitstellen" onClick={() => setModal('uitstellen')}><i class="bi bi-alarm me-2" aria-hidden="true" />Aandacht uitstellen</button>
             </Show>
             <A class="dropdown-item qa-menu-activiteit" href={`/dossiers/${s.id}/activiteit`}><i class="bi bi-clock-history me-2" aria-hidden="true" />Alle activiteit</A>
             <div class="dropdown-divider" />
+            <Show when={!s.d.gesloten_at}>
+              <button type="button" class="dropdown-item text-warning qa-menu-sluiten" onClick={() => setModal('sluiten')}><i class="bi bi-lock me-2" aria-hidden="true" />Dossier sluiten</button>
+            </Show>
             <button type="button" class="dropdown-item text-danger qa-menu-verwijderen" onClick={() => setModal('verwijderen')}><i class="bi bi-trash3 me-2" aria-hidden="true" />Dossier verwijderen</button>
           </Dropdown>
         </Show>

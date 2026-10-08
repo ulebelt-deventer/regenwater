@@ -1,6 +1,6 @@
 // Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen and regenpijpen, then what was found.
 import { A } from '@solidjs/router';
-import { For, Show } from 'solid-js';
+import { For, Show, createSignal } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
 import { getal, kaartItems, waterberging } from '../../shared/kaart.ts';
 import { ontbrekend } from '../../shared/velden.ts';
@@ -20,6 +20,42 @@ function naarVeld(anker: string) {
   const details = el.closest('details');
   if (details) details.open = true;
   gaNaar(anker);
+}
+
+// window.scrollTo's smooth behaviour has no fixed duration, so this eases over `ms` itself.
+function scrollNaar(y: number, ms: number) {
+  const van = window.scrollY;
+  const start = performance.now();
+  const stap = (nu: number) => {
+    const t = Math.min(1, (nu - start) / ms);
+    const e = t < 0.5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2;
+    // 'instant' overrides Bootstrap's `scroll-behavior: smooth` on :root, which would fight each frame.
+    window.scrollTo({ top: van + (y - van) * e, behavior: 'instant' });
+    if (t < 1) requestAnimationFrame(stap);
+  };
+  requestAnimationFrame(stap);
+}
+
+// One regenpijp as its own accordion. Its header sticks to the top of the screen while you scroll through its fields; tapping it while stuck scrolls back to the start of the section instead of collapsing it.
+function RegenpijpSectie(props: { id: string; label: string }) {
+  const [open, setOpen] = createSignal(true);
+  let item!: HTMLDetailsElement;
+  const tik = (e: MouseEvent) => {
+    const top = item.getBoundingClientRect().top;
+    if (top >= 0) return;
+    e.preventDefault();
+    scrollNaar(window.scrollY + top, 250);
+  };
+  return (
+    <div class="accordion mb-3">
+      <details ref={item} open class="accordion-item qa-regenpijp" onToggle={(e) => setOpen(e.currentTarget.open)}>
+        <summary class="accordion-button fw-semibold qa-regenpijp-kop" classList={{ collapsed: !open() }} onClick={tik}>Regenpijp {props.label}</summary>
+        <div class="accordion-body">
+          <For each={REGENPIJP_VELDEN}>{(v) => <VeldInvoer k={`regenpijp.${props.id}.${v}`} />}</For>
+        </div>
+      </details>
+    </div>
+  );
 }
 
 export function Bezoek() {
@@ -116,16 +152,7 @@ export function Bezoek() {
         <VeldInvoer k="verhard" />
         <VeldInvoer k="tuinsituatie" />
 
-        <For each={items().regenpijpen}>
-          {(r) => (
-            <details open class="border rounded p-2 mb-3 qa-regenpijp">
-              <summary class="fw-semibold">Regenpijp {r.label}</summary>
-              <div class="pt-2">
-                <For each={REGENPIJP_VELDEN}>{(v) => <VeldInvoer k={`regenpijp.${r.id}.${v}`} />}</For>
-              </div>
-            </details>
-          )}
-        </For>
+        <For each={items().regenpijpen}>{(r) => <RegenpijpSectie id={r.id} label={r.label} />}</For>
 
         <VeldInvoer k="hoosbuien" />
         <VeldInvoer k="wensen" />

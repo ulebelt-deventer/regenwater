@@ -36,6 +36,8 @@ if ! command -v caddy >/dev/null 2>&1; then
   apt-get update -y
   apt-get install -y caddy
 fi
+# provision.sh drops the site into /etc/caddy/sites. This replaces the package's welcome-page Caddyfile, so never run host-setup.sh on a shared host.
+printf '%s\n' 'import /etc/caddy/sites/*.caddy' > /etc/caddy/Caddyfile
 systemctl enable --now caddy
 
 if ! command -v litestream >/dev/null 2>&1; then

@@ -27,6 +27,13 @@ test('Feedback toont bij openen meteen de openstaande feedback', async ({ page }
   await expect(page.locator('.qa-feedback-item')).toContainText('De knop is te klein');
 });
 
+test('Feedback geven opent met de cursor in het tekstvak', async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  await page.locator('.qa-feedback').click();
+  await expect(page.locator('.qa-feedback-modal .qa-feedback-tekst')).toBeFocused();
+});
+
 test('Gebruikers staat als eerste in het Beheer-menu', async ({ page }) => {
   await start(page);
   await page.goto('/');

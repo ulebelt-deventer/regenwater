@@ -1,13 +1,6 @@
 // The details page summarises every sub-page field as text, and a done step's Bewerken sits in its section's top right corner.
-import { type Page, expect, test } from '@playwright/test';
-import { nieuwDossier, opslagKlaar, post, start, subsidieMail, veld, wijsToe } from './hulp.ts';
-
-async function zet(page: Page, id: number, velden: Record<string, unknown>): Promise<void> {
-  for (const [key, value] of Object.entries(velden)) {
-    const res = await page.request.patch(`/api/dossiers/${id}`, { data: { key, value } });
-    if (!res.ok()) throw new Error(`${key}: ${res.status()} ${await res.text()}`);
-  }
-}
+import { expect, test } from '@playwright/test';
+import { nieuwDossier, opslagKlaar, post, start, subsidieMail, veld, wijsToe, zet } from './hulp.ts';
 
 test('de samenvattingen tonen alle ingevulde velden van intake, bezoek, plan en uitvoering', async ({ page }) => {
   await start(page);
@@ -100,6 +93,17 @@ test('bij een gescheiden riool zegt de intake waarom straatfoto, kaart en boorpr
   await page.goto(`/dossiers/${id}`);
   await expect(page.locator('.qa-sectie-intake .qa-sv-niet-subsidiabel')).toBeVisible();
   await expect(page.locator('.qa-sectie-intake .qa-sv-straatfoto')).toHaveCount(0);
+});
+
+test('in het actiemenu staat Dossier sluiten in amber onder de streep, vlak boven Verwijderen', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}`);
+  await page.locator('.qa-dossier-menu').click();
+  const sluiten = page.locator('.qa-menu-sluiten');
+  await expect(sluiten).toHaveClass(/text-warning/);
+  await expect(sluiten.locator('xpath=preceding-sibling::*[1]')).toHaveClass(/dropdown-divider/);
+  await expect(sluiten.locator('xpath=following-sibling::*[1]')).toHaveClass(/qa-menu-verwijderen/);
 });
 
 test('de knop naar de sub-pagina staat altijd rechtsboven in de sectie: eerst Invullen, en Bewerken met potlood zodra de intake compleet is', async ({ page }) => {

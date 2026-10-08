@@ -59,7 +59,7 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 
 ## Deployment
 
-Bash scripts adapted from `tmp/devops-SAMPLE`, run from the maintainer's machine over SSH. No Docker, no platform-as-a-service. The shared-host parts of the sample (port registry, private Node per app) are dropped, since this VPS runs only this app.
+Bash scripts adapted from `tmp/devops-SAMPLE`, run from the maintainer's machine over SSH. No Docker, no platform-as-a-service. Production runs only this app; the same scripts also deploy the prototype to the maintainer's shared VPS, where `deploy.env` points at a private Node (`NODE_BIN`) and turns backups off (`BACKUPS=none`), and `host-setup.sh` is skipped.
 
 - `config.sh`: reads the gitignored `deploy.env` (host, domain, app name) and provides the `remote`/`remote_sudo` helpers.
 - `host-setup.sh`: once per VPS. Apt packages, Node, Caddy, fail2ban, unattended-upgrades, swap, timezone, Litestream, rclone.

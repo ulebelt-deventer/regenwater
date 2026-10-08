@@ -76,9 +76,10 @@ async function sluitTekenaar(page: Page): Promise<void> {
   await opslagKlaar(page);
 }
 
-// The drawing tool shows its own save indicator over the page's.
+// The page's corner save indicator stays visible over the drawing tool, which has none of its own.
 async function tekenaarOpgeslagen(page: Page): Promise<void> {
-  await expect(page.locator('.qa-tekenaar .qa-opslag-klaar')).toBeVisible();
+  await expect(page.locator('.qa-tekenaar .qa-opslag-status')).toHaveCount(0);
+  await opslagKlaar(page);
 }
 
 const VIERKANT: [number, number][] = [
@@ -231,7 +232,7 @@ test('een lege regenpijp verwijderen vraagt niets, en de volgende schuiven een l
   await tik(page, 0.7, 0.5);
   await sluitTekenaar(page);
   const pijpen = page.locator('.qa-regenpijp');
-  await expect(pijpen.locator('summary')).toHaveText(['Regenpijp A', 'Regenpijp B', 'Regenpijp C']);
+  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['Regenpijp A', 'Regenpijp B', 'Regenpijp C']);
   await pijpen.nth(2).locator('.qa-veld-regenpijp-waar .qa-invoer').fill('Wadi achterin');
   await opslagKlaar(page);
 
@@ -241,7 +242,7 @@ test('een lege regenpijp verwijderen vraagt niets, en de volgende schuiven een l
   await expect(page.locator('.qa-bevestig')).toHaveCount(0);
   await sluitTekenaar(page);
 
-  await expect(pijpen.locator('summary')).toHaveText(['Regenpijp A', 'Regenpijp B']);
+  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['Regenpijp A', 'Regenpijp B']);
   await expect(pijpen.nth(1).locator('.qa-veld-regenpijp-waar .qa-invoer')).toHaveValue('Wadi achterin');
   expect(await kaart(page, id)).toHaveLength(2);
 });
