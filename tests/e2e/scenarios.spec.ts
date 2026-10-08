@@ -242,7 +242,7 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
   await page.locator('.qa-voorstel-rij .qa-invoer').first().fill('Regenton en wadi in de achtertuin');
   await opslagKlaar(page);
   await naarDossier(page, id);
-  await expect(page.locator('.qa-aandacht')).toContainText('Het plan is gewijzigd op 2 maart 2026, na het versturen naar de woningcorporatie op 2 maart 2026. Stuur het opnieuw, of markeer dat dat niet nodig is.');
+  await expect(page.locator('.qa-aandacht')).toContainText('Plan gewijzigd op 2 maart 2026, na versturen naar de woningcorporatie. Opnieuw sturen?');
   await expect(page.locator('.qa-sectie-versturen .qa-plan-gewijzigd')).toBeVisible();
 
   await page.locator('.qa-wijzigingen').click();
@@ -254,7 +254,7 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
   // 10 days without an answer is not yet Ligt stil.
   await naarDossier(page, id);
   await verschuifDagen(page, 10);
-  await expect(page.locator('.qa-aandacht')).not.toContainText('nog niet gereageerd');
+  await expect(page.locator('.qa-aandacht')).not.toContainText('reageert al');
   await mail(page, 'plan_corporatie');
   await geenAandacht(page);
   await expect(page.locator('.qa-sectie-versturen .qa-verstuurd')).toContainText('12 maart 2026');
@@ -265,7 +265,7 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
   await status(page, 'Plan goedkeuren (huur)');
   await geenAandacht(page);
   await verschuifDagen(page, 5);
-  await expect(page.locator('.qa-aandacht')).toContainText('Ieder1 heeft na 15 dagen nog niet gereageerd op het plan. Tijd om na te bellen?');
+  await expect(page.locator('.qa-aandacht')).toContainText('Ieder1 reageert al 15 dagen niet op het plan. Nabellen?');
 
   await page.locator('.qa-dossier-menu').click();
   await page.locator('.qa-menu-uitstellen').click();
@@ -279,7 +279,7 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
   await verschuifDagen(page, 4);
   await geenAandacht(page);
   await verschuifDagen(page, 1);
-  await expect(page.locator('.qa-aandacht')).toContainText('Ieder1 heeft na 20 dagen nog niet gereageerd');
+  await expect(page.locator('.qa-aandacht')).toContainText('Ieder1 reageert al 20 dagen niet');
 
   await page.locator('.qa-akkoord').click();
   await status(page, 'Uitvoerder toewijzen');

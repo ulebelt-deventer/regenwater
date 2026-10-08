@@ -115,12 +115,12 @@
   - **Status**
     - Volgende stap
       - To the right of this label, a "?" link to the Statussen page, so the app documents its own rules.
-      - Displays the calculated current next step for this record, with one action: a button that opens the step's sub-page ("Intake afronden", "Start bezoek", "Plan van Aanpak afronden", "Uitvoering invullen"), or else a tap that scrolls to the inline section where the step happens (Bezoeker, the afspraak field, Plan versturen & goedkeuring, Uitvoerder, Oplevering).
+      - Displays the calculated current next step for this record, with one action: a button that opens the step's sub-page ("Intake invullen", "Start bezoek", "Plan van Aanpak invullen", "Uitvoering invullen"), or else a tap that scrolls to the inline section where the step happens (Bezoeker, the afspraak field, Plan versturen & goedkeuring, Uitvoerder, Oplevering).
     - Notities
       - a free-form textarea where the admin & klusser can write in whatever notes are relevant.
   - **Intake** (sub-page, admin)
     - *"+ Nieuw dossier" creates the dossier and opens this sub-page.*
-    - On the details page, inline: the compact summary (incl. the bewoner's telefoon as a tap-to-call `tel:` link and e-mail as a `mailto:` link, and whether the eligibility mail was sent), and an "Intake afronden" / "Bewerken" button to the sub-page.
+    - On the details page, inline: the compact summary (incl. the bewoner's telefoon as a tap-to-call `tel:` link and e-mail as a `mailto:` link, and whether the eligibility mail was sent), and an "Intake invullen" / "Bewerken" button to the sub-page.
     - Adres
       - Enter the address in a free-form text input (eg street name, number, plaats; or postcode & number) and the API will suggest the best matching address. Click it to populate that validated address.
       - Autocompletes using the PDOK Locatieserver (`/suggest` while typing, then `/lookup` for the chosen result; `/free?q=` as fallback). Our app stores the validated street name, number, plaats, postcode, `gekoppeld_perceel`, centerpoint in both RD and lat/long systems, and `gemeentenaam`.
@@ -389,39 +389,39 @@
 - Aandacht-criteria page (admins only)
   - Linked from the Beheer dropdown and from each dossier's aandacht banner. Like the Statussen page, generated from the same rules and threshold constants the app uses.
   - A dossier needs aandacht if it has any finding of the three kinds below. Each finding is one bullet in the dossier's aandacht banner (linking to the field or section to fix), and the dossier gets the red "aandacht" badge in lists and counts. Findings are computed from the data on every page load, just like the status, never cached; nothing is stored except snoozes and "Opnieuw versturen niet nodig" notes. The Overzicht and stats counts and the weekly digest cover open dossiers; the dossier page and the list's Aandacht filter cover closed ones too.
-  - **Klopt niet** (admins only). Listed first in the banner, under the headline "Het systeem kan de status van dit dossier niet goed bepalen. Controleer:". Checked on open and closed dossiers; cannot be snoozed.
+  - **Klopt niet** (admins only). Listed first in the banner, under the headline "De gegevens spreken elkaar tegen. Controleer:" followed by a question-circle icon linking to this page. Checked on open and closed dossiers; cannot be snoozed.
 
     | Rule | Banner line |
     | --- | --- |
-    | A later step's milestone is set but an earlier applicable step's isn't (one generic check over the status table) | "{later stap} is geregistreerd, maar {eerdere stap} niet. Registreer dat alsnog, of controleer of {later stap} klopt." |
-    | Koopwoning with a corporatie approval recorded | "Dit is een koopwoning, maar er is een goedkeuring van de woningcorporatie geregistreerd. Klopt huur/koop?" |
-    | Huurwoning with a bewoner Klussendienst choice recorded | "Dit is een huurwoning, maar er is een keuze van de bewoner (Klussendienst of zelf) geregistreerd. Klopt huur/koop?" |
-    | Rioolstelsel gescheiden, dossier open and past Intake | "Rioolstelsel staat op gescheiden (niet subsidiabel), maar het dossier loopt nog. Sluit het dossier, of corrigeer het rioolstelsel." |
-    | Closed as Niet subsidiabel while rioolstelsel is gemengd | "Gesloten als niet subsidiabel, maar het rioolstelsel staat op gemengd." |
-    | Bezoek afgerond while the afspraak is in the future | "Het bezoek is afgerond, maar de afspraak staat op {datum}, in de toekomst. Klopt de afspraakdatum?" |
-    | Werk opgeleverd while uitvoering gepland is in the future | "Het werk is opgeleverd, maar de uitvoering staat gepland op {datum}, in de toekomst." |
-    | The bezoeker/uitvoerder of an open step is archived | "{naam} is gearchiveerd, maar is nog {bezoeker/uitvoerder} van dit dossier. Wijs iemand anders toe." |
+    | A later step's milestone is set but an earlier applicable step's isn't (one generic check over the status table) | "Stap {nr} ({latere stap}) is gedaan, maar stap {nr} ({eerdere stap}) nog niet." |
+    | Koopwoning with a corporatie approval recorded | "Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?" |
+    | Huurwoning with a bewoner Klussendienst choice recorded | "Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?" |
+    | Rioolstelsel gescheiden, dossier open and past Intake | "Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?" |
+    | Closed as Niet subsidiabel while rioolstelsel is gemengd | "Gesloten als niet subsidiabel, maar het riool is gemengd." |
+    | Bezoek afgerond while the afspraak is in the future | "Bezoek afgerond, maar de afspraak is pas op {datum}." |
+    | Werk opgeleverd while uitvoering gepland is in the future | "Werk opgeleverd, maar de uitvoering is pas gepland op {datum}." |
+    | The bezoeker/uitvoerder of an open step is archived | "{naam} is gearchiveerd, maar nog {bezoeker/uitvoerder}. Wijs iemand anders toe." |
 
     States the UI cannot produce (eg a regenpijp linked to a non-existent dakdeel) aren't banners: they're bugs, so the code raises an error.
   - **Ligt stil**. Only for open dossiers, only for the current step. The clock starts when the step began (the timestamp of the previous step's milestone; `created_at` for Intake, and the *first* eligibility mail's send for Bezoeker toewijzen (a re-mail doesn't restart it), since Intake has no milestone of its own), except for the two scheduled steps, which run from their planned date.
 
     | Step | Aandacht when | Banner line |
     | --- | --- | --- |
-    | 1 Intake | \> 3 days since created | "Intake staat al {n} dagen open. Nog nodig: {ontbrekende velden}." |
-    | 2 Bezoeker toewijzen | \> 7 days since the first eligibility mail | "Al {n} dagen geen bezoeker. Zet eventueel een (nieuwe) oproep in de Signal-groep." |
-    | 3 Bezoek plannen | \> 7 days since bezoeker assigned | "{bezoeker} is {n} dagen geleden toegewezen, maar er is nog geen afspraak gepland." |
-    | 4 Bezoek uitvoeren | \> 2 days after the afspraak; never while the afspraak is in the future | "De afspraak was op {datum}, {n} dagen geleden, maar het bezoek is nog niet afgerond. Is het doorgegaan?" |
-    | 5 Plan van Aanpak afronden | \> 5 days since bezoek afgerond | "Het bezoek was {n} dagen geleden; het Plan van Aanpak is nog niet klaar voor controle." |
-    | 6 Plan controleren & versturen | \> 5 days since ready for review | "Het Plan van Aanpak wacht al {n} dagen op controle en versturen." |
-    | 7 Plan goedkeuren (huur) | \> 14 days since the latest send to the corporatie | "{corporatie} heeft na {n} dagen nog niet gereageerd op het plan. Tijd om na te bellen?" |
-    | 8 Klussendienst of zelf? (koop) | \> 14 days since the latest send to the bewoner | "De bewoner heeft na {n} dagen nog niet laten weten of ze de Klussendienst willen. Tijd om na te bellen?" |
-    | 9 Uitvoerder toewijzen | \> 7 days since approval/choice | "Het plan is {n} dagen geleden goedgekeurd, maar er is nog geen uitvoerder." |
-    | 10 Werk uitvoeren | \> 3 days after uitvoering gepland; if no date, > 21 days since uitvoerder assigned; never while the planned date is in the future | "De uitvoering stond gepland op {datum}, maar is nog niet opgeleverd." / "{uitvoerder} is {n} dagen geleden toegewezen, maar er is nog geen uitvoering gepland of opgeleverd." |
-    | 11 Opleverrapport versturen | \> 7 days since werk opgeleverd | "Het werk is {n} dagen geleden opgeleverd; het opleverrapport is nog niet verstuurd en het dossier niet gesloten." |
+    | 1 Intake | \> 3 days since created | "Intake al {n} dagen open. Nog nodig: {ontbrekende velden}." |
+    | 2 Bezoeker toewijzen | \> 7 days since the first eligibility mail | "Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?" |
+    | 3 Bezoek plannen | \> 7 days since bezoeker assigned | "{bezoeker} heeft na {n} dagen nog geen afspraak gepland." |
+    | 4 Bezoek uitvoeren | \> 2 days after the afspraak; never while the afspraak is in the future | "Afspraak was op {datum}, maar het bezoek is niet afgerond. Doorgegaan?" |
+    | 5 Plan van Aanpak afronden | \> 5 days since bezoek afgerond | "Bezoek was {n} dagen geleden; plan nog niet klaar voor controle." |
+    | 6 Plan controleren & versturen | \> 5 days since ready for review | "Plan wacht al {n} dagen op controle." |
+    | 7 Plan goedkeuren (huur) | \> 14 days since the latest send to the corporatie | "{corporatie} reageert al {n} dagen niet op het plan. Nabellen?" |
+    | 8 Klussendienst of zelf? (koop) | \> 14 days since the latest send to the bewoner | "Bewoner kiest al {n} dagen niet tussen Klussendienst of zelf. Nabellen?" |
+    | 9 Uitvoerder toewijzen | \> 7 days since approval/choice | "Plan al {n} dagen goedgekeurd, nog geen uitvoerder." |
+    | 10 Werk uitvoeren | \> 3 days after uitvoering gepland; if no date, > 21 days since uitvoerder assigned; never while the planned date is in the future | "Uitvoering was gepland op {datum}, maar niet opgeleverd." / "{uitvoerder} heeft na {n} dagen nog geen uitvoering gepland." |
+    | 11 Opleverrapport versturen | \> 7 days since werk opgeleverd | "Werk al {n} dagen opgeleverd. Rapport versturen en dossier sluiten?" |
     - Thresholds are constants in code, shown in this table.
     - Admins can snooze a Ligt stil finding ("Aandacht uitstellen" in the dossier menu) until a date, with a required note. While snoozed it shows as a small gray line "Uitgesteld tot {datum}: {notitie}" and doesn't count as aandacht. A snooze ends at its date or when the step changes.
     - Klussers see Ligt stil findings only for their own steps (3, 4, 5, 10), as a reminder, without the aandacht badge.
-  - **Plan gewijzigd** (admins only). For open dossiers: `plan_gewijzigd_at` is later than a plan send to the bewoner or corporatie, or than the uitvoerder's assignment email, and later than the last "Opnieuw versturen niet nodig". One line per affected recipient: "Het plan is gewijzigd op {datum}, na het versturen naar {ontvanger} op {datum}. Stuur het opnieuw, of markeer dat dat niet nodig is." Cleared by resending to that recipient or by "Opnieuw versturen niet nodig"; cannot be snoozed.
+  - **Plan gewijzigd** (admins only). For open dossiers: `plan_gewijzigd_at` is later than a plan send to the bewoner or corporatie, or than the uitvoerder's assignment email, and later than the last "Opnieuw versturen niet nodig". One line per affected recipient: "Plan gewijzigd op {datum}, na versturen naar {ontvanger}. Opnieuw sturen?" Cleared by resending to that recipient or by "Opnieuw versturen niet nodig"; cannot be snoozed.
 - "Gebruikers" list (admins only)
   - Linked in the navbar.
   - Button, top right: "+ Nieuwe gebruiker". Opens a form: Naam, E-mail, Telefoon (optional), Rol (Beheerder or Klusser). An e-mail address that already exists shows an error naming that user. The new user logs in the usual way with their e-mail address; nothing is sent automatically.
@@ -436,7 +436,7 @@
   - Actions dropdown in the top right corner: "Bewerken", "Archiveren" (or "Dearchiveren" if archived), "Inloggen als {naam}".
     - "Bewerken" opens the "+ Nieuwe gebruiker" form, filled in.
     - "Archiveren" opens a confirmation pop-up explaining what it does: they're logged out everywhere at once, can no longer log in, and are hidden from the bezoeker/uitvoerder dropdowns, but stay named on the dossiers they worked on. Open dossiers still assigned to them get a Klopt niet finding until reassigned. "Dearchiveren" restores access.
-    - "Inloggen als" shows the app as that klusser sees it, with exactly their permissions (the server checks every request as them), and a red banner below the navbar: "Je bekijkt de app als {naam}. {Terug naar {mijn naam}}". Offered only for active klussers: another admin's view is the same as your own.
+    - "Inloggen als" first asks for confirmation, warning that it's meant for troubleshooting and that actions are recorded as yours on their behalf. It then shows the app as that klusser sees it, with exactly their permissions (the server checks every request as them), and a red banner below the navbar: "Je bekijkt de app als {naam}. {Terug naar {mijn naam}}". Offered only for active klussers: another admin's view is the same as your own.
       - Everything done meanwhile is attributed to the admin: audit entries name the admin as actor plus the klusser being viewed (shown as "{admin} (als {klusser})"), milestones store the admin as `_by`, and no melding is sent, as when an admin acts themselves. The klusser's Laatst actief doesn't change.
       - Starting and stopping are audit events. It ends on "Terug naar {mijn naam}", on Uitloggen, when the admin's session expires, or when the klusser is archived (the next request returns the admin to their own view).
     - Admins can't archive themselves or change their own role, so they can't lock themselves out.

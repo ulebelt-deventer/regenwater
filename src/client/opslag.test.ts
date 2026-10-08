@@ -4,7 +4,7 @@ import type { Json } from '../shared/types.ts';
 import { ApiFout } from './api.ts';
 import type { Item } from './opslag.ts';
 
-vi.mock('./ui.tsx', () => ({ melding: vi.fn() }));
+vi.mock('./ui.tsx', () => ({ melding: vi.fn(() => 7), sluitMelding: vi.fn() }));
 vi.mock('./api.ts', async (echt) => ({ ...(await echt<typeof import('./api.ts')>()), api: vi.fn() }));
 
 const SLEUTEL = 'regenton.wachtrij';
@@ -30,9 +30,11 @@ async function laad(bewaard?: Item[]) {
   vi.resetModules();
   const m = await import('./opslag.ts');
   const api = vi.mocked((await import('./api.ts')).api);
-  const melding = vi.mocked((await import('./ui.tsx')).melding);
+  const ui = await import('./ui.tsx');
+  const melding = vi.mocked(ui.melding);
+  const sluitMelding = vi.mocked(ui.sluitMelding);
   api.mockResolvedValue({ plan_gewijzigd_at: '2026-03-02T09:00:00.000Z' });
-  return { ...m, api, melding };
+  return { ...m, api, melding, sluitMelding };
 }
 
 const veld = (key: string, value: unknown, dossierId = 1): Item => ({ soort: 'veld', dossierId, key, value: value as Json });
@@ -168,8 +170,23 @@ describe('without a connection', () => {
       await vi.advanceTimersByTimeAsync(1);
       expect(q.api).toHaveBeenCalledTimes(i + 2);
     }
-    expect(q.melding.mock.calls).toEqual([['danger', 'Opslaan mislukt: er is geen verbinding met de server. Je wijzigingen blijven bewaard en worden opnieuw verstuurd.']]);
+    expect(q.melding.mock.calls).toEqual([['danger', 'Opslaan mislukt: er is geen verbinding met de server. Je wijzigingen blijven bewaard en worden opnieuw verstuurd.', 'wifi-off']]);
+    expect(q.sluitMelding).not.toHaveBeenCalled();
     expect(bewaard()).toEqual([veld('wensen', 'a')]);
+  });
+
+  it('closes the no-connection alert once every edit is saved, and not while one is still waiting', async () => {
+    const q = await laad();
+    q.api.mockRejectedValueOnce(geenVerbinding());
+    q.zetInWachtrij(veld('wensen', 'a'));
+    await vi.advanceTimersByTimeAsync(400);
+    q.api.mockImplementationOnce(async () => {
+      q.zetInWachtrij(veld('hoosbuien', 'b'));
+      return { plan_gewijzigd_at: null };
+    });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(q.api).toHaveBeenCalledTimes(3); // the retry, then the edit made meanwhile in the same run
+    expect(q.sluitMelding.mock.calls).toEqual([[7]]);
   });
 
   it('treats a server error (5xx) like a dropped connection', async () => {

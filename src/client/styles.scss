@@ -34,7 +34,7 @@ $container-max-widths: (sm: 1200px, md: 1200px, lg: 1200px, xl: 1200px, xxl: 120
 .cursor-pointer { cursor: pointer; }
 .pre-wrap { white-space: pre-wrap; }
 .min-w-0 { min-width: 0; }
-@include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } }
+@include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } .fw-md-normal { font-weight: normal !important; } }
 
 .topbar { background: $ub-creme; border-bottom: 1px solid $ub-rand; }
 .topbar .nav-link { color: $ub-zwart; padding: .25rem 0; }
@@ -67,7 +67,8 @@ $container-max-widths: (sm: 1200px, md: 1200px, lg: 1200px, xl: 1200px, xxl: 120
 @keyframes flash { from { background: #fff3c4; } to { background: transparent; } }
 
 // Autosave indicator
-.opslag { position: fixed; right: .25rem; bottom: .25rem; z-index: 1080; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem .75rem; font-size: $font-size-sm; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
+// Tucked partly past the corner; the extra right and bottom padding keeps the text clear of the edge.
+.opslag { position: fixed; right: -.5rem; bottom: -.25rem; z-index: 1080; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem 1.25rem .5rem .75rem; font-size: $font-size-sm; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
 .meldingen { position: fixed; top: .75rem; left: 50%; transform: translateX(-50%); z-index: 1090; width: min(32rem, calc(100% - 1.5rem)); }
 
 // Photo slots
@@ -88,6 +89,23 @@ $container-max-widths: (sm: 1200px, md: 1200px, lg: 1200px, xl: 1200px, xxl: 120
 .big-touch .form-check { margin-bottom: .35rem; }
 
 .dropdown-menu.show { display: block; }
+// A select-like dropdown (Dropdown `kiezer`): the menu opens over the field, at least as wide as it.
+.kiezer > .form-select { min-width: 14rem; }
+.kiezer > .dropdown-menu[data-bs-popper] { top: 0; margin-top: 0; min-width: 100%; }
+// Navbar menus point up at their button with a small arrow (border-colored ::before under a white ::after).
+.topbar .dropdown-menu[data-bs-popper] { margin-top: .5rem; }
+.topbar .dropdown-menu::before, .topbar .dropdown-menu::after { content: ''; position: absolute; right: .6rem; border: .5rem solid transparent; border-top: 0; }
+.topbar .dropdown-menu::before { top: -.5rem; border-bottom-color: var(--bs-dropdown-border-color); }
+.topbar .dropdown-menu::after { top: calc(-.5rem + 1px); border-bottom-color: var(--bs-dropdown-bg); }
+
+// Below md, each table row becomes a compact card; a cell's data-label shows as its caption.
+@include media-breakpoint-down(md) {
+  .tabel-kaarten thead { display: none; }
+  .tabel-kaarten, .tabel-kaarten tbody, .tabel-kaarten tr, .tabel-kaarten td { display: block; }
+  .tabel-kaarten tr { border: 1px solid $ub-rand; border-radius: $border-radius; padding: .5rem .75rem; margin-bottom: .5rem; }
+  .tabel-kaarten > :not(caption) > * > * { border: 0; padding: 0; text-align: start !important; white-space: normal !important; }
+  .tabel-kaarten td[data-label]::before { content: attr(data-label) ': '; color: var(--bs-secondary-color); }
+}
 .modal.d-block { background: rgba(26, 26, 26, .55); overflow-y: auto; }
 
 @media print {

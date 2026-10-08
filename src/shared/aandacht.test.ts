@@ -15,7 +15,7 @@ describe('kloptNiet', () => {
   it('flags a later milestone recorded before an earlier applicable one', () => {
     const d = naIntake('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, bezoek_afgerond_at: T });
     expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toEqual([
-      'Bezoek afgerond is geregistreerd, maar de afspraak niet. Registreer dat alsnog, of controleer of bezoek afgerond klopt.',
+      'Stap 4 (Bezoek uitvoeren) is gedaan, maar stap 3 (Bezoek plannen) nog niet.',
     ]);
   });
 
@@ -26,12 +26,12 @@ describe('kloptNiet', () => {
 
   it('flags a koopwoning with a corporatie approval, as after switching huur to koop', () => {
     const d = naIntake('koop', { corporatie_akkoord_at: T });
-    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toContain('Dit is een koopwoning, maar er is een goedkeuring van de woningcorporatie geregistreerd. Klopt huur/koop?');
+    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toContain('Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?');
   });
 
   it('flags a huurwoning with a Klussendienst choice', () => {
     const d = naIntake('huur', { klussendienst_gekozen_at: T });
-    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toContain('Dit is een huurwoning, maar er is een keuze van de bewoner (Klussendienst of zelf) geregistreerd. Klopt huur/koop?');
+    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toContain('Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?');
   });
 
   it('flags a gescheiden riool on an open dossier past Intake, but not during Intake', () => {
@@ -44,18 +44,18 @@ describe('kloptNiet', () => {
 
   it('flags a dossier closed as Niet subsidiabel while the riool is gemengd, even though closed', () => {
     const d = naIntake('koop', { gesloten_at: T, gesloten_reden: 'Niet subsidiabel' });
-    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toEqual(['Gesloten als niet subsidiabel, maar het rioolstelsel staat op gemengd.']);
+    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toEqual(['Gesloten als niet subsidiabel, maar het riool is gemengd.']);
   });
 
   it('flags a bezoek afgerond while the afspraak is in the future', () => {
     const d = naIntake('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-04-01T10:00', bezoek_afgerond_at: T });
-    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toEqual(['Het bezoek is afgerond, maar de afspraak staat op 1 april 2026, in de toekomst. Klopt de afspraakdatum?']);
+    expect(kloptNiet(d, geen, nu).map((b) => b.tekst)).toEqual(['Bezoek afgerond, maar de afspraak is pas op 1 april 2026.']);
   });
 
   it('flags an archived bezoeker only while the bezoek steps are open', () => {
     const g = new Map([[2, gebruiker(2, { naam: 'Henk', archived_at: T })]]);
     const d = naIntake('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T });
-    expect(kloptNiet(d, g, nu).map((b) => b.tekst)).toEqual(['Henk is gearchiveerd, maar is nog bezoeker van dit dossier. Wijs iemand anders toe.']);
+    expect(kloptNiet(d, g, nu).map((b) => b.tekst)).toEqual(['Henk is gearchiveerd, maar nog bezoeker. Wijs iemand anders toe.']);
     expect(kloptNiet({ ...d, afspraak: '2026-03-10T10:00', bezoek_afgerond_at: T, klaar_voor_controle_at: T }, g, nu)).toEqual([]);
   });
 });
@@ -63,21 +63,21 @@ describe('kloptNiet', () => {
 describe('ligtStil', () => {
   it('flags an Intake open for more than 3 days, listing what is missing', () => {
     const d = dossier({ created_at: '2026-03-16T09:00:00.000Z' });
-    expect(ligtStil(d, geen, nu)?.tekst).toBe('Intake staat al 4 dagen open. Nog nodig: adres, naam bewoner, e-mail bewoner, huur/koop, rioolstelsel, subsidiemail.');
+    expect(ligtStil(d, geen, nu)?.tekst).toBe('Intake al 4 dagen open. Nog nodig: adres, naam bewoner, e-mail bewoner, huur/koop, rioolstelsel, subsidiemail.');
     expect(ligtStil(dossier({ created_at: '2026-03-17T13:00:00.000Z' }), geen, nu)).toBeNull();
   });
 
   it('runs the Bezoeker toewijzen clock from the first subsidiemail, not a re-mail', () => {
     const d = naIntake('koop');
     d.verzendingen.push(verzending('subsidie_koop', '2026-03-19T09:00:00.000Z'));
-    expect(ligtStil(d, geen, nu)?.tekst).toBe('Al 18 dagen geen bezoeker. Zet eventueel een (nieuwe) oproep in de Signal-groep.');
+    expect(ligtStil(d, geen, nu)?.tekst).toBe('Al 18 dagen geen bezoeker. Nieuwe oproep in de Signal-groep?');
   });
 
   it('raises no flag for an afspraak in the future, and does 3 days past', () => {
     const d = naIntake('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-03-25T10:00' });
     expect(ligtStil(d, geen, nu)).toBeNull();
     d.afspraak = '2026-03-17T10:00';
-    expect(ligtStil(d, geen, nu)?.tekst).toBe('De afspraak was op 17 maart 2026, 3 dagen geleden, maar het bezoek is nog niet afgerond. Is het doorgegaan?');
+    expect(ligtStil(d, geen, nu)?.tekst).toBe('Afspraak was op 17 maart 2026, maar het bezoek is niet afgerond. Doorgegaan?');
   });
 
   it('runs step 10 from the planned date when set, else from the assignment', () => {
@@ -87,11 +87,11 @@ describe('ligtStil', () => {
     });
     d.verzendingen.push(verzending('plan_bewoner_koop', T));
     const g = new Map([[3, gebruiker(3, { naam: 'Piet' })]]);
-    expect(ligtStil(d, g, nu)?.tekst).toBe('Piet is 28 dagen geleden toegewezen, maar er is nog geen uitvoering gepland of opgeleverd.');
+    expect(ligtStil(d, g, nu)?.tekst).toBe('Piet heeft na 28 dagen nog geen uitvoering gepland.');
     d.uitvoering_gepland = '2026-03-25';
     expect(ligtStil(d, g, nu)).toBeNull();
     d.uitvoering_gepland = '2026-03-16';
-    expect(ligtStil(d, g, nu)?.tekst).toBe('De uitvoering stond gepland op 16 maart 2026, maar is nog niet opgeleverd.');
+    expect(ligtStil(d, g, nu)?.tekst).toBe('Uitvoering was gepland op 16 maart 2026, maar niet opgeleverd.');
   });
 
   it('marks a finding as snoozed until its date, which no longer counts as aandacht', () => {
@@ -119,7 +119,7 @@ describe('planGewijzigd', () => {
   it('flags a plan changed after the send to the corporatie', () => {
     const d = { ...basis(), plan_gewijzigd_at: '2026-03-11T10:00:00.000Z' };
     expect(planGewijzigd(d).map((b) => b.tekst)).toEqual([
-      'Het plan is gewijzigd op 11 maart 2026, na het versturen naar de woningcorporatie op 10 maart 2026. Stuur het opnieuw, of markeer dat dat niet nodig is.',
+      'Plan gewijzigd op 11 maart 2026, na versturen naar de woningcorporatie. Opnieuw sturen?',
     ]);
   });
 

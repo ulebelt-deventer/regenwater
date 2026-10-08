@@ -275,7 +275,7 @@ export function Toewijzen(props: { rol: 'bezoeker' | 'uitvoerder' }) {
 
   return (
     <div class={`qa-toewijzen qa-toewijzen-${props.rol}`}>
-      <Dropdown knop={huidig() === null ? 'Kies...' : s.naam(huidig())} knopClass="btn btn-outline-secondary qa-toewijzen-knop">
+      <Dropdown knop={huidig() === null ? 'Kies...' : s.naam(huidig())} knopClass="form-select text-start qa-toewijzen-knop" kiezer>
         <div class="px-2 pb-1" onClick={(e) => e.stopPropagation()}>
           <input class="form-control form-control-sm qa-toewijzen-zoek" placeholder="Zoeken..." value={zoek()} onInput={(e) => setZoek(e.currentTarget.value)} />
         </div>

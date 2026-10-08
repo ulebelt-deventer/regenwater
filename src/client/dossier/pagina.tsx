@@ -73,7 +73,7 @@ function Kop() {
       <div class="d-flex align-items-start gap-2 mb-2">
         <h1 class="h3 mb-0 flex-grow-1 qa-dossier-titel">{adresRegel(s.d)}</h1>
         <Show when={s.beheerder()}>
-          <Dropdown knop="" knopClass="btn btn-primary btn-sm qa-dossier-menu" rechts>
+          <Dropdown knop={<span class="visually-hidden">Acties</span>} knopClass="btn btn-outline-primary btn-sm qa-dossier-menu" rechts>
             <Show when={!s.d.gesloten_at} fallback={<button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}><i class="bi bi-unlock me-2" aria-hidden="true" />Dossier heropenen</button>}>
               <button type="button" class="dropdown-item qa-menu-sluiten" onClick={() => setModal('sluiten')}><i class="bi bi-lock me-2" aria-hidden="true" />Dossier sluiten</button>
             </Show>
@@ -108,22 +108,22 @@ function Kop() {
               <button type="button" class="btn btn-link link-danger p-0 text-start align-baseline qa-bevinding" onClick={() => naarAnker(b.anker)}>{b.tekst}</button>
             </li>
           );
+          const uitleg = () => <A href="/uitleg/aandacht" class="link-danger qa-aandacht-uitleg" title="Waarom zie ik dit?" aria-label="Waarom zie ik dit?"><i class="bi bi-question-circle" aria-hidden="true" /></A>;
           return (
             <>
               <Show when={a().nodig}>
                 <div class="alert alert-danger qa-aandacht">
-                  <Show when={kloptNiet().length}>
-                    <div class="fw-semibold">{KLOPT_NIET_KOP}</div>
-                    <ul class="mb-2 qa-klopt-niet">
+                  <Show when={kloptNiet().length} fallback={<span class="float-end">{uitleg()}</span>}>
+                    <div class="fw-semibold">{KLOPT_NIET_KOP} {uitleg()}</div>
+                    <ul class={`${overig().length ? 'mb-2' : 'mb-0'} qa-klopt-niet`}>
                       <For each={kloptNiet()}>{regel}</For>
                     </ul>
                   </Show>
                   <Show when={overig().length}>
-                    <ul class="mb-2">
+                    <ul class="mb-0">
                       <For each={overig()}>{regel}</For>
                     </ul>
                   </Show>
-                  <A href="/uitleg/aandacht" class="small link-danger">Waarom zie ik dit?</A>
                 </div>
               </Show>
               <For each={uitgesteld()}>
@@ -216,7 +216,7 @@ export function Details() {
 
   const stapActie = () => {
     const st = s.status().stap;
-    const sub: Record<string, [string, string]> = { intake: ['intake', 'Intake afronden'], bezoek: ['bezoek', 'Start bezoek'], plan: ['plan', 'Plan van Aanpak afronden'], uitvoering: ['uitvoering', 'Uitvoering invullen'] };
+    const sub: Record<string, [string, string]> = { intake: ['intake', 'Intake invullen'], bezoek: ['bezoek', 'Start bezoek'], plan: ['plan', 'Plan van Aanpak invullen'], uitvoering: ['uitvoering', 'Uitvoering invullen'] };
     return { st, sub: st.key in sub ? sub[st.key] : null };
   };
   // Klussers only get the action for their own steps; the other sections are the admins' work.
@@ -287,7 +287,7 @@ export function Details() {
         </div>
         <Show when={s.beheerder()}>
           <div>
-            <SubpaginaKnop pad="intake" eerst="Intake afronden" gestart={s.status().stap.nr > 1} mag={open()} />
+            <SubpaginaKnop pad="intake" eerst="Intake invullen" gestart={s.status().stap.nr > 1} mag={open()} />
           </div>
         </Show>
       </Sectie>
@@ -345,7 +345,7 @@ export function Details() {
         </div>
         <MijlpaalRegel mijlpaal="klaar_voor_controle" label="Klaar voor controle" />
         <div class="d-flex flex-wrap align-items-center gap-3 mt-2">
-          <SubpaginaKnop pad="plan" eerst="Plan van Aanpak afronden" gestart={s.d.klaar_voor_controle_at !== null} mag={s.mag(['bezoeker'])} />
+          <SubpaginaKnop pad="plan" eerst="Plan van Aanpak invullen" gestart={s.d.klaar_voor_controle_at !== null} mag={s.mag(['bezoeker'])} />
           <a href={`/docs/dossiers/${s.id}/concept-plan`} target="_blank" class="small qa-concept-plan">Bekijk concept-Plan</a>
         </div>
       </Sectie>

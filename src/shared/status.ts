@@ -55,7 +55,6 @@ export interface Stap {
   key: string;
   ligtBij: LigtBij;
   label: string;
-  mijlpaal: string; // how the done state reads in a sentence: "{mijlpaal} is geregistreerd"
   regel: string; // the "current while" text on the Statussen page
   anker: string; // section id on the details page
   geldt: (d: Dossier) => boolean;
@@ -65,37 +64,37 @@ export interface Stap {
 
 export const STAPPEN: Stap[] = [
   {
-    nr: 1, key: 'intake', ligtBij: 'beheerder', label: 'Intake', mijlpaal: 'De intake', anker: 'sectie-intake',
+    nr: 1, key: 'intake', ligtBij: 'beheerder', label: 'Intake', anker: 'sectie-intake',
     regel: 'Adres (gevalideerd), naam of e-mail bewoner, huur/koop of rioolstelsel ontbreekt, of de subsidiemail is nog niet verstuurd',
     geldt: () => true,
     gedaan: (d) => (intakeOntbreekt(d).length === 0 ? eersteVerzending(d, SUBSIDIE_SJABLONEN)!.created_at : null),
   },
   {
-    nr: 2, key: 'bezoeker', ligtBij: 'beheerder', label: 'Bezoeker toewijzen', mijlpaal: 'Bezoeker toegewezen', anker: 'sectie-bezoeker',
+    nr: 2, key: 'bezoeker', ligtBij: 'beheerder', label: 'Bezoeker toewijzen', anker: 'sectie-bezoeker',
     regel: 'Nog geen bezoeker toegewezen',
     geldt: () => true,
     gedaan: (d) => (d.bezoeker_id !== null ? d.bezoeker_toegewezen_at : null),
   },
   {
-    nr: 3, key: 'afspraak', ligtBij: 'klusser', label: 'Bezoek plannen', mijlpaal: 'De afspraak', anker: 'sectie-bezoek',
+    nr: 3, key: 'afspraak', ligtBij: 'klusser', label: 'Bezoek plannen', anker: 'sectie-bezoek',
     regel: 'Nog geen afspraakdatum',
     geldt: () => true,
     gedaan: (d) => d.afspraak,
   },
   {
-    nr: 4, key: 'bezoek', ligtBij: 'klusser', label: 'Bezoek uitvoeren', mijlpaal: 'Bezoek afgerond', anker: 'sectie-bezoek',
+    nr: 4, key: 'bezoek', ligtBij: 'klusser', label: 'Bezoek uitvoeren', anker: 'sectie-bezoek',
     regel: '"Bezoek afronden" is nog niet aangetikt',
     geldt: () => true,
     gedaan: (d) => d.bezoek_afgerond_at,
   },
   {
-    nr: 5, key: 'plan', ligtBij: 'klusser', label: 'Plan van Aanpak afronden', mijlpaal: 'Klaar voor controle', anker: 'sectie-plan',
+    nr: 5, key: 'plan', ligtBij: 'klusser', label: 'Plan van Aanpak afronden', anker: 'sectie-plan',
     regel: '"Klaar voor controle" is nog niet aangetikt',
     geldt: () => true,
     gedaan: (d) => d.klaar_voor_controle_at,
   },
   {
-    nr: 6, key: 'versturen', ligtBij: 'beheerder', label: 'Plan controleren & versturen', mijlpaal: 'Plan verstuurd', anker: 'sectie-versturen',
+    nr: 6, key: 'versturen', ligtBij: 'beheerder', label: 'Plan controleren & versturen', anker: 'sectie-versturen',
     regel: 'Plan nog niet verstuurd (naar de woningcorporatie bij huur, naar de bewoner bij koop)',
     geldt: () => true,
     gedaan: (d) => {
@@ -105,31 +104,31 @@ export const STAPPEN: Stap[] = [
     },
   },
   {
-    nr: 7, key: 'akkoord_huur', ligtBij: 'corporatie', label: 'Plan goedkeuren (huur)', mijlpaal: 'Akkoord van de woningcorporatie', anker: 'sectie-versturen',
+    nr: 7, key: 'akkoord_huur', ligtBij: 'corporatie', label: 'Plan goedkeuren (huur)', anker: 'sectie-versturen',
     regel: 'Goedkeuring van de woningcorporatie nog niet geregistreerd',
     geldt: (d) => d.huur_koop === 'huur',
     gedaan: (d) => d.corporatie_akkoord_at,
   },
   {
-    nr: 8, key: 'keuze_koop', ligtBij: 'bewoner', label: 'Klussendienst of zelf? (koop)', mijlpaal: 'De keuze voor de Klussendienst', anker: 'sectie-versturen',
+    nr: 8, key: 'keuze_koop', ligtBij: 'bewoner', label: 'Klussendienst of zelf? (koop)', anker: 'sectie-versturen',
     regel: 'Keuze van de bewoner nog niet geregistreerd',
     geldt: (d) => d.huur_koop === 'koop',
     gedaan: (d) => d.klussendienst_gekozen_at,
   },
   {
-    nr: 9, key: 'uitvoerder', ligtBij: 'beheerder', label: 'Uitvoerder toewijzen', mijlpaal: 'Uitvoerder toegewezen', anker: 'sectie-uitvoerder',
+    nr: 9, key: 'uitvoerder', ligtBij: 'beheerder', label: 'Uitvoerder toewijzen', anker: 'sectie-uitvoerder',
     regel: 'Nog geen uitvoerder toegewezen',
     geldt: () => true,
     gedaan: (d) => (d.uitvoerder_id !== null ? d.uitvoerder_toegewezen_at : null),
   },
   {
-    nr: 10, key: 'uitvoering', ligtBij: 'klusser', label: 'Werk uitvoeren', mijlpaal: 'Werk opgeleverd', anker: 'sectie-uitvoering',
+    nr: 10, key: 'uitvoering', ligtBij: 'klusser', label: 'Werk uitvoeren', anker: 'sectie-uitvoering',
     regel: '"Werk opgeleverd" is nog niet aangetikt',
     geldt: () => true,
     gedaan: (d) => d.werk_opgeleverd_at,
   },
   {
-    nr: 11, key: 'oplevering', ligtBij: 'beheerder', label: 'Opleverrapport versturen', mijlpaal: 'Gesloten als uitgevoerd', anker: 'sectie-oplevering',
+    nr: 11, key: 'oplevering', ligtBij: 'beheerder', label: 'Opleverrapport versturen', anker: 'sectie-oplevering',
     regel: 'Nog niet gesloten als Uitgevoerd',
     geldt: () => true,
     gedaan: (d) => (d.gesloten_reden === 'Uitgevoerd' ? d.gesloten_at : null),

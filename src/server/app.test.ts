@@ -266,7 +266,7 @@ describe('weekly digest', () => {
     expect(m.onderwerp).toBe('Aandacht nodig: 1 dossiers');
     expect(m.tekst).toContain('Ligt stil');
     expect(m.tekst).toContain(`https://regenton.test/dossiers/${id}`);
-    expect(m.tekst).toContain('Intake staat al 8 dagen open');
+    expect(m.tekst).toContain('Intake al 8 dagen open');
     expect(m.tekst).toContain('geen activiteit sinds 2 maart 2026');
   });
 });

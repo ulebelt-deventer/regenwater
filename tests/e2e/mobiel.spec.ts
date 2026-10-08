@@ -52,3 +52,19 @@ test('op een telefoon is de navigatiebalk compact: klein logo, geen Overzicht en
   await expect(page.locator('.qa-nav-account .bi-person-circle')).toBeVisible();
   await geenZijwaartsScrollen(page);
 });
+
+test('op een telefoon tonen Gebruikers, een gebruiker en de uitlegpagina\'s kaarten zonder tabelkop en zonder zijwaarts scrollen', async ({ page }) => {
+  const { klusserId } = await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await naarDossier(page, id);
+  await wijsToe(page, 'bezoeker', klusserId, false);
+
+  for (const pad of ['/gebruikers', `/gebruikers/${klusserId}`, '/uitleg/statussen', '/uitleg/aandacht']) {
+    await page.goto(pad);
+    await expect(page.locator('.tabel-kaarten').first()).toBeVisible();
+    for (const kop of await page.locator('.tabel-kaarten thead').all()) await expect(kop).toBeHidden();
+    await geenZijwaartsScrollen(page);
+  }
+  await page.goto(`/gebruikers/${klusserId}`);
+  await expect(page.locator(`.qa-gebruiker-dossiers .qa-dossier-${id}`)).toBeVisible();
+});

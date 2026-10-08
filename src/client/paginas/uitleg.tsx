@@ -19,7 +19,7 @@ export function Statussen() {
       <h1 class="h3">Uitleg: statussen</h1>
       <p>De status van een dossier stel je nooit met de hand in: de app leidt hem af uit de gegevens. De eerste stap waarvan de regel klopt, is de huidige stap. De kleur laat zien bij wie de bal ligt.</p>
       <div class="table-responsive">
-        <table class="table align-middle qa-statussen">
+        <table class="table align-middle tabel-kaarten qa-statussen">
           <thead>
             <tr>
               <th>#</th>
@@ -32,10 +32,10 @@ export function Statussen() {
             <For each={STAPPEN}>
               {(s) => (
                 <tr class={`qa-stap-${s.key}`}>
-                  <td>{s.nr}</td>
-                  <td>{LIGT_BIJ_LABEL[s.ligtBij]}</td>
+                  <td data-label="Stap">{s.nr}</td>
+                  <td data-label="Ligt bij">{LIGT_BIJ_LABEL[s.ligtBij]}</td>
                   <td><StatusLabel label={s.label} ligtBij={s.ligtBij} /></td>
-                  <td>{s.regel}</td>
+                  <td data-label="Huidig zolang">{s.regel}</td>
                 </tr>
               )}
             </For>
@@ -60,7 +60,7 @@ export function AandachtUitleg() {
         <h2 class="h5">Klopt niet</h2>
         <p>Staat bovenaan de balk, onder de kop “{KLOPT_NIET_KOP}” Geldt voor open en gesloten dossiers en kan niet worden uitgesteld.</p>
         <div class="table-responsive">
-          <table class="table table-sm mb-0">
+          <table class="table table-sm mb-0 tabel-kaarten">
             <thead>
               <tr>
                 <th>Regel</th>
@@ -71,8 +71,8 @@ export function AandachtUitleg() {
               <For each={KLOPT_NIET_REGELS}>
                 {([regel, tekst]) => (
                   <tr>
-                    <td>{regel}</td>
-                    <td class="fst-italic">{tekst}</td>
+                    <td class="fw-semibold fw-md-normal">{regel}</td>
+                    <td class="fst-italic" data-label="Tekst in de balk">{tekst}</td>
                   </tr>
                 )}
               </For>
@@ -83,14 +83,14 @@ export function AandachtUitleg() {
 
       <section class="card card-body mb-3 qa-plan-gewijzigd-regels">
         <h2 class="h5">Plan gewijzigd</h2>
-        <p class="mb-0">Voor open dossiers: het Plan van Aanpak is gewijzigd nadat het naar de bewoner, de woningcorporatie of de uitvoerder is gestuurd, en na de laatste “Opnieuw versturen niet nodig”. Eén regel per ontvanger: <span class="fst-italic">“Het plan is gewijzigd op {'{datum}'}, na het versturen naar {'{ontvanger}'} op {'{datum}'}. Stuur het opnieuw, of markeer dat dat niet nodig is.”</span> Verdwijnt door opnieuw te versturen of door “Opnieuw versturen niet nodig”; kan niet worden uitgesteld.</p>
+        <p class="mb-0">Voor open dossiers: het Plan van Aanpak is gewijzigd nadat het naar de bewoner, de woningcorporatie of de uitvoerder is gestuurd, en na de laatste “Opnieuw versturen niet nodig”. Eén regel per ontvanger: <span class="fst-italic">“Plan gewijzigd op {'{datum}'}, na versturen naar {'{ontvanger}'}. Opnieuw sturen?”</span> Verdwijnt door opnieuw te versturen of door “Opnieuw versturen niet nodig”; kan niet worden uitgesteld.</p>
       </section>
 
       <section class="card card-body mb-3 qa-ligt-stil-regels">
         <h2 class="h5">Ligt stil</h2>
         <p>Alleen voor open dossiers en alleen voor de huidige stap. De klok start wanneer de stap begon: bij de vorige stap, bij het aanmaken voor de intake, en bij de eerste subsidiemail voor het toewijzen van een bezoeker. De twee geplande stappen tellen vanaf hun geplande datum.</p>
         <div class="table-responsive">
-          <table class="table table-sm">
+          <table class="table table-sm tabel-kaarten">
             <thead>
               <tr>
                 <th>Stap</th>
@@ -102,9 +102,9 @@ export function AandachtUitleg() {
               <For each={LIGT_STIL_REGELS}>
                 {(r) => (
                   <tr>
-                    <td class="text-nowrap">{stapLabel(r.stap)}</td>
-                    <td>{r.wanneer}</td>
-                    <td class="fst-italic">{r.tekst}</td>
+                    <td class="text-nowrap fw-semibold fw-md-normal">{stapLabel(r.stap)}</td>
+                    <td data-label="Aandacht als">{r.wanneer}</td>
+                    <td class="fst-italic" data-label="Tekst in de balk">{r.tekst}</td>
                   </tr>
                 )}
               </For>

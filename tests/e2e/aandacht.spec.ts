@@ -13,7 +13,7 @@ test('een afspraak in de toekomst is geen aandachtspunt, drie dagen erna zonder 
   await geenAandacht(page);
 
   await verschuifDagen(page, 4);
-  await expect(page.locator('.qa-aandacht')).toContainText('De afspraak was op 3 maart 2026, 3 dagen geleden, maar het bezoek is nog niet afgerond. Is het doorgegaan?');
+  await expect(page.locator('.qa-aandacht')).toContainText('Afspraak was op 3 maart 2026, maar het bezoek is niet afgerond. Doorgegaan?');
   await bezoek(page, id);
   await naarDossier(page, id);
   await geenAandacht(page);
@@ -38,8 +38,9 @@ test('koopwoning met een goedkeuring van de woningcorporatie: Klopt niet', async
   await kies(page, 'huur_koop', 'koop');
   await opslagKlaar(page);
   await naarDossier(page, id);
-  await expect(page.locator('.qa-aandacht')).toContainText('Het systeem kan de status van dit dossier niet goed bepalen. Controleer:');
-  await expect(page.locator('.qa-klopt-niet')).toContainText('Dit is een koopwoning, maar er is een goedkeuring van de woningcorporatie geregistreerd. Klopt huur/koop?');
+  await expect(page.locator('.qa-aandacht')).toContainText('De gegevens spreken elkaar tegen. Controleer:');
+  await expect(page.locator('.qa-aandacht-uitleg')).toHaveAttribute('href', '/uitleg/aandacht');
+  await expect(page.locator('.qa-klopt-niet')).toContainText('Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?');
 });
 
 test('een geprinte Plan van Aanpak is een echte PDF', async ({ page }) => {

@@ -16,7 +16,7 @@ export interface Bevinding {
   uitgesteld?: { tot: string; notitie: string };
 }
 
-export const KLOPT_NIET_KOP = 'Het systeem kan de status van dit dossier niet goed bepalen. Controleer:';
+export const KLOPT_NIET_KOP = 'De gegevens spreken elkaar tegen. Controleer:';
 
 // Ligt stil thresholds in days, per step. Shown on the Aandacht-criteria page.
 export const DREMPELS = {
@@ -41,33 +41,29 @@ export interface LigtStilRegel {
 }
 
 export const LIGT_STIL_REGELS: LigtStilRegel[] = [
-  { stap: 'intake', wanneer: `> ${DREMPELS.intake} dagen sinds aangemaakt`, tekst: 'Intake staat al {n} dagen open. Nog nodig: {ontbrekende velden}.' },
-  { stap: 'bezoeker', wanneer: `> ${DREMPELS.bezoeker} dagen sinds de eerste subsidiemail`, tekst: 'Al {n} dagen geen bezoeker. Zet eventueel een (nieuwe) oproep in de Signal-groep.' },
-  { stap: 'afspraak', wanneer: `> ${DREMPELS.afspraak} dagen sinds de bezoeker is toegewezen`, tekst: '{bezoeker} is {n} dagen geleden toegewezen, maar er is nog geen afspraak gepland.' },
-  { stap: 'bezoek', wanneer: `> ${DREMPELS.bezoek} dagen na de afspraak; nooit zolang de afspraak in de toekomst ligt`, tekst: 'De afspraak was op {datum}, {n} dagen geleden, maar het bezoek is nog niet afgerond. Is het doorgegaan?' },
-  { stap: 'plan', wanneer: `> ${DREMPELS.plan} dagen sinds bezoek afgerond`, tekst: 'Het bezoek was {n} dagen geleden; het Plan van Aanpak is nog niet klaar voor controle.' },
-  { stap: 'versturen', wanneer: `> ${DREMPELS.versturen} dagen sinds klaar voor controle`, tekst: 'Het Plan van Aanpak wacht al {n} dagen op controle en versturen.' },
-  { stap: 'akkoord_huur', wanneer: `> ${DREMPELS.akkoord_huur} dagen sinds het laatste versturen naar de woningcorporatie`, tekst: '{corporatie} heeft na {n} dagen nog niet gereageerd op het plan. Tijd om na te bellen?' },
-  { stap: 'keuze_koop', wanneer: `> ${DREMPELS.keuze_koop} dagen sinds het laatste versturen naar de bewoner`, tekst: 'De bewoner heeft na {n} dagen nog niet laten weten of ze de Klussendienst willen. Tijd om na te bellen?' },
-  { stap: 'uitvoerder', wanneer: `> ${DREMPELS.uitvoerder} dagen sinds goedkeuring/keuze`, tekst: 'Het plan is {n} dagen geleden goedgekeurd, maar er is nog geen uitvoerder.' },
-  { stap: 'uitvoering', wanneer: `> ${DREMPELS.uitvoering} dagen na uitvoering gepland; zonder datum > ${DREMPELS.uitvoering_zonder_datum} dagen sinds de uitvoerder is toegewezen; nooit zolang de geplande datum in de toekomst ligt`, tekst: 'De uitvoering stond gepland op {datum}, maar is nog niet opgeleverd. / {uitvoerder} is {n} dagen geleden toegewezen, maar er is nog geen uitvoering gepland of opgeleverd.' },
-  { stap: 'oplevering', wanneer: `> ${DREMPELS.oplevering} dagen sinds werk opgeleverd`, tekst: 'Het werk is {n} dagen geleden opgeleverd; het opleverrapport is nog niet verstuurd en het dossier niet gesloten.' },
+  { stap: 'intake', wanneer: `> ${DREMPELS.intake} dagen sinds aangemaakt`, tekst: 'Intake al {n} dagen open. Nog nodig: {ontbrekende velden}.' },
+  { stap: 'bezoeker', wanneer: `> ${DREMPELS.bezoeker} dagen sinds de eerste subsidiemail`, tekst: 'Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?' },
+  { stap: 'afspraak', wanneer: `> ${DREMPELS.afspraak} dagen sinds de bezoeker is toegewezen`, tekst: '{bezoeker} heeft na {n} dagen nog geen afspraak gepland.' },
+  { stap: 'bezoek', wanneer: `> ${DREMPELS.bezoek} dagen na de afspraak; nooit zolang de afspraak in de toekomst ligt`, tekst: 'Afspraak was op {datum}, maar het bezoek is niet afgerond. Doorgegaan?' },
+  { stap: 'plan', wanneer: `> ${DREMPELS.plan} dagen sinds bezoek afgerond`, tekst: 'Bezoek was {n} dagen geleden; plan nog niet klaar voor controle.' },
+  { stap: 'versturen', wanneer: `> ${DREMPELS.versturen} dagen sinds klaar voor controle`, tekst: 'Plan wacht al {n} dagen op controle.' },
+  { stap: 'akkoord_huur', wanneer: `> ${DREMPELS.akkoord_huur} dagen sinds het laatste versturen naar de woningcorporatie`, tekst: '{corporatie} reageert al {n} dagen niet op het plan. Nabellen?' },
+  { stap: 'keuze_koop', wanneer: `> ${DREMPELS.keuze_koop} dagen sinds het laatste versturen naar de bewoner`, tekst: 'Bewoner kiest al {n} dagen niet tussen Klussendienst of zelf. Nabellen?' },
+  { stap: 'uitvoerder', wanneer: `> ${DREMPELS.uitvoerder} dagen sinds goedkeuring/keuze`, tekst: 'Plan al {n} dagen goedgekeurd, nog geen uitvoerder.' },
+  { stap: 'uitvoering', wanneer: `> ${DREMPELS.uitvoering} dagen na uitvoering gepland; zonder datum > ${DREMPELS.uitvoering_zonder_datum} dagen sinds de uitvoerder is toegewezen; nooit zolang de geplande datum in de toekomst ligt`, tekst: 'Uitvoering was gepland op {datum}, maar niet opgeleverd. / {uitvoerder} heeft na {n} dagen nog geen uitvoering gepland.' },
+  { stap: 'oplevering', wanneer: `> ${DREMPELS.oplevering} dagen sinds werk opgeleverd`, tekst: 'Werk al {n} dagen opgeleverd. Rapport versturen en dossier sluiten?' },
 ];
 
 export const KLOPT_NIET_REGELS: [string, string][] = [
-  ['Een latere stap is geregistreerd, maar een eerdere stap die van toepassing is niet', '"{latere stap} is geregistreerd, maar {eerdere stap} niet. Registreer dat alsnog, of controleer of {latere stap} klopt."'],
-  ['Koopwoning met een goedkeuring van de woningcorporatie', '"Dit is een koopwoning, maar er is een goedkeuring van de woningcorporatie geregistreerd. Klopt huur/koop?"'],
-  ['Huurwoning met een keuze van de bewoner (Klussendienst of zelf)', '"Dit is een huurwoning, maar er is een keuze van de bewoner (Klussendienst of zelf) geregistreerd. Klopt huur/koop?"'],
-  ['Rioolstelsel gescheiden, dossier open en voorbij de intake', '"Rioolstelsel staat op gescheiden (niet subsidiabel), maar het dossier loopt nog. Sluit het dossier, of corrigeer het rioolstelsel."'],
-  ['Gesloten als niet subsidiabel terwijl het rioolstelsel gemengd is', '"Gesloten als niet subsidiabel, maar het rioolstelsel staat op gemengd."'],
-  ['Bezoek afgerond terwijl de afspraak in de toekomst ligt', '"Het bezoek is afgerond, maar de afspraak staat op {datum}, in de toekomst. Klopt de afspraakdatum?"'],
-  ['Werk opgeleverd terwijl de geplande uitvoering in de toekomst ligt', '"Het werk is opgeleverd, maar de uitvoering staat gepland op {datum}, in de toekomst."'],
-  ['De bezoeker/uitvoerder van een open stap is gearchiveerd', '"{naam} is gearchiveerd, maar is nog {bezoeker/uitvoerder} van dit dossier. Wijs iemand anders toe."'],
+  ['Een latere stap is gedaan, maar een eerdere stap die van toepassing is niet', '"Stap {nr} ({latere stap}) is gedaan, maar stap {nr} ({eerdere stap}) nog niet."'],
+  ['Koopwoning met een goedkeuring van de woningcorporatie', '"Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?"'],
+  ['Huurwoning met een keuze van de bewoner (Klussendienst of zelf)', '"Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?"'],
+  ['Rioolstelsel gescheiden, dossier open en voorbij de intake', '"Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?"'],
+  ['Gesloten als niet subsidiabel terwijl het rioolstelsel gemengd is', '"Gesloten als niet subsidiabel, maar het riool is gemengd."'],
+  ['Bezoek afgerond terwijl de afspraak in de toekomst ligt', '"Bezoek afgerond, maar de afspraak is pas op {datum}."'],
+  ['Werk opgeleverd terwijl de geplande uitvoering in de toekomst ligt', '"Werk opgeleverd, maar de uitvoering is pas gepland op {datum}."'],
+  ['De bezoeker/uitvoerder van een open stap is gearchiveerd', '"{naam} is gearchiveerd, maar nog {bezoeker/uitvoerder}. Wijs iemand anders toe."'],
 ];
-
-function zin(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
 
 export function kloptNiet(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Date): Bevinding[] {
   const uit: Bevinding[] = [];
@@ -78,40 +74,40 @@ export function kloptNiet(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Da
     for (const s of geldend) {
       if (s.nr >= laatsteGedaan.nr) break;
       if (s.gedaan(d) === null) {
-        k(`${zin(laatsteGedaan.mijlpaal)} is geregistreerd, maar ${s.mijlpaal.charAt(0).toLowerCase() + s.mijlpaal.slice(1)} niet. Registreer dat alsnog, of controleer of ${laatsteGedaan.mijlpaal.charAt(0).toLowerCase() + laatsteGedaan.mijlpaal.slice(1)} klopt.`, s.anker);
+        k(`Stap ${laatsteGedaan.nr} (${laatsteGedaan.label}) is gedaan, maar stap ${s.nr} (${s.label}) nog niet.`, s.anker);
       }
     }
   }
   if (d.huur_koop === 'koop' && d.corporatie_akkoord_at) {
-    k('Dit is een koopwoning, maar er is een goedkeuring van de woningcorporatie geregistreerd. Klopt huur/koop?', 'sectie-intake');
+    k('Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?', 'sectie-intake');
   }
   if (d.huur_koop === 'huur' && d.klussendienst_gekozen_at) {
-    k('Dit is een huurwoning, maar er is een keuze van de bewoner (Klussendienst of zelf) geregistreerd. Klopt huur/koop?', 'sectie-intake');
+    k('Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?', 'sectie-intake');
   }
   const huidig = huidigeStap(d);
   const riool = str(d, 'rioolstelsel');
   if (riool === 'gescheiden' && !d.gesloten_at && huidig.nr > 1) {
-    k('Rioolstelsel staat op gescheiden (niet subsidiabel), maar het dossier loopt nog. Sluit het dossier, of corrigeer het rioolstelsel.', 'sectie-intake');
+    k('Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?', 'sectie-intake');
   }
   if (d.gesloten_reden === 'Niet subsidiabel' && riool === 'gemengd') {
-    k('Gesloten als niet subsidiabel, maar het rioolstelsel staat op gemengd.', 'sectie-intake');
+    k('Gesloten als niet subsidiabel, maar het riool is gemengd.', 'sectie-intake');
   }
   const afspraak = afspraakDatum(d);
   if (d.bezoek_afgerond_at && afspraak && afspraak > nu) {
-    k(`Het bezoek is afgerond, maar de afspraak staat op ${datum(afspraak)}, in de toekomst. Klopt de afspraakdatum?`, 'sectie-bezoek');
+    k(`Bezoek afgerond, maar de afspraak is pas op ${datum(afspraak)}.`, 'sectie-bezoek');
   }
   if (d.werk_opgeleverd_at && d.uitvoering_gepland && lokaal(d.uitvoering_gepland) > nu) {
-    k(`Het werk is opgeleverd, maar de uitvoering staat gepland op ${datum(d.uitvoering_gepland)}, in de toekomst.`, 'sectie-uitvoering');
+    k(`Werk opgeleverd, maar de uitvoering is pas gepland op ${datum(d.uitvoering_gepland)}.`, 'sectie-uitvoering');
   }
   if (!d.gesloten_at) {
     const gearchiveerd = (id: number | null) => (id !== null ? gebruikers.get(id) : undefined);
     const b = gearchiveerd(d.bezoeker_id);
     if (b && b.archived_at && huidig.nr >= 3 && huidig.nr <= 5) {
-      k(`${b.naam} is gearchiveerd, maar is nog bezoeker van dit dossier. Wijs iemand anders toe.`, 'sectie-bezoeker');
+      k(`${b.naam} is gearchiveerd, maar nog bezoeker. Wijs iemand anders toe.`, 'sectie-bezoeker');
     }
     const u = gearchiveerd(d.uitvoerder_id);
     if (u && u.archived_at && huidig.nr === 10) {
-      k(`${u.naam} is gearchiveerd, maar is nog uitvoerder van dit dossier. Wijs iemand anders toe.`, 'sectie-uitvoerder');
+      k(`${u.naam} is gearchiveerd, maar nog uitvoerder. Wijs iemand anders toe.`, 'sectie-uitvoerder');
     }
   }
   return uit;
@@ -145,41 +141,41 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
   let tekst: string | null = null;
   switch (s.key) {
     case 'intake':
-      if (n > DREMPELS.intake) tekst = `Intake staat al ${n} dagen open. Nog nodig: ${intakeOntbreekt(d).join(', ')}.`;
+      if (n > DREMPELS.intake) tekst = `Intake al ${n} dagen open. Nog nodig: ${intakeOntbreekt(d).join(', ')}.`;
       break;
     case 'bezoeker':
-      if (n > DREMPELS.bezoeker) tekst = `Al ${n} dagen geen bezoeker. Zet eventueel een (nieuwe) oproep in de Signal-groep.`;
+      if (n > DREMPELS.bezoeker) tekst = `Al ${n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?`;
       break;
     case 'afspraak':
-      if (n > DREMPELS.afspraak) tekst = `${naam(d.bezoeker_id)} is ${n} dagen geleden toegewezen, maar er is nog geen afspraak gepland.`;
+      if (n > DREMPELS.afspraak) tekst = `${naam(d.bezoeker_id)} heeft na ${n} dagen nog geen afspraak gepland.`;
       break;
     case 'bezoek':
-      if (n > DREMPELS.bezoek) tekst = `De afspraak was op ${datum(start)}, ${n} dagen geleden, maar het bezoek is nog niet afgerond. Is het doorgegaan?`;
+      if (n > DREMPELS.bezoek) tekst = `Afspraak was op ${datum(start)}, maar het bezoek is niet afgerond. Doorgegaan?`;
       break;
     case 'plan':
-      if (n > DREMPELS.plan) tekst = `Het bezoek was ${n} dagen geleden; het Plan van Aanpak is nog niet klaar voor controle.`;
+      if (n > DREMPELS.plan) tekst = `Bezoek was ${n} dagen geleden; plan nog niet klaar voor controle.`;
       break;
     case 'versturen':
-      if (n > DREMPELS.versturen) tekst = `Het Plan van Aanpak wacht al ${n} dagen op controle en versturen.`;
+      if (n > DREMPELS.versturen) tekst = `Plan wacht al ${n} dagen op controle.`;
       break;
     case 'akkoord_huur':
-      if (n > DREMPELS.akkoord_huur) tekst = `${corporatieNaam(d) ?? 'De woningcorporatie'} heeft na ${n} dagen nog niet gereageerd op het plan. Tijd om na te bellen?`;
+      if (n > DREMPELS.akkoord_huur) tekst = `${corporatieNaam(d) ?? 'De woningcorporatie'} reageert al ${n} dagen niet op het plan. Nabellen?`;
       break;
     case 'keuze_koop':
-      if (n > DREMPELS.keuze_koop) tekst = `De bewoner heeft na ${n} dagen nog niet laten weten of ze de Klussendienst willen. Tijd om na te bellen?`;
+      if (n > DREMPELS.keuze_koop) tekst = `Bewoner kiest al ${n} dagen niet tussen Klussendienst of zelf. Nabellen?`;
       break;
     case 'uitvoerder':
-      if (n > DREMPELS.uitvoerder) tekst = `Het plan is ${n} dagen geleden goedgekeurd, maar er is nog geen uitvoerder.`;
+      if (n > DREMPELS.uitvoerder) tekst = `Plan al ${n} dagen goedgekeurd, nog geen uitvoerder.`;
       break;
     case 'uitvoering':
       if (d.uitvoering_gepland) {
-        if (n > DREMPELS.uitvoering) tekst = `De uitvoering stond gepland op ${datum(d.uitvoering_gepland)}, maar is nog niet opgeleverd.`;
+        if (n > DREMPELS.uitvoering) tekst = `Uitvoering was gepland op ${datum(d.uitvoering_gepland)}, maar niet opgeleverd.`;
       } else if (n > DREMPELS.uitvoering_zonder_datum) {
-        tekst = `${naam(d.uitvoerder_id)} is ${n} dagen geleden toegewezen, maar er is nog geen uitvoering gepland of opgeleverd.`;
+        tekst = `${naam(d.uitvoerder_id)} heeft na ${n} dagen nog geen uitvoering gepland.`;
       }
       break;
     case 'oplevering':
-      if (n > DREMPELS.oplevering) tekst = `Het werk is ${n} dagen geleden opgeleverd; het opleverrapport is nog niet verstuurd en het dossier niet gesloten.`;
+      if (n > DREMPELS.oplevering) tekst = `Werk al ${n} dagen opgeleverd. Rapport versturen en dossier sluiten?`;
       break;
   }
   if (tekst === null) return null;
@@ -215,7 +211,7 @@ export function planGewijzigd(d: Dossier): Bevinding[] {
     if (s && s.gewijzigd) {
       uit.push({
         soort: 'plan_gewijzigd',
-        tekst: `Het plan is gewijzigd op ${datum(s.gewijzigd)}, na het versturen naar ${ONTVANGER_NAAM[o]} op ${datum(s.verstuurd)}. Stuur het opnieuw, of markeer dat dat niet nodig is.`,
+        tekst: `Plan gewijzigd op ${datum(s.gewijzigd)}, na versturen naar ${ONTVANGER_NAAM[o]}. Opnieuw sturen?`,
         anker: o === 'uitvoerder' ? 'sectie-uitvoerder' : 'sectie-versturen',
         ontvanger: o,
       });

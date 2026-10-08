@@ -34,3 +34,23 @@ test('Gebruikers staat als eerste in het Beheer-menu', async ({ page }) => {
   await page.locator('.qa-nav-beheer + .dropdown-menu > :first-child.qa-nav-gebruikers').click();
   await expect(page).toHaveURL(/\/gebruikers$/);
 });
+
+test('Inloggen als vraagt eerst om bevestiging; annuleren laat je beheerder blijven', async ({ page }) => {
+  const { klusserId } = await start(page);
+  await page.goto(`/gebruikers/${klusserId}`);
+  const inloggenAls = async () => {
+    await page.locator('.qa-gebruiker-menu').click();
+    await page.locator('.qa-inloggen-als').click();
+    await expect(page.locator('.qa-bevestig')).toBeVisible();
+  };
+
+  await inloggenAls();
+  await page.locator('.qa-bevestig .qa-nee').click();
+  await expect(page.locator('.qa-bevestig')).toHaveCount(0);
+  await expect(page.locator('.qa-als-banner')).toHaveCount(0);
+
+  await inloggenAls();
+  await page.locator('.qa-bevestig .qa-ja').click();
+  await expect(page).toHaveURL(/\/dossiers$/);
+  await expect(page.locator('.qa-als-banner')).toBeVisible();
+});

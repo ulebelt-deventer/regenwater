@@ -34,15 +34,15 @@ function Navbar() {
         <NavLink href="/dossiers" class="qa-nav-dossiers">{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
           <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
-            <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers">Gebruikers</A>
-            <A class="dropdown-item" href="/beheer/materialen">Materialen</A>
-            <A class="dropdown-item" href="/beheer/sjablonen">E-mailsjablonen</A>
-            <A class="dropdown-item" href="/beheer/feedback">Feedback</A>
+            <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>
+            <A class="dropdown-item" href="/beheer/materialen"><i class="bi bi-hammer me-2" aria-hidden="true" />Materialen</A>
+            <A class="dropdown-item" href="/beheer/sjablonen"><i class="bi bi-envelope me-2" aria-hidden="true" />E-mailsjablonen</A>
+            <A class="dropdown-item" href="/beheer/feedback"><i class="bi bi-lightbulb me-2" aria-hidden="true" />Feedback</A>
             <a class="dropdown-item" href="/docs/bezoekformulier-leeg.pdf" target="_blank"><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />Leeg bezoekformulier (PDF)</a>
-            <A class="dropdown-item" href="/beheer/activiteit">Alle activiteit</A>
+            <A class="dropdown-item" href="/beheer/activiteit"><i class="bi bi-clock-history me-2" aria-hidden="true" />Alle activiteit</A>
             <div class="dropdown-divider" />
-            <A class="dropdown-item" href="/uitleg/statussen">Uitleg: statussen</A>
-            <A class="dropdown-item" href="/uitleg/aandacht">Uitleg: aandacht</A>
+            <A class="dropdown-item" href="/uitleg/statussen"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: statussen</A>
+            <A class="dropdown-item" href="/uitleg/aandacht"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: aandacht</A>
           </Dropdown>
         </Show>
         <Dropdown

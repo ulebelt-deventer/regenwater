@@ -10,16 +10,18 @@ interface Melding {
   id: number;
   soort: 'danger' | 'success' | 'warning';
   tekst: string;
+  icoon?: string; // a Bootstrap Icons name
 }
 const [meldingen, setMeldingen] = createSignal<Melding[]>([]);
 let meldingNr = 0;
 
-export function melding(soort: Melding['soort'], tekst: string): void {
+export function melding(soort: Melding['soort'], tekst: string, icoon?: string): number {
   const id = ++meldingNr;
-  setMeldingen((m) => [...m, { id, soort, tekst }]);
+  setMeldingen((m) => [...m, { id, soort, tekst, icoon }]);
   if (soort === 'success') setTimeout(() => sluitMelding(id), 4000);
+  return id;
 }
-const sluitMelding = (id: number) => setMeldingen((m) => m.filter((x) => x.id !== id));
+export const sluitMelding = (id: number) => setMeldingen((m) => m.filter((x) => x.id !== id));
 
 export function Meldingen() {
   return (
@@ -27,6 +29,9 @@ export function Meldingen() {
       <For each={meldingen()}>
         {(m) => (
           <div class={`alert alert-${m.soort} alert-dismissible shadow-sm qa-melding qa-melding-${m.soort}`} role="alert">
+            <Show when={m.icoon}>
+              <i class={`bi bi-${m.icoon} me-2`} aria-hidden="true" />
+            </Show>
             {m.tekst}
             <button type="button" class="btn-close" aria-label="Sluiten" onClick={() => sluitMelding(m.id)} />
           </div>
@@ -117,17 +122,29 @@ export function Vragen() {
 
 // ---- Dropdown (Bootstrap markup, Solid state) ----
 
-export function Dropdown(props: { knop: JSX.Element; knopClass?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean }) {
+// `kiezer`: looks and opens like a select field: the menu covers the field and its search input gets the focus.
+export function Dropdown(props: { knop: JSX.Element; knopClass?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean; kiezer?: boolean }) {
   const [open, setOpen] = createSignal(false);
   let el!: HTMLDivElement;
   const buiten = (e: MouseEvent) => {
     if (!el.contains(e.target as Node)) setOpen(false);
   };
-  onMount(() => document.addEventListener('click', buiten));
-  onCleanup(() => document.removeEventListener('click', buiten));
+  const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+  onMount(() => {
+    document.addEventListener('click', buiten);
+    document.addEventListener('keydown', esc);
+  });
+  onCleanup(() => {
+    document.removeEventListener('click', buiten);
+    document.removeEventListener('keydown', esc);
+  });
+  const wissel = () => {
+    setOpen(!open());
+    if (open() && props.kiezer) el.querySelector<HTMLInputElement>('.dropdown-menu input')!.focus();
+  };
   return (
-    <div class={`dropdown ${props.class ?? ''}`} ref={el}>
-      <button type="button" class={`dropdown-toggle ${props.knopClass ?? 'btn btn-outline-secondary'}`} aria-expanded={open()} onClick={() => setOpen(!open())}>
+    <div class={`dropdown ${props.kiezer ? 'kiezer' : ''} ${props.class ?? ''}`} ref={el}>
+      <button type="button" class={`${props.kiezer ? '' : 'dropdown-toggle'} ${props.knopClass ?? 'btn btn-outline-secondary'}`} aria-expanded={open()} onClick={wissel}>
         {props.knop}
       </button>
       {/* Bootstrap positions the menu (incl. -end alignment) only when data-bs-popper is set; "static" is its no-Popper mode. */}
@@ -165,17 +182,17 @@ export function Opgeslagen(props: { status: 'opgeslagen' | 'bezig' | 'mislukt'; 
   return (
     <span class="qa-opslag-status">
       <Show when={props.status === 'mislukt'}>
-        <span class="text-danger fw-semibold qa-opslag-mislukt">Opslaan mislukt</span>
+        <span class="text-danger fw-semibold qa-opslag-mislukt"><i class="bi bi-wifi-off me-1" aria-hidden="true" />Opslaan mislukt</span>
       </Show>
       <Show when={props.status === 'bezig'}>
-        <span class="text-warning qa-opslag-bezig">Bezig met opslaan...</span>
+        <span class="text-warning qa-opslag-bezig"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true" />Bezig met opslaan...</span>
       </Show>
       <Show when={props.status === 'opgeslagen'}>
         <span class="text-muted qa-opslag-klaar">
           <Show when={props.om}>
             <i class="bi bi-check-circle-fill text-success me-1" aria-hidden="true" />
           </Show>
-          {props.om ? `Opgeslagen om ${tijd(props.om)}` : 'Wijzigingen worden automatisch opgeslagen'}
+          {props.om ? `Opgeslagen om ${tijd(props.om)}` : 'Slaat automatisch op'}
         </span>
       </Show>
     </span>

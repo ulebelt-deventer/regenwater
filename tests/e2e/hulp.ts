@@ -158,10 +158,11 @@ export async function subsidieMail(page: Page, huurKoop: 'huur' | 'koop'): Promi
   await expect(page.locator('.qa-intake-compleet')).toBeVisible();
 }
 
-// Picks a user in the bezoeker/uitvoerder dropdown; the mail pop-up that follows is sent or cancelled.
+// Picks a user in the bezoeker/uitvoerder dropdown (whose search field gets the focus on opening); the mail pop-up that follows is sent or cancelled.
 export async function wijsToe(page: Page, rol: 'bezoeker' | 'uitvoerder', id: number, mailen: boolean): Promise<void> {
   const blok = page.locator(`.qa-toewijzen-${rol}`);
   await blok.locator('.qa-toewijzen-knop').click();
+  await expect(blok.locator('.qa-toewijzen-zoek')).toBeFocused();
   await blok.locator(`.qa-kandidaat-${id}`).click();
   if (mailen) await verstuurMail(page);
   else await annuleerMail(page);

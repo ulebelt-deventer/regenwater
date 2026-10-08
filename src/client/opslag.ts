@@ -4,7 +4,7 @@ import { createSignal } from 'solid-js';
 import { FOTO_MAX_PX } from '../shared/constants.ts';
 import type { Annotatie, Foto, Json } from '../shared/types.ts';
 import { ApiFout, api, isNetwerkFout } from './api.ts';
-import { melding } from './ui.tsx';
+import { melding, sluitMelding } from './ui.tsx';
 
 export type Item =
   | { soort: 'veld'; dossierId: number; key: string; value: Json }
@@ -70,6 +70,13 @@ const sessieVerlopen = (e: unknown) => e instanceof ApiFout && e.status === 401;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let bezig = false;
 let pogingen = 0;
+let offlineMelding: number | null = null; // the "geen verbinding" alert, closed once everything is saved
+
+function sluitOfflineMelding(): void {
+  if (offlineMelding === null || rijen.length || wachtendeFotos().length) return;
+  sluitMelding(offlineMelding);
+  offlineMelding = null;
+}
 
 function plan(ms: number): void {
   if (timer) clearTimeout(timer);
@@ -96,7 +103,7 @@ async function verwerk(): Promise<void> {
       } catch (e) {
         if (sessieVerlopen(e)) return;
         if (isNetwerkFout(e)) {
-          if (!mislukt()) melding('danger', 'Opslaan mislukt: er is geen verbinding met de server. Je wijzigingen blijven bewaard en worden opnieuw verstuurd.');
+          if (!mislukt()) offlineMelding = melding('danger', 'Opslaan mislukt: er is geen verbinding met de server. Je wijzigingen blijven bewaard en worden opnieuw verstuurd.', 'wifi-off');
           setMislukt(true);
           pogingen++;
           plan(Math.min(30000, 1000 * 2 ** Math.min(pogingen, 5)));
@@ -110,6 +117,7 @@ async function verwerk(): Promise<void> {
       rijen = rijen.filter((r) => r.nr !== rij.nr);
       bewaar();
     }
+    sluitOfflineMelding();
   } finally {
     bezig = false;
   }
@@ -197,6 +205,7 @@ async function verwerkFotos(): Promise<void> {
         return w.filter((x) => x.id !== t.id);
       });
     }
+    sluitOfflineMelding();
   } finally {
     fotoBezig = false;
   }
