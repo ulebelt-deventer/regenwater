@@ -2,7 +2,7 @@ import { A, type RouteSectionProps, useLocation, useNavigate } from '@solidjs/ro
 import { type JSX, Show, createResource, createSignal } from 'solid-js';
 import { post } from './api.ts';
 import { opgeslagenOm, opslagStatus } from './opslag.ts';
-import { laadSessie, sessie } from './sessie.ts';
+import { laadOmgeving, laadSessie, omgeving, sessie } from './sessie.ts';
 import { Dropdown, Meldingen, Modal, Opgeslagen, Vragen, melding, probeer } from './ui.tsx';
 
 function NavLink(props: { href: string; children: JSX.Element; class?: string }) {
@@ -10,6 +10,43 @@ function NavLink(props: { href: string; children: JSX.Element; class?: string })
     <A href={props.href} class={`nav-link ${props.class ?? ''}`} activeClass="active">
       {props.children}
     </A>
+  );
+}
+
+function Merk() {
+  return (
+    <>
+      <img src="/icon-192.png" alt="Ulebelt Regenwater" class="logo rounded d-md-none qa-logo-klein" />
+      <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo d-none d-md-block" />
+      <span class="wordmark d-none d-md-inline">Regenwater</span>
+    </>
+  );
+}
+
+function OmgevingLabel() {
+  return (
+    <>
+      <Show when={omgeving() === 'dev'}>
+        <span class="badge text-bg-success qa-omgeving-label">DEV</span>
+      </Show>
+      <Show when={omgeving() === 'test'}>
+        <span class="badge text-bg-warning qa-omgeving-label">TEST</span>
+      </Show>
+    </>
+  );
+}
+
+// Logged out: the same bar without the links, since there's nothing to navigate to yet.
+function KaleNavbar() {
+  return (
+    <nav class="topbar no-print qa-navbar-uitgelogd">
+      <div class="container-lg d-flex align-items-center gap-3 py-2">
+        <div class="d-flex align-items-center gap-2 me-2">
+          <Merk />
+        </div>
+        <OmgevingLabel />
+      </div>
+    </nav>
   );
 }
 
@@ -24,16 +61,9 @@ function Navbar() {
     <nav class="topbar no-print">
       <div class="container-lg d-flex flex-wrap align-items-center gap-3 py-2">
         <A href="/" class="d-flex align-items-center gap-2 text-decoration-none me-2">
-          <img src="/icon-192.png" alt="Ulebelt Regenwater" class="logo rounded d-md-none qa-logo-klein" />
-          <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo d-none d-md-block" />
-          <span class="wordmark d-none d-md-inline">Regenwater</span>
+          <Merk />
         </A>
-        <Show when={s().omgeving === 'dev'}>
-          <span class="badge text-bg-success qa-omgeving-label">DEV</span>
-        </Show>
-        <Show when={s().omgeving === 'test'}>
-          <span class="badge text-bg-warning qa-omgeving-label">TEST</span>
-        </Show>
+        <OmgevingLabel />
         <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
           <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
@@ -139,13 +169,13 @@ export function Layout(props: RouteSectionProps) {
   const navigate = useNavigate();
   const openbaar = () => OPENBAAR.some((p) => loc.pathname.startsWith(p));
   const [geladen] = createResource(async () => {
-    const s = await laadSessie();
+    const [s] = await Promise.all([laadSessie(), laadOmgeving()]);
     if (!s && !openbaar()) navigate('/inloggen', { replace: true });
     return true;
   });
   return (
     <Show when={geladen()}>
-      <Show when={sessie()}>
+      <Show when={sessie()} fallback={<KaleNavbar />}>
         <Navbar />
         <AlsBanner />
       </Show>

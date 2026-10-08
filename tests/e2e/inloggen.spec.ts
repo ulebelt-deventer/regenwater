@@ -17,6 +17,17 @@ async function vraagCode(page: Page, email: string): Promise<{ code: string; lin
 
 const ingelogd = async (page: Page) => (await page.request.get('/api/auth/me')).status();
 
+test('de inlogpagina toont de navbar met het logo maar zonder iets om op te klikken', async ({ page }) => {
+  await start(page);
+  await page.context().clearCookies();
+  await page.goto('/inloggen');
+  const navbar = page.locator('.qa-navbar-uitgelogd');
+  await expect(navbar.locator('.qa-logo-klein')).toBeAttached();
+  await expect(navbar.locator('img[src="/ulebelt-logo.svg"]')).toBeVisible();
+  await expect(navbar.locator('a, button')).toHaveCount(0);
+  await expect(page.locator('.qa-nav-dossiers')).toHaveCount(0);
+});
+
 test('met de code uit de e-mail logt een klusser in en komt op Mijn dossiers', async ({ page }) => {
   await start(page);
   const { code } = await vraagCode(page, KLUSSER.email);

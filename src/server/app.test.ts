@@ -28,8 +28,8 @@ describe('login and sessions', () => {
     expect(me.actor).toBeNull();
   });
 
-  it('tells the client which install this is: none, test when STAGING is set, dev in development even when staging', async () => {
-    const omgeving = async () => (await beheerder.json('GET', '/api/auth/me')).omgeving;
+  it('tells a logged-out client which install this is: none, test when STAGING is set, dev in development even when staging', async () => {
+    const omgeving = async () => (await new Klant(t).json('GET', '/api/omgeving')).omgeving;
     expect(await omgeving()).toBeNull();
     t.ctx.config.staging = true;
     expect(await omgeving()).toBe('test');

@@ -165,8 +165,13 @@ export function authRoutes(app: Hono<Env>, ctx: Ctx): void {
   app.get('/api/auth/me', (c) => {
     const ik = c.get('ik');
     const actor = c.get('actor');
+    return c.json({ ik, actor: actor.id === ik.id ? null : actor, nu: ctx.klok.iso() });
+  });
+
+  // Open, so the logged-out navbar shows the label too.
+  app.get('/api/omgeving', (c) => {
     const omgeving: Omgeving = ctx.config.modus === 'development' ? 'dev' : ctx.config.staging ? 'test' : null;
-    return c.json({ ik, actor: actor.id === ik.id ? null : actor, nu: ctx.klok.iso(), omgeving });
+    return c.json({ omgeving });
   });
 
   // Registered before /als/:id, which would otherwise match "stop".
@@ -189,7 +194,7 @@ export function authRoutes(app: Hono<Env>, ctx: Ctx): void {
   });
 }
 
-const OPEN_ROUTES = new Set(['/api/auth/request', '/api/auth/code', '/api/auth/link', '/api/auth/logout']);
+const OPEN_ROUTES = new Set(['/api/auth/request', '/api/auth/code', '/api/auth/link', '/api/auth/logout', '/api/omgeving']);
 
 interface SessieRij {
   id: number;
