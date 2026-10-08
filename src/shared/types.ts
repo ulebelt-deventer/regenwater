@@ -1,6 +1,8 @@
 export type Rol = 'beheerder' | 'klusser';
 export type HuurKoop = 'huur' | 'koop';
 export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
+// Which install this is, for the navbar label: dev (local npm run dev), test (STAGING set), or null on the live site.
+export type Omgeving = 'dev' | 'test' | null;
 
 export interface Gebruiker {
   id: number;

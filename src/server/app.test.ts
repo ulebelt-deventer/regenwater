@@ -28,10 +28,13 @@ describe('login and sessions', () => {
     expect(me.actor).toBeNull();
   });
 
-  it('tells the client whether this is a staging install', async () => {
-    expect((await beheerder.json('GET', '/api/auth/me')).staging).toBe(false);
+  it('tells the client which install this is: none, test when STAGING is set, dev in development even when staging', async () => {
+    const omgeving = async () => (await beheerder.json('GET', '/api/auth/me')).omgeving;
+    expect(await omgeving()).toBeNull();
     t.ctx.config.staging = true;
-    expect((await beheerder.json('GET', '/api/auth/me')).staging).toBe(true);
+    expect(await omgeving()).toBe('test');
+    t.ctx.config.modus = 'development';
+    expect(await omgeving()).toBe('dev');
   });
 
   it('answers 401 with a Dutch message without a session', async () => {

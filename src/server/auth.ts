@@ -6,7 +6,7 @@ import {
   APP_NAAM, LAATST_ACTIEF_INTERVAL_MIN, LOGIN_CODE_GELDIG_MIN, LOGIN_MAILS_PER_ADRES_PER_UUR, LOGIN_MAX_FOUTE_CODES,
   LOGIN_POGINGEN_PER_IP_PER_UUR, SESSIE_DAGEN, ULEBELT_CONTACT_EMAIL,
 } from '../shared/constants.ts';
-import type { Gebruiker } from '../shared/types.ts';
+import type { Gebruiker, Omgeving } from '../shared/types.ts';
 import { audit } from './audit.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from './context.ts';
 import { log } from './log.ts';
@@ -165,7 +165,8 @@ export function authRoutes(app: Hono<Env>, ctx: Ctx): void {
   app.get('/api/auth/me', (c) => {
     const ik = c.get('ik');
     const actor = c.get('actor');
-    return c.json({ ik, actor: actor.id === ik.id ? null : actor, nu: ctx.klok.iso(), staging: ctx.config.staging });
+    const omgeving: Omgeving = ctx.config.modus === 'development' ? 'dev' : ctx.config.staging ? 'test' : null;
+    return c.json({ ik, actor: actor.id === ik.id ? null : actor, nu: ctx.klok.iso(), omgeving });
   });
 
   // Registered before /als/:id, which would otherwise match "stop".

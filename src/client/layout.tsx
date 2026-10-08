@@ -28,8 +28,11 @@ function Navbar() {
           <img src="/ulebelt-logo.svg" alt="Ulebelt" class="logo d-none d-md-block" />
           <span class="wordmark d-none d-md-inline">Regenwater</span>
         </A>
-        <Show when={s().staging}>
-          <span class="badge text-bg-warning qa-staging-label">TEST</span>
+        <Show when={s().omgeving === 'dev'}>
+          <span class="badge text-bg-success qa-omgeving-label">DEV</span>
+        </Show>
+        <Show when={s().omgeving === 'test'}>
+          <span class="badge text-bg-warning qa-omgeving-label">TEST</span>
         </Show>
         <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
