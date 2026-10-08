@@ -23,8 +23,8 @@ export function Statussen() {
           <thead>
             <tr>
               <th>#</th>
-              <th>Ligt bij</th>
               <th>Status</th>
+              <th>Ligt bij</th>
               <th>Huidig zolang</th>
             </tr>
           </thead>
@@ -32,9 +32,10 @@ export function Statussen() {
             <For each={STAPPEN}>
               {(s) => (
                 <tr class={`qa-stap-${s.key}`}>
-                  <td data-label="Stap">{s.nr}</td>
+                  {/* On phones the step number moves into the status label. */}
+                  <td class="d-none d-md-table-cell">{s.nr}</td>
+                  <td><StatusLabel label={<><span class="d-md-none">{s.nr}: </span>{s.label}</>} ligtBij={s.ligtBij} /></td>
                   <td data-label="Ligt bij">{LIGT_BIJ_LABEL[s.ligtBij]}</td>
-                  <td><StatusLabel label={s.label} ligtBij={s.ligtBij} /></td>
                   <td data-label="Huidig zolang">{s.regel}</td>
                 </tr>
               )}

@@ -73,7 +73,7 @@ function Kop() {
       <div class="d-flex align-items-start gap-2 mb-2">
         <h1 class="h3 mb-0 flex-grow-1 qa-dossier-titel">{adresRegel(s.d)}</h1>
         <Show when={s.beheerder()}>
-          <Dropdown knop={<span class="visually-hidden">Acties</span>} knopClass="btn btn-outline-primary btn-sm qa-dossier-menu" rechts>
+          <Dropdown knop="" label="Acties" knopClass="btn btn-outline-primary btn-sm qa-dossier-menu" rechts>
             <Show when={!s.d.gesloten_at} fallback={<button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}><i class="bi bi-unlock me-2" aria-hidden="true" />Dossier heropenen</button>}>
               <button type="button" class="dropdown-item qa-menu-sluiten" onClick={() => setModal('sluiten')}><i class="bi bi-lock me-2" aria-hidden="true" />Dossier sluiten</button>
             </Show>
@@ -105,7 +105,8 @@ function Kop() {
           const uitgesteld = () => a().bevindingen.filter((b) => b.uitgesteld);
           const regel = (b: { tekst: string; anker: string }) => (
             <li>
-              <button type="button" class="btn btn-link link-danger p-0 text-start align-baseline qa-bevinding" onClick={() => naarAnker(b.anker)}>{b.tekst}</button>
+              {/* align-top: an inline-block's baseline is its last line, which would put the bullet beside a wrapped reason's last line. */}
+              <button type="button" class="btn btn-inline btn-link link-danger text-start align-top qa-bevinding" onClick={() => naarAnker(b.anker)}>{b.tekst}</button>
             </li>
           );
           const uitleg = () => <A href="/uitleg/aandacht" class="link-danger qa-aandacht-uitleg" title="Waarom zie ik dit?" aria-label="Waarom zie ik dit?"><i class="bi bi-question-circle" aria-hidden="true" /></A>;

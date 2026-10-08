@@ -63,10 +63,46 @@ function MaterialenInhoud() {
     if (!(await bevestig(`${m.naam} verwijderen?`, 'Bestaande dossiers houden hun materialen; alleen nieuwe dossiers krijgen het niet meer.', { ja: 'Verwijderen', gevaar: true }))) return;
     await probeer(async () => zet((await del<{ materialen: Materiaal[] }>(`/api/materialen/${m.id}`)).materialen));
   };
-  const verplaats = async (i: number, richting: -1 | 1) => {
+  const verschoven = (l: Materiaal[], van: number, naar: number) => {
+    const c = [...l];
+    c.splice(naar, 0, ...c.splice(van, 1));
+    return c;
+  };
+  const verplaats = async (van: number, naar: number) => {
+    if (naar === van || naar < 0 || naar >= lijst().length) return;
+    const oud = lijst();
+    zet(verschoven(oud, van, naar));
     const ids = lijst().map((m) => m.id);
-    [ids[i], ids[i + richting]] = [ids[i + richting], ids[i]];
-    await probeer(async () => zet((await put<{ materialen: Materiaal[] }>('/api/materialen/volgorde', { ids })).materialen));
+    if (!(await probeer(async () => zet((await put<{ materialen: Materiaal[] }>('/api/materialen/volgorde', { ids })).materialen)))) zet(oud);
+  };
+
+  // Dragging by the grip shows the new order live and saves it on release. The listeners sit on the document
+  // because the dragged row's DOM node moves, which would drop a pointer capture.
+  let tbody!: HTMLTableSectionElement;
+  const [sleep, setSleep] = createSignal<{ van: number; naar: number } | null>(null);
+  const getoond = () => {
+    const s = sleep();
+    return s ? verschoven(lijst(), s.van, s.naar) : lijst();
+  };
+  const begin = (e: PointerEvent, i: number) => {
+    e.preventDefault();
+    setSleep({ van: i, naar: i });
+    const beweeg = (ev: PointerEvent) => {
+      const rijen = [...tbody.rows];
+      const naar = rijen.findIndex((r) => ev.clientY < r.getBoundingClientRect().bottom);
+      setSleep({ van: i, naar: naar === -1 ? rijen.length - 1 : naar });
+    };
+    const los = () => {
+      document.removeEventListener('pointermove', beweeg);
+      document.removeEventListener('pointerup', los);
+      document.removeEventListener('pointercancel', los);
+      const s = sleep()!;
+      setSleep(null);
+      void verplaats(s.van, s.naar);
+    };
+    document.addEventListener('pointermove', beweeg);
+    document.addEventListener('pointerup', los);
+    document.addEventListener('pointercancel', los);
   };
 
   return (
@@ -78,24 +114,38 @@ function MaterialenInhoud() {
           <table class="table align-middle qa-materialen" style={{ 'max-width': '42rem' }}>
             <thead>
               <tr>
+                <th class="w-1px" />
                 <th>Materiaal</th>
-                <th style={{ width: '9rem' }}>Prijs (€)</th>
-                <th style={{ width: '9rem' }} />
+                <th style={{ width: '6rem' }}>Prijs (€)</th>
+                <th class="w-1px" />
               </tr>
             </thead>
-            <tbody>
-              <For each={lijst()}>
+            <tbody ref={tbody}>
+              <For each={getoond()}>
                 {(m, i) => (
-                  <tr class="qa-materiaal">
+                  <tr class="qa-materiaal" classList={{ 'table-active': sleep()?.naar === i() }}>
+                    <td class="px-0">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-link text-secondary sleep-greep qa-greep"
+                        aria-label={`${m.naam} verslepen; pijltjestoetsen verplaatsen`}
+                        onPointerDown={(e) => begin(e, i())}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+                          e.preventDefault();
+                          void verplaats(i(), i() + (e.key === 'ArrowUp' ? -1 : 1));
+                        }}
+                      >
+                        <i class="bi bi-grip-vertical" aria-hidden="true" />
+                      </button>
+                    </td>
                     <td>
                       <input class="form-control form-control-sm qa-materiaal-naam" value={m.naam} onChange={(e) => void wijzig(m, 'naam', e.currentTarget.value)} />
                     </td>
                     <td>
                       <input class="form-control form-control-sm text-end qa-materiaal-prijs" inputmode="decimal" value={euroTekst(m.prijs)} onChange={(e) => void wijzig(m, 'prijs', e.currentTarget.value)} />
                     </td>
-                    <td class="text-nowrap text-end">
-                      <button type="button" class="btn btn-sm btn-outline-secondary qa-omhoog" disabled={i() === 0} aria-label="Omhoog" onClick={() => void verplaats(i(), -1)}>↑</button>{' '}
-                      <button type="button" class="btn btn-sm btn-outline-secondary qa-omlaag" disabled={i() === lijst().length - 1} aria-label="Omlaag" onClick={() => void verplaats(i(), 1)}>↓</button>{' '}
+                    <td>
                       <button type="button" class="btn btn-sm btn-outline-danger qa-verwijderen" aria-label="Verwijderen" onClick={() => void verwijder(m)}><i class="bi bi-trash3" aria-hidden="true" /></button>
                     </td>
                   </tr>
@@ -142,7 +192,11 @@ function SjablonenInhoud() {
       <h1 class="h3">E-mailsjablonen</h1>
       <p class="text-muted">Tags tussen accolades, zoals <code>{'{bewoner}'}</code>, worden bij het versturen ingevuld. Per sjabloon staat welke tags je kunt gebruiken; tags met een * zijn verplicht.</p>
       <Show when={data()} fallback={<Laden />}>
-        {(d) => <For each={d().sjablonen}>{(s) => <SjabloonKaart sjabloon={s} uitleg={d().uitleg} />}</For>}
+        {(d) => (
+          <div class="accordion">
+            <For each={d().sjablonen}>{(s) => <SjabloonKaart sjabloon={s} uitleg={d().uitleg} />}</For>
+          </div>
+        )}
       </Show>
     </>
   );
@@ -154,6 +208,7 @@ function SjabloonKaart(props: { sjabloon: Sjabloon; uitleg: Record<string, strin
   const def = sjabloonDef(s.key);
   const [onderwerp, setOnderwerp] = createSignal(s.onderwerp);
   const [tekst, setTekst] = createSignal(s.tekst);
+  const [open, setOpen] = createSignal(false);
   const [opgeslagen, setOpgeslagen] = createSignal({ onderwerp: s.onderwerp, tekst: s.tekst });
   const gewijzigd = () => onderwerp() !== opgeslagen().onderwerp || tekst() !== opgeslagen().tekst;
   const problemen = () => probleemTeksten(controleerTags(def, onderwerp(), tekst()));
@@ -166,33 +221,45 @@ function SjabloonKaart(props: { sjabloon: Sjabloon; uitleg: Record<string, strin
   };
 
   return (
-    <section class={`card card-body mb-3 qa-sjabloon qa-sjabloon-${s.key}`}>
-      <h2 class="h5 mb-1">{s.naam}</h2>
-      <div class="small text-muted mb-2">{s.ontvanger === null ? 'Wordt gekopieerd, niet gemaild.' : `Aan: ${s.ontvanger}`}</div>
-      <div class="small mb-2 qa-tags">
-        <For each={s.tags}>
-          {(t) => (
-            <span class="me-3 text-nowrap">
-              <code>{`{${t}}`}</code>
-              {s.verplicht.includes(t) ? '*' : ''} <span class="text-muted">{props.uitleg[t]}</span>
-            </span>
-          )}
-        </For>
-      </div>
-      <Show when={s.ontvanger !== null}>
-        <label class="form-label fw-semibold mb-1" for={`onderwerp-${s.key}`}>Onderwerp</label>
-        <input id={`onderwerp-${s.key}`} class="form-control mb-2 qa-onderwerp" value={onderwerp()} onInput={(e) => setOnderwerp(e.currentTarget.value)} />
-      </Show>
-      <label class="form-label fw-semibold mb-1" for={`tekst-${s.key}`}>Tekst</label>
-      <textarea id={`tekst-${s.key}`} class="form-control mb-2 qa-tekst" rows="10" value={tekst()} onInput={(e) => setTekst(e.currentTarget.value)} />
-      <Show when={problemen().length}>
-        <div class="alert alert-warning py-2 small qa-tag-problemen">
-          <For each={problemen()}>{(p) => <div>{p}</div>}</For>
+    <section class={`accordion-item qa-sjabloon qa-sjabloon-${s.key}`}>
+      <h2 class="accordion-header">
+        <button type="button" class="accordion-button fw-semibold qa-sjabloon-open" classList={{ collapsed: !open() }} aria-expanded={open()} onClick={() => setOpen(!open())}>
+          {s.naam}
+          {/* Collapsing hides the editor, so unsaved edits stay visible in the title. */}
+          <Show when={gewijzigd()}>
+            <span class="badge text-bg-warning ms-2 qa-niet-opgeslagen">Niet opgeslagen</span>
+          </Show>
+        </button>
+      </h2>
+      <Show when={open()}>
+        <div class="accordion-body">
+          <div class="small text-muted mb-2">{s.ontvanger === null ? 'Wordt gekopieerd, niet gemaild.' : `Aan: ${s.ontvanger}`}</div>
+          <div class="small mb-2 qa-tags">
+            <For each={s.tags}>
+              {(t) => (
+                <span class="d-inline-block me-3">
+                  <code>{`{${t}}`}</code>
+                  {s.verplicht.includes(t) ? '*' : ''} <span class="text-muted">{props.uitleg[t]}</span>
+                </span>
+              )}
+            </For>
+          </div>
+          <Show when={s.ontvanger !== null}>
+            <label class="form-label fw-semibold mb-1" for={`onderwerp-${s.key}`}>Onderwerp</label>
+            <input id={`onderwerp-${s.key}`} class="form-control mb-2 qa-onderwerp" value={onderwerp()} onInput={(e) => setOnderwerp(e.currentTarget.value)} />
+          </Show>
+          <label class="form-label fw-semibold mb-1" for={`tekst-${s.key}`}>Tekst</label>
+          <textarea id={`tekst-${s.key}`} class="form-control mb-2 qa-tekst" rows="10" value={tekst()} onInput={(e) => setTekst(e.currentTarget.value)} />
+          <Show when={problemen().length}>
+            <div class="alert alert-warning py-2 small qa-tag-problemen">
+              <For each={problemen()}>{(p) => <div>{p}</div>}</For>
+            </div>
+          </Show>
+          <div>
+            <button type="button" class="btn btn-primary qa-opslaan" disabled={!gewijzigd()} onClick={() => void opslaan()}>Opslaan</button>
+          </div>
         </div>
       </Show>
-      <div>
-        <button type="button" class="btn btn-primary qa-opslaan" disabled={!gewijzigd()} onClick={() => void opslaan()}>Opslaan</button>
-      </div>
     </section>
   );
 }

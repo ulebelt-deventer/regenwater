@@ -66,5 +66,17 @@ test('op een telefoon tonen Gebruikers, een gebruiker en de uitlegpagina\'s kaar
     await geenZijwaartsScrollen(page);
   }
   await page.goto(`/gebruikers/${klusserId}`);
-  await expect(page.locator(`.qa-gebruiker-dossiers .qa-dossier-${id}`)).toBeVisible();
+  const kaart = page.locator(`.qa-gebruiker-dossiers .qa-dossier-${id}`);
+  await expect(kaart.locator('.qa-rol')).toHaveText('Bezoeker');
+  const rol = (await kaart.locator('.qa-rol').boundingBox())!;
+  const status = (await kaart.locator('.qa-status').boundingBox())!;
+  expect(Math.abs(rol.y + rol.height / 2 - (status.y + status.height / 2))).toBeLessThan(4);
+});
+
+test('op een telefoon past een opengeklapt e-mailsjabloon met zijn tags in de breedte', async ({ page }) => {
+  await start(page);
+  await page.goto('/beheer/sjablonen');
+  for (const knop of await page.locator('.qa-sjabloon-open').all()) await knop.click();
+  await expect(page.locator('.qa-tags').first()).toBeVisible();
+  await geenZijwaartsScrollen(page);
 });

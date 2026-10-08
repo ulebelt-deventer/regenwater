@@ -44,7 +44,7 @@
   - Linked in the navbar.
   - When viewed by admins:
     - Title: "Alle dossiers"
-    - Top-right: "+ Nieuw dossier" button, & a "CSV downloaden" button (admins only; the server refuses it for klussers). The CSV holds all dossiers matching the current filters, ignoring pagination, in the current sort order, one row per dossier: Dossier-ID, Aangemaakt op, Straat, Huisnummer, Postcode, Plaats, Gemeente, Huur/koop, Woningeigenaar, Woningtype, Rioolstelsel, Bewoner naam, e-mail and telefoon, Bezoeker, Uitvoerder, Status, Aandacht nodig (ja/nee), every milestone date (subsidiemail, bezoeker toegewezen, afspraak, bezoek afgerond, klaar voor controle, plan verstuurd naar bewoner, plan verstuurd naar woningcorporatie, akkoord, uitvoerder toegewezen, uitvoering gepland, werk opgeleverd, opleverrapport verstuurd, gesloten), Reden gesloten, Dak m² (totaal), Aantal regenpijpen, Regentonnen gewenst, Geschatte materiaalkosten, Gebruikte materiaalkosten. Dates as `YYYY-MM-DD`, amounts as plain numbers, so Excel can sum them.
+    - Top-right: "+ Nieuw dossier" button ("+ Nieuw" on phones), & a caret-only menu holding "CSV downloaden" (admins only; the server refuses it for klussers). The CSV holds all dossiers matching the current filters, ignoring pagination, in the current sort order, one row per dossier: Dossier-ID, Aangemaakt op, Straat, Huisnummer, Postcode, Plaats, Gemeente, Huur/koop, Woningeigenaar, Woningtype, Rioolstelsel, Bewoner naam, e-mail and telefoon, Bezoeker, Uitvoerder, Status, Aandacht nodig (ja/nee), every milestone date (subsidiemail, bezoeker toegewezen, afspraak, bezoek afgerond, klaar voor controle, plan verstuurd naar bewoner, plan verstuurd naar woningcorporatie, akkoord, uitvoerder toegewezen, uitvoering gepland, werk opgeleverd, opleverrapport verstuurd, gesloten), Reden gesloten, Dak m² (totaal), Aantal regenpijpen, Regentonnen gewenst, Geschatte materiaalkosten, Gebruikte materiaalkosten. Dates as `YYYY-MM-DD`, amounts as plain numbers, so Excel can sum them.
     - Bar of overall stats: Open, Aandacht nodig, Uitgevoerd.
     - Filters bar:
       - Adres (text filter/match)
@@ -102,7 +102,7 @@
     - Red .alert.alert-danger at top if this email (same template, same dossier) was already sent, with the date.
     - CC'd to the admin who sends it (pending the team question about a shared inbox).
     - Attachments (the PDF) are listed by name; they're generated at send time.
-    - Below the buttons, a link "Handmatig verstuurd": for when the admin downloaded the PDF and emailed it themselves. It records a send at the current time exactly like "Versturen" does (it counts for the status, the aandacht clocks and Plan gewijzigd), shown as "Handmatig verstuurd op {datum}".
+    - Bottom left, away from "Versturen", a link "Handmatig verstuurd...": for when the admin downloaded the PDF and emailed it themselves. Since it sends nothing, it first asks for confirmation that the app won't send this email and that they sent it themselves. It records a send at the current time exactly like "Versturen" does (it counts for the status, the aandacht clocks and Plan gewijzigd), shown as "Handmatig verstuurd op {datum}".
   - Title: this address
   - If the dossier is closed: a prominent gray banner directly under the title, "Gesloten op {datum}: {reden}" (green for Uitgevoerd).
   - If the dossier needs aandacht (closed ones included, for Klopt niet): one .alert.alert-danger banner directly under the title, one bullet per finding (Klopt niet findings first), each linking to the relevant field or section (see the Aandacht-criteria page).
@@ -431,7 +431,7 @@
 - Gebruiker page (admins only)
   - Title: the user's name, with a Beheerder/Klusser badge, and a gray "Gearchiveerd" badge if archived.
   - Gegevens: Naam, E-mail, Telefoon, Rol, Aangemaakt op, Laatst actief.
-  - Dossiers: the dossiers where they're bezoeker or uitvoerder, open first, then closed. Columns: Adres, Opdracht (this user's own role, as on the Klusser list), Status, Laatste activiteit.
+  - Dossiers: the dossiers where they're bezoeker or uitvoerder, open first, then closed. Columns: Adres, Rol (Bezoeker, Uitvoerder or "Bezoeker + Uitvoerder"), Status, Laatste activiteit.
   - Link "Alle activiteit van {naam}": the Alle activiteit page filtered to this user.
   - Actions dropdown in the top right corner: "Bewerken", "Archiveren" (or "Dearchiveren" if archived), "Inloggen als {naam}".
     - "Bewerken" opens the "+ Nieuwe gebruiker" form, filled in.
@@ -442,11 +442,11 @@
     - Admins can't archive themselves or change their own role, so they can't lock themselves out.
 - "Beheer" (navbar dropdown of further less-used links, all of these links & pages are admin-only)
   - "Materialen"
-    - Lets admins manage the default list of materials (Materiaal, Prijs) and its order. It's only the prefill for new dossiers' Materialen tables (see Plan van Aanpak).
+    - Lets admins manage the default list of materials (Materiaal, Prijs) and its order, set by dragging a row by its grip (or arrow keys on the grip). It's only the prefill for new dossiers' Materialen tables (see Plan van Aanpak).
   - "E-mailsjablonen"
     - The templates: Subsidie: subsidiabel, huurwoning / subsidiabel, koopwoning / niet subsidiabel; Bezoeker toegewezen; Plan naar bewoner (huur); Plan naar bewoner (koop, asks Klussendienst of zelf); Plan naar woningcorporatie; Uitvoerder toegewezen; Opleverrapport naar woningcorporatie; Opleverrapport naar bewoner; Oproep Signal-groep (copied to the clipboard, no onderwerp). The login email is fixed in code.
     - Seeded at launch from the prototype's drafts, with texts written for the ones it lacks; admins edit them from then on.
-    - Lets admins configure each email template. Each one has {...} tags, listed at the top so you know what tags are supported (required ones marked), and validated on save with warnings for unknown tags (eg a typo `{adress}`) and missing required tags (eg `{link}` in a klusser email).
+    - Lets admins configure each email template, each in a collapsible panel (collapsed by default; a "Niet opgeslagen" badge on the title marks unsaved edits). Each one has {...} tags, listed at the top so you know what tags are supported (required ones marked), and validated on save with warnings for unknown tags (eg a typo `{adress}`) and missing required tags (eg `{link}` in a klusser email).
   - "Leeg bezoekformulier (PDF)" (see Bezoek)
   - "Alle activiteit"
     - An audit list of all recent changes in the app, most recent at top, cursor-paginated. With date/time, who, what dossier (link), summary of the change.

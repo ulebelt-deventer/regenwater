@@ -123,7 +123,8 @@ export function Vragen() {
 // ---- Dropdown (Bootstrap markup, Solid state) ----
 
 // `kiezer`: looks and opens like a select field: the menu covers the field and its search input gets the focus.
-export function Dropdown(props: { knop: JSX.Element; knopClass?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean; kiezer?: boolean }) {
+// `label` names a caret-only button (knop=""), which must stay :empty for Bootstrap to center the caret.
+export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean; kiezer?: boolean }) {
   const [open, setOpen] = createSignal(false);
   let el!: HTMLDivElement;
   const buiten = (e: MouseEvent) => {
@@ -144,7 +145,7 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; rechts?
   };
   return (
     <div class={`dropdown ${props.kiezer ? 'kiezer' : ''} ${props.class ?? ''}`} ref={el}>
-      <button type="button" class={`${props.kiezer ? '' : 'dropdown-toggle'} ${props.knopClass ?? 'btn btn-outline-secondary'}`} aria-expanded={open()} onClick={wissel}>
+      <button type="button" class={`${props.kiezer ? '' : 'dropdown-toggle'} ${props.knopClass ?? 'btn btn-outline-secondary'}`} aria-label={props.label} aria-expanded={open()} onClick={wissel}>
         {props.knop}
       </button>
       {/* Bootstrap positions the menu (incl. -end alignment) only when data-bs-popper is set; "static" is its no-Popper mode. */}
@@ -157,7 +158,7 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; rechts?
 
 // ---- Status labels ----
 
-export function StatusLabel(props: { label: string; ligtBij: LigtBij | null }) {
+export function StatusLabel(props: { label: JSX.Element; ligtBij: LigtBij | null }) {
   return <span class={`bij bij-${props.ligtBij ?? 'gesloten'} qa-status`}>{props.label}</span>;
 }
 

@@ -31,7 +31,7 @@ function Navbar() {
         <Show when={beheerder()}>
           <NavLink href="/" end class="d-none d-md-block qa-nav-overzicht">Overzicht</NavLink>
         </Show>
-        <NavLink href="/dossiers" class="qa-nav-dossiers">{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
+        <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
           <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
             <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>

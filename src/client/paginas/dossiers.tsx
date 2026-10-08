@@ -90,8 +90,10 @@ export function Dossiers() {
       <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <h1 class="h3 mb-0 me-auto qa-titel">{beheerder() ? 'Alle dossiers' : 'Mijn dossiers'}</h1>
         <Show when={beheerder()}>
-          <a class="btn btn-outline-secondary qa-csv" href={`/api/dossiers.csv${query(zoek())}`}><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />CSV downloaden</a>
-          <button type="button" class="btn btn-primary qa-nieuw-dossier" onClick={() => void nieuw()}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuw dossier</button>
+          <button type="button" class="btn btn-primary qa-nieuw-dossier" onClick={() => void nieuw()}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuw<span class="d-none d-sm-inline"> dossier</span></button>
+          <Dropdown knop="" label="Meer" knopClass="btn btn-outline-primary qa-dossiers-menu" rechts>
+            <a class="dropdown-item qa-csv" href={`/api/dossiers.csv${query(zoek())}`}><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />CSV downloaden</a>
+          </Dropdown>
         </Show>
       </div>
 
@@ -110,8 +112,8 @@ export function Dossiers() {
           <div class="row g-2 align-items-end mb-3 qa-filters">
             <div class="col-12 col-md-3">
               <input
-                class="form-control form-control-sm qa-filter-adres"
-                placeholder="Adres"
+                class="form-control form-control-sm placeholder-icoon qa-filter-adres"
+                placeholder={' Adres'}
                 value={adres()}
                 onInput={(e) => {
                   setAdres(e.currentTarget.value);

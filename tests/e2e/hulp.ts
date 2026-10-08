@@ -103,6 +103,7 @@ export async function verstuurMail(page: Page, handmatig = false): Promise<void>
   const modal = page.locator('.qa-mail');
   await expect(modal.locator('.qa-mail-aan')).toBeVisible();
   await modal.locator(handmatig ? '.qa-mail-handmatig' : '.qa-mail-versturen').click();
+  if (handmatig) await page.locator('.qa-bevestig .qa-ja').click();
   await expect(modal).toHaveCount(0);
 }
 

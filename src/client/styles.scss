@@ -17,8 +17,8 @@ $font-family-sans-serif: Figtree, system-ui, -apple-system, 'Segoe UI', sans-ser
 $headings-font-weight: 800;
 $card-border-color: $ub-rand;
 $min-contrast-ratio: 3;
-// One max width at every breakpoint: containers stay fluid up to 1200px and then center, with no jumps in between.
-$container-max-widths: (sm: 1200px, md: 1200px, lg: 1200px, xl: 1200px, xxl: 1200px);
+// .container-lg stays fluid up to 1200px and then centers, with no jumps in between. Only .container and .container-lg exist.
+$container-max-widths: (lg: 1200px);
 
 @import 'bootstrap/scss/bootstrap';
 
@@ -34,6 +34,12 @@ $container-max-widths: (sm: 1200px, md: 1200px, lg: 1200px, xl: 1200px, xxl: 120
 .cursor-pointer { cursor: pointer; }
 .pre-wrap { white-space: pre-wrap; }
 .min-w-0 { min-width: 0; }
+// A table column only as wide as its content.
+.w-1px { width: 1px; }
+// touch-action: none keeps a touch drag on the grip from scrolling the page instead.
+.sleep-greep { cursor: grab; touch-action: none; }
+// Lets a placeholder start with an icon glyph, eg ' Adres' for bi-search; the letters fall back to the text font.
+.placeholder-icoon::placeholder { font-family: bootstrap-icons, $font-family-sans-serif; }
 @include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } .fw-md-normal { font-weight: normal !important; } }
 
 .topbar { background: $ub-creme; border-bottom: 1px solid $ub-rand; }

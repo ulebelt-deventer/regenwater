@@ -7,7 +7,7 @@ import { ApiFout, get, post, query } from '../api.ts';
 import { GebruikerForm } from '../gebruikerform.tsx';
 import { ik } from '../sessie.ts';
 import { AlleenBeheerder, Dropdown, Laden, StatusLabel, bevestig, melding, probeer, titel } from '../ui.tsx';
-import { type LijstRij, OpdrachtBadge } from './dossiers.tsx';
+import type { LijstRij } from './dossiers.tsx';
 import { type GebruikerRij, RolBadge } from './overzicht.tsx';
 
 export function Gebruikers() {
@@ -92,7 +92,7 @@ function Lijst() {
 
 interface GebruikerData {
   gebruiker: Gebruiker;
-  dossiers: LijstRij[];
+  dossiers: (LijstRij & { rol: string })[];
 }
 
 export function GebruikerPagina() {
@@ -158,7 +158,7 @@ function Pagina() {
                 <Show when={g().archived_at}>
                   <span class="badge text-bg-secondary qa-gearchiveerd">Gearchiveerd</span>
                 </Show>
-                <Dropdown knop={<span class="visually-hidden">Acties</span>} knopClass="btn btn-outline-primary qa-gebruiker-menu" class="ms-auto" rechts>
+                <Dropdown knop="" label="Acties" knopClass="btn btn-outline-primary qa-gebruiker-menu" class="ms-auto" rechts>
                   <button type="button" class="dropdown-item qa-bewerken" onClick={() => setBewerken(true)}><i class="bi bi-pencil me-2" aria-hidden="true" />Bewerken</button>
                   <Show when={!zelf()}>
                     <Show when={g().archived_at} fallback={<button type="button" class="dropdown-item text-danger qa-archiveren" onClick={() => void archiveren(g())}><i class="bi bi-archive me-2" aria-hidden="true" />Archiveren</button>}>
@@ -193,7 +193,7 @@ function Pagina() {
                       <thead>
                         <tr>
                           <th>Adres</th>
-                          <th>Opdracht</th>
+                          <th>Rol</th>
                           <th>Status</th>
                           <th>Laatste activiteit</th>
                         </tr>
@@ -203,10 +203,11 @@ function Pagina() {
                           {(r) => (
                             <tr class={`row-link qa-dossier qa-dossier-${r.id}`} classList={{ 'text-muted': r.gesloten }} onClick={() => navigate(`/dossiers/${r.id}`)}>
                               <td><A href={`/dossiers/${r.id}`} class="text-reset text-decoration-none fw-semibold">{r.adres}</A></td>
-                              <td>
-                                <Show when={r.opdracht}>{(o) => <OpdrachtBadge opdracht={o()} />}</Show>
+                              {/* On phones the rol and status share a line. */}
+                              <td class="d-inline-block d-md-table-cell me-2">
+                                <span class="badge border border-secondary text-secondary qa-rol">{r.rol}</span>
                               </td>
-                              <td><StatusLabel label={r.status} ligtBij={r.ligtBij} /></td>
+                              <td class="d-inline-block d-md-table-cell" data-label="Status"><StatusLabel label={r.status} ligtBij={r.ligtBij} /></td>
                               <td class="text-nowrap" data-label="Laatste activiteit">{r.laatste_activiteit_at ? kortDatum(r.laatste_activiteit_at) : ''}</td>
                             </tr>
                           )}

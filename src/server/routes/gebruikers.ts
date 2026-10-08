@@ -1,5 +1,4 @@
 import type { Hono } from 'hono';
-import { opdracht } from '../../shared/status.ts';
 import type { Gebruiker, Rol } from '../../shared/types.ts';
 import { audit } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
@@ -76,7 +75,7 @@ export function gebruikerRoutes(app: Hono<Env>, ctx: Ctx): void {
     const nu = ctx.klok.nu();
     const ik = c.get('ik');
     const dossiers = laadDossiers(ctx.db, 'd.bezoeker_id = ? OR d.uitvoerder_id = ?', [g.id, g.id])
-      .map((d) => ({ ...lijstRij(d, gm, nu, ik), opdracht: opdracht(d, g.id) }))
+      .map((d) => ({ ...lijstRij(d, gm, nu, ik), rol: [d.bezoeker_id === g.id ? 'Bezoeker' : null, d.uitvoerder_id === g.id ? 'Uitvoerder' : null].filter((r) => r !== null).join(' + ') }))
       .sort((a, b) => Number(a.gesloten) - Number(b.gesloten) || b.id - a.id);
     return c.json({ gebruiker: g, dossiers });
   });

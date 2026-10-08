@@ -36,6 +36,18 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
 
   const verstuur = async (handmatig: boolean) => {
     const m = data()!;
+    if (
+      handmatig &&
+      !(await bevestig(
+        'Zelf verstuurd?',
+        <>
+          <p>De app verstuurt deze e-mail <strong>niet</strong>.</p>
+          <p class="mb-0">Je bevestigt dat je hem zelf al hebt verstuurd, bijvoorbeeld vanuit je eigen mailprogramma. Het dossier noteert hem dan als handmatig verstuurd.</p>
+        </>,
+        { ja: 'Ja, ik heb hem zelf verstuurd' },
+      ))
+    )
+      return;
     if (problemen().length && !(await bevestig('Weet je het zeker?', <ul class="mb-0"><For each={problemen()}>{(p) => <li>{p}</li>}</For></ul>, { ja: handmatig ? 'Toch markeren' : 'Toch versturen' }))) return;
     setBezig(true);
     setFout(null);
@@ -62,12 +74,13 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
       class="qa-mail"
       onSluit={() => props.onSluit()}
       voet={
-        <div class="d-flex flex-column align-items-end w-100 gap-1">
-          <div class="d-flex gap-2">
+        // "Handmatig verstuurd" sends nothing, so it sits far from Versturen and asks first.
+        <div class="d-flex flex-wrap justify-content-between align-items-center w-100 gap-2">
+          <button type="button" class="btn btn-link btn-sm p-0 qa-mail-handmatig" disabled={bezig() || !data()} onClick={() => void verstuur(true)}>Handmatig verstuurd...</button>
+          <div class="d-flex gap-2 ms-auto">
             <button type="button" class="btn btn-outline-secondary" onClick={() => props.onSluit()}>Annuleren</button>
             <button type="button" class="btn btn-primary qa-mail-versturen" disabled={bezig() || !data()} onClick={() => void verstuur(false)}>{bezig() ? 'Bezig...' : 'Versturen'}</button>
           </div>
-          <button type="button" class="btn btn-link btn-sm p-0 qa-mail-handmatig" disabled={bezig() || !data()} onClick={() => void verstuur(true)}>Handmatig verstuurd</button>
         </div>
       }
     >
