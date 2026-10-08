@@ -58,17 +58,29 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
           </tr>
         </tbody>
       </table>
-      <Fotos doc={props.doc} slot="straatfoto" onderschrift="Vooraanzicht" />
-      <h3>Dakoppervlakte en waterberging</h3>
-      <Show when={kaart()} fallback={<Show when={props.doc.concept}><p><Leeg doc={props.doc} /></p></Show>}>
-        {(k) => (
-          <div class="fotos">
-            <figure class="breed">
+      <div class="fotos">
+        <For each={fotosIn(d(), 'straatfoto')}>
+          {(f) => (
+            <figure class="qa-pdf-straatfoto">
+              <FotoMetTekening doc={props.doc} foto={f} />
+              <figcaption>Vooraanzicht</figcaption>
+            </figure>
+          )}
+        </For>
+        <Show when={kaart()}>
+          {(k) => (
+            <figure class="qa-pdf-kaart">
               <FotoMetTekening doc={props.doc} foto={k()} annots={kaartAnnotaties(d())} mPerPx={k().m_per_px} />
               <figcaption>Kadastrale kaart met dakdelen (D), tuindelen (T) en regenpijpen (A, B, ...)</figcaption>
             </figure>
-          </div>
-        )}
+          )}
+        </Show>
+      </div>
+      <Show when={items().daken.length > 0 || props.doc.concept}>
+        <h3>Dakoppervlakte en waterberging</h3>
+      </Show>
+      <Show when={!kaart() && props.doc.concept}>
+        <p><Leeg doc={props.doc} /></p>
       </Show>
       <Show when={items().daken.length > 0}>
         <table class="tabel">
@@ -295,29 +307,35 @@ function Bijlage(props: { doc: Doc }): JSX.Element {
   return (
     <div class="nieuwe-pagina">
       <h2>Bijlage</h2>
-      <Show when={fotosIn(props.doc.d, 'boorprofiel').length > 0}>
-        <h3>Boorprofiel</h3>
-        <Fotos doc={props.doc} slot="boorprofiel" breed />
-      </Show>
-      <h3>Doorlaatbaarheid per grondsoort</h3>
-      <table class="tabel">
-        <thead>
-          <tr>
-            <th>Grondsoort</th>
-            <th>Doorlaatbaarheid</th>
-          </tr>
-        </thead>
-        <tbody>
-          <For each={DOORLAATBAARHEID}>
-            {([g, w]) => (
+      <div class="kolommen">
+        <Show when={fotosIn(props.doc.d, 'boorprofiel').length > 0}>
+          <div class="qa-pdf-boorprofiel">
+            <h3>Boorprofiel</h3>
+            <Fotos doc={props.doc} slot="boorprofiel" breed />
+          </div>
+        </Show>
+        <div class="qa-pdf-doorlaatbaarheid">
+          <h3>Doorlaatbaarheid per grondsoort</h3>
+          <table class="tabel">
+            <thead>
               <tr>
-                <td>{g}</td>
-                <td>{w}</td>
+                <th>Grondsoort</th>
+                <th>Doorlaatbaarheid</th>
               </tr>
-            )}
-          </For>
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              <For each={DOORLAATBAARHEID}>
+                {([g, w]) => (
+                  <tr>
+                    <td>{g}</td>
+                    <td>{w}</td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

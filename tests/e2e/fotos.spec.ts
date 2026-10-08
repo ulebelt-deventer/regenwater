@@ -207,3 +207,22 @@ test('tijdens het uploaden staat er Uploaden... bij het vak, de wachtende foto b
   await expect(slot.locator('.qa-uploaden')).toHaveCount(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(voor);
 });
+
+test('in het Plan van Aanpak staan vooraanzicht en kaart naast elkaar, en boorprofiel en doorlaatbaarheid ook', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  for (const slot of ['straatfoto', 'kaart', 'boorprofiel']) {
+    const res = await page.request.post(`/api/dossiers/${id}/fotos/${slot}`, { data: Buffer.from(PNG, 'base64'), headers: { 'Content-Type': 'image/png' } });
+    expect(res.status()).toBe(201);
+  }
+  await page.goto(`/docs/dossiers/${id}/concept-plan`);
+  const naastElkaar = async (links: string, rechts: string) => {
+    const [l, r, blad] = [(await page.locator(links).boundingBox())!, (await page.locator(rechts).boundingBox())!, (await page.locator('.blad').boundingBox())!];
+    expect(Math.abs(l.y - r.y)).toBeLessThan(2);
+    expect(r.x).toBeGreaterThanOrEqual(l.x + l.width);
+    expect(l.width).toBeLessThan(blad.width / 2);
+    expect(r.width).toBeLessThan(blad.width / 2);
+  };
+  await naastElkaar('.qa-pdf-straatfoto', '.qa-pdf-kaart');
+  await naastElkaar('.qa-pdf-boorprofiel', '.qa-pdf-doorlaatbaarheid');
+});

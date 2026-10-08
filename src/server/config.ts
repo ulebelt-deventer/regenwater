@@ -8,7 +8,7 @@ export interface Config {
   dataDir: string;
   fotoDir: string;
   emailDir: string;
-  mailgun: { sleutel: string; domein: string } | null;
+  mailgun: { sleutel: string; domein: string; api: string } | null;
   afzender: string; // From address
   healthcheckUrl: string | null;
 }
@@ -17,6 +17,14 @@ function verplicht(naam: string): string {
   const v = process.env[naam];
   if (!v) throw new Error(`Omgevingsvariabele ${naam} ontbreekt`);
   return v;
+}
+
+// A Mailgun domain lives in one region; the other region's API answers 401/404 for it.
+const MAILGUN_API = { eu: 'https://api.eu.mailgun.net', us: 'https://api.mailgun.net' };
+function mailgunApi(): string {
+  const regio = process.env.MAILGUN_REGIO ?? 'eu';
+  if (regio !== 'eu' && regio !== 'us') throw new Error(`Onbekende MAILGUN_REGIO ${regio} (eu of us)`);
+  return MAILGUN_API[regio];
 }
 
 export function leesConfig(): Config {
@@ -30,7 +38,7 @@ export function leesConfig(): Config {
     dataDir,
     fotoDir: path.join(dataDir, 'fotos'),
     emailDir: path.resolve('tmp/emails'),
-    mailgun: productie ? { sleutel: verplicht('MAILGUN_API_KEY'), domein: verplicht('MAILGUN_DOMEIN') } : null,
+    mailgun: productie ? { sleutel: verplicht('MAILGUN_API_KEY'), domein: verplicht('MAILGUN_DOMEIN'), api: mailgunApi() } : null,
     afzender: productie ? verplicht('MAIL_AFZENDER') : 'Ulebelt Regenwater <regenwater@example.org>',
     healthcheckUrl: process.env.HEALTHCHECK_URL ?? null,
   };

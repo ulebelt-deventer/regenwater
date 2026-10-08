@@ -63,6 +63,30 @@ test('midden in Regenpijp C staat zijn kop bovenaan in beeld, en tikken erop sch
   expect(new Set(rit.posities).size).toBeGreaterThan(5);
   expect(rit.aangekomen).toBeGreaterThan(200);
   expect(rit.aangekomen).toBeLessThan(450);
-  await expect(c).toHaveAttribute('open', '');
-  await expect(c.locator('.qa-veld-regenpijp-waar .qa-invoer')).toBeVisible();
+  await expect(c).not.toHaveAttribute('open');
+  await expect(c.locator('.qa-veld-regenpijp-waar .qa-invoer')).toBeHidden();
+  await expect(c.locator('.qa-regenpijp-kop')).toHaveClass(/collapsed/);
+  expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(begin, -1);
+});
+
+test('op een telefoon is elk dakdeel een kaartje met labels, zonder zijwaarts scrollen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 760 });
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await zet(page, id, {
+    kaart_annotaties: [
+      { id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] },
+      { id: 'r1', type: 'regenpijp', p: [[1, 1]] },
+      { id: 'r2', type: 'regenpijp', p: [[2, 2]] },
+    ],
+    'dak.d1.m2': 24,
+  });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const tabel = page.locator('.qa-daken-tabel');
+  await expect(tabel.locator('thead')).toBeHidden();
+  await expect(tabel.locator('.qa-waterberging')).toContainText('240 liter');
+  const label = await tabel.locator('.qa-waterberging').evaluate((el) => getComputedStyle(el, '::before').content);
+  expect(label).toBe('"Waterberging per regenpijp**: "');
+  const breedte = await tabel.evaluate((el) => [el.scrollWidth, el.parentElement!.clientWidth]);
+  expect(breedte[0]).toBeLessThanOrEqual(breedte[1]);
 });

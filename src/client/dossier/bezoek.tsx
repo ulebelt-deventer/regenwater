@@ -23,7 +23,7 @@ function naarVeld(anker: string) {
 }
 
 // window.scrollTo's smooth behaviour has no fixed duration, so this eases over `ms` itself.
-function scrollNaar(y: number, ms: number) {
+function scrollNaar(y: number, ms: number, klaar: () => void) {
   const van = window.scrollY;
   const start = performance.now();
   const stap = (nu: number) => {
@@ -32,11 +32,12 @@ function scrollNaar(y: number, ms: number) {
     // 'instant' overrides Bootstrap's `scroll-behavior: smooth` on :root, which would fight each frame.
     window.scrollTo({ top: van + (y - van) * e, behavior: 'instant' });
     if (t < 1) requestAnimationFrame(stap);
+    else klaar();
   };
   requestAnimationFrame(stap);
 }
 
-// One regenpijp as its own accordion. Its header sticks to the top of the screen while you scroll through its fields; tapping it while stuck scrolls back to the start of the section instead of collapsing it.
+// One regenpijp as its own accordion. Its header sticks to the top of the screen while you scroll through its fields; tapping it while stuck scrolls back to the start of the section first, then collapses it.
 function RegenpijpSectie(props: { id: string; label: string }) {
   const [open, setOpen] = createSignal(true);
   let item!: HTMLDetailsElement;
@@ -44,7 +45,7 @@ function RegenpijpSectie(props: { id: string; label: string }) {
     const top = item.getBoundingClientRect().top;
     if (top >= 0) return;
     e.preventDefault();
-    scrollNaar(window.scrollY + top, 250);
+    scrollNaar(window.scrollY + top, 250, () => (item.open = false));
   };
   return (
     <div class="accordion mb-3">
@@ -86,7 +87,7 @@ export function Bezoek() {
               <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
             </Show>
             <div class="table-responsive">
-              <table class="table table-sm align-middle mb-1">
+              <table class="table table-sm align-middle mb-1 tabel-kaarten qa-daken-tabel">
                 <thead>
                   <tr>
                     <th>Dakdeel</th>
@@ -99,10 +100,10 @@ export function Bezoek() {
                   <For each={items().daken}>
                     {(dak) => (
                       <tr class="qa-dak-rij">
-                        <td>{dak.label}</td>
-                        <td>{m2Cel(dak.id, 'dak', dak.m2, dak.m2Berekend)}</td>
-                        <td>{dak.regenpijpen.map((id) => items().labels.get(id)).join(', ') || '--'}</td>
-                        <td class="qa-waterberging">
+                        <td class="fw-semibold">{dak.label}</td>
+                        <td class="d-flex d-md-table-cell align-items-center gap-2" data-label="m²*">{m2Cel(dak.id, 'dak', dak.m2, dak.m2Berekend)}</td>
+                        <td data-label="Regenpijpen">{dak.regenpijpen.map((id) => items().labels.get(id)).join(', ') || '--'}</td>
+                        <td class="qa-waterberging" data-label="Waterberging per regenpijp**">
                           <Show when={dak.regenpijpen.length} fallback={<span class="text-muted">-- (geen regenpijp)</span>}>
                             <Show when={waterberging(dak)} fallback="--">
                               {(w) => (

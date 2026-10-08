@@ -45,6 +45,7 @@ td.getal, th.getal { text-align: right; white-space: nowrap; }
 .fotos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
 .fotos figure { margin: 0; width: calc(50% - 4px); break-inside: avoid; }
 .fotos figure.breed { width: 100%; }
+.kolommen { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .foto { position: relative; line-height: 0; }
 .foto img { width: 100%; height: auto; display: block; border-radius: 3px; }
 .foto svg { position: absolute; inset: 0; width: 100%; height: 100%; }

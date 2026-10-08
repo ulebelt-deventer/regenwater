@@ -69,11 +69,13 @@ export class BestandMailer implements Mailer {
 export class MailgunMailer implements Mailer {
   private sleutel: string;
   private domein: string;
+  private api: string;
   private afzender: string;
   constructor(cfg: Config) {
     if (!cfg.mailgun) throw new Error('Mailgun niet geconfigureerd');
     this.sleutel = cfg.mailgun.sleutel;
     this.domein = cfg.mailgun.domein;
+    this.api = cfg.mailgun.api;
     this.afzender = cfg.afzender;
   }
   async verstuur(b: Bericht): Promise<void> {
@@ -86,7 +88,7 @@ export class MailgunMailer implements Mailer {
     form.set('text', b.tekst);
     form.set('html', b.html ?? tekstNaarHtml(b.tekst));
     for (const x of b.bijlagen ?? []) form.append('attachment', new Blob([new Uint8Array(x.inhoud)], { type: 'application/pdf' }), x.naam);
-    const res = await fetch(`https://api.eu.mailgun.net/v3/${this.domein}/messages`, {
+    const res = await fetch(`${this.api}/v3/${this.domein}/messages`, {
       method: 'POST',
       headers: { Authorization: `Basic ${Buffer.from(`api:${this.sleutel}`).toString('base64')}` },
       body: form,

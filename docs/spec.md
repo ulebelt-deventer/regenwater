@@ -204,7 +204,7 @@
         - Selecting a dak/tuin polygon shows draggable corner handles, so an outline the admin drew roughly can be corrected on-site without redrawing it.
       - Deleting a dak, tuin or regenpijp deletes its form data too, and the remaining items are renumbered/relettered everywhere in the form (each keeps its stable internal ID; only the shown label changes). Undo restores it including its data. The confirm prompt says so, and warns that free text mentioning items by letter or number (eg "pijp C") isn't updated automatically, so the user should check it.
     - "Dak" (table)
-      - 1 row per dakdeel: number (eg "D1"), m² (auto-calculated; a manual input if the kaart isn't to scale), # regenpijpen (from the links), waterberging per regenpijp (m² ÷ # regenpijpen × normafvoer). The waterberging cell shows its calculation in small gray text (eg "18 m² ÷ 2 × 20 mm = 180 liter"), here and in the PDF, so anyone can check it. A dakdeel with no regenpijp linked shows "-- (geen regenpijp)" in that cell, here and in the PDF, and the Controle text lists it.
+      - 1 row per dakdeel: number (eg "D1"), m² (auto-calculated; a manual input if the kaart isn't to scale), # regenpijpen (from the links), waterberging per regenpijp (m² ÷ # regenpijpen × normafvoer). The waterberging cell shows its calculation in small gray text (eg "18 m² ÷ 2 × 20 mm = 180 liter"), here and in the PDF, so anyone can check it. A dakdeel with no regenpijp linked shows "-- (geen regenpijp)" in that cell, here and in the PDF, and the Controle text lists it. On phones each dakdeel row shows as a small card with a label before each value, so the table never scrolls sideways.
       - Footnotes as on the sample: "\* bron: kadastrale kaart (PDOK)" and "\*\* per regenpijp gebaseerd op normafvoer 20 mm regenwater". The 20 mm is a constant in code (tentative, pending the team question).
       - If no dak is drawn on the kaart yet: red warning "Er is nog geen dak ingetekend op de kadasterkaart" with a link that scrolls back up to the kaart.
     - Tuin
@@ -213,7 +213,7 @@
       - Verhard (number input, 0-100 %): how much of the whole tuin is paved (terras, pad, tegels).
       - Tuinsituatie & infiltratie (textarea, with optional photo upload slots)
         - *Hint: Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?*
-    - For each regenpijp identified on the kaart: its own accordion (collapsible, with a line under the header, open by default). While you scroll through its fields its header sticks to the top of the screen (eg "Regenpijp C"); tapping the stuck header scrolls back to the top of that section over 250ms instead of collapsing it.
+    - For each regenpijp identified on the kaart: its own accordion (collapsible, with a line under the header, open by default). While you scroll through its fields its header sticks to the top of the screen (eg "Regenpijp C"); tapping the stuck header scrolls back to the top of that section over 250ms, then collapses it.
       - Voert af van: dropdown of dakdelen, preset to the nearest one.
       - Soort (radio options: PVC, Zink, Anders, namelijk... (write-in))
       - Diameter (radio options: 80mm, 100mm, Anders, namelijk... (write-in))
@@ -342,8 +342,8 @@
   - Contains everything filled in on the form, in roughly the same narrative sequence, following the structure of the sample (Voorbeeldstraat 12):
   - **Header block**: Locatie, Bewoner, Woningeigenaar, Datum schouw (afspraak date), Schouw door (the bezoeker), Auteur (the admin who created the dossier).
   - **1. Regenwatervolume**
-    - Algemeen: woningtype, huur/koop & woningeigenaar, straatfoto.
-    - Dakoppervlakte en waterberging: the kadasterkaart with its tekeningen, and the "Dak" (dakdelen) table with its two footnotes.
+    - Algemeen: woningtype, huur/koop & woningeigenaar, then the straatfoto and the kadasterkaart with its tekeningen side by side (half width each).
+    - Dakoppervlakte en waterberging: the "Dak" (dakdelen) table with its two footnotes.
   - **2. Infiltratie**: "Tuin" (tuindelen) table, verhard %, tuinsituatie text, wat gebeurt er bij hoosbuien, tuin photos.
   - **3. Bodemgegevens**: the bodemsituatie choice, with the boorlocatie and bron (BRO/DINOloket); boorprofiel image in the bijlage.
   - **4. Plan van aanpak**
@@ -352,7 +352,7 @@
     - Voorstel Ulebelt: the Beoordeling sentence, Toelichting, fixed lead-in line, werkzaamheden bullets.
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.
   - **5. Materialenlijst en uitvoering**: the rows with an Aantal, listing Materiaal and Aantal only, then the Werkzaamheden text. Prices are left out, as in the sample (see team question).
-  - **Bijlage**: boorprofiel image and the standard "Doorlaatbaarheid per grondsoort" table, rendered as text from a constant in code (transcribed from the sample):
+  - **Bijlage**: in two columns, the boorprofiel image (left) and the standard "Doorlaatbaarheid per grondsoort" table, rendered as text from a constant in code (transcribed from the sample):
 
     | Grondsoort | Doorlaatbaarheid |
     | --- | --- |
