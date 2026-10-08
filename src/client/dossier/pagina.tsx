@@ -185,19 +185,17 @@ export function SluitKnop(props: { reden: SluitReden; label: string; class: stri
   );
 }
 
-// "Bewerken" for whoever may still edit that sub-page, "Bekijken" for the rest. Once the step is done it moves to the
-// section's top right corner (`kop`), out of the way of the summary.
-function SubpaginaKnop(props: { pad: string; eerst: string; gestart: boolean; mag: boolean; kop?: boolean }) {
+// The link to a section's sub-page, always in the section's top right corner: a filled `eerst` button while the step
+// is still to do, then a pencil "Bewerken" for whoever may still edit it, and an eye "Bekijken" for the rest.
+function SubpaginaKnop(props: { pad: string; eerst: string; gestart: boolean; mag: boolean }) {
   const s = useDossier();
   const label = () => (!props.mag ? 'Bekijken' : props.gestart ? 'Bewerken' : props.eerst);
   const icoon = () => (!props.mag ? 'bi-eye' : props.gestart ? 'bi-pencil' : null);
   return (
-    <Show when={!!props.kop === props.gestart}>
-      <A href={`/dossiers/${s.id}/${props.pad}`} class={`btn ${props.mag && !props.gestart ? 'btn-primary' : 'btn-outline-primary'} btn-sm text-nowrap qa-naar-${props.pad}`}>
-        <Show when={icoon()}>{(i) => <i class={`bi ${i()} me-1`} aria-hidden="true" />}</Show>
-        {label()}
-      </A>
-    </Show>
+    <A href={`/dossiers/${s.id}/${props.pad}`} class={`btn ${props.mag && !props.gestart ? 'btn-primary' : 'btn-outline-primary'} btn-sm text-nowrap qa-naar-${props.pad}`}>
+      <Show when={icoon()}>{(i) => <i class={`bi ${i()} me-1`} aria-hidden="true" />}</Show>
+      {label()}
+    </A>
   );
 }
 
@@ -269,11 +267,6 @@ export function Details() {
     if (await actie(s, 'sluiten', { reden: 'Uitgevoerd', toelichting: '' })) melding('success', 'Dossier gesloten als uitgevoerd.');
   };
 
-  const intakeKnop = (kop: boolean) => <SubpaginaKnop pad="intake" eerst="Intake invullen" gestart={s.d.intake_afgerond_at !== null} mag={open()} kop={kop} />;
-  const bezoekKnop = (kop: boolean) => <SubpaginaKnop pad="bezoek" eerst="Start bezoek" gestart={s.d.bezoek_afgerond_at !== null} mag={s.mag(['bezoeker'])} kop={kop} />;
-  const planKnop = (kop: boolean) => <SubpaginaKnop pad="plan" eerst="Plan van Aanpak invullen" gestart={s.d.klaar_voor_controle_at !== null} mag={s.mag(['bezoeker'])} kop={kop} />;
-  const uitvoeringKnop = (kop: boolean) => <SubpaginaKnop pad="uitvoering" eerst="Uitvoering invullen" gestart={opgeleverd()} mag={s.mag(['uitvoerder'])} kop={kop} />;
-
   const naUitvoerder = () => s.d.corporatie_akkoord_at || s.d.klussendienst_gekozen_at || s.d.uitvoerder_id !== null || s.d.werk_opgeleverd_at || s.status().stap.nr >= 9;
   const opgeleverd = () => s.d.werk_opgeleverd_at !== null;
 
@@ -300,14 +293,15 @@ export function Details() {
         <Notities />
       </Sectie>
 
-      <Sectie id="sectie-intake" titel="Intake" actie={<Show when={s.beheerder()}>{intakeKnop(true)}</Show>}>
-        <div class="mb-2">
+      <Sectie
+        id="sectie-intake"
+        titel="Intake"
+        actie={<Show when={s.beheerder()}><SubpaginaKnop pad="intake" eerst="Invullen" gestart={s.d.intake_afgerond_at !== null} mag={open()} /></Show>}
+      >
+        <dl class="feiten mb-2">
           <IntakeSamenvatting />
-        </div>
+        </dl>
         <MijlpaalRegel mijlpaal="intake_afgerond" label="Intake is compleet" />
-        <Show when={s.beheerder() && s.d.intake_afgerond_at === null}>
-          <div class="mt-2">{intakeKnop(false)}</div>
-        </Show>
       </Sectie>
 
       <Sectie id="sectie-bezoeker" titel="Bezoeker">
@@ -342,29 +336,25 @@ export function Details() {
         </Show>
       </Sectie>
 
-      <Sectie id="sectie-bezoek" titel="Bezoek" actie={bezoekKnop(true)}>
+      <Sectie id="sectie-bezoek" titel="Bezoek" actie={<SubpaginaKnop pad="bezoek" eerst="Start bezoek" gestart={s.d.bezoek_afgerond_at !== null} mag={s.mag(['bezoeker'])} />}>
         <VeldInvoer k="afspraak" />
         <Show when={s.beheerder()}>
           <div class="mb-3">
             <a href={`/docs/dossiers/${s.id}/bezoekformulier.pdf`} target="_blank" class="small qa-bezoekformulier"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Printbaar bezoekformulier (PDF)</a>
           </div>
         </Show>
-        <div class="mb-2">
+        <dl class="feiten mb-2">
           <BezoekSamenvatting />
-        </div>
+        </dl>
         <MijlpaalRegel mijlpaal="bezoek_afgerond" label="Bezoek afgerond" />
-        <Show when={s.d.bezoek_afgerond_at === null}>
-          <div class="mt-2">{bezoekKnop(false)}</div>
-        </Show>
       </Sectie>
 
-      <Sectie id="sectie-plan" titel="Plan van Aanpak" actie={planKnop(true)}>
-        <div class="mb-2">
+      <Sectie id="sectie-plan" titel="Plan van Aanpak" actie={<SubpaginaKnop pad="plan" eerst="Invullen" gestart={s.d.klaar_voor_controle_at !== null} mag={s.mag(['bezoeker'])} />}>
+        <dl class="feiten mb-2">
           <PlanSamenvatting />
-        </div>
+        </dl>
         <MijlpaalRegel mijlpaal="klaar_voor_controle" label="Klaar voor controle" />
-        <div class="d-flex flex-wrap align-items-center gap-3 mt-2">
-          {planKnop(false)}
+        <div class="mt-2">
           <a href={`/docs/dossiers/${s.id}/concept-plan`} target="_blank" class="small qa-concept-plan">Bekijk concept-Plan</a>
         </div>
       </Sectie>
@@ -438,18 +428,15 @@ export function Details() {
           </Show>
         </Sectie>
 
-        <Sectie id="sectie-uitvoering" titel="Uitvoering" actie={uitvoeringKnop(true)}>
+        <Sectie id="sectie-uitvoering" titel="Uitvoering" actie={<SubpaginaKnop pad="uitvoering" eerst="Invullen" gestart={opgeleverd()} mag={s.mag(['uitvoerder'])} />}>
           <div class="mb-3">
             <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="qa-plan-pdf-uitvoering"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Plan van Aanpak (PDF)</a>
           </div>
           <VeldInvoer k="uitvoering_gepland" />
-          <div class="mb-2">
+          <dl class="feiten mb-2">
             <UitvoeringSamenvatting />
-          </div>
+          </dl>
           <MijlpaalRegel mijlpaal="werk_opgeleverd" label="Werk opgeleverd" />
-          <Show when={!opgeleverd()}>
-            <div class="mt-2">{uitvoeringKnop(false)}</div>
-          </Show>
         </Sectie>
 
         <Show when={s.beheerder()}>

@@ -35,7 +35,19 @@ $container-max-widths: (lg: 1200px);
 .pre-wrap { white-space: pre-wrap; }
 .font-serif { font-family: Georgia, 'Times New Roman', serif; }
 // The label column of a read-only Regel: narrower on phones so the value keeps room.
-.regel-label { width: 7.5rem; @include media-breakpoint-up(sm) { width: 11rem; } }
+// Summary list (`dl.feiten` of `Regel`s): on phones each label sits small above its value (an empty one stays on one
+// line with its "--"); from sm up the labels form a column as wide as the longest one. Rows share the columns through
+// subgrid; other children span the full width.
+.feiten { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: .4rem;
+  > * { grid-column: 1 / -1; }
+  .feit { display: grid; grid-template-columns: subgrid; }
+  .feit dt { font-size: $font-size-sm; line-height: 1.3; }
+  @include media-breakpoint-down(sm) { .feit-leeg { display: flex; align-items: baseline; gap: .5rem; } }
+  @include media-breakpoint-up(sm) {
+    grid-template-columns: max-content minmax(0, 1fr); column-gap: 1.5rem; row-gap: .15rem;
+    .feit dt { font-size: inherit; line-height: inherit; }
+  }
+}
 .min-w-0 { min-width: 0; }
 // A table column only as wide as its content.
 .w-1px { width: 1px; }
@@ -84,9 +96,12 @@ $container-max-widths: (lg: 1200px);
 // Photo slots
 .foto-slot { border: 2px dashed transparent; border-radius: .5rem; padding: .25rem; }
 .foto-slot.sleep { border-color: $ub-groen; background: #eef7f1; }
-.thumb { width: 5.5rem; height: 5.5rem; object-fit: cover; border-radius: .4rem; border: 1px solid $ub-rand; background: #eee; cursor: pointer; display: block; }
+// Stays beside the photos in a narrow column by stacking its buttons, rather than wrapping below them.
+.foto-knoppen { flex: 1 1 8rem; }
+// Twice as wide as tall: the photo is cropped to its middle band.
+.thumb { width: 11rem; height: 5.5rem; background: #eee; cursor: pointer; display: block; }
 .thumb.wacht { opacity: .5; }
-.thumb.thumb-klein { width: 3.5rem; height: 3.5rem; }
+.thumb.thumb-klein { width: 7rem; height: 3.5rem; }
 
 // Full-screen photo viewer and drawing editor
 .annot { position: fixed; inset: 0; background: $ub-zwart; z-index: 1050; display: flex; flex-direction: column; }

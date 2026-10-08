@@ -179,6 +179,8 @@ function esc(s: string): string {
 }
 
 const KLEUR = { pijl: '#ff713e', tekst: '#ffffff', dak: '#86afe2', tuin: '#88d356', regenpijp: '#00643c' };
+// A Tekst annotation's font size in units of `schaal`; the editor's hit test uses it too.
+export const TEKST_PX = 14 * 1.21;
 
 // One SVG drawing function for the editor and the PDFs. `schaal` is the stroke/text size unit in image pixels.
 export function annotatiesSvg(annots: Annotatie[], opts: { schaal: number; mPerPx: number | null; geselecteerd?: string | null }): string {
@@ -223,7 +225,7 @@ export function annotatiesSvg(annots: Annotatie[], opts: { schaal: number; mPerP
       out.push(`<polygon points="${x2},${y2} ${punt(0.45)} ${punt(-0.45)}" fill="${KLEUR.pijl}"/>`);
     } else {
       const [x, y] = a.p[0];
-      out.push(tekst(x, y, a.tekst ?? '', sel ? '#ffd84d' : '#ffffff', 1.1));
+      out.push(tekst(x, y, a.tekst ?? '', sel ? '#ffd84d' : '#ffffff', TEKST_PX / 14));
     }
   }
   return out.join('');

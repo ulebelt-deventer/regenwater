@@ -322,12 +322,12 @@ export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
   );
 }
 
-// A labelled read-only line in a compact summary; `leeg` shows a dash instead of the value.
+// A labelled read-only line in a compact summary, inside a `dl.feiten`; `leeg` shows a dash instead of the value.
 export function Regel(props: { label: string; children: JSX.Element; leeg?: boolean; class?: string }) {
   return (
-    <div class={`d-flex gap-2 ${props.class ?? ''}`}>
-      <span class="text-muted flex-shrink-0 regel-label">{props.label}</span>
-      <span class="min-w-0">{props.leeg ? <span class="text-muted">--</span> : props.children}</span>
+    <div class={`feit ${props.class ?? ''}`} classList={{ 'feit-leeg': props.leeg }}>
+      <dt class="text-muted fw-normal">{props.label}</dt>
+      <dd class="mb-0 min-w-0">{props.leeg ? <span class="text-muted">--</span> : props.children}</dd>
     </div>
   );
 }

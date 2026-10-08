@@ -102,24 +102,51 @@ test('bij een gescheiden riool zegt de intake waarom straatfoto, kaart en boorpr
   await expect(page.locator('.qa-sectie-intake .qa-sv-straatfoto')).toHaveCount(0);
 });
 
-test('Bewerken met potlood staat rechtsboven in de sectie zodra de intake compleet is, en anders onderaan', async ({ page }) => {
+test('de knop naar de sub-pagina staat altijd rechtsboven in de sectie: eerst Invullen, en Bewerken met potlood zodra de intake compleet is', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}`);
   const sectie = page.locator('.qa-sectie-intake');
   const knop = sectie.locator('.qa-naar-intake');
   const titel = sectie.locator('h2');
-  await expect(knop).toHaveText('Intake invullen');
-  const onder = (await knop.boundingBox())!;
-  expect(onder.y).toBeGreaterThan((await titel.boundingBox())!.y + 40);
+  const rechtsboven = async () => {
+    const [k, t, s] = [(await knop.boundingBox())!, (await titel.boundingBox())!, (await sectie.boundingBox())!];
+    expect(Math.abs(k.y + k.height / 2 - (t.y + t.height / 2))).toBeLessThan(8);
+    expect(s.x + s.width - (k.x + k.width)).toBeLessThan(40);
+  };
+  await expect(knop).toHaveText('Invullen');
+  await expect(knop).toHaveClass(/btn-primary/);
+  await rechtsboven();
 
   await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'intake_afgerond', aan: true });
   await page.reload();
   await expect(knop).toHaveText('Bewerken');
   await expect(knop.locator('.bi-pencil')).toBeVisible();
-  const [k, t, s] = [(await knop.boundingBox())!, (await titel.boundingBox())!, (await sectie.boundingBox())!];
-  expect(Math.abs(k.y + k.height / 2 - (t.y + t.height / 2))).toBeLessThan(8);
-  expect(s.x + s.width - (k.x + k.width)).toBeLessThan(40);
+  await rechtsboven();
+});
+
+test('de samenvatting zet labels als smalle kolom naast de waarden, en op een telefoon het label boven de waarde, behalve bij een leeg veld', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}`);
+  const regel = page.locator('.qa-sectie-intake .qa-sv-rioolstelsel');
+  const [label, waarde] = [regel.locator('dt'), regel.locator('dd')];
+  // The label column is as wide as the longest label ("Bodemsituatie"), not a fixed width.
+  const langste = (await page.locator('.qa-sectie-intake .qa-sv-bodemsituatie dt').boundingBox())!;
+  let [l, w] = [(await label.boundingBox())!, (await waarde.boundingBox())!];
+  expect(Math.abs(l.y - w.y)).toBeLessThan(4);
+  expect(w.x - (langste.x + langste.width)).toBeLessThan(32);
+
+  await page.setViewportSize({ width: 390, height: 800 });
+  [l, w] = [(await label.boundingBox())!, (await waarde.boundingBox())!];
+  expect(w.y).toBeGreaterThanOrEqual(l.y + l.height - 1);
+  expect(Math.abs(w.x - l.x)).toBeLessThan(2);
+
+  const leeg = page.locator('.qa-sectie-intake .qa-sv-boorlocatie');
+  await expect(leeg.locator('dd')).toHaveText('--');
+  [l, w] = [(await leeg.locator('dt').boundingBox())!, (await leeg.locator('dd').boundingBox())!];
+  expect(w.x).toBeGreaterThan(l.x + l.width);
+  expect(Math.abs(w.y + w.height - (l.y + l.height))).toBeLessThan(6);
 });
 
 test('zonder ingevulde aantallen toont Materialen alleen --', async ({ page }) => {

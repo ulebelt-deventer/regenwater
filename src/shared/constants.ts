@@ -18,7 +18,12 @@ export const RIOOLKAARTEN: Record<string, string> = {
   'Olst-Wijhe': 'https://olst-wijhe.maps.arcgis.com/apps/instant/basic/index.html?appid=859f1b244196497e9f13df1f7c136676',
 };
 
-export const KADASTRALE_KAART_URL = 'https://app.pdok.nl/kadaster/kadastralekaart/viewer/'; // PLACEHOLDER: does not center on the address
+// The PDOK viewer centred on an RD point, with the kadastrale kaart layers on (layer id from the PDOK service catalog).
+export function kadastraleKaartUrl([x, y]: [number, number]): string {
+  const l = '97cf6a64-9cfc-4ce6-9741-2db44fd27fca';
+  const lagen = ['kadastralekaart;_', 'Perceel;standaard:perceel', 'KadastraleGrens;standaard:kadastralegrens', 'Bebouwing;standaard:bebouwing', 'OpenbareRuimteNaam;_'];
+  return `https://app.pdok.nl/viewer/#x=${Math.round(x)}&y=${Math.round(y)}&z=14&background=BRT-A%20standaard&layers=${lagen.map((n) => `${l};${n};1`).join(',')}`;
+}
 export const SUBSIDIE_INFO_URL = 'https://www.ulebelt.nl/regenwater'; // PLACEHOLDER
 export const NORMAFVOER_MM = 20; // PLACEHOLDER: the sample says 20 mm, its numbers match 10 mm
 export const KLUSSENDIENST_PER_REGENPIJP_CENT = 5000; // PLACEHOLDER

@@ -1,6 +1,6 @@
 // Photo slots: drop or pick images, see thumbnails with their drawings, tap one to open the drawing tool.
 import { For, Show, createSignal, untrack } from 'solid-js';
-import { KADASTRALE_KAART_URL } from '../../shared/constants.ts';
+import { kadastraleKaartUrl } from '../../shared/constants.ts';
 import { annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Foto } from '../../shared/types.ts';
 import { fotoSlotVoor } from '../../shared/velden.ts';
@@ -15,7 +15,7 @@ export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boole
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
   const svg = () => annotatiesSvg(annots(), { schaal: Math.max(props.foto.breedte, props.foto.hoogte) / 450, mPerPx: null });
   return (
-    <button type="button" class="thumb p-0 border-0 qa-foto" classList={{ 'thumb-klein': props.klein }} onClick={() => props.onClick()} aria-label="Foto bekijken">
+    <button type="button" class="thumb p-0 border rounded overflow-hidden qa-foto" classList={{ 'thumb-klein': props.klein }} onClick={() => props.onClick()} aria-label="Foto bekijken">
       <svg viewBox={`0 0 ${props.foto.breedte} ${props.foto.hoogte}`} preserveAspectRatio="xMidYMid slice" width="100%" height="100%">
         <image href={`/api/fotos/${props.foto.id}`} width={props.foto.breedte} height={props.foto.hoogte} />
         {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
@@ -121,31 +121,34 @@ export function FotoSlot(props: { k: string; label?: string }) {
       <Show when={props.label}>
         <div class="small fw-semibold mb-1">{props.label}</div>
       </Show>
-      <div class="d-flex flex-wrap gap-2 mb-2">
+      {/* The buttons sit right of the photos, and wrap below them only when there's no room. */}
+      <div class="d-flex flex-wrap align-items-start gap-2">
         <For each={fotos()}>{(f) => <FotoDuim foto={f} onClick={() => setOpen(f.id)} />}</For>
         <For each={wachtend()}>
           {(w) => (
-            <div class="thumb wacht qa-foto-wacht">
-              <img src={w.url} alt="" class="w-100 h-100 object-fit-cover rounded" />
+            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht">
+              <img src={w.url} alt="" class="w-100 h-100 object-fit-cover" />
             </div>
           )}
         </For>
         <Show when={omzetten() > 0 || wachtend().length > 0}>
-          <div class="d-flex align-items-center small text-muted qa-uploaden">
+          <div class="d-flex align-items-center align-self-center small text-muted qa-uploaden">
             <span class="spinner-border spinner-border-sm me-2" aria-hidden="true" />
             Uploaden...
           </div>
         </Show>
+        <Show when={!uit()}>
+          <div class="foto-knoppen qa-foto-knoppen">
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}>📷 Foto maken</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}>Bestand kiezen</button>
+            </div>
+            <div class="small text-muted mt-1 d-none d-md-block">Of sleep een foto hierheen.</div>
+            <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
+            <input ref={kiezer} type="file" accept="image/*" multiple={!slot.enkel} class="d-none qa-foto-invoer" onChange={uitInvoer} />
+          </div>
+        </Show>
       </div>
-      <Show when={!uit()}>
-        <div class="d-flex flex-wrap gap-2">
-          <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}>📷 Foto maken</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}>Bestand kiezen</button>
-        </div>
-        <div class="small text-muted mt-1 d-none d-md-block">Of sleep een foto hierheen.</div>
-        <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
-        <input ref={kiezer} type="file" accept="image/*" multiple={!slot.enkel} class="d-none qa-foto-invoer" onChange={uitInvoer} />
-      </Show>
       <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} />}</Show>
     </div>
   );
@@ -163,7 +166,9 @@ export function KaartVeld() {
         <Show when={magBewerken() && s.d.adres}>
           <button type="button" class="btn btn-sm btn-outline-primary qa-luchtfoto-laden" onClick={() => setLucht(true)}>Luchtfoto laden</button>
         </Show>
-        <a href={KADASTRALE_KAART_URL} target="_blank" rel="noopener" class="small">Kadastrale kaart</a>
+        <Show when={s.d.adres}>
+          {(a) => <a href={kadastraleKaartUrl(a().rd)} target="_blank" rel="noopener" class="small qa-kadastrale-kaart">Kadastrale kaart</a>}
+        </Show>
       </div>
       <div class="form-text mt-0 mb-1">Teken de daken, tuinen en regenpijpen in. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
       <Show when={s.kaartVervangen()}>

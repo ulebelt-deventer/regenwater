@@ -1,6 +1,6 @@
 // Full-screen photo viewer and drawing tool. Zoom and pan move the SVG viewBox, so image coordinates never change.
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
-import { afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
+import { TEKST_PX, afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
 import { del } from '../api.ts';
@@ -141,7 +141,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
       case 'regenpijp':
         return Math.hypot(p[0] - a.p[0][0], p[1] - a.p[0][1]) < 11 * u() + tol / 2;
       case 'tekst': {
-        const h = 14 * u() * 1.1;
+        const h = TEKST_PX * u();
         const b = (a.tekst ?? '').length * h * 0.6;
         return Math.abs(p[0] - a.p[0][0]) < b / 2 + tol / 2 && Math.abs(p[1] - a.p[0][1]) < h / 2 + tol / 2;
       }

@@ -29,3 +29,9 @@ test('met nog ontbrekende velden vraagt Intake is compleet eerst bevestiging, en
   await expect(page.locator('.qa-toewijzen-bezoeker')).toBeVisible();
   await expect(page.locator('.qa-bezoeker-na-intake')).toHaveCount(0);
 });
+
+test('de link Kadastrale kaart opent de PDOK-viewer op het adres', async ({ page }) => {
+  await start(page);
+  await nieuwDossier(page, { huurKoop: 'koop' });
+  await expect(page.locator('.qa-kadastrale-kaart')).toHaveAttribute('href', /^https:\/\/app\.pdok\.nl\/viewer\/#x=207966&y=474195&.*kadastralekaart/);
+});

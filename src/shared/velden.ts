@@ -35,7 +35,7 @@ export interface FotoSlot {
   bewerkers: Bewerker[];
   inPlan?: boolean;
   inOplever?: boolean;
-  enkel?: boolean; // a single-photo slot, where a new upload asks to replace
+  enkel?: boolean; // a single-photo slot, where a new upload replaces the photo without asking
 }
 
 const isHuur = (d: Dossier) => d.huur_koop === 'huur';

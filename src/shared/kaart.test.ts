@@ -191,6 +191,11 @@ describe('annotatiesSvg', () => {
   it('escapes free text', () => {
     expect(annotatiesSvg([{ id: 't', type: 'tekst', p: [[1, 1]], tekst: '<b>' }], { schaal: 1, mPerPx: null })).toContain('&lt;b&gt;');
   });
+
+  it('draws free text at 14 × 1.21 units, scaled with schaal', () => {
+    const svg = annotatiesSvg([{ id: 't', type: 'tekst', p: [[1, 1]], tekst: 'Deur' }], { schaal: 2, mPerPx: null });
+    expect(Number(/font-size="([\d.]+)"/.exec(svg)![1])).toBeCloseTo(14 * 1.21 * 2);
+  });
 });
 
 describe('ontbrekend (Controle)', () => {

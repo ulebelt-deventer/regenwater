@@ -76,6 +76,36 @@ test('een tweede foto op een vak met één foto vraagt vervangen of toevoegen', 
   await expect(page.locator('.qa-bevestig')).toHaveCount(0);
 });
 
+test('op een vak voor één foto, zoals de straatfoto, vervangt een nieuwe foto de oude zonder te vragen', async ({ page }) => {
+  await start(page);
+  await nieuwDossier(page, { huurKoop: 'koop' });
+  const slot = page.locator('.qa-fotoslot-straatfoto');
+  await sleep(page, slot, [png('een.png')]);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await opslagKlaar(page);
+  const eerste = await slot.locator('.qa-foto image').getAttribute('href');
+
+  await sleep(page, slot, [png('twee.png')]);
+  await opslagKlaar(page);
+  await expect(page.locator('.qa-bevestig')).toHaveCount(0);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await expect(slot.locator('.qa-foto image')).not.toHaveAttribute('href', eerste!);
+});
+
+test('de knoppen staan rechts naast de foto, en de duimnagel is twee keer zo breed als hoog met een rand', async ({ page }) => {
+  await nieuwBezoekDossier(page);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  await sleep(page, slot, [png('tuin.png')]);
+  const duim = slot.locator('.qa-foto');
+  await expect(duim).toHaveCount(1);
+  const [d, k] = [(await duim.boundingBox())!, (await slot.locator('.qa-foto-knoppen').boundingBox())!];
+  expect(k.x).toBeGreaterThanOrEqual(d.x + d.width);
+  expect(k.y).toBeLessThan(d.y + d.height / 2);
+  expect(d.width / d.height).toBeCloseTo(2, 1);
+  await expect(duim).toHaveCSS('border-top-width', '1px');
+  await expect(duim).not.toHaveCSS('border-top-left-radius', '0px');
+});
+
 test('vervangen haalt de oude foto weg', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-tuinsituatie');
@@ -169,7 +199,8 @@ test('tijdens het uploaden staat er Uploaden... bij het vak, de wachtende foto b
   await sleep(page, slot, [{ naam: 'tuin.png', type: 'image/png', base64: groot }]);
   await expect(slot.locator('.qa-uploaden')).toContainText('Uploaden...');
   const wacht = (await slot.locator('.qa-foto-wacht img').boundingBox())!;
-  expect(Math.max(wacht.width, wacht.height)).toBeLessThan(100);
+  expect(wacht.width).toBeLessThan(180);
+  expect(wacht.height).toBeLessThan(100);
   expect(await page.evaluate(() => window.scrollY)).toBe(voor);
   laatGaan();
   await expect(slot.locator('.qa-foto')).toHaveCount(1);
