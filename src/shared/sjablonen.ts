@@ -125,6 +125,11 @@ export function probleemTeksten(p: TagProblemen): string[] {
   return [...p.onbekend.map((t) => `{${t}} is geen bekende tag voor deze e-mail.`), ...p.ontbrekend.map((t) => `{${t}} ontbreekt, maar is nodig.`)];
 }
 
+// The required tags whose filled-in value no longer appears in an already filled-in mail, eg the dossier link deleted from the text.
+export function ontbrekendeWaarden(def: SjabloonDef, waarden: Record<string, string>, onderwerp: string, tekst: string): string[] {
+  return def.verplicht.filter((t) => !`${onderwerp}\n${tekst}`.includes(waarden[t]));
+}
+
 export function vulIn(s: string, waarden: Record<string, string>): string {
   return s.replace(/\{([a-z_]+)\}/g, (m, t: string) => (Object.hasOwn(waarden, t) ? waarden[t] : m));
 }

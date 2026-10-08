@@ -171,7 +171,12 @@ export function Opgeslagen(props: { status: 'opgeslagen' | 'bezig' | 'mislukt'; 
         <span class="text-warning qa-opslag-bezig">Bezig met opslaan...</span>
       </Show>
       <Show when={props.status === 'opgeslagen'}>
-        <span class="text-muted qa-opslag-klaar">{props.om ? `Opgeslagen om ${tijd(props.om)}` : 'Wijzigingen worden automatisch opgeslagen'}</span>
+        <span class="text-muted qa-opslag-klaar">
+          <Show when={props.om}>
+            <i class="bi bi-check-circle-fill text-success me-1" aria-hidden="true" />
+          </Show>
+          {props.om ? `Opgeslagen om ${tijd(props.om)}` : 'Wijzigingen worden automatisch opgeslagen'}
+        </span>
       </Show>
     </span>
   );

@@ -33,7 +33,7 @@ function Navbar() {
         </Show>
         <NavLink href="/dossiers" class="qa-nav-dossiers">{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
-          <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer">
+          <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
             <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers">Gebruikers</A>
             <A class="dropdown-item" href="/beheer/materialen">Materialen</A>
             <A class="dropdown-item" href="/beheer/sjablonen">E-mailsjablonen</A>
@@ -53,11 +53,11 @@ function Navbar() {
             </>
           }
           knopClass="btn btn-link nav-link qa-nav-account"
-          class="ms-auto"
+          class={beheerder() ? '' : 'ms-auto'}
           rechts
         >
           <A class="dropdown-item" href="/installeren"><i class="bi bi-phone me-2" aria-hidden="true" />App op je telefoon zetten</A>
-          <button type="button" class="dropdown-item qa-uitloggen" onClick={() => void uitloggen()}><i class="bi bi-box-arrow-right me-2" aria-hidden="true" />Uitloggen</button>
+          <button type="button" class="dropdown-item text-danger qa-uitloggen" onClick={() => void uitloggen()}><i class="bi bi-box-arrow-right me-2" aria-hidden="true" />Uitloggen</button>
         </Dropdown>
       </div>
     </nav>

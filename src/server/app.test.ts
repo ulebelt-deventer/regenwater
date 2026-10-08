@@ -122,12 +122,13 @@ describe('dossiers', () => {
 });
 
 describe('e-mail', () => {
-  it('sends the subsidiemail with the tags filled in and records it on the dossier', async () => {
+  it('sends the prefilled subsidiemail and records it on the dossier', async () => {
     const id = await nieuwDossier();
     const voorbeeld = await beheerder.json('GET', `/api/dossiers/${id}/mail/subsidie_huur`);
     expect(voorbeeld.aan).toBe('anna@example.org');
-    const { dossier } = await beheerder.json('POST', `/api/dossiers/${id}/mail/subsidie_huur`, { aan: voorbeeld.aan, onderwerp: voorbeeld.onderwerp, tekst: 'Beste {bewoner}, over {adres}.' });
-    expect(t.mailer.verstuurd[0]).toMatchObject({ aan: 'anna@example.org', cc: 'bea.beheer@example.org', tekst: 'Beste Anna de Vries, over Walstraat 74, Deventer.' });
+    expect(voorbeeld.tekst).toContain('Beste Anna de Vries,');
+    const { dossier } = await beheerder.json('POST', `/api/dossiers/${id}/mail/subsidie_huur`, { aan: voorbeeld.aan, onderwerp: voorbeeld.onderwerp, tekst: voorbeeld.tekst });
+    expect(t.mailer.verstuurd[0]).toMatchObject({ aan: 'anna@example.org', cc: 'bea.beheer@example.org', tekst: voorbeeld.tekst });
     expect(dossier.verzendingen).toHaveLength(1);
   });
 

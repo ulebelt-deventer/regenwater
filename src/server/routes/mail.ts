@@ -1,7 +1,7 @@
 import type { Hono } from 'hono';
 import { SUBSIDIE_INFO_URL } from '../../shared/constants.ts';
 import { adresRegel, corporatieEmail, corporatieNaam, str } from '../../shared/status.ts';
-import { SJABLONEN, type SjabloonDef, controleerTags, vulIn } from '../../shared/sjablonen.ts';
+import { SJABLONEN, type SjabloonDef, ontbrekendeWaarden, vulIn } from '../../shared/sjablonen.ts';
 import type { Dossier, Gebruiker } from '../../shared/types.ts';
 import { audit } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
@@ -66,13 +66,14 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
     const d = haalDossier(ctx, c);
     const def = mailDef(c);
     const t = sjabloonTekst(ctx, def.key);
+    const waarden = tagWaarden(ctx, d, c.get('actor'));
     return c.json({
       sjabloon: { key: def.key, naam: def.naam, ontvanger: def.ontvanger, tags: def.tags, verplicht: def.verplicht },
       aan: standaardAan(ctx, d, def),
       cc: c.get('actor').email,
-      onderwerp: t.onderwerp,
-      tekst: t.tekst,
-      waarden: Object.fromEntries(def.tags.map((k) => [k, tagWaarden(ctx, d, c.get('actor'))[k]])),
+      onderwerp: vulIn(t.onderwerp, waarden),
+      tekst: vulIn(t.tekst, waarden),
+      waarden: Object.fromEntries(def.tags.map((k) => [k, waarden[k]])),
       bijlage: def.bijlage ? bijlageNaam(d, def.bijlage) : null,
       eerder: d.verzendingen.filter((v) => v.sjabloon === def.key),
     });
@@ -92,9 +93,8 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!EMAIL_RE.test(aan)) fout(400, 'Vul een geldig e-mailadres in bij Aan.');
     if (!onderwerp || !tekst.trim()) fout(400, 'Onderwerp en tekst mogen niet leeg zijn.');
     const afzender = c.get('actor');
-    const waarden = tagWaarden(ctx, d, afzender);
-    const bericht = { aan, cc: afzender.email, replyTo: afzender.email, onderwerp: vulIn(onderwerp, waarden), tekst: vulIn(tekst, waarden) };
-    const problemen = controleerTags(def, onderwerp, tekst);
+    const bericht = { aan, cc: afzender.email, replyTo: afzender.email, onderwerp, tekst };
+    const ontbrekend = ontbrekendeWaarden(def, tagWaarden(ctx, d, afzender), onderwerp, tekst);
     const nu = ctx.klok.iso();
     const opslaan = ctx.db.prepare(
       'INSERT INTO verzendingen (dossier_id, sjabloon, ontvanger, aan, cc, onderwerp, tekst, handmatig, mislukt_at, mislukt_reden, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -111,7 +111,7 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
     }
     opslaan.run(d.id, def.key, def.ontvanger, aan, handmatig ? null : afzender.email, bericht.onderwerp, bericht.tekst, handmatig ? 1 : 0, mislukt ? nu : null, mislukt, nu, afzender.id);
     audit(ctx, actorVan(c), d.id, handmatig ? 'handmatig_verstuurd' : mislukt ? 'email_mislukt' : 'email_verstuurd', {
-      sjabloon: def.key, aan, onderwerp: bericht.onderwerp, tekst: bericht.tekst, tag_problemen: problemen.onbekend.length + problemen.ontbrekend.length > 0,
+      sjabloon: def.key, aan, onderwerp: bericht.onderwerp, tekst: bericht.tekst, tag_problemen: ontbrekend.length > 0,
     });
     if (mislukt) {
       await melding(ctx, `E-mail niet afgeleverd: ${bericht.onderwerp} aan ${aan}`, `De e-mail "${bericht.onderwerp}" aan ${aan} is niet afgeleverd.\n\nFoutmelding: ${mislukt}\n\n${dossierLink(ctx, d.id)}`, d.id);

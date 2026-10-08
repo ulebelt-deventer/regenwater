@@ -97,7 +97,7 @@
   - *For each input with optional photo upload slots, it's a 2-column system where you write in the left and the right (by default narrow) column has a "Foto maken" button you can tap on to open your camera and take a pic and it will be downscaled and uploaded and attached (or drop image files on it; see the photo slot rules under Straatfoto). Tap a pic then tap "Verwijderen" to remove it. Multiple photos can be attached to any such slot, though usually it will be 0-1 in a given slot.*
   - *Every email the app sends to a person outside the admin team (bewoner, corporatie, klusser) goes through the same preview pop-up, opened by a button:*
     - Aan: prefilled (bewoner's e-mail, the corporatie's address constant, the klusser's account e-mail) but editable; validated as an e-mail address. Onderwerp and tekst are editable too, prefilled from the template.
-    - The tekst shows the template's `{tags}` as tags, not filled in, and they're filled in at send time; a line under the textarea shows what each tag will become for this dossier (eg `{adres}` = Voorbeeldstraat 12, Deventer). An unknown tag (eg a typo `{adress}`) or a missing required tag (eg the dossier `{link}` in a klusser email) shows a red warning in the pop-up, and "Versturen" then asks "Weet je het zeker?" before sending.
+    - The onderwerp and tekst arrive with the template's `{tags}` already filled in for this dossier, so the pop-up shows exactly the mail that will be sent, and it's sent as edited. If a required value is no longer in the text (eg the dossier link in a klusser email), the pop-up shows a warning and "Versturen" then asks "Weet je het zeker?" before sending.
     - Edits apply to this one send only; to change the standard text, edit the template under Beheer > E-mailsjablonen. The sent subject and text are stored in the audit trail.
     - Red .alert.alert-danger at top if this email (same template, same dossier) was already sent, with the date.
     - CC'd to the admin who sends it (pending the team question about a shared inbox).
@@ -446,7 +446,7 @@
   - "E-mailsjablonen"
     - The templates: Subsidie: subsidiabel, huurwoning / subsidiabel, koopwoning / niet subsidiabel; Bezoeker toegewezen; Plan naar bewoner (huur); Plan naar bewoner (koop, asks Klussendienst of zelf); Plan naar woningcorporatie; Uitvoerder toegewezen; Opleverrapport naar woningcorporatie; Opleverrapport naar bewoner; Oproep Signal-groep (copied to the clipboard, no onderwerp). The login email is fixed in code.
     - Seeded at launch from the prototype's drafts, with texts written for the ones it lacks; admins edit them from then on.
-    - Lets admins configure each email template. Each one has {...} tags, listed at the top so you know what tags are supported (required ones marked), and validated on save with the same unknown/missing tag warnings as the preview pop-up.
+    - Lets admins configure each email template. Each one has {...} tags, listed at the top so you know what tags are supported (required ones marked), and validated on save with warnings for unknown tags (eg a typo `{adress}`) and missing required tags (eg `{link}` in a klusser email).
   - "Leeg bezoekformulier (PDF)" (see Bezoek)
   - "Alle activiteit"
     - An audit list of all recent changes in the app, most recent at top, cursor-paginated. With date/time, who, what dossier (link), summary of the change.

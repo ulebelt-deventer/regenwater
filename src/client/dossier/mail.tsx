@@ -1,7 +1,7 @@
-// Edit-and-send pop-up for one e-mail template. Tags stay as {tags} in the editor; the server fills them in.
+// Edit-and-send pop-up for one e-mail template, prefilled with the template's tags already filled in for this dossier.
 import { For, Show, createResource, createSignal, untrack } from 'solid-js';
 import { datum } from '../../shared/datum.ts';
-import { controleerTags, probleemTeksten, sjabloonDef } from '../../shared/sjablonen.ts';
+import { TAG_UITLEG, ontbrekendeWaarden, sjabloonDef } from '../../shared/sjablonen.ts';
 import type { Dossier, Verzending } from '../../shared/types.ts';
 import { ApiFout, get, post } from '../api.ts';
 import { Laden, Modal, bevestig, melding } from '../ui.tsx';
@@ -31,7 +31,7 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
   const waarde = (eigen: string | null, standaard: string) => (eigen === null ? standaard : eigen);
   const problemen = () => {
     const m = data()!;
-    return probleemTeksten(controleerTags(def, waarde(onderwerp(), m.onderwerp), waarde(tekst(), m.tekst)));
+    return ontbrekendeWaarden(def, m.waarden, waarde(onderwerp(), m.onderwerp), waarde(tekst(), m.tekst)).map((t) => `De ${TAG_UITLEG[t]} ontbreekt, maar is nodig.`);
   };
 
   const verstuur = async (handmatig: boolean) => {
@@ -100,9 +100,6 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
                 <For each={problemen()}>{(p) => <div>{p}</div>}</For>
               </div>
             </Show>
-            <div class="small text-muted qa-mail-tags">
-              <For each={Object.entries(m().waarden)}>{([k, v], i) => <>{i() ? ' · ' : ''}<code>{`{${k}}`}</code> = {v || <em>leeg</em>}</>}</For>
-            </div>
             <Show when={m().bijlage}>
               <div class="small mt-2 qa-mail-bijlage">📎 {m().bijlage}</div>
             </Show>

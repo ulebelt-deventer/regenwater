@@ -17,6 +17,8 @@ $font-family-sans-serif: Figtree, system-ui, -apple-system, 'Segoe UI', sans-ser
 $headings-font-weight: 800;
 $card-border-color: $ub-rand;
 $min-contrast-ratio: 3;
+// One max width at every breakpoint: containers stay fluid up to 1200px and then center, with no jumps in between.
+$container-max-widths: (sm: 1200px, md: 1200px, lg: 1200px, xl: 1200px, xxl: 1200px);
 
 @import 'bootstrap/scss/bootstrap';
 
@@ -65,7 +67,7 @@ $min-contrast-ratio: 3;
 @keyframes flash { from { background: #fff3c4; } to { background: transparent; } }
 
 // Autosave indicator
-.opslag { position: fixed; right: .75rem; bottom: .75rem; z-index: 1080; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem .75rem; font-size: $font-size-sm; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
+.opslag { position: fixed; right: .25rem; bottom: .25rem; z-index: 1080; background: #fff; border: 1px solid $ub-rand; border-radius: 2rem; padding: .25rem .75rem; font-size: $font-size-sm; box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
 .meldingen { position: fixed; top: .75rem; left: 50%; transform: translateX(-50%); z-index: 1090; width: min(32rem, calc(100% - 1.5rem)); }
 
 // Photo slots

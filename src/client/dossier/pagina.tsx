@@ -73,7 +73,7 @@ function Kop() {
       <div class="d-flex align-items-start gap-2 mb-2">
         <h1 class="h3 mb-0 flex-grow-1 qa-dossier-titel">{adresRegel(s.d)}</h1>
         <Show when={s.beheerder()}>
-          <Dropdown knop="" knopClass="btn btn-outline-secondary btn-sm qa-dossier-menu" rechts>
+          <Dropdown knop="" knopClass="btn btn-primary btn-sm qa-dossier-menu" rechts>
             <Show when={!s.d.gesloten_at} fallback={<button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}><i class="bi bi-unlock me-2" aria-hidden="true" />Dossier heropenen</button>}>
               <button type="button" class="dropdown-item qa-menu-sluiten" onClick={() => setModal('sluiten')}><i class="bi bi-lock me-2" aria-hidden="true" />Dossier sluiten</button>
             </Show>

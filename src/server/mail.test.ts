@@ -1,4 +1,4 @@
-// Sending a template mail from the popup: validation, tag filling, closed dossiers and manual sends.
+// Sending a template mail from the popup: validation, the prefilled text, closed dossiers and manual sends.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier, testApp } from './testapp.ts';
 
@@ -50,29 +50,30 @@ describe('validation', () => {
 });
 
 describe('tags', () => {
-  it('fills tags in subject and body, leaves a misspelled tag visible, and still sends', async () => {
-    await stuur('subsidie_huur', { onderwerp: 'Over {adres}', tekst: 'Beste {bewoner}, {bewonr}. {afzender}' });
-    expect(t.mailer.verstuurd[0]).toMatchObject({ onderwerp: 'Over Walstraat 74, Deventer', tekst: 'Beste Anna de Vries, {bewonr}. Bea Beheer' });
-    expect((await laatsteAudit()).payload).toMatchObject({ tag_problemen: true, onderwerp: 'Over Walstraat 74, Deventer' });
-  });
-
-  it('flags a missing required {link} but sends anyway', async () => {
-    await bea.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: keesId });
-    t.mailer.verstuurd = [];
-    await stuur('bezoeker_toegewezen', { aan: 'kees.klus@example.org', tekst: 'Hoi {bezoeker}' });
-    expect(t.mailer.verstuurd[0].tekst).toBe('Hoi Kees Klus');
-    expect((await laatsteAudit()).payload.tag_problemen).toBe(true);
-  });
-
-  it('records no tag problems for a clean mail', async () => {
-    await stuur('subsidie_huur', { tekst: 'Beste {bewoner}' });
-    expect((await laatsteAudit()).payload.tag_problemen).toBe(false);
-  });
-
-  it('offers the filled-in value of each tag of the template', async () => {
+  it('prefills subject and text with the tags filled in for this dossier, and offers the value of each tag', async () => {
     const v = await bea.json('GET', `/api/dossiers/${id}/mail/subsidie_huur`);
+    expect(v.tekst).toContain('Beste Anna de Vries,');
+    expect(v.tekst).toContain('regenwater op Walstraat 74, Deventer.');
+    expect(`${v.onderwerp} ${v.tekst}`).not.toMatch(/\{[a-z_]+\}/);
     expect(v.waarden).toEqual({ bewoner: 'Anna de Vries', adres: 'Walstraat 74, Deventer', corporatie: 'Ieder1', afzender: 'Bea Beheer', subsidie_info: expect.stringMatching(/^https:\/\//) as string });
     expect(v).toMatchObject({ aan: 'anna@example.org', cc: 'bea.beheer@example.org', bijlage: null });
+  });
+
+  it('sends the subject and text exactly as edited', async () => {
+    await stuur('subsidie_huur', { onderwerp: 'Over de Walstraat', tekst: 'Beste Anna, {adres} blijft {adres}.' });
+    expect(t.mailer.verstuurd[0]).toMatchObject({ onderwerp: 'Over de Walstraat', tekst: 'Beste Anna, {adres} blijft {adres}.' });
+    expect((await laatsteAudit()).payload).toMatchObject({ tag_problemen: false, onderwerp: 'Over de Walstraat' });
+  });
+
+  it('flags a deleted dossier link in a klusser mail but sends anyway, and not when the link is there', async () => {
+    await bea.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: keesId });
+    const { waarden } = await bea.json<{ waarden: Record<string, string> }>('GET', `/api/dossiers/${id}/mail/bezoeker_toegewezen`);
+    t.mailer.verstuurd = [];
+    await stuur('bezoeker_toegewezen', { aan: 'kees.klus@example.org', tekst: 'Hoi Kees' });
+    expect(t.mailer.verstuurd[0].tekst).toBe('Hoi Kees');
+    expect((await laatsteAudit()).payload.tag_problemen).toBe(true);
+    await stuur('bezoeker_toegewezen', { aan: 'kees.klus@example.org', tekst: `Hoi Kees, zie ${waarden.link}` });
+    expect((await laatsteAudit()).payload.tag_problemen).toBe(false);
   });
 });
 
