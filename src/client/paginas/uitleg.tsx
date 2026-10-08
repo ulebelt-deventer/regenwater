@@ -1,9 +1,10 @@
-// Explanation pages: Statussen and Aandacht-criteria, generated from the rules the app uses, plus Installeren and Privacy.
+// Explanation pages: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Installeren and Privacy.
 import { For, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { KLOPT_NIET_KOP, KLOPT_NIET_REGELS, LIGT_STIL_REGELS } from '../../shared/aandacht.ts';
 import { ULEBELT_CONTACT_EMAIL } from '../../shared/constants.ts';
 import { LIGT_BIJ_LABEL, STAPPEN } from '../../shared/status.ts';
 import { SLUIT_REDENEN } from '../../shared/types.ts';
+import { type Bewerker, FOTO_SLOTS, type Pagina, VELDEN } from '../../shared/velden.ts';
 import { AlleenBeheerder, StatusLabel, titel } from '../ui.tsx';
 
 const stapLabel = (key: string) => {
@@ -114,6 +115,84 @@ export function AandachtUitleg() {
         </div>
         <p>Je kunt een Ligt stil-bevinding uitstellen tot een datum, met een notitie (“Aandacht uitstellen” in het menu van het dossier). Zolang hij is uitgesteld staat er een grijze regel en telt hij niet als aandacht. Het uitstel stopt op de datum of zodra de stap verandert.</p>
         <p class="mb-0">Klussers zien Ligt stil alleen voor hun eigen stappen ({['afspraak', 'bezoek', 'plan', 'uitvoering'].map(stapLabel).join(', ')}), als herinnering, zonder het aandacht-label.</p>
+      </section>
+    </AlleenBeheerder>
+  );
+}
+
+const PAGINA_LABEL: Record<Pagina, string> = {
+  intake: 'Intake',
+  details: 'Op het dossier zelf',
+  bezoek: 'Bezoek',
+  plan: 'Plan van Aanpak',
+  uitvoering: 'Uitvoering',
+};
+
+// What a role may edit on a page: everything, nothing, or the labels of the fields and photo slots it may edit.
+function rolMag(pagina: Pagina, rol: Bewerker): string {
+  const items = [...VELDEN, ...FOTO_SLOTS].filter((x) => x.pagina === pagina);
+  const mag = items.filter((x) => x.bewerkers.includes(rol));
+  if (!mag.length) return 'Niets';
+  if (mag.length === items.length) return 'Alles';
+  return [...new Set(mag.map((x) => x.label))].join(', ');
+}
+
+export function RechtenUitleg() {
+  titel('Uitleg: rechten');
+  return (
+    <AlleenBeheerder>
+      <h1 class="h3">Uitleg: rechten</h1>
+      <p>Wat iemand mag zien en wijzigen hangt af van twee dingen: of die beheerder of klusser is, en bij een klusser welke rol die op het dossier heeft en hoe ver het dossier is. De server controleert dit bij elk verzoek; de app zet velden die je niet mag wijzigen grijs.</p>
+
+      <section class="card card-body mb-3 qa-rechten-beheerder">
+        <h2 class="h5">Beheerders</h2>
+        <p>Beheerders zien alle dossiers en mogen alles wijzigen. Alleen beheerders kunnen dossiers aanmaken, het adres en de intake invullen, bezoekers en uitvoerders toewijzen, e-mails versturen, een stap terugdraaien, aandacht uitstellen, dossiers sluiten, heropenen en verwijderen, en de activiteit van een dossier bekijken.</p>
+        <p class="mb-2">Ook een beheerder wordt soms tegengehouden:</p>
+        <ul class="mb-0">
+          <li>Een gesloten dossier is voor iedereen alleen-lezen. Heropen het eerst om iets te wijzigen. Alleen de opleverrapport-mails kun je dan nog versturen.</li>
+          <li>Het opleverrapport (de PDF en de mails) bestaat pas als “Werk opgeleverd” is aangetikt.</li>
+          <li>“Woningcorporatie heeft het plan goedgekeurd” hoort alleen bij een huurwoning en “Bewoner kiest voor de Klussendienst” alleen bij een koopwoning.</li>
+          <li>Aandacht uitstellen kan alleen als het dossier stilligt.</li>
+          <li>Je kunt jezelf niet archiveren en je eigen rol niet wijzigen, zodat je jezelf niet kunt buitensluiten.</li>
+        </ul>
+      </section>
+
+      <section class="card card-body mb-3 qa-rechten-klusser">
+        <h2 class="h5">Klussers</h2>
+        <p>Een klusser ziet alleen de dossiers waaraan die is toegewezen, als bezoeker of als uitvoerder. Op die dossiers ziet de klusser alle gegevens van de woning, ook als er niets meer te wijzigen valt. Wat een klusser niet ziet: de activiteit van het dossier, de rode aandacht-balk (wel een herinnering bij de eigen stappen), het e-mailadres en telefoonnummer van andere gebruikers, en het opleverrapport als die niet de uitvoerder is.</p>
+        <p>Wat een klusser mag wijzigen hangt af van de rol op dat dossier:</p>
+        <ul>
+          <li><strong>Bezoeker:</strong> de afspraak, het bezoek en het Plan van Aanpak, tot de bezoeker “Klaar voor controle” aantikt. Daarna is alles alleen-lezen voor de bezoeker.</li>
+          <li><strong>Uitvoerder:</strong> de geplande datum en de uitvoering, tot de uitvoerder “Werk opgeleverd” aantikt. Daarna is alles alleen-lezen voor de uitvoerder.</li>
+          <li><strong>Beide rollen:</strong> de rechten tellen op en elke rol stopt op zijn eigen moment. Na “Klaar voor controle” kan dezelfde klusser als uitvoerder nog de uitvoering invullen.</li>
+        </ul>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 tabel-kaarten qa-rechten-tabel">
+            <thead>
+              <tr>
+                <th>Onderdeel</th>
+                <th>Bezoeker mag wijzigen</th>
+                <th>Uitvoerder mag wijzigen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={Object.keys(PAGINA_LABEL) as Pagina[]}>
+                {(p) => (
+                  <tr class={`qa-rechten-${p}`}>
+                    <td class="fw-semibold fw-md-normal">{PAGINA_LABEL[p]}</td>
+                    <td data-label="Bezoeker mag wijzigen">{rolMag(p, 'bezoeker')}</td>
+                    <td data-label="Uitvoerder mag wijzigen">{rolMag(p, 'uitvoerder')}</td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card card-body mb-3 qa-rechten-beheer">
+        <h2 class="h5">Het Beheer-menu</h2>
+        <p class="mb-0">Alles onder Beheer is alleen voor beheerders: gebruikers, materialen, e-mailsjablonen, feedback, het lege bezoekformulier, alle activiteit en deze uitlegpagina’s. Klussers zien het menu niet, en de server weigert deze gegevens aan hen. Een beheerder kan met “Inloggen als” de app bekijken zoals een klusser hem ziet, met precies diens rechten.</p>
       </section>
     </AlleenBeheerder>
   );

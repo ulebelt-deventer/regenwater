@@ -73,7 +73,7 @@ test('op een telefoon tonen Gebruikers, een gebruiker en de uitlegpagina\'s kaar
   await subsidieMail(page, 'koop');
   await wijsToe(page, 'bezoeker', klusserId, false);
 
-  for (const pad of ['/gebruikers', `/gebruikers/${klusserId}`, '/uitleg/statussen', '/uitleg/aandacht']) {
+  for (const pad of ['/gebruikers', `/gebruikers/${klusserId}`, '/uitleg/statussen', '/uitleg/aandacht', '/uitleg/rechten']) {
     await page.goto(pad);
     await expect(page.locator('.tabel-kaarten').first()).toBeVisible();
     for (const kop of await page.locator('.tabel-kaarten thead').all()) await expect(kop).toBeHidden();

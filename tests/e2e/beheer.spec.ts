@@ -135,3 +135,16 @@ test('Materialen verplaats je door een rij aan de greep te slepen, of met de pij
   await page.reload();
   await expect.poll(namen).toEqual(getoetst);
 });
+
+test('Uitleg: rechten staat in het Beheer-menu en toont per onderdeel wat bezoeker en uitvoerder mogen wijzigen', async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  await page.locator('.qa-nav-beheer').click();
+  await page.locator('a[href="/uitleg/rechten"]').click();
+  await expect(page.locator('.qa-rechten-intake td').nth(1)).toHaveText('Niets');
+  await expect(page.locator('.qa-rechten-bezoek td').nth(1)).toHaveText('Alles');
+  await expect(page.locator('.qa-rechten-bezoek td').nth(2)).toHaveText('Niets');
+  await expect(page.locator('.qa-rechten-uitvoering td').nth(2)).toHaveText('Alles');
+  await expect(page.locator('.qa-rechten-details td').nth(1)).toHaveText('Notities, Bezoek-afspraak');
+  await expect(page.locator('.qa-rechten-details td').nth(2)).toHaveText('Notities, Uitvoering gepland op');
+});

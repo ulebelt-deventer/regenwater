@@ -459,6 +459,7 @@
     - Audit events are filterable by actor (user), event type, dossier ID. (Each audit event has a type, which can be eg dossier created, dossier updated, user created, user archived, email sent, etc. A payload json field specifies the details, eg for each email sent it specifies the subject & recipient.)
   - "Uitleg: statussen" (link to the Statussen page)
   - "Uitleg: aandacht" (link to the Aandacht-criteria page)
+  - "Uitleg: rechten" (link to the Rechten page: what beheerders and klussers (per role, per step) may see and edit, and that the Beheer menu is admin-only)
 - Account (navbar dropdown at the right, labeled with the user's naam; everyone)
   - "App op je telefoon zetten" (the install-guide page)
   - "Uitloggen"

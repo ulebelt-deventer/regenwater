@@ -19,7 +19,7 @@ import { Dossiers } from './paginas/dossiers.tsx';
 import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
 import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
-import { AandachtUitleg, Installeren, Privacy, Statussen } from './paginas/uitleg.tsx';
+import { AandachtUitleg, Installeren, Privacy, RechtenUitleg, Statussen } from './paginas/uitleg.tsx';
 
 function NietGevonden() {
   return <div class="alert alert-warning qa-niet-gevonden">Deze pagina bestaat niet.</div>;
@@ -51,6 +51,7 @@ render(
       <Route path="/beheer/activiteit" component={Activiteit} />
       <Route path="/uitleg/statussen" component={Statussen} />
       <Route path="/uitleg/aandacht" component={AandachtUitleg} />
+      <Route path="/uitleg/rechten" component={RechtenUitleg} />
       <Route path="/installeren" component={Installeren} />
       <Route path="/privacy" component={Privacy} />
       <Route path="*" component={NietGevonden} />
