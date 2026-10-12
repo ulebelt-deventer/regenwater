@@ -3,7 +3,7 @@ import { A, useSearchParams } from '@solidjs/router';
 import { Match, Show, Switch, createResource } from 'solid-js';
 import { datumTijd } from '../../shared/datum.ts';
 import type { Gebruiker } from '../../shared/types.ts';
-import { ActiviteitLijst, type AuditItem, TYPE_LABEL } from '../activiteit.tsx';
+import { ActiviteitLijst, type AuditItem, TYPE_LABEL, wie } from '../activiteit.tsx';
 import { get } from '../api.ts';
 import { AlleenBeheerder, Laden } from '../ui.tsx';
 import { TerugLink } from './pagina.tsx';
@@ -36,7 +36,6 @@ function Inhoud() {
     const vanaf = sinds();
     return vanaf === null ? alle : alle.filter((i) => i.updated_at >= vanaf);
   };
-  const wie = (i: AuditItem) => (i.actor_id === null ? 'Systeem' : naam()(i.actor_id));
 
   return (
     <>
@@ -53,7 +52,7 @@ function Inhoud() {
               <Show when={items()[0]}>
                 {(laatste) => (
                   <span class="small text-muted qa-laatste">
-                    Laatst: {TYPE_LABEL[laatste().type] ?? laatste().type} op {datumTijd(laatste().updated_at)} door {wie(laatste())}
+                    Laatst: {TYPE_LABEL[laatste().type] ?? laatste().type} op {datumTijd(laatste().updated_at)} door {wie(laatste(), naam())}
                   </span>
                 )}
               </Show>

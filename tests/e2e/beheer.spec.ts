@@ -1,6 +1,6 @@
 // Admin pages: lists that filter on a checkbox must load on first open (box unchecked), and the navbar menus stay on screen.
 import { expect, test } from '@playwright/test';
-import { BEHEERDER, KLUSSER, nieuwDossier, post, start } from './hulp.ts';
+import { BEHEERDER, KLUSSER, nieuwDossier, post, start, zet } from './hulp.ts';
 
 test('het accountmenu rechtsboven valt niet buiten de pagina', async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 800 });
@@ -60,6 +60,20 @@ test('Inloggen als vraagt eerst om bevestiging; annuleren laat je beheerder blij
   await page.locator('.qa-bevestig .qa-ja').click();
   await expect(page).toHaveURL(/\/dossiers$/);
   await expect(page.locator('.qa-als-banner')).toBeVisible();
+});
+
+test('de activiteit van een dossier noemt bij wat een beheerder als klusser deed beide namen', async ({ page }) => {
+  const { klusserId } = await start(page);
+  const { id } = await post<{ id: number }>(page.request, '/api/dossiers');
+  await post(page.request, `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
+  await post(page.request, `/api/auth/als/${klusserId}`);
+  await zet(page, id, { tuinsituatie: 'als Kees' });
+  await post(page.request, '/api/auth/als/stop');
+
+  await page.goto(`/dossiers/${id}/activiteit`);
+  const als = `${BEHEERDER.naam} (als ${KLUSSER.naam})`;
+  await expect(page.locator('.qa-laatste')).toContainText(`door ${als}`);
+  await expect(page.locator('.qa-type-dossier_gewijzigd')).toContainText(als);
 });
 
 test('E-mailsjablonen zijn knoppen naar een eigen bewerkpagina, met een kruimelpad terug naar de lijst', async ({ page }) => {

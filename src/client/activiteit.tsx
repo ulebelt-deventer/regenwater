@@ -161,11 +161,12 @@ function samenvatting(item: AuditItem): JSX.Element {
   return null;
 }
 
+export function wie(i: AuditItem, naam: (id: number) => string): string {
+  if (i.actor_id === null) return 'Systeem';
+  return i.impersonated_user_id === null ? naam(i.actor_id) : `${naam(i.actor_id)} (als ${naam(i.impersonated_user_id)})`;
+}
+
 export function ActiviteitLijst(props: { items: AuditItem[]; naam: (id: number) => string; adres?: (item: AuditItem) => JSX.Element }) {
-  const wie = (i: AuditItem) => {
-    if (i.actor_id === null) return 'Systeem';
-    return i.impersonated_user_id === null ? props.naam(i.actor_id) : `${props.naam(i.actor_id)} (als ${props.naam(i.impersonated_user_id)})`;
-  };
   return (
     <div class="table-responsive">
       <table class="table table-sm align-top qa-activiteit-lijst">
@@ -189,7 +190,7 @@ export function ActiviteitLijst(props: { items: AuditItem[]; naam: (id: number) 
                     <div class="text-muted">t/m {datumTijd(i.updated_at)}</div>
                   </Show>
                 </td>
-                <td class="small">{wie(i)}</td>
+                <td class="small">{wie(i, props.naam)}</td>
                 <Show when={props.adres}>{(adres) => <td class="small">{adres()(i)}</td>}</Show>
                 <td>
                   <div class={`fw-semibold small ${i.type === 'email_mislukt' || i.type === 'login_geblokkeerd' ? 'text-danger' : ''}`}>{TYPE_LABEL[i.type] ?? i.type}</div>
