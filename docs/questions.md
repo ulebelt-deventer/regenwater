@@ -11,6 +11,7 @@
 - **Loop de flow door met verschillende scenario's.** Please walk through the flow a few times with different scenarios in mind: a koopwoning vs a huurwoning, a bewoner who drops out halfway, a woningcorporatie that rejects the plan or asks for changes.
 - **Staan er stappen in de verkeerde volgorde?** I know that this prototype likely has some steps out of order. For example, the bezoeker doesn't fill in Afspraken until after they've completed the on-site visit. Please take a look and let me know what you think, and we can polish it up / adjust accordingly.
 - **Werken jullie ook voor huishoudens zonder subsidie?** Can you still do work with a household that wants a rain capture system, even if they don't get a subsidy for it? or do we immediately close dossiers that don't have a subsidy available?
+- Should the dossier page form be all on the main Dossier page? or is it useful to have the subforms for each step on separated subpages? I'm iffy about that design decision.
 
 ### Login & permissions
 

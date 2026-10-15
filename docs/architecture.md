@@ -59,13 +59,13 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 
 ## Deployment
 
-Bash scripts adapted from `tmp/devops-SAMPLE`, run from the maintainer's machine over SSH. No Docker, no platform-as-a-service. Production runs only this app; the same scripts also deploy the prototype to the maintainer's shared VPS, where `deploy.env` points at a private Node (`NODE_BIN`) and turns backups off (`BACKUPS=none`), and `host-setup.sh` is skipped.
+Bash scripts adapted from `tmp/devops-SAMPLE`, run from the maintainer's machine over SSH. No Docker, no platform-as-a-service. The VPS runs only this app, in two environments, production and staging, which every script takes as its first argument. Each environment has its own port (3000 / 3001), system user, units, `/srv/regenton/<env>` directory, env file and Caddy site, all named `regenton-<env>`, so the two never share data. The scripts also support a shared host where `deploy.<env>.env` points at a private Node (`NODE_BIN`) and turns backups off (`BACKUPS=none`), and `host-setup.sh` is skipped.
 
-- `config.sh`: reads the gitignored `deploy.env` (host, domain, app name) and provides the `remote`/`remote_sudo` helpers.
+- `config.sh`: validates the environment argument, reads the gitignored `deploy.<env>.env` (host, domain) and provides the `remote`/`remote_sudo` helpers.
 - `host-setup.sh`: once per VPS. Apt packages, Node, Caddy, fail2ban, unattended-upgrades, swap, timezone, Litestream, rclone.
-- `provision.sh`: idempotent, rerun whenever the units change. Creates the system user and `/srv/regenton/{app,browsers,data,logs}` (photos in `data/fotos`), the hardened systemd unit for the app (`EnvironmentFile=/etc/regenton.env`), the Litestream service, the scheduled jobs below, and the Caddy site.
+- `provision.sh`: idempotent, rerun whenever the units change. Creates the system user and `/srv/regenton/<env>/{app,browsers,data,logs}` (photos in `data/fotos`), the hardened systemd unit for the app (`EnvironmentFile=/etc/regenton-<env>.env`), the Litestream service, the scheduled jobs below, and the Caddy site.
 - `deploy.sh`: typecheck, lint, unit tests and build locally; rsync an allow-list to the server; `npm ci --omit=dev` and the Playwright Chromium install only when `package-lock.json` changed; restart (migrations run on boot); poll `/health` until it answers.
-- `push-env.sh`: writes `/etc/regenton.env` (Mailgun key, healthcheck URLs, S3 credentials) from a local gitignored file.
+- `push-env.sh`: writes `/etc/regenton-<env>.env` (Mailgun key, healthcheck URLs, S3 credentials) from the local gitignored `devops/<env>.env`.
 - `status.sh`, `logs.sh`, `restart.sh`: health, memory, recent errors, backup age and disk at a glance; journald logs; restart.
 
 Scheduled jobs are systemd timers, defined in `provision.sh`, each running a small Node script as the app user with the same environment file. Timers rather than crontab entries because the sample scripts already use them, `Persistent=true` catches up on a run missed during a reboot, and output lands in journald next to the app's logs.

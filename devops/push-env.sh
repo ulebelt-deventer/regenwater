@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Upload devops/production.env (gitignored) to the host's ENV_FILE, readable only by root and the app user.
+# Upload devops/<env>.env (gitignored) to the host's ENV_FILE, readable only by root and the app user.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
-SRC="${_config_dir}/production.env"
-[ -f "${SRC}" ] || { echo "ERROR: ${SRC} not found. Copy production.env.example and fill it in." >&2; exit 1; }
+SRC="${_config_dir}/${ENVIRONMENT}.env"
+[ -f "${SRC}" ] || { echo "ERROR: ${SRC} not found. Copy app.env.example and fill it in." >&2; exit 1; }
 required="BASIS_URL MAILGUN_API_KEY MAILGUN_DOMEIN MAIL_AFZENDER"
 if [ "${BACKUPS}" = s3 ]; then required="${required} S3_ENDPOINT S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY"; fi
 for var in ${required}; do

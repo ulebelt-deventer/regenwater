@@ -5,5 +5,4 @@ data/
 test-results/
 playwright-report/
 .DS_Store
-devops/deploy.env
-devops/production.env
+devops/*.env

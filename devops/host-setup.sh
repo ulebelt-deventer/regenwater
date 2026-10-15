@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Once per VPS: packages, Node, Caddy, Litestream, rclone, firewall, swap, timezone. The VPS runs only this app.
+# Once per VPS: packages, Node, Caddy, Litestream, rclone, firewall, swap, timezone. The VPS runs only this app (one or both environments); either environment's argument picks the host.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
 remote_sudo "env NODE_MAJOR='${NODE_MAJOR}' SSH_PORT='${SSH_PORT}' bash -s" <<'REMOTE'

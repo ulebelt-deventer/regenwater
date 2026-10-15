@@ -65,7 +65,7 @@ dbs:
         endpoint: \${S3_ENDPOINT}
         region: \${S3_REGION}
         bucket: \${S3_BUCKET}
-        path: db
+        path: ${SERVICE_NAME}/db
         access-key-id: \${S3_ACCESS_KEY_ID}
         secret-access-key: \${S3_SECRET_ACCESS_KEY}
 YML
@@ -126,7 +126,7 @@ export RCLONE_CONFIG_BACKUP_ENDPOINT="\${S3_ENDPOINT}" RCLONE_CONFIG_BACKUP_REGI
 export RCLONE_CONFIG_BACKUP_ACCESS_KEY_ID="\${S3_ACCESS_KEY_ID}" RCLONE_CONFIG_BACKUP_SECRET_ACCESS_KEY="\${S3_SECRET_ACCESS_KEY}"
 tmp="\$(mktemp -d)"
 trap 'rm -rf "\${tmp}"' EXIT
-if rclone sync "${DATA_DIR}/fotos" "backup:\${S3_BUCKET}/fotos" \\
+if rclone sync "${DATA_DIR}/fotos" "backup:\${S3_BUCKET}/${SERVICE_NAME}/fotos" \\
   && litestream restore -config "/etc/${SERVICE_NAME}-litestream.yml" -o "\${tmp}/app.db" "${DATA_DIR}/app.db" \\
   && "${NODE_BIN}" dist/server/jobs.js backupcheck "\${tmp}/app.db"; then
   ping ""
