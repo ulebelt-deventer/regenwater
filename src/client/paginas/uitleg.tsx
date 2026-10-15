@@ -266,7 +266,7 @@ export function Installeren() {
   );
 }
 
-// PLACEHOLDER: the text waits on who the data controller is and the retention period (see the open questions in the spec).
+// PLACEHOLDER: the text waits on who the data controller is and the retention period (see docs/privacy.md).
 export function Privacy() {
   titel('Privacy');
   return (
@@ -287,15 +287,15 @@ export function Privacy() {
       </section>
       <section class="card card-body mb-3">
         <h2 class="h5">Wie het ziet</h2>
-        <p class="mb-0">Beheerders zien alle dossiers. Een vrijwilliger ziet alleen de dossiers waaraan die is toegewezen. Het Plan van Aanpak en het opleverrapport gaan naar de bewoner en, bij een huurwoning, naar de woningcorporatie.</p>
+        <p class="mb-0">Beheerders zien alle dossiers. Een vrijwilliger ziet alleen de dossiers waaraan die is toegewezen. De technisch beheerder van de app kan bij alle gegevens, maar gebruikt dat alleen voor onderhoud en het oplossen van storingen. Het Plan van Aanpak en het opleverrapport gaan naar de bewoner en, bij een huurwoning, naar de woningcorporatie.</p>
       </section>
       <section class="card card-body mb-3">
         <h2 class="h5">Waar het staat</h2>
         <ul class="mb-0">
           <li>De app en de gegevens staan op een server van Netcup in Duitsland.</li>
           <li>Back-ups staan bij een opslagdienst in de EU.</li>
-          <li>E-mails worden verstuurd via Mailgun (EU-regio).</li>
-          <li>Adressen en kaarten komen van PDOK (Kadaster) en bodemgegevens van BRO; daarvoor wordt alleen het adres of de locatie gebruikt.</li>
+          <li>E-mails worden verstuurd via Mailgun. Mailgun is een Amerikaans bedrijf, maar wij gebruiken de EU-regio: de e-mails en gegevens blijven in de EU.</li>
+          <li>Om de woning in kaart te brengen, zoeken we het adres op bij openbare kaartdiensten, zoals PDOK (Kadaster), BRO, de rioolkaart van de gemeente (ArcGIS) en Google Street View. Die diensten krijgen alleen het adres of de locatie, geen naam of contactgegevens.</li>
         </ul>
       </section>
       <section class="card card-body mb-3">
