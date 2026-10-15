@@ -1,7 +1,7 @@
 // The CSV export: every column, the Dutch Excel dialect, and who may download it.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { aandacht } from '../shared/aandacht.ts';
-import { ADRES, dossier, gebruiker, naIntake, verzending } from '../shared/testhulp.ts';
+import { ADRES, dossier, gebruiker, naInschrijving, verzending } from '../shared/testhulp.ts';
 import { csv, csvExport, lijstRij } from './lijst.ts';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier, testApp } from './testapp.ts';
 
@@ -83,7 +83,7 @@ describe('csvExport()', () => {
 
   it('writes Aandacht nodig as ja or nee, following the attention rules', () => {
     const nieuw = dossier();
-    const klaar = naIntake('koop', { gesloten_at: '2026-03-20T09:00:00.000Z', gesloten_reden: 'Uitgevoerd' });
+    const klaar = naInschrijving('koop', { gesloten_at: '2026-03-20T09:00:00.000Z', gesloten_reden: 'Uitgevoerd' });
     expect([aandacht(nieuw, GM, NU).nodig, aandacht(klaar, GM, NU).nodig]).toEqual([true, false]);
     expect([exporteer(nieuw)['Aandacht nodig'], exporteer(klaar)['Aandacht nodig']]).toEqual(['ja', 'nee']);
   });
@@ -94,19 +94,19 @@ describe('csvExport()', () => {
   });
 
   it('writes option labels, the Anders write-in, and the corporatie only for huur', () => {
-    const huur = naIntake('huur', { data: { ...naIntake('huur').data, woningeigenaar: 'anders', woningeigenaar_anders: 'Particulier', woningtype: 'anders', woningtype_anders: 'Woonboot', rioolstelsel: 'gescheiden' } });
+    const huur = naInschrijving('huur', { data: { ...naInschrijving('huur').data, woningeigenaar: 'anders', woningeigenaar_anders: 'Particulier', woningtype: 'anders', woningtype_anders: 'Woonboot', rioolstelsel: 'gescheiden' } });
     expect(exporteer(huur)).toMatchObject({ 'Huur/koop': 'huur', Woningeigenaar: 'Particulier', Woningtype: 'Woonboot', Rioolstelsel: 'Gescheiden' });
-    const koop = naIntake('koop', { data: { ...naIntake('koop').data, woningeigenaar: 'Ieder1', woningtype: '2-onder-1-kap' } });
+    const koop = naInschrijving('koop', { data: { ...naInschrijving('koop').data, woningeigenaar: 'Ieder1', woningtype: '2-onder-1-kap' } });
     expect(exporteer(koop)).toMatchObject({ Woningeigenaar: '', Woningtype: '2-onder-1-kap' });
   });
 
   it('writes the bewoner and the assigned klussers by name', () => {
-    const d = naIntake('huur', { bezoeker_id: 7, uitvoerder_id: 8, data: { ...naIntake('huur').data, bewoner_telefoon: '06 12345678' } });
+    const d = naInschrijving('huur', { bezoeker_id: 7, uitvoerder_id: 8, data: { ...naInschrijving('huur').data, bewoner_telefoon: '06 12345678' } });
     expect(exporteer(d)).toMatchObject({ 'Bewoner naam': 'Anna de Vries', 'Bewoner e-mail': 'anna@example.org', 'Bewoner telefoon': '06 12345678', Bezoeker: 'Kees', Uitvoerder: 'Ria' });
   });
 
   it('writes dates as YYYY-MM-DD in Dutch time, also just after midnight', () => {
-    const d = naIntake('huur', {
+    const d = naInschrijving('huur', {
       created_at: '2026-03-01T23:30:00.000Z', // 00:30 on 2 March in Amsterdam
       bezoeker_toegewezen_at: '2026-03-03T09:00:00.000Z',
       afspraak: '2026-03-10T00:15',
@@ -120,7 +120,7 @@ describe('csvExport()', () => {
   });
 
   it('dates each mail column by the first successful send of its templates', () => {
-    const d = naIntake('huur', {
+    const d = naInschrijving('huur', {
       verzendingen: [
         verzending('subsidie_huur', '2026-03-02T09:00:00.000Z', { mislukt_at: '2026-03-02T09:00:00.000Z' }),
         verzending('subsidie_huur', '2026-03-03T09:00:00.000Z'),
@@ -135,12 +135,12 @@ describe('csvExport()', () => {
   });
 
   it('fills Akkoord from the corporatie for huur and from the Klussendienst choice for koop', () => {
-    expect(exporteer(naIntake('huur', { corporatie_akkoord_at: '2026-03-12T09:00:00.000Z' })).Akkoord).toBe('2026-03-12');
-    expect(exporteer(naIntake('koop', { klussendienst_gekozen_at: '2026-03-13T09:00:00.000Z' })).Akkoord).toBe('2026-03-13');
+    expect(exporteer(naInschrijving('huur', { corporatie_akkoord_at: '2026-03-12T09:00:00.000Z' })).Akkoord).toBe('2026-03-12');
+    expect(exporteer(naInschrijving('koop', { klussendienst_gekozen_at: '2026-03-13T09:00:00.000Z' })).Akkoord).toBe('2026-03-13');
   });
 
   it('writes the closing date and reason', () => {
-    const d = naIntake('koop', { gesloten_at: '2026-03-20T09:00:00.000Z', gesloten_reden: 'Bewoner afgehaakt' });
+    const d = naInschrijving('koop', { gesloten_at: '2026-03-20T09:00:00.000Z', gesloten_reden: 'Bewoner afgehaakt' });
     expect(exporteer(d)).toMatchObject({ Gesloten: '2026-03-20', 'Reden gesloten': 'Bewoner afgehaakt', Status: expect.stringMatching(/Gesloten/) as string });
   });
 
@@ -185,7 +185,7 @@ describe('csvExport()', () => {
   });
 
   it('keeps user text with semicolons, quotes and line breaks in one cell', () => {
-    const d = naIntake('huur', { data: { ...naIntake('huur').data, bewoner_naam: 'Jan "Jantje"; de Vries\nachterhuis' } });
+    const d = naInschrijving('huur', { data: { ...naInschrijving('huur').data, bewoner_naam: 'Jan "Jantje"; de Vries\nachterhuis' } });
     expect(exporteer(d)['Bewoner naam']).toBe('Jan "Jantje"; de Vries\nachterhuis');
   });
 });

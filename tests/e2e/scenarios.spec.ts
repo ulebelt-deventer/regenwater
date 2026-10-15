@@ -14,7 +14,7 @@ async function laatsteMail(page: Page) {
   return m[m.length - 1];
 }
 
-// Intake, bezoeker (Kees), afspraak, bezoek and plan, all by the admin: the dossier ends at step 6.
+// Inschrijving, bezoeker (Kees), afspraak, bezoek and plan, all by the admin: the dossier ends at step 6.
 async function totPlanKlaar(page: Page, klusserId: number, huurKoop: 'huur' | 'koop'): Promise<number> {
   const id = await nieuwDossier(page, { huurKoop });
   await subsidieMail(page, huurKoop);
@@ -28,10 +28,10 @@ async function totPlanKlaar(page: Page, klusserId: number, huurKoop: 'huur' | 'k
   return id;
 }
 
-test('huur: intake, bezoek, plan, akkoord, uitvoering en opleverrapport tot gesloten als Uitgevoerd', async ({ page }) => {
+test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport tot gesloten als Uitgevoerd', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'huur' });
-  await expect(page.locator('.qa-intake-ontbreekt')).toContainText('subsidiemail');
+  await expect(page.locator('.qa-inschrijving-ontbreekt')).toContainText('subsidiemail');
   await subsidieMail(page, 'huur');
   expect(await laatsteMail(page)).toMatchObject({ aan: 'bea@example.org', onderwerp: 'Uw aanmelding: we komen graag langs' });
 
@@ -214,7 +214,7 @@ test('koop, bewoner doet het zelf: gesloten na het plan', async ({ page }) => {
   expect(id).toBeGreaterThan(0);
 });
 
-test('niet subsidiabel: gescheiden riool, subsidiemail en gesloten bij de intake', async ({ page }) => {
+test('niet subsidiabel: gescheiden riool, subsidiemail en gesloten bij de inschrijving', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'huur', riool: 'gescheiden' });
   // The autodetectie's gemengd stays a hint: the admin's own gescheiden is what counts.
@@ -320,7 +320,7 @@ test('bewoner haakt af na het bezoek: niets bewerkbaar zolang gesloten, na herop
   await page.goto(`/dossiers/${id}/plan`);
   await expect(veld(page, 'beoordeling').locator('.qa-optie-uitvoerbaar')).toBeDisabled();
   await expect(page.locator('.qa-klaar-voor-controle')).toHaveCount(0);
-  await page.goto(`/dossiers/${id}/intake`);
+  await page.goto(`/dossiers/${id}/inschrijving`);
   await expect(page.locator('.qa-adres-zoek')).toHaveCount(0);
   await expect(veld(page, 'bewoner_naam').locator('.qa-invoer')).toBeDisabled();
   const patch = await page.request.patch(`/api/dossiers/${id}`, { data: { key: 'notities', value: 'Toch iets' } });

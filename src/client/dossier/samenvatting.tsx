@@ -77,7 +77,7 @@ function MateriaalRegel(props: { lijst: 'materialen' | 'gebruikt'; label: string
   );
 }
 
-export function IntakeSamenvatting() {
+export function InschrijvingSamenvatting() {
   const s = useDossier();
   const kaart = () => kaartFoto(s.d);
   const gescheiden = () => str(s.d, 'rioolstelsel') === 'gescheiden';

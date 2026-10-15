@@ -31,7 +31,7 @@ The privacy page names the map services as one category ("openbare kaartdiensten
 
 - PDOK (Kadaster) and BRO: address and soil lookups from the server.
 - The gemeente sewer maps on ArcGIS Online (Esri): `src/server/riool.ts` sends the RD coordinates.
-- Google Street View: opened by an admin from the intake link. It counts the same as a server call, because the admin acts for Ulebelt.
+- Google Street View: opened by an admin from the inschrijving link. It counts the same as a server call, because the admin acts for Ulebelt.
 
 Healthchecks pings are empty POSTs and fonts are self-hosted, so neither receives personal data.
 

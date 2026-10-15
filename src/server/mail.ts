@@ -30,9 +30,12 @@ export function htmlMail(inhoud: string): string {
   return `<!doctype html><html><body style="font-family: Figtree, Arial, sans-serif; font-size: 15px; color: #1a1a1a; line-height: 1.5">${inhoud}</body></html>`;
 }
 
-// Plain text with blank-line paragraphs; URLs become links.
-export function tekstNaarHtml(tekst: string): string {
-  const alinea = (p: string) => escHtml(p).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>').replace(/\n/g, '<br>');
+// Plain text with blank-line paragraphs; URLs become links, pointing to `hrefs[url]` where given.
+export function tekstNaarHtml(tekst: string, hrefs: Record<string, string> = {}): string {
+  const alinea = (p: string) =>
+    escHtml(p)
+      .replace(/(https?:\/\/[^\s<]+)/g, (url) => `<a href="${url in hrefs ? escHtml(hrefs[url]) : url}">${url}</a>`)
+      .replace(/\n/g, '<br>');
   return htmlMail(
     tekst
       .split(/\n{2,}/)

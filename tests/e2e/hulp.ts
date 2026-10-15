@@ -143,11 +143,11 @@ export async function geenAandacht(page: Page): Promise<void> {
   await expect(page.locator('.qa-aandacht')).toHaveCount(0);
 }
 
-// Creates a dossier from the list and fills in the intake up to (not including) the subsidie mail.
+// Creates a dossier from the list and fills in the inschrijving up to (not including) the subsidie mail.
 export async function nieuwDossier(page: Page, opts: { huurKoop: 'huur' | 'koop'; riool?: 'gemengd' | 'gescheiden'; corporatie?: string }): Promise<number> {
   await page.goto('/dossiers');
   await page.locator('.qa-nieuw-dossier').click();
-  await expect(page).toHaveURL(/\/dossiers\/\d+\/intake$/);
+  await expect(page).toHaveURL(/\/dossiers\/\d+\/inschrijving$/);
   const id = Number(/\/dossiers\/(\d+)\//.exec(page.url())![1]);
 
   await page.locator('.qa-adres-zoek').fill('Walstraat 74');
@@ -163,12 +163,12 @@ export async function nieuwDossier(page: Page, opts: { huurKoop: 'huur' | 'koop'
   return id;
 }
 
-// The rest of the intake: the subsidie mail, then "Intake is compleet", which lands on the dossier.
+// The rest of the inschrijving: the subsidie mail, then "Inschrijving is compleet", which lands on the dossier.
 export async function subsidieMail(page: Page, huurKoop: 'huur' | 'koop'): Promise<void> {
   await mail(page, `subsidie_${huurKoop}`);
   await expect(page.locator('.qa-subsidiemail .qa-subsidie-verstuurd')).toBeVisible();
-  await expect(page.locator('.qa-intake-ontbreekt')).toHaveCount(0);
-  await page.locator('.qa-intake-klaar').click();
+  await expect(page.locator('.qa-inschrijving-ontbreekt')).toHaveCount(0);
+  await page.locator('.qa-inschrijving-klaar').click();
   await expect(page).toHaveURL(/\/dossiers\/\d+#sectie-bezoeker$/);
 }
 

@@ -75,6 +75,17 @@ describe('tags', () => {
     await stuur('bezoeker_toegewezen', { aan: 'kees.klus@example.org', tekst: `Hoi Kees, zie ${waarden.link}` });
     expect((await laatsteAudit()).payload.tag_problemen).toBe(false);
   });
+
+  it("puts the klusser's address in the dossier link's href only, and leaves other mails' links alone", async () => {
+    await bea.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: keesId });
+    const { waarden } = await bea.json<{ waarden: Record<string, string> }>('GET', `/api/dossiers/${id}/mail/bezoeker_toegewezen`);
+    t.mailer.verstuurd = [];
+    await stuur('bezoeker_toegewezen', { aan: 'kees.klus@example.org', tekst: `Zie ${waarden.link}` });
+    expect(t.mailer.verstuurd[0].tekst).toBe(`Zie ${waarden.link}`);
+    expect(t.mailer.verstuurd[0].html).toContain(`<a href="${waarden.link}?email=kees.klus%40example.org">${waarden.link}</a>`);
+    await stuur('subsidie_huur', { tekst: `Zie ${waarden.link}` });
+    expect(t.mailer.verstuurd[1].html).toBeUndefined();
+  });
 });
 
 describe('closed dossiers and the opleverrapport', () => {

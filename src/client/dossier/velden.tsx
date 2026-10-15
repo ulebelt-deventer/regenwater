@@ -61,11 +61,28 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
   const zet = (v: Json) => s.zet(props.k, v);
   const zetTekst = (t: string) => zet(t === '' ? null : t);
   const andersKey = `${untrack(() => props.k)}_anders`;
+  // Set when the user picks Anders, so the write-in grabs focus as it appears but not when the page loads with Anders already chosen.
+  let andersFocus = false;
+  const kiesAnders = (k: string) => {
+    if (k === 'anders') andersFocus = true;
+  };
   const anders = (gekozen: () => boolean) => (
     <Show when={props.veld.anders && gekozen()}>
-      <input class="form-control mt-1 qa-anders" placeholder="Namelijk..." disabled={props.uit} value={tekst(waarde(s.d, andersKey))} onInput={(e) => s.zet(andersKey, e.currentTarget.value === '' ? null : e.currentTarget.value)} />
+      <input
+        ref={(el) => {
+          if (andersFocus) queueMicrotask(() => el.focus());
+          andersFocus = false;
+        }}
+        class="form-control mt-1 mt-sm-0 qa-anders"
+        placeholder="Namelijk..."
+        disabled={props.uit}
+        value={tekst(waarde(s.d, andersKey))}
+        onInput={(e) => s.zet(andersKey, e.currentTarget.value === '' ? null : e.currentTarget.value)}
+      />
     </Show>
   );
+  // The Anders option's row also holds its write-in; on phones it drops to its own line.
+  const optieRij = (k: string) => (k === 'anders' && props.veld.anders ? 'form-check d-sm-flex align-items-center gap-2' : 'form-check');
   const optieId = (o: string) => `in-${props.k}-${o}`;
 
   return (
@@ -81,23 +98,25 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
       </Match>
       <Match when={props.veld.type === 'radio' && props.veld.lijst}>
         {/* Per-option `selected`: a select's `value` is lost when its options re-render. */}
-        <select class="form-select w-auto mw-100 qa-invoer" disabled={props.uit} onChange={(e) => zet(e.currentTarget.value === '' ? null : e.currentTarget.value)}>
-          <option value="" selected={!w()}>- kies -</option>
-          <For each={props.opties}>{([k, label]) => <option value={k} selected={w() === k}>{label.replace(/, namelijk:$/, '...')}</option>}</For>
-        </select>
-        {anders(() => w() === 'anders')}
+        <div class="d-sm-flex align-items-center gap-2">
+          <select class="form-select w-auto mw-100 qa-invoer" disabled={props.uit} onChange={(e) => { kiesAnders(e.currentTarget.value); zet(e.currentTarget.value === '' ? null : e.currentTarget.value); }}>
+            <option value="" selected={!w()}>- kies -</option>
+            <For each={props.opties}>{([k, label]) => <option value={k} selected={w() === k}>{label.replace(/, namelijk:$/, '...')}</option>}</For>
+          </select>
+          {anders(() => w() === 'anders')}
+        </div>
       </Match>
       <Match when={props.veld.type === 'radio'}>
         <div class="big-touch">
           <For each={props.opties}>
             {([k, label]) => (
-              <div class="form-check">
-                <input class={`form-check-input qa-optie-${k}`} type="radio" name={`in-${props.k}`} id={optieId(k)} disabled={props.uit} checked={w() === k} onChange={() => zet(k)} />
-                <label class="form-check-label" for={optieId(k)}>{label}</label>
+              <div class={optieRij(k)}>
+                <input class={`form-check-input qa-optie-${k}`} type="radio" name={`in-${props.k}`} id={optieId(k)} disabled={props.uit} checked={w() === k} onChange={() => { kiesAnders(k); zet(k); }} />
+                <label class="form-check-label" classList={{ 'text-nowrap': k === 'anders' }} for={optieId(k)}>{label}</label>
+                {k === 'anders' && anders(() => w() === 'anders')}
               </div>
             )}
           </For>
-          {anders(() => w() === 'anders')}
         </div>
       </Match>
       <Match when={props.veld.type === 'checks'}>
@@ -106,7 +125,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
             {([k, label]) => {
               const lijstNu = () => (Array.isArray(w()) ? (w() as string[]) : []);
               return (
-                <div class="form-check">
+                <div class={optieRij(k)}>
                   <input
                     class={`form-check-input qa-optie-${k}`}
                     type="checkbox"
@@ -115,16 +134,17 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
                     checked={lijstNu().includes(k)}
                     onChange={(e) => {
                       const rest = lijstNu().filter((x) => x !== k);
+                      if (e.currentTarget.checked) kiesAnders(k);
                       const nieuw = e.currentTarget.checked ? [...rest, k] : rest;
                       zet(nieuw.length ? nieuw : null);
                     }}
                   />
-                  <label class="form-check-label" for={optieId(k)}>{label}</label>
+                  <label class="form-check-label" classList={{ 'text-nowrap': k === 'anders' }} for={optieId(k)}>{label}</label>
+                  {k === 'anders' && anders(() => lijstNu().includes('anders'))}
                 </div>
               );
             }}
           </For>
-          {anders(() => Array.isArray(w()) && (w() as string[]).includes('anders'))}
         </div>
       </Match>
       <Match when={props.veld.type === 'select'}>

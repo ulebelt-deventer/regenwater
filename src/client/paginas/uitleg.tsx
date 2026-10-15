@@ -90,7 +90,7 @@ export function AandachtUitleg() {
 
       <section class="card card-body mb-3 qa-ligt-stil-regels">
         <h2 class="h5">Ligt stil</h2>
-        <p>Alleen voor open dossiers en alleen voor de huidige stap. De klok start wanneer de stap begon: bij de vorige stap, bij het aanmaken voor de intake, en bij de eerste subsidiemail voor het toewijzen van een bezoeker. De twee geplande stappen tellen vanaf hun geplande datum.</p>
+        <p>Alleen voor open dossiers en alleen voor de huidige stap. De klok start wanneer de stap begon: bij de vorige stap, bij het aanmaken voor de inschrijving, en bij de eerste subsidiemail voor het toewijzen van een bezoeker. De twee geplande stappen tellen vanaf hun geplande datum.</p>
         <div class="table-responsive">
           <table class="table table-sm tabel-kaarten">
             <thead>
@@ -121,7 +121,7 @@ export function AandachtUitleg() {
 }
 
 const PAGINA_LABEL: Record<Pagina, string> = {
-  intake: 'Intake',
+  inschrijving: 'Inschrijving',
   details: 'Op het dossier zelf',
   bezoek: 'Bezoek',
   plan: 'Plan van Aanpak',
@@ -146,7 +146,7 @@ export function RechtenUitleg() {
 
       <section class="card card-body mb-3 qa-rechten-beheerder">
         <h2 class="h5">Beheerders</h2>
-        <p>Beheerders zien alle dossiers en mogen alles wijzigen. Alleen beheerders kunnen dossiers aanmaken, het adres en de intake invullen, bezoekers en uitvoerders toewijzen, e-mails versturen, een stap terugdraaien, aandacht uitstellen, dossiers sluiten, heropenen en verwijderen, en de activiteit van een dossier bekijken.</p>
+        <p>Beheerders zien alle dossiers en mogen alles wijzigen. Alleen beheerders kunnen dossiers aanmaken, het adres en de inschrijving invullen, bezoekers en uitvoerders toewijzen, e-mails versturen, een stap terugdraaien, aandacht uitstellen, dossiers sluiten, heropenen en verwijderen, en de activiteit van een dossier bekijken.</p>
         <p class="mb-2">Ook een beheerder wordt soms tegengehouden:</p>
         <ul class="mb-0">
           <li>Een gesloten dossier is voor iedereen alleen-lezen. Heropen het eerst om iets te wijzigen. Alleen de opleverrapport-mails kun je dan nog versturen.</li>

@@ -39,8 +39,8 @@ export function str(d: Dossier, key: string): string | null {
   return typeof v === 'string' && v.trim() !== '' ? v : null;
 }
 
-// Shown as a warning on the intake page; the admin decides when the intake is complete.
-export function intakeOntbreekt(d: Dossier): string[] {
+// Shown as a warning on the inschrijving page; the admin decides when the inschrijving is complete.
+export function inschrijvingOntbreekt(d: Dossier): string[] {
   const uit: string[] = [];
   if (!d.adres) uit.push('adres');
   if (!str(d, 'bewoner_naam')) uit.push('naam bewoner');
@@ -65,10 +65,10 @@ export interface Stap {
 
 export const STAPPEN: Stap[] = [
   {
-    nr: 1, key: 'intake', ligtBij: 'beheerder', label: 'Intake', anker: 'sectie-intake',
-    regel: '"Intake is compleet" is nog niet aangetikt',
+    nr: 1, key: 'inschrijving', ligtBij: 'beheerder', label: 'Inschrijving', anker: 'sectie-inschrijving',
+    regel: '"Inschrijving is compleet" is nog niet aangetikt',
     geldt: () => true,
-    gedaan: (d) => d.intake_afgerond_at,
+    gedaan: (d) => d.inschrijving_afgerond_at,
   },
   {
     nr: 2, key: 'bezoeker', ligtBij: 'beheerder', label: 'Bezoeker toewijzen', anker: 'sectie-bezoeker',

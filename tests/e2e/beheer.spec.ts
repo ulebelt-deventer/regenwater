@@ -1,4 +1,5 @@
 // Admin pages: lists that filter on a checkbox must load on first open (box unchecked), and the navbar menus stay on screen.
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { BEHEERDER, KLUSSER, nieuwDossier, post, start, zet } from './hulp.ts';
 
@@ -115,14 +116,21 @@ test('de menuknoppen met alleen een pijltje hebben het caret-down-fill-icoon in 
   expect(await page.locator('.qa-dossiers-menu').evaluate((el) => getComputedStyle(el, '::after').content)).toBe('"\uF229"');
 });
 
-test('CSV downloaden staat in het menu naast Nieuw dossier en volgt de filters', async ({ page }) => {
+test('CSV downloaden staat in het menu naast Nieuw dossier, volgt de filters en downloadt het bestand', async ({ page }) => {
   await start(page);
+  await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto('/dossiers');
   await page.locator('.qa-filter-adres').fill('Walstraat');
   await expect(page).toHaveURL(/adres=Walstraat/);
   await page.locator('.qa-dossiers-menu').click();
   await expect(page.locator('.qa-csv')).toBeVisible();
   await expect(page.locator('.qa-csv')).toHaveAttribute('href', /^\/api\/dossiers\.csv\?.*adres=Walstraat/);
+
+  const download = page.waitForEvent('download');
+  await page.locator('.qa-csv').click();
+  const bestand = readFileSync((await (await download).path())!, 'utf-8');
+  expect(bestand).toContain('Dossier-ID;');
+  expect(bestand).toContain('Walstraat');
 });
 
 test('Materialen verplaats je door een rij aan de greep te slepen, of met de pijltjestoetsen op de greep', async ({ page }) => {
@@ -155,7 +163,7 @@ test('Uitleg: rechten staat in het Beheer-menu en toont per onderdeel wat bezoek
   await page.goto('/');
   await page.locator('.qa-nav-beheer').click();
   await page.locator('a[href="/uitleg/rechten"]').click();
-  await expect(page.locator('.qa-rechten-intake td').nth(1)).toHaveText('Niets');
+  await expect(page.locator('.qa-rechten-inschrijving td').nth(1)).toHaveText('Niets');
   await expect(page.locator('.qa-rechten-bezoek td').nth(1)).toHaveText('Alles');
   await expect(page.locator('.qa-rechten-bezoek td').nth(2)).toHaveText('Niets');
   await expect(page.locator('.qa-rechten-uitvoering td').nth(2)).toHaveText('Alles');

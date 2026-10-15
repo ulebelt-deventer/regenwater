@@ -1,43 +1,43 @@
 import { describe, expect, it } from 'vitest';
-import { STAPPEN, huidigeStap, intakeOntbreekt, opdracht, status } from './status.ts';
-import { dossier, naIntake, verzending } from './testhulp.ts';
+import { STAPPEN, huidigeStap, inschrijvingOntbreekt, opdracht, status } from './status.ts';
+import { dossier, naInschrijving, verzending } from './testhulp.ts';
 
 const T = '2026-03-05T10:00:00.000Z';
 
 describe('huidigeStap', () => {
-  it('starts a new dossier at Intake', () => {
-    expect(huidigeStap(dossier()).key).toBe('intake');
+  it('starts a new dossier at Inschrijving', () => {
+    expect(huidigeStap(dossier()).key).toBe('inschrijving');
   });
 
-  it('stays at Intake until an admin marks it complete, even with nothing missing', () => {
-    const d = naIntake('huur', { intake_afgerond_at: null });
-    expect(intakeOntbreekt(d)).toEqual([]);
-    expect(huidigeStap(d).key).toBe('intake');
+  it('stays at Inschrijving until an admin marks it complete, even with nothing missing', () => {
+    const d = naInschrijving('huur', { inschrijving_afgerond_at: null });
+    expect(inschrijvingOntbreekt(d)).toEqual([]);
+    expect(huidigeStap(d).key).toBe('inschrijving');
   });
 
-  it('leaves Intake once marked complete, even with fields missing', () => {
-    const d = dossier({ intake_afgerond_at: T });
-    expect(intakeOntbreekt(d)).toContain('subsidiemail');
+  it('leaves Inschrijving once marked complete, even with fields missing', () => {
+    const d = dossier({ inschrijving_afgerond_at: T });
+    expect(inschrijvingOntbreekt(d)).toContain('subsidiemail');
     expect(huidigeStap(d).key).toBe('bezoeker');
   });
 
   it('lists the subsidiemail as missing until it is sent', () => {
-    expect(intakeOntbreekt(naIntake('huur', { verzendingen: [] }))).toEqual(['subsidiemail']);
+    expect(inschrijvingOntbreekt(naInschrijving('huur', { verzendingen: [] }))).toEqual(['subsidiemail']);
   });
 
-  it('needs both naam and e-mail of the bewoner to finish Intake', () => {
-    const d = naIntake('koop');
+  it('needs both naam and e-mail of the bewoner to finish Inschrijving', () => {
+    const d = naInschrijving('koop');
     d.data.bewoner_email = '';
-    expect(intakeOntbreekt(d)).toEqual(['e-mail bewoner']);
+    expect(inschrijvingOntbreekt(d)).toEqual(['e-mail bewoner']);
   });
 
   it('does not count a failed subsidiemail as sent', () => {
-    const d = naIntake('koop', { verzendingen: [verzending('subsidie_koop', T, { mislukt_at: T })] });
-    expect(intakeOntbreekt(d)).toEqual(['subsidiemail']);
+    const d = naInschrijving('koop', { verzendingen: [verzending('subsidie_koop', T, { mislukt_at: T })] });
+    expect(inschrijvingOntbreekt(d)).toEqual(['subsidiemail']);
   });
 
   it('walks the huur path through every step to closed as Uitgevoerd', () => {
-    const d = naIntake('huur');
+    const d = naInschrijving('huur');
     expect(huidigeStap(d).key).toBe('bezoeker');
     Object.assign(d, { bezoeker_id: 2, bezoeker_toegewezen_at: T });
     expect(huidigeStap(d).key).toBe('afspraak');
@@ -62,7 +62,7 @@ describe('huidigeStap', () => {
   });
 
   it('skips the corporatie step for a koopwoning and waits for the bewoner instead', () => {
-    const d = naIntake('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-03-10T14:00', bezoek_afgerond_at: T, klaar_voor_controle_at: T });
+    const d = naInschrijving('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-03-10T14:00', bezoek_afgerond_at: T, klaar_voor_controle_at: T });
     d.verzendingen.push(verzending('plan_bewoner_koop', T));
     expect(status(d)).toMatchObject({ label: 'Klussendienst of zelf? (koop)', ligtBij: 'bewoner' });
     d.klussendienst_gekozen_at = T;
@@ -70,7 +70,7 @@ describe('huidigeStap', () => {
   });
 
   it('labels a closed dossier with its reden instead of a step', () => {
-    const d = naIntake('koop', { gesloten_at: T, gesloten_reden: 'Bewoner afgehaakt' });
+    const d = naInschrijving('koop', { gesloten_at: T, gesloten_reden: 'Bewoner afgehaakt' });
     expect(status(d).label).toBe('Gesloten: Bewoner afgehaakt');
   });
 
@@ -80,7 +80,7 @@ describe('huidigeStap', () => {
 });
 
 describe('opdracht', () => {
-  const basis = naIntake('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-03-10T14:00' });
+  const basis = naInschrijving('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-03-10T14:00' });
 
   it('gives the bezoeker a current Bezoek during steps 3-5', () => {
     expect(opdracht(basis, 2)).toEqual({ rol: 'Bezoek', aanZet: true, klaar: false });

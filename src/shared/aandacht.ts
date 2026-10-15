@@ -1,6 +1,6 @@
 import { datum, dagenSinds, lokaal, isoDatum } from './datum.ts';
 import {
-  STAPPEN, PLAN_SJABLONEN, afspraakDatum, corporatieNaam, huidigeStap, intakeOntbreekt,
+  STAPPEN, PLAN_SJABLONEN, afspraakDatum, corporatieNaam, huidigeStap, inschrijvingOntbreekt,
   laatsteVerzending, str, type Stap,
 } from './status.ts';
 import type { Dossier, Gebruiker, Ontvanger } from './types.ts';
@@ -20,7 +20,7 @@ export const KLOPT_NIET_KOP = 'De gegevens spreken elkaar tegen. Controleer:';
 
 // Ligt stil thresholds in days, per step. Shown on the Aandacht-criteria page.
 export const DREMPELS = {
-  intake: 3,
+  inschrijving: 3,
   bezoeker: 7,
   afspraak: 7,
   bezoek: 2,
@@ -41,8 +41,8 @@ export interface LigtStilRegel {
 }
 
 export const LIGT_STIL_REGELS: LigtStilRegel[] = [
-  { stap: 'intake', wanneer: `> ${DREMPELS.intake} dagen sinds aangemaakt`, tekst: 'Intake al {n} dagen open. Nog niet ingevuld: {ontbrekende velden}.' },
-  { stap: 'bezoeker', wanneer: `> ${DREMPELS.bezoeker} dagen sinds de intake compleet is`, tekst: 'Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?' },
+  { stap: 'inschrijving', wanneer: `> ${DREMPELS.inschrijving} dagen sinds aangemaakt`, tekst: 'Inschrijving al {n} dagen open. Nog niet ingevuld: {ontbrekende velden}.' },
+  { stap: 'bezoeker', wanneer: `> ${DREMPELS.bezoeker} dagen sinds de inschrijving compleet is`, tekst: 'Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?' },
   { stap: 'afspraak', wanneer: `> ${DREMPELS.afspraak} dagen sinds de bezoeker is toegewezen`, tekst: '{bezoeker} heeft na {n} dagen nog geen afspraak gepland.' },
   { stap: 'bezoek', wanneer: `> ${DREMPELS.bezoek} dagen na de afspraak; nooit zolang de afspraak in de toekomst ligt`, tekst: 'Afspraak was op {datum}, maar het bezoek is niet afgerond. Doorgegaan?' },
   { stap: 'plan', wanneer: `> ${DREMPELS.plan} dagen sinds bezoek afgerond`, tekst: 'Bezoek was {n} dagen geleden; plan nog niet klaar voor controle.' },
@@ -58,7 +58,7 @@ export const KLOPT_NIET_REGELS: [string, string][] = [
   ['Een latere stap is gedaan, maar een eerdere stap die van toepassing is niet', '"Stap {nr} ({latere stap}) is gedaan, maar stap {nr} ({eerdere stap}) nog niet."'],
   ['Koopwoning met een goedkeuring van de woningcorporatie', '"Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?"'],
   ['Huurwoning met een keuze van de bewoner (Klussendienst of zelf)', '"Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?"'],
-  ['Rioolstelsel gescheiden, dossier open en voorbij de intake', '"Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?"'],
+  ['Rioolstelsel gescheiden, dossier open en voorbij de inschrijving', '"Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?"'],
   ['Gesloten als niet subsidiabel terwijl het rioolstelsel gemengd is', '"Gesloten als niet subsidiabel, maar het riool is gemengd."'],
   ['Bezoek afgerond terwijl de afspraak in de toekomst ligt', '"Bezoek afgerond, maar de afspraak is pas op {datum}."'],
   ['Werk opgeleverd terwijl de geplande uitvoering in de toekomst ligt', '"Werk opgeleverd, maar de uitvoering is pas gepland op {datum}."'],
@@ -79,18 +79,18 @@ export function kloptNiet(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Da
     }
   }
   if (d.huur_koop === 'koop' && d.corporatie_akkoord_at) {
-    k('Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?', 'sectie-intake');
+    k('Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?', 'sectie-inschrijving');
   }
   if (d.huur_koop === 'huur' && d.klussendienst_gekozen_at) {
-    k('Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?', 'sectie-intake');
+    k('Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?', 'sectie-inschrijving');
   }
   const huidig = huidigeStap(d);
   const riool = str(d, 'rioolstelsel');
   if (riool === 'gescheiden' && !d.gesloten_at && huidig.nr > 1) {
-    k('Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?', 'sectie-intake');
+    k('Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?', 'sectie-inschrijving');
   }
   if (d.gesloten_reden === 'Niet subsidiabel' && riool === 'gemengd') {
-    k('Gesloten als niet subsidiabel, maar het riool is gemengd.', 'sectie-intake');
+    k('Gesloten als niet subsidiabel, maar het riool is gemengd.', 'sectie-inschrijving');
   }
   const afspraak = afspraakDatum(d);
   if (d.bezoek_afgerond_at && afspraak && afspraak > nu) {
@@ -116,8 +116,8 @@ export function kloptNiet(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Da
 // When the current step began, for the Ligt stil clock.
 function startVan(d: Dossier, s: Stap): string | Date | null {
   switch (s.key) {
-    case 'intake': return d.created_at;
-    case 'bezoeker': return d.intake_afgerond_at;
+    case 'inschrijving': return d.created_at;
+    case 'bezoeker': return d.inschrijving_afgerond_at;
     case 'afspraak': return d.bezoeker_toegewezen_at;
     case 'bezoek': return afspraakDatum(d);
     case 'plan': return d.bezoek_afgerond_at;
@@ -140,10 +140,10 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
   const naam = (id: number | null) => (id !== null && gebruikers.has(id) ? gebruikers.get(id)!.naam : 'De klusser');
   let tekst: string | null = null;
   switch (s.key) {
-    case 'intake':
-      if (n > DREMPELS.intake) {
-        const mist = intakeOntbreekt(d);
-        tekst = `Intake al ${n} dagen open.${mist.length ? ` Nog niet ingevuld: ${mist.join(', ')}.` : ' Nog niet als compleet gemarkeerd.'}`;
+    case 'inschrijving':
+      if (n > DREMPELS.inschrijving) {
+        const mist = inschrijvingOntbreekt(d);
+        tekst = `Inschrijving al ${n} dagen open.${mist.length ? ` Nog niet ingevuld: ${mist.join(', ')}.` : ' Nog niet als compleet gemarkeerd.'}`;
       }
       break;
     case 'bezoeker':

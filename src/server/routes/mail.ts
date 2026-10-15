@@ -8,6 +8,7 @@ import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout } from '../context.ts';
 import { bijlageNaam, bijlagePdf } from '../documenten/index.tsx';
 import { log } from '../log.ts';
+import { tekstNaarHtml } from '../mail.ts';
 import { dossierLink, melding } from '../meldingen.ts';
 import { laadDossier } from '../repo.ts';
 import { haalDossier } from './dossiers.ts';
@@ -93,8 +94,11 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!EMAIL_RE.test(aan)) fout(400, 'Vul een geldig e-mailadres in bij Aan.');
     if (!onderwerp || !tekst.trim()) fout(400, 'Onderwerp en tekst mogen niet leeg zijn.');
     const afzender = c.get('actor');
-    const bericht = { aan, cc: afzender.email, replyTo: afzender.email, onderwerp, tekst };
-    const ontbrekend = ontbrekendeWaarden(def, tagWaarden(ctx, d, afzender), onderwerp, tekst);
+    const waarden = tagWaarden(ctx, d, afzender);
+    // A klusser's dossier link carries their address in the href only, so a logged-out tap prefills the login form.
+    const html = def.ontvanger === 'bezoeker' || def.ontvanger === 'uitvoerder' ? tekstNaarHtml(tekst, { [waarden.link]: `${waarden.link}?email=${encodeURIComponent(aan)}` }) : undefined;
+    const bericht = { aan, cc: afzender.email, replyTo: afzender.email, onderwerp, tekst, html };
+    const ontbrekend = ontbrekendeWaarden(def, waarden, onderwerp, tekst);
     const nu = ctx.klok.iso();
     const opslaan = ctx.db.prepare(
       'INSERT INTO verzendingen (dossier_id, sjabloon, ontvanger, aan, cc, onderwerp, tekst, handmatig, mislukt_at, mislukt_reden, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',

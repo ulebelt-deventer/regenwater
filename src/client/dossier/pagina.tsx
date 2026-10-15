@@ -10,7 +10,7 @@ import { ApiFout, get } from '../api.ts';
 import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, titel } from '../ui.tsx';
 import { MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerwijderModal, VerzendRegel, actie, verstuurdSinds, zetMijlpaal } from './acties.tsx';
 import { type Antwoord, DossierCtx, haalDossier, maakStaat, useDossier } from './staat.ts';
-import { BezoekSamenvatting, IntakeSamenvatting, PlanSamenvatting, UitvoeringSamenvatting } from './samenvatting.tsx';
+import { BezoekSamenvatting, InschrijvingSamenvatting, PlanSamenvatting, UitvoeringSamenvatting } from './samenvatting.tsx';
 import { VeldInvoer } from './velden.tsx';
 
 export function DossierRoute(props: RouteSectionProps) {
@@ -250,7 +250,7 @@ export function Details() {
 
   const stapActie = () => {
     const st = s.status().stap;
-    const sub: Record<string, [string, string]> = { intake: ['intake', 'Intake invullen'], bezoek: ['bezoek', 'Start bezoek'], plan: ['plan', 'Plan van Aanpak invullen'], uitvoering: ['uitvoering', 'Uitvoering invullen'] };
+    const sub: Record<string, [string, string]> = { inschrijving: ['inschrijving', 'Inschrijving invullen'], bezoek: ['bezoek', 'Start bezoek'], plan: ['plan', 'Plan van Aanpak invullen'], uitvoering: ['uitvoering', 'Uitvoering invullen'] };
     return { st, sub: st.key in sub ? sub[st.key] : null };
   };
   // Klussers only get the action for their own steps; the other sections are the admins' work.
@@ -286,7 +286,7 @@ export function Details() {
               fallback={<button type="button" class="btn btn-sm btn-outline-primary qa-stap-actie" onClick={() => naarAnker(stapActie().st.key === 'afspraak' ? 'veld-afspraak' : stapActie().st.anker)}>Naar {stapActie().st.label.toLowerCase()}</button>}
             >
               {(sub) => (
-                <Show when={sub()[0] !== 'intake' || s.beheerder()}>
+                <Show when={sub()[0] !== 'inschrijving' || s.beheerder()}>
                   <A href={`/dossiers/${s.id}/${sub()[0]}`} class="btn btn-sm btn-primary qa-stap-actie">{sub()[1]}</A>
                 </Show>
               )}
@@ -297,24 +297,24 @@ export function Details() {
       </Sectie>
 
       <Sectie
-        id="sectie-intake"
-        titel="Intake"
-        actie={<Show when={s.beheerder()}><SubpaginaKnop pad="intake" eerst="Invullen" gestart={s.d.intake_afgerond_at !== null} mag={open()} /></Show>}
+        id="sectie-inschrijving"
+        titel="Inschrijving"
+        actie={<Show when={s.beheerder()}><SubpaginaKnop pad="inschrijving" eerst="Invullen" gestart={s.d.inschrijving_afgerond_at !== null} mag={open()} /></Show>}
       >
         <dl class="feiten mb-2">
-          <IntakeSamenvatting />
+          <InschrijvingSamenvatting />
         </dl>
-        <MijlpaalRegel mijlpaal="intake_afgerond" label="Intake is compleet" />
+        <MijlpaalRegel mijlpaal="inschrijving_afgerond" label="Inschrijving is compleet" />
       </Sectie>
 
       <Sectie id="sectie-bezoeker" titel="Bezoeker">
         <Show
-          when={s.beheerder() && open() && s.d.intake_afgerond_at}
+          when={s.beheerder() && open() && s.d.inschrijving_afgerond_at}
           fallback={
             <div class="qa-bezoeker-naam">
               {naam(s.d.bezoeker_id) ?? <span class="text-muted">Nog niemand</span>}
               <Show when={s.beheerder() && open() && s.d.bezoeker_id === null}>
-                <div class="small text-muted qa-bezoeker-na-intake">Je kunt een bezoeker toewijzen zodra de intake compleet is.</div>
+                <div class="small text-muted qa-bezoeker-na-inschrijving">Je kunt een bezoeker toewijzen zodra de inschrijving compleet is.</div>
               </Show>
             </div>
           }
@@ -332,7 +332,7 @@ export function Details() {
             </Show>
           </div>
         </Show>
-        <Show when={s.beheerder() && s.d.bezoeker_id !== null && !(open() && s.d.intake_afgerond_at)}>
+        <Show when={s.beheerder() && s.d.bezoeker_id !== null && !(open() && s.d.inschrijving_afgerond_at)}>
           <div class="mt-1">
             <VerzendRegel sjablonen={['bezoeker_toegewezen']} sinds={s.d.bezoeker_toegewezen_at} />
           </div>
@@ -367,7 +367,7 @@ export function Details() {
           <div class="mb-3">
             <a href={`/docs/dossiers/${s.id}/plan.pdf`} target="_blank" class="qa-plan-pdf"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Plan van Aanpak (PDF)</a>
           </div>
-          <Show when={s.d.huur_koop} fallback={<div class="text-muted">Vul eerst bij de intake in of het een huur- of koopwoning is.</div>}>
+          <Show when={s.d.huur_koop} fallback={<div class="text-muted">Vul eerst bij de inschrijving in of het een huur- of koopwoning is.</div>}>
             {(hk) => (
               <>
                 <div class="mb-3">

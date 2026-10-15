@@ -1,11 +1,11 @@
 # Ulebelt Regenton portal
 
-A web portal for the Ulebelt rainwater project (Regenwater / Regenton). Volunteers (klussers) visit homes, design a rainwater capture plan, and install rain barrels. The portal follows each household from intake to installation as one dossier. Admins (beheerders) set up dossiers and assign the work. Klussers do the on-site visit, fill in the plan and record the installation. The app produces the PDFs and e-mails that go to the bewoner and the woningcorporatie. The interface is in Dutch and built mobile-first, since most of the work happens on a phone in someone's backyard.
+A web portal for the Ulebelt rainwater project (Regenwater / Regenton). Volunteers (klussers) visit homes, design a rainwater capture plan, and install rain barrels. The portal follows each household from inschrijving to installation as one dossier. Admins (beheerders) set up dossiers and assign the work. Klussers do the on-site visit, fill in the plan and record the installation. The app produces the PDFs and e-mails that go to the bewoner and the woningcorporatie. The interface is in Dutch and built mobile-first, since most of the work happens on a phone in someone's backyard.
 
 ## Main features
 
-- **Dossiers**: one per address, moving through 11 steps (defined in `src/shared/status.ts`): intake, assign a bezoeker, plan and do the bezoek, finish the Plan van Aanpak, admin check and send, akkoord from the corporatie (huur) or the bewoner's choice (koop), assign an uitvoerder, do the work, send the opleverrapport. Status and "aandacht nodig" findings are computed from the dossier's data, never stored.
-- **Intake**: address lookup through PDOK, kadastrale kaart, luchtfoto, and a boorprofiel auto-filled from the nearest boring (BRO / DINOloket).
+- **Dossiers**: one per address, moving through 11 steps (defined in `src/shared/status.ts`): inschrijving, assign a bezoeker, plan and do the bezoek, finish the Plan van Aanpak, admin check and send, akkoord from the corporatie (huur) or the bewoner's choice (koop), assign an uitvoerder, do the work, send the opleverrapport. Status and "aandacht nodig" findings are computed from the dossier's data, never stored.
+- **Inschrijving**: address lookup through PDOK, kadastrale kaart, luchtfoto, and a boorprofiel auto-filled from the nearest boring (BRO / DINOloket).
 - **On-site visit and plan**: field forms with autosave, photos with drawn annotations, daken / tuinen / regenpijpen, and a materials list with cost estimate.
 - **Documents**: PDFs (plan, opleverrapport), a concept-Plan preview, paper bezoekformulieren and a materials print page, all rendered on the server and printed with Chromium.
 - **E-mail**: login links, notices to klussers, bewoners and corporaties from editable templates (sjablonen), admin alerts (meldingen), and a weekly digest.
@@ -38,7 +38,7 @@ Notes:
 - `npm start` / `npm run dev` starts the Vite client on 7425 (proxying `/api`, `/docs` and `/health`) and the API server on 3000, rebuilding and restarting the server on change. Use the 7425 URL (the server's startup line prints it too). Login links point there. Production doesn't use `npm start`: its systemd unit runs `node dist/server/main.js`.
 - Data lives in `data/` (gitignored): `app.db` and `fotos/`. Delete the folder to start fresh, then seed again. `DATA_DIR=...` points the server and the seed command somewhere else.
 - `npm run beheerder` rebuilds the server bundle first, so run it before `npm start` (or expect the dev server to restart once). It fails if the e-mail already exists. Add further users from the Gebruikers page in the app.
-- The intake fetches live data from PDOK, BRO and DINOloket, so it needs an internet connection.
+- The inschrijving fetches live data from PDOK, BRO and DINOloket, so it needs an internet connection.
 
 ## Tests and checks
 

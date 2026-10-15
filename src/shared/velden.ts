@@ -3,7 +3,7 @@ import { datum, datumTijd } from './datum.ts';
 import { getal, kaartItems } from './kaart.ts';
 import type { Dossier, Json } from './types.ts';
 
-export type Pagina = 'intake' | 'details' | 'bezoek' | 'plan' | 'uitvoering';
+export type Pagina = 'inschrijving' | 'details' | 'bezoek' | 'plan' | 'uitvoering';
 // Who may edit besides a beheerder. 'bezoeker'/'uitvoerder' means the klusser assigned to that role, until their hand-off.
 export type Bewerker = 'bezoeker' | 'uitvoerder';
 export type VeldType = 'text' | 'email' | 'tel' | 'textarea' | 'number' | 'radio' | 'checks' | 'select' | 'date' | 'datetime' | 'ids' | 'annotaties';
@@ -49,20 +49,20 @@ export const BEOORDELINGEN: [string, string, string][] = [
 ];
 
 export const VELDEN: Veld[] = [
-  // Intake
-  { key: 'bewoner_naam', label: 'Naam bewoner', type: 'text', pagina: 'intake', bewerkers: [], inPlan: true, inOplever: true },
-  { key: 'bewoner_email', label: 'E-mail bewoner', type: 'email', pagina: 'intake', bewerkers: [] },
-  { key: 'bewoner_telefoon', label: 'Telefoon bewoner', type: 'tel', pagina: 'intake', bewerkers: [] },
-  { key: 'huur_koop', label: 'Huurwoning of koopwoning', type: 'radio', pagina: 'intake', bewerkers: [], kolom: true, inPlan: true, inOplever: true, opties: [['huur', 'Huurwoning'], ['koop', 'Koopwoning']] },
-  { key: 'woningeigenaar', label: 'Woningeigenaar', type: 'radio', lijst: true, pagina: 'intake', bewerkers: [], inPlan: true, inOplever: true, anders: true, zichtbaar: isHuur, opties: [...CORPORATIES.map((c): [string, string] => [c, c]), ['anders', 'Anders, namelijk:']] },
+  // Inschrijving
+  { key: 'bewoner_naam', label: 'Naam bewoner', type: 'text', pagina: 'inschrijving', bewerkers: [], inPlan: true, inOplever: true },
+  { key: 'bewoner_email', label: 'E-mail bewoner', type: 'email', pagina: 'inschrijving', bewerkers: [] },
+  { key: 'bewoner_telefoon', label: 'Telefoon bewoner', type: 'tel', pagina: 'inschrijving', bewerkers: [] },
+  { key: 'huur_koop', label: 'Huurwoning of koopwoning', type: 'radio', pagina: 'inschrijving', bewerkers: [], kolom: true, inPlan: true, inOplever: true, opties: [['huur', 'Huurwoning'], ['koop', 'Koopwoning']] },
+  { key: 'woningeigenaar', label: 'Woningeigenaar', type: 'radio', lijst: true, pagina: 'inschrijving', bewerkers: [], inPlan: true, inOplever: true, anders: true, zichtbaar: isHuur, opties: [...CORPORATIES.map((c): [string, string] => [c, c]), ['anders', 'Anders, namelijk:']] },
   {
-    key: 'woningtype', label: 'Woningtype', type: 'radio', lijst: true, pagina: 'intake', bewerkers: [], inPlan: true, anders: true,
+    key: 'woningtype', label: 'Woningtype', type: 'radio', lijst: true, pagina: 'inschrijving', bewerkers: [], inPlan: true, anders: true,
     opties: [['tussenwoning', 'Tussenwoning'], ['hoekwoning', 'Hoekwoning'], ['geschakeld', 'Geschakeld'], ['2-onder-1-kap', '2-onder-1-kap'], ['vrijstaand', 'Vrijstaand'], ['benedenwoning', 'Benedenwoning'], ['anders', 'Anders, namelijk:']],
   },
-  { key: 'rioolstelsel', label: 'Rioolstelsel', type: 'radio', pagina: 'intake', bewerkers: [], opties: [['gemengd', 'Gemengd'], ['gescheiden', 'Gescheiden']] },
-  { key: 'boorlocatie', label: 'Boorlocatie', type: 'text', pagina: 'intake', bewerkers: [], inPlan: true, hint: 'Waar de boring is gedaan, bijvoorbeeld "Voorbeeldplein, Deventer".' },
+  { key: 'rioolstelsel', label: 'Rioolstelsel', type: 'radio', pagina: 'inschrijving', bewerkers: [], opties: [['gemengd', 'Gemengd'], ['gescheiden', 'Gescheiden']] },
+  { key: 'boorlocatie', label: 'Boorlocatie', type: 'text', pagina: 'inschrijving', bewerkers: [], inPlan: true, hint: 'Waar de boring is gedaan, bijvoorbeeld "Voorbeeldplein, Deventer".' },
   {
-    key: 'bodemsituatie', label: 'Bodemsituatie', type: 'radio', pagina: 'intake', bewerkers: [], inPlan: true, anders: true,
+    key: 'bodemsituatie', label: 'Bodemsituatie', type: 'radio', pagina: 'inschrijving', bewerkers: [], inPlan: true, anders: true,
     opties: [
       ['zand_fijn', 'Zand, fijn tot midden, goed doorlaatbaar'],
       ['zand_grof', 'Zand, grof, zeer goed doorlaatbaar'],
@@ -120,11 +120,11 @@ export const VELDEN: Veld[] = [
   { key: 'gebruikt.*.aantal', label: 'Aantal', type: 'number', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true, min: 0 },
 ];
 
-// A tuin's photos and the kaart sit next to Intake/Bezoek fields; the kaart is shared by both pages.
+// A tuin's photos and the kaart sit next to Inschrijving/Bezoek fields; the kaart is shared by both pages.
 export const FOTO_SLOTS: FotoSlot[] = [
-  { key: 'straatfoto', label: 'Straatfoto / vooraanzicht', pagina: 'intake', bewerkers: [], inPlan: true, enkel: true },
+  { key: 'straatfoto', label: 'Straatfoto / vooraanzicht', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true },
   { key: 'kaart', label: 'Plattegrond van kadaster', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, enkel: true },
-  { key: 'boorprofiel', label: 'Boorprofiel', pagina: 'intake', bewerkers: [], inPlan: true, enkel: true },
+  { key: 'boorprofiel', label: 'Boorprofiel', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true },
   { key: 'tuin.*', label: 'Foto’s van de tuin', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'tuinsituatie', label: 'Foto’s tuinsituatie', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'regenpijp.*.ondergrond', label: 'Foto’s ondergrond', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },

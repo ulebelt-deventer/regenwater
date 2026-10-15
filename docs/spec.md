@@ -10,7 +10,7 @@
 
 - Admin receives an email alert from the online aanmelding form where residents express interest in having a rainwater capture system.
 - They log into our portal at https://regenwater.ulebelt.nl - if not already logged in they enter their email address and click the emailed login link (or type the emailed code).
-- Once logged in, they land on the Overzicht and go to the Dossiers list. Click on "+ Nieuw dossier" to open the Intake form. Fill in the address and basic prep information (huur of koop, subsidie eligibility, street view, validate or adjust the kadastrale kaart, boorprofiel, etc) then assign a klusser as bezoeker and send them an email saying they've been assigned.
+- Once logged in, they land on the Overzicht and go to the Dossiers list. Click on "+ Nieuw dossier" to open the Inschrijving form. Fill in the address and basic prep information (huur of koop, subsidie eligibility, street view, validate or adjust the kadastrale kaart, boorprofiel, etc) then assign a klusser as bezoeker and send them an email saying they've been assigned.
 
 ### 2. Klusser schedules and does the on-site
 
@@ -21,8 +21,8 @@
 ## UI per page
 
 - Login page
-  - If you're already logged in, it redirects admins to the Overzicht and klussers to Mijn dossiers. The same applies right after logging in.
-  - If you're not logged in, display an email address form. Enter your email and submit. If that email is not in our system, display an error message saying so and asking you to contact the Ulebelt contact address (a constant in code). Archived users get the same message. If that email IS found, send that email a login link plus a 6-digit code, and display a confirmation message with a code input field.
+  - If you're already logged in, it redirects admins to the Overzicht and klussers to Mijn dossiers. The same applies right after logging in, unless you were sent here from another page: then login returns you to that page, once (eg the dossier link in a klusser email). The page is remembered in the browser until the next login, which uses it up.
+  - If you're not logged in, display an email address form, autofocused. If the URL has `?email=` (the dossier link in a bezoeker or uitvoerder email carries it), the form arrives filled in and the button is focused instead, so one tap sends the code. Enter your email and submit. If that email is not in our system, display an error message saying so and asking you to contact the Ulebelt contact address (a constant in code). Archived users get the same message. If that email IS found, send that email a login link plus a 6-digit code, and display a confirmation message with an autofocused code input field.
     - *Why the code: on phones, mail apps often open links in their own built-in browser, so the login cookie lands there instead of in Safari/Chrome. Typing the code into the browser they actually use avoids that.*
     - The email shows the code first, then the link, with wording like "Op je telefoon: typ deze code in. Op een computer: klik op de link."
     - The link opens an otherwise empty page with one centered "Inloggen" button; only tapping it logs in. *Mail scanners (eg Outlook Safe Links) open every link in an email, which would use up a one-use link.*
@@ -85,8 +85,8 @@
       - **Volgende stap**, when it isn't their turn, is plain muted text naming the step and who it's with (eg "Wordt uitgevoerd door Henk", "Wacht op Ieder1"), not the colored status label, so nothing suggests they need to act.
     - On narrow screens, the same card layout as admins, with the Opdracht badge before the address.
 - Dossier details page
-  - *The page has one section per phase, in process order. The rule for what goes where: a form that someone sits down to fill in, with many fields, gets its own sub-page; a single field or a button stays inline on the details page, next to the summary the "Volgende stap" points to. That gives four sub-pages, each filled by one person in one moment: **Intake** (admin, at the desk), **Bezoek** (bezoeker, on-site), **Plan van Aanpak** (bezoeker afterwards, then admin during review) and **Uitvoering** (uitvoerder). On the details page each of these shows as a compact, text-only summary of every field the sub-page has, as a definition list: from tablet width a label column as wide as its longest label, then the value; on phones each label small above its value, except an empty field, which keeps its "--" on the label's line. Values are option labels, Anders write-ins, textareas with their line breaks, photos as small thumbnails that open the same annotator as on the sub-page (autosaved, editable by whoever may edit that field), empty fields as "--", fields the sub-page hides hidden here too. The button to the sub-page always sits in the section's top right corner, so sub-pages are always found in the same place: a filled "Invullen" ("Start bezoek" for Bezoek) while the step is open, then a small pencil "Bewerken" once its milestone is set, or an eye "Bekijken" for someone who can't edit. Each sub-page has the address as title, the same banners, and a "← Terug naar dossier" link.*
-  - *Permissions: admins view and edit everything. Klussers view all sections of their assigned dossiers. As bezoeker they edit the afspraak, the Bezoek and Plan van Aanpak sub-pages, and Notities, until they tap "Klaar voor controle"; as uitvoerder, the uitvoering date, the Uitvoering sub-page, and Notities, until they tap "Werk opgeleverd". After that they only view, and ask an admin for any change. Intake is read-only for klussers; assigning, sending, approving and closing are admin-only. A closed dossier is read-only for everyone, admins included: only viewing, PDFs, Alle activiteit, sending the opleverrapport (again) to the corporatie or bewoner, heropenen and verwijderen. Reopen it to change anything else.*
+  - *The page has one section per phase, in process order. The rule for what goes where: a form that someone sits down to fill in, with many fields, gets its own sub-page; a single field or a button stays inline on the details page, next to the summary the "Volgende stap" points to. That gives four sub-pages, each filled by one person in one moment: **Inschrijving** (admin, at the desk), **Bezoek** (bezoeker, on-site), **Plan van Aanpak** (bezoeker afterwards, then admin during review) and **Uitvoering** (uitvoerder). On the details page each of these shows as a compact, text-only summary of every field the sub-page has, as a definition list: from tablet width a label column as wide as its longest label, then the value; on phones each label small above its value, except an empty field, which keeps its "--" on the label's line. Values are option labels, Anders write-ins, textareas with their line breaks, photos as small thumbnails that open the same annotator as on the sub-page (autosaved, editable by whoever may edit that field), empty fields as "--", fields the sub-page hides hidden here too. The button to the sub-page always sits in the section's top right corner, so sub-pages are always found in the same place: a filled "Invullen" ("Start bezoek" for Bezoek) while the step is open, then a small pencil "Bewerken" once its milestone is set, or an eye "Bekijken" for someone who can't edit. Each sub-page has the address as title, the same banners, and a "← Terug naar dossier" link.*
+  - *Permissions: admins view and edit everything. Klussers view all sections of their assigned dossiers. As bezoeker they edit the afspraak, the Bezoek and Plan van Aanpak sub-pages, and Notities, until they tap "Klaar voor controle"; as uitvoerder, the uitvoering date, the Uitvoering sub-page, and Notities, until they tap "Werk opgeleverd". After that they only view, and ask an admin for any change. Inschrijving is read-only for klussers; assigning, sending, approving and closing are admin-only. A closed dossier is read-only for everyone, admins included: only viewing, PDFs, Alle activiteit, sending the opleverrapport (again) to the corporatie or bewoner, heropenen and verwijderen. Reopen it to change anything else.*
   - *All changes on this page and subpage forms, incl photo uploads and annotations, will autosave as soon as you make them.*
     - A floating status indicator in the bottom right corner indicates that all changes will autosave, and shows the latest time saved (eg "Opgeslagen om 19:04")
     - Each field saves on its own (PATCH per field, not the whole form), so an admin and a klusser editing the same dossier don't overwrite each other's fields (last write wins per field). All annotations on one image are a single field, so two people drawing on the same kaart at once can overwrite each other; accepted as rare.
@@ -115,12 +115,12 @@
   - **Status**
     - Volgende stap
       - To the right of this label, a "?" link to the Statussen page, so the app documents its own rules.
-      - Displays the calculated current next step for this record, with one action: a button that opens the step's sub-page ("Intake invullen", "Start bezoek", "Plan van Aanpak invullen", "Uitvoering invullen"), or else a tap that scrolls to the inline section where the step happens (Bezoeker, the afspraak field, Plan versturen & goedkeuring, Uitvoerder, Oplevering).
+      - Displays the calculated current next step for this record, with one action: a button that opens the step's sub-page ("Inschrijving invullen", "Start bezoek", "Plan van Aanpak invullen", "Uitvoering invullen"), or else a tap that scrolls to the inline section where the step happens (Bezoeker, the afspraak field, Plan versturen & goedkeuring, Uitvoerder, Oplevering).
     - Notities
       - free-form notes the admin & klusser can write whatever is relevant in. Shown as one line of text ("--" if empty) with a pencil "Bewerken" link for whoever may edit; that link opens an autofocused textarea, which closes back to text when it loses focus.
-  - **Intake** (sub-page, admin)
+  - **Inschrijving** (sub-page, admin)
     - *"+ Nieuw dossier" creates the dossier and opens this sub-page.*
-    - On the details page, inline: the compact summary (address; bewoner on one line as "naam • telefoon • e-mail", telefoon as a tap-to-call `tel:` link and e-mail as a `mailto:` link; woning, rioolstelsel, whether the eligibility mail was sent (a `text-warning` "Nog niet verstuurd" if not), straatfoto, kaart (luchtfoto op schaal or screenshot), boorprofiel, boorlocatie, bodemsituatie; for a gescheiden riool one line saying those last five aren't needed), "Intake is compleet" with its date once marked, and the "Invullen" / "Bewerken" button to the sub-page.
+    - On the details page, inline: the compact summary (address; bewoner on one line as "naam • telefoon • e-mail", telefoon as a tap-to-call `tel:` link and e-mail as a `mailto:` link; woning, rioolstelsel, whether the eligibility mail was sent (a `text-warning` "Nog niet verstuurd" if not), straatfoto, kaart (luchtfoto op schaal or screenshot), boorprofiel, boorlocatie, bodemsituatie; for a gescheiden riool one line saying those last five aren't needed), "Inschrijving is compleet" with its date once marked, and the "Invullen" / "Bewerken" button to the sub-page.
     - Adres
       - Enter the address in a free-form text input (eg street name, number, plaats; or postcode & number) and the API will suggest the best matching address. Click it to populate that validated address.
       - Autocompletes using the PDOK Locatieserver (`/suggest` while typing, then `/lookup` for the chosen result; `/free?q=` as fallback). Our app stores the validated street name, number, plaats, postcode, `gekoppeld_perceel`, centerpoint in both RD and lat/long systems, and `gemeentenaam`.
@@ -176,15 +176,16 @@
       - Leem, slecht doorlaatbaar
       - Veen, wisselend tot slecht doorlaatbaar
       - Anders, namelijk: (write-in)
-    - At the bottom: a `text-warning` "Nog niet ingevuld: {velden}" list (Adres, naam or e-mail bewoner, huur/koop, rioolstelsel, the eligibility mail; bodemsituatie, boorprofiel and kaart aren't required), and an "Intake is compleet" button. The admin decides: with fields still missing it first asks "Toch als compleet markeren?". Marking it stores the milestone (when, by whom; admins can undo it) and goes to the dossier's Bezoeker section.
+    - At the bottom: a `text-warning` "Nog niet ingevuld: {velden}" list (Adres, naam or e-mail bewoner, huur/koop, rioolstelsel, the eligibility mail; bodemsituatie, boorprofiel and kaart aren't required), and an "Inschrijving is compleet" button. The admin decides: with fields still missing it first asks "Toch als compleet markeren?". Marking it stores the milestone (when, by whom; admins can undo it) and goes to the dossier's Bezoeker section.
   - **Bezoeker** (inline, admin)
-    - Until the intake is marked compleet, only the line "Je kunt een bezoeker toewijzen zodra de intake compleet is."
+    - Until the inschrijving is marked compleet, only the line "Je kunt een bezoeker toewijzen zodra de inschrijving compleet is."
     - searchable dropdown where you assign any beheerder or klusser to do the on-site.
     - While no bezoeker is assigned: a "Kopieer oproep voor Signal-groep" button that copies a call for volunteers to the clipboard, from the "Oproep Signal-groep" template with its tags filled in. Its tags are only `{straat}`, `{plaats}` and `{afzender}` (no huisnummer or bewoner name, for privacy). Default text: "Nieuwe klus voor regenwater-infiltratie in de {straat} in {plaats}. Wie wil er op bezoek? Reageer hier of app {afzender}." Mostly used for koopwoningen.
     - The dropdown's last option, "+ Nieuwe klusser", opens the "+ Nieuwe gebruiker" form (see Gebruikers) in a pop-up, with Rol fixed to Klusser. Saving creates the account, assigns them as bezoeker, and continues to the notify pop-up below; that email's link is also how they first log in. The Uitvoerder dropdown has the same option.
     - Changing the bezoeker after "Bezoek afronden" first asks "Hiermee verandert ook 'Schouw door' in het Plan van Aanpak van {oud} naar {nieuw}. Weet je het zeker?"
     - When you select a bezoeker, the email preview pop-up asks if you want to notify them. Click "Ja, versturen" to notify them, or "Annuleren" to skip it. Notifying marks the record as notified, stores the timestamp, and displays a small green "Verstuurd op {datum}" on the same row as the dropdown. Until then a "Bezoeker mailen" button sits there; once sent, a link "Opnieuw mailen" at the end of the Verstuurd line replaces it.
       - The email template just notifies the klusser that they've been assigned this address <address>, please click on <button link to the dossier page> to view the bewoner's contact details and schedule an afspraak.
+      - In the HTML part of bezoeker and uitvoerder emails, the dossier link's href adds `?email={Aan}` (not in the visible text), so a logged-out klusser lands on a prefilled login form.
   - **Bezoek** (sub-page, bezoeker on-site: what's actually there)
     - On the details page, inline:
       - Bezoek-afspraak: native date and time inputs (`type="date"`, `type="time"`), which give phones their own pickers. *Normally the klusser arranges it with the bewoner by phone, days before the bezoek.*
@@ -192,7 +193,7 @@
       - Its generic twin, "Leeg bezoekformulier (PDF)" (in the Beheer dropdown), has no dossier data at all: blank lines for adres, bewoner and datum, a blank sketch box instead of the kaart, and a few blank regenpijp blocks (A to D). Admins print a stack in advance so a vrijwilliger can grab one without anyone preparing a dossier-specific form. Both are rendered from the same form definitions in code as the Bezoek and Plan van Aanpak pages, so a new question appears on paper automatically.
       - The compact summary (one line per dak with m², regenpijpen and waterberging; per tuin m² and photos; verhard; tuinsituatie; per regenpijp one line "van D1 · PVC · 80 mm · Regenton: ... · Afkoppelen: ..." with Ondergrond / Water naar / Via lines below; hoosbuien; wensen), and a "Start bezoek" / "Bewerken" button to the sub-page.
     - Plattegrond intekenen
-      - The same kadasterkaart image slot as in Intake, with the same annotations; shown again here because the bezoeker now records what's actually found on-site. Same buttons to auto-load the luchtfoto or open the kadasterkaart; the image can be replaced (annotations are kept, with the warning described in Intake).
+      - The same kadasterkaart image slot as in Inschrijving, with the same annotations; shown again here because the bezoeker now records what's actually found on-site. Same buttons to auto-load the luchtfoto or open the kadasterkaart; the image can be replaced (annotations are kept, with the warning described in Inschrijving).
       - Tap it to open full-screen. Besides Pijl and Tekst, the kaart has three semantic tools whose annotations feed the form below and the Plan van Aanpak:
         - **Dak** (polygon, numbered D1, D2...): adds a row to the Dak delen table.
         - **Regenpijp** (point, lettered A, B, C...): adds a regenpijp section below, and is automatically linked to the nearest dakdeel (inside it, or else the closest edge). The link can be overridden in that regenpijp's section.
@@ -377,7 +378,7 @@
 
     | \# | Ligt bij | Status | Current while |
     | --- | --- | --- | --- |
-    | 1 | Beheerder | Intake | "Intake is compleet" not yet tapped |
+    | 1 | Beheerder | Inschrijving | "Inschrijving is compleet" not yet tapped |
     | 2 | Beheerder | Bezoeker toewijzen | No bezoeker assigned |
     | 3 | Klusser | Bezoek plannen | No afspraak date |
     | 4 | Klusser | Bezoek uitvoeren | "Bezoek afronden" not yet tapped |
@@ -400,19 +401,19 @@
     | A later step's milestone is set but an earlier applicable step's isn't (one generic check over the status table) | "Stap {nr} ({latere stap}) is gedaan, maar stap {nr} ({eerdere stap}) nog niet." |
     | Koopwoning with a corporatie approval recorded | "Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?" |
     | Huurwoning with a bewoner Klussendienst choice recorded | "Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?" |
-    | Rioolstelsel gescheiden, dossier open and past Intake | "Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?" |
+    | Rioolstelsel gescheiden, dossier open and past Inschrijving | "Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?" |
     | Closed as Niet subsidiabel while rioolstelsel is gemengd | "Gesloten als niet subsidiabel, maar het riool is gemengd." |
     | Bezoek afgerond while the afspraak is in the future | "Bezoek afgerond, maar de afspraak is pas op {datum}." |
     | Werk opgeleverd while uitvoering gepland is in the future | "Werk opgeleverd, maar de uitvoering is pas gepland op {datum}." |
     | The bezoeker/uitvoerder of an open step is archived | "{naam} is gearchiveerd, maar nog {bezoeker/uitvoerder}. Wijs iemand anders toe." |
 
     States the UI cannot produce (eg a regenpijp linked to a non-existent dakdeel) aren't banners: they're bugs, so the code raises an error.
-  - **Ligt stil**. Only for open dossiers, only for the current step. The clock starts when the step began (the timestamp of the previous step's milestone; `created_at` for Intake), except for the two scheduled steps, which run from their planned date.
+  - **Ligt stil**. Only for open dossiers, only for the current step. The clock starts when the step began (the timestamp of the previous step's milestone; `created_at` for Inschrijving), except for the two scheduled steps, which run from their planned date.
 
     | Step | Aandacht when | Banner line |
     | --- | --- | --- |
-    | 1 Intake | \> 3 days since created | "Intake al {n} dagen open. Nog niet ingevuld: {ontbrekende velden}." (or "Nog niet als compleet gemarkeerd." when nothing is missing) |
-    | 2 Bezoeker toewijzen | \> 7 days since the intake was marked compleet | "Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?" |
+    | 1 Inschrijving | \> 3 days since created | "Inschrijving al {n} dagen open. Nog niet ingevuld: {ontbrekende velden}." (or "Nog niet als compleet gemarkeerd." when nothing is missing) |
+    | 2 Bezoeker toewijzen | \> 7 days since the inschrijving was marked compleet | "Al {n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?" |
     | 3 Bezoek plannen | \> 7 days since bezoeker assigned | "{bezoeker} heeft na {n} dagen nog geen afspraak gepland." |
     | 4 Bezoek uitvoeren | \> 2 days after the afspraak; never while the afspraak is in the future | "Afspraak was op {datum}, maar het bezoek is niet afgerond. Doorgegaan?" |
     | 5 Plan van Aanpak afronden | \> 5 days since bezoek afgerond | "Bezoek was {n} dagen geleden; plan nog niet klaar voor controle." |
@@ -491,10 +492,10 @@
 
 Each scenario is an end-to-end test that walks one dossier through the app and, after each action, asserts the derived status, the aandacht findings, and key PDF fields:
 
-1. Huur happy path: intake, bezoek, plan (materials prefilled from the default list, some Aantallen filled in), corporatie approves, uitvoering (Gebruikte materialen prefilled from the planned rows), opleverrapport to corporatie and bewoner, closed as Uitgevoerd.
+1. Huur happy path: inschrijving, bezoek, plan (materials prefilled from the default list, some Aantallen filled in), corporatie approves, uitvoering (Gebruikte materialen prefilled from the planned rows), opleverrapport to corporatie and bewoner, closed as Uitgevoerd.
 2. Koop with Klussendienst, uitvoerder different from the bezoeker and created on the spot via "+ Nieuwe klusser"; the uitvoerder's list shows a filled Uitvoering badge, the bezoeker's shows "✓ Bezoek" in muted text. After "Klaar voor controle" the bezoeker can no longer edit, nor the uitvoerder after "Werk opgeleverd". After closing as Uitgevoerd, the admin resends the opleverrapport to the bewoner.
 3. Koop, bewoner does it themselves: closed as Bewoner doet het zelf.
-4. Niet subsidiabel: gescheiden riool, closed at intake.
+4. Niet subsidiabel: gescheiden riool, closed at inschrijving.
 5. Corporatie asks for changes: plan edited (Plan gewijzigd finding appears, the audit trail shows old and new values), resent (finding clears, the step 7 clock restarts), then approved.
 6. Corporatie rejects: closed as Plan afgewezen.
 7. Bewoner drops out after the bezoek: closed as Bewoner afgehaakt (no field can be edited while closed), reopened later, status resumes at the right step.

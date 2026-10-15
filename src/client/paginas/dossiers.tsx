@@ -82,7 +82,7 @@ export function Dossiers() {
   const nieuw = async () => {
     await probeer(async () => {
       const { id } = await post<{ id: number }>('/api/dossiers');
-      navigate(`/dossiers/${id}/intake`);
+      navigate(`/dossiers/${id}/inschrijving`);
     });
   };
 
@@ -93,7 +93,7 @@ export function Dossiers() {
         <Show when={beheerder()}>
           <button type="button" class="btn btn-primary qa-nieuw-dossier" onClick={() => void nieuw()}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuw<span class="d-none d-sm-inline"> dossier</span></button>
           <Dropdown knop="" label="Meer" knopClass="btn btn-outline-primary qa-dossiers-menu" rechts>
-            <a class="dropdown-item qa-csv" href={`/api/dossiers.csv${query(zoek())}`}><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />CSV downloaden</a>
+            <a class="dropdown-item qa-csv" download="" href={`/api/dossiers.csv${query(zoek())}`}><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />CSV downloaden</a>
           </Dropdown>
         </Show>
       </div>

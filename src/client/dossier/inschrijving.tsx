@@ -1,9 +1,9 @@
-// Intake sub-page (admin, at the desk): address, bewoner, woning, subsidie mail, straatfoto, kaart and bodem.
+// Inschrijving sub-page (admin, at the desk): address, bewoner, woning, subsidie mail, straatfoto, kaart and bodem.
 import { A, useNavigate } from '@solidjs/router';
 import { For, Show, createSignal, onCleanup } from 'solid-js';
 import { BORING_MAX_KM, DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/constants.ts';
 import { datum } from '../../shared/datum.ts';
-import { SUBSIDIE_SJABLONEN, intakeOntbreekt, laatsteVerzending, str, straatNummer } from '../../shared/status.ts';
+import { SUBSIDIE_SJABLONEN, inschrijvingOntbreekt, laatsteVerzending, str, straatNummer } from '../../shared/status.ts';
 import type { Dossier, RioolDetectie } from '../../shared/types.ts';
 import { get, post } from '../api.ts';
 import { Modal, bevestig, melding, probeer } from '../ui.tsx';
@@ -19,7 +19,7 @@ const VARIANT: Record<string, string> = {
   subsidie_niet: 'niet subsidiabel',
 };
 
-export function Intake() {
+export function Inschrijving() {
   const s = useDossier();
   const uit = () => !s.mag([]);
   const sjabloon = () => {
@@ -29,20 +29,20 @@ export function Intake() {
   };
   const verstuurd = () => laatsteVerzending(s.d, SUBSIDIE_SJABLONEN);
   const nietSubsidiabel = () => str(s.d, 'rioolstelsel') === 'gescheiden';
-  const ontbreekt = () => intakeOntbreekt(s.d);
+  const ontbreekt = () => inschrijvingOntbreekt(s.d);
   const navigate = useNavigate();
   const naarBezoeker = () => navigate(`/dossiers/${s.id}#sectie-bezoeker`);
   const afronden = async () => {
     const mist = ontbreekt();
-    if (mist.length && !(await bevestig('Intake afronden?', `Nog niet ingevuld: ${mist.join(', ')}. Toch als compleet markeren?`, { ja: 'Toch afronden' }))) return;
-    if (await zetMijlpaal(s, 'intake_afgerond')) naarBezoeker();
+    if (mist.length && !(await bevestig('Inschrijving afronden?', `Nog niet ingevuld: ${mist.join(', ')}. Toch als compleet markeren?`, { ja: 'Toch afronden' }))) return;
+    if (await zetMijlpaal(s, 'inschrijving_afgerond')) naarBezoeker();
   };
 
   return (
     <>
       <TerugLink />
-      <section class="card card-body mb-3 qa-intake">
-        <h2 class="h5">Intake</h2>
+      <section class="card card-body mb-3 qa-inschrijving">
+        <h2 class="h5">Inschrijving</h2>
         <AdresVeld />
         <VeldInvoer k="bewoner_naam" />
         <VeldInvoer k="bewoner_email" />
@@ -104,18 +104,18 @@ export function Intake() {
 
         <div class="border-top pt-3 qa-controle">
           <Show
-            when={!s.d.intake_afgerond_at}
+            when={!s.d.inschrijving_afgerond_at}
             fallback={
               <>
-                <MijlpaalRegel mijlpaal="intake_afgerond" label="Intake is compleet" />
+                <MijlpaalRegel mijlpaal="inschrijving_afgerond" label="Inschrijving is compleet" />
                 <button type="button" class="btn btn-outline-primary mt-2 qa-naar-dossier" onClick={naarBezoeker}>Naar het dossier</button>
               </>
             }
           >
             <Show when={ontbreekt().length}>
-              <div class="text-warning qa-intake-ontbreekt">Nog niet ingevuld: {ontbreekt().join(', ')}.</div>
+              <div class="text-warning qa-inschrijving-ontbreekt">Nog niet ingevuld: {ontbreekt().join(', ')}.</div>
             </Show>
-            <button type="button" class="btn btn-primary mt-2 qa-intake-klaar" disabled={uit()} onClick={() => void afronden()}><i class="bi bi-check-lg me-1" aria-hidden="true" />Intake is compleet</button>
+            <button type="button" class="btn btn-primary mt-2 qa-inschrijving-klaar" disabled={uit()} onClick={() => void afronden()}><i class="bi bi-check-lg me-1" aria-hidden="true" />Inschrijving is compleet</button>
           </Show>
         </div>
       </section>

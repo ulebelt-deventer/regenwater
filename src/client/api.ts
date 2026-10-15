@@ -24,10 +24,21 @@ export async function api<T = any>(methode: string, pad: string, inhoud?: unknow
   const tekst = await res.text();
   const json = tekst ? JSON.parse(tekst) : {};
   if (!res.ok) {
-    if (res.status === 401 && !location.pathname.startsWith('/inloggen')) location.assign('/inloggen');
+    if (res.status === 401 && !location.pathname.startsWith('/inloggen')) naarInloggen();
     throw new ApiFout(res.status, typeof json.fout === 'string' ? json.fout : `Fout ${res.status}`);
   }
   return json as T;
+}
+
+export const TERUG_SLEUTEL = 'terugNaInloggen';
+
+// Remembers the page a logged-out visitor opened, for one return after login, and carries a klusser email link's ?email= along to prefill.
+function naarInloggen(): void {
+  const params = new URLSearchParams(location.search);
+  const email = params.get('email');
+  params.delete('email');
+  if (location.pathname !== '/') localStorage.setItem(TERUG_SLEUTEL, location.pathname + (params.size ? `?${params}` : ''));
+  location.assign(`/inloggen${query({ email })}`);
 }
 
 export const get = <T = any>(pad: string) => api<T>('GET', pad);

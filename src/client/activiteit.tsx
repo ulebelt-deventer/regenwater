@@ -18,7 +18,7 @@ export interface AuditItem {
 }
 
 const MIJLPAAL_LABEL: Record<string, string> = {
-  intake_afgerond: 'Intake is compleet',
+  inschrijving_afgerond: 'Inschrijving is compleet',
   bezoek_afgerond: 'Bezoek afgerond',
   klaar_voor_controle: 'Klaar voor controle',
   corporatie_akkoord: 'Woningcorporatie heeft het plan goedgekeurd',

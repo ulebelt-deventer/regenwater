@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test';
 import { nieuwDossier, opslagKlaar, post, start, subsidieMail, veld, wijsToe, zet } from './hulp.ts';
 
-test('de samenvattingen tonen alle ingevulde velden van intake, bezoek, plan en uitvoering', async ({ page }) => {
+test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, plan en uitvoering', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'huur', corporatie: 'Ieder1' });
   await zet(page, id, {
@@ -45,14 +45,14 @@ test('de samenvattingen tonen alle ingevulde velden van intake, bezoek, plan en 
   await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'corporatie_akkoord', aan: true });
   await page.goto(`/dossiers/${id}`);
 
-  const intake = page.locator('.qa-sectie-intake');
-  await expect(intake).toContainText('Huurwoning, Ieder1, Tussenwoning');
-  await expect(intake.locator('.qa-sv-bewoner')).toHaveText(/^\s*Bewoner\s*Bea Bewoner\s*• 0612345678\s*• bea@example.org\s*$/);
-  await expect(intake.locator('.qa-subsidie-niet-verstuurd')).toHaveClass(/text-warning/);
-  await expect(intake.locator('.qa-sv-rioolstelsel')).toContainText('Gemengd');
-  await expect(intake.locator('.qa-sv-straatfoto')).toContainText('--');
-  await expect(intake.locator('.qa-sv-boorlocatie')).toContainText('Voorbeeldplein, Deventer');
-  await expect(intake.locator('.qa-sv-bodemsituatie')).toContainText('Klei, slecht doorlaatbaar');
+  const inschrijving = page.locator('.qa-sectie-inschrijving');
+  await expect(inschrijving).toContainText('Huurwoning, Ieder1, Tussenwoning');
+  await expect(inschrijving.locator('.qa-sv-bewoner')).toHaveText(/^\s*Bewoner\s*Bea Bewoner\s*• 0612345678\s*• bea@example.org\s*$/);
+  await expect(inschrijving.locator('.qa-subsidie-niet-verstuurd')).toHaveClass(/text-warning/);
+  await expect(inschrijving.locator('.qa-sv-rioolstelsel')).toContainText('Gemengd');
+  await expect(inschrijving.locator('.qa-sv-straatfoto')).toContainText('--');
+  await expect(inschrijving.locator('.qa-sv-boorlocatie')).toContainText('Voorbeeldplein, Deventer');
+  await expect(inschrijving.locator('.qa-sv-bodemsituatie')).toContainText('Klei, slecht doorlaatbaar');
 
   const bezoek = page.locator('.qa-sectie-bezoek');
   await expect(bezoek.locator('.qa-sv-dak')).toHaveText(/Dak D1\s*24 m² · regenpijp A · \d+ liter waterberging per regenpijp/);
@@ -85,14 +85,14 @@ test('de samenvattingen tonen alle ingevulde velden van intake, bezoek, plan en 
   await expect(uitvoering.locator('.qa-sv-opleverfotos')).toContainText('--');
 });
 
-test('bij een gescheiden riool zegt de intake waarom straatfoto, kaart en boorprofiel ontbreken', async ({ page }) => {
+test('bij een gescheiden riool zegt de inschrijving waarom straatfoto, kaart en boorprofiel ontbreken', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop', riool: 'gescheiden' });
   await expect(page.locator('.qa-niet-subsidiabel-uitleg')).toContainText('gescheiden riool');
   await expect(page.locator('.qa-veld-straatfoto')).toHaveCount(0);
   await page.goto(`/dossiers/${id}`);
-  await expect(page.locator('.qa-sectie-intake .qa-sv-niet-subsidiabel')).toBeVisible();
-  await expect(page.locator('.qa-sectie-intake .qa-sv-straatfoto')).toHaveCount(0);
+  await expect(page.locator('.qa-sectie-inschrijving .qa-sv-niet-subsidiabel')).toBeVisible();
+  await expect(page.locator('.qa-sectie-inschrijving .qa-sv-straatfoto')).toHaveCount(0);
 });
 
 test('in het actiemenu staat Dossier sluiten in amber onder de streep, vlak boven Verwijderen', async ({ page }) => {
@@ -106,12 +106,12 @@ test('in het actiemenu staat Dossier sluiten in amber onder de streep, vlak bove
   await expect(sluiten.locator('xpath=following-sibling::*[1]')).toHaveClass(/qa-menu-verwijderen/);
 });
 
-test('de knop naar de sub-pagina staat altijd rechtsboven in de sectie: eerst Invullen, en Bewerken met potlood zodra de intake compleet is', async ({ page }) => {
+test('de knop naar de sub-pagina staat altijd rechtsboven in de sectie: eerst Invullen, en Bewerken met potlood zodra de inschrijving compleet is', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}`);
-  const sectie = page.locator('.qa-sectie-intake');
-  const knop = sectie.locator('.qa-naar-intake');
+  const sectie = page.locator('.qa-sectie-inschrijving');
+  const knop = sectie.locator('.qa-naar-inschrijving');
   const titel = sectie.locator('h2');
   const rechtsboven = async () => {
     const [k, t, s] = [(await knop.boundingBox())!, (await titel.boundingBox())!, (await sectie.boundingBox())!];
@@ -122,7 +122,7 @@ test('de knop naar de sub-pagina staat altijd rechtsboven in de sectie: eerst In
   await expect(knop).toHaveClass(/btn-primary/);
   await rechtsboven();
 
-  await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'intake_afgerond', aan: true });
+  await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'inschrijving_afgerond', aan: true });
   await page.reload();
   await expect(knop).toHaveText('Bewerken');
   await expect(knop.locator('.bi-pencil')).toBeVisible();
@@ -133,10 +133,10 @@ test('de samenvatting zet labels als smalle kolom naast de waarden, en op een te
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}`);
-  const regel = page.locator('.qa-sectie-intake .qa-sv-rioolstelsel');
+  const regel = page.locator('.qa-sectie-inschrijving .qa-sv-rioolstelsel');
   const [label, waarde] = [regel.locator('dt'), regel.locator('dd')];
   // The label column is as wide as the longest label ("Bodemsituatie"), not a fixed width.
-  const langste = (await page.locator('.qa-sectie-intake .qa-sv-bodemsituatie dt').boundingBox())!;
+  const langste = (await page.locator('.qa-sectie-inschrijving .qa-sv-bodemsituatie dt').boundingBox())!;
   let [l, w] = [(await label.boundingBox())!, (await waarde.boundingBox())!];
   expect(Math.abs(l.y - w.y)).toBeLessThan(4);
   expect(w.x - (langste.x + langste.width)).toBeLessThan(32);
@@ -146,7 +146,7 @@ test('de samenvatting zet labels als smalle kolom naast de waarden, en op een te
   expect(w.y).toBeGreaterThanOrEqual(l.y + l.height - 1);
   expect(Math.abs(w.x - l.x)).toBeLessThan(2);
 
-  const leeg = page.locator('.qa-sectie-intake .qa-sv-boorlocatie');
+  const leeg = page.locator('.qa-sectie-inschrijving .qa-sv-boorlocatie');
   await expect(leeg.locator('dd')).toHaveText('--');
   [l, w] = [(await leeg.locator('dt').boundingBox())!, (await leeg.locator('dd').boundingBox())!];
   expect(w.x).toBeGreaterThan(l.x + l.width);

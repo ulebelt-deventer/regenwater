@@ -3,11 +3,11 @@ import '@fontsource/figtree/600.css';
 import '@fontsource/figtree/800.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './styles.scss';
-import { Route, Router } from '@solidjs/router';
+import { Navigate, Route, Router } from '@solidjs/router';
 import { render } from 'solid-js/web';
 import { DossierActiviteit } from './dossier/activiteit.tsx';
 import { Bezoek } from './dossier/bezoek.tsx';
-import { Intake } from './dossier/intake.tsx';
+import { Inschrijving } from './dossier/inschrijving.tsx';
 import { Details, DossierRoute } from './dossier/pagina.tsx';
 import { Plan } from './dossier/plan.tsx';
 import { Uitvoering } from './dossier/uitvoering.tsx';
@@ -36,7 +36,9 @@ render(
       <Route path="/dossiers" component={Dossiers} />
       <Route path="/dossiers/:id" component={DossierRoute}>
         <Route path="/" component={Details} />
-        <Route path="/intake" component={Intake} />
+        <Route path="/inschrijving" component={Inschrijving} />
+        {/* The step was called Intake; old bookmarks and feedback paths use this. */}
+        <Route path="/intake" component={() => <Navigate href="../inschrijving" />} />
         <Route path="/bezoek" component={Bezoek} />
         <Route path="/plan" component={Plan} />
         <Route path="/uitvoering" component={Uitvoering} />

@@ -267,7 +267,7 @@ describe('beheer', () => {
 });
 
 describe('weekly digest', () => {
-  it('lists a stalled intake with its line and the no-activity note, and is empty when nothing needs aandacht', async () => {
+  it('lists a stalled inschrijving with its line and the no-activity note, and is empty when nothing needs aandacht', async () => {
     expect(digestTekst(t.ctx)).toBeNull();
     const { id } = await beheerder.json<{ id: number }>('POST', '/api/dossiers');
     t.klok.verschuif(8 * 864e5);
@@ -275,7 +275,7 @@ describe('weekly digest', () => {
     expect(m.onderwerp).toBe('Aandacht nodig: 1 dossiers');
     expect(m.tekst).toContain('Ligt stil');
     expect(m.tekst).toContain(`https://regenton.test/dossiers/${id}`);
-    expect(m.tekst).toContain('Intake al 8 dagen open');
+    expect(m.tekst).toContain('Inschrijving al 8 dagen open');
     expect(m.tekst).toContain('geen activiteit sinds 2 maart 2026');
   });
 });

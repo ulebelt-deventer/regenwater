@@ -23,13 +23,13 @@ test('een beheerder ziet op een telefoon kaarten in plaats van de tabel, en een 
   await geenZijwaartsScrollen(page);
 });
 
-test('een klusser ziet op een telefoon een kaart met de opdracht, nog niet aan zet tijdens de intake', async ({ page }) => {
+test('een klusser ziet op een telefoon een kaart met de opdracht, nog niet aan zet tijdens de inschrijving', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await subsidieMail(page, 'koop');
   await wijsToe(page, 'bezoeker', klusserId, false);
-  // Back in the intake: an admin undid "Intake is compleet" after assigning.
-  await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'intake_afgerond', aan: false });
+  // Back in the inschrijving: an admin undid "Inschrijving is compleet" after assigning.
+  await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'inschrijving_afgerond', aan: false });
 
   await login(page, KLUSSER.email);
   await page.goto('/dossiers');

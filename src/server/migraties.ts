@@ -161,4 +161,12 @@ export const MIGRATIES: string[] = [
     intake_afgerond_at = (SELECT v.created_at FROM verzendingen v WHERE v.dossier_id = dossiers.id AND v.mislukt_at IS NULL AND v.sjabloon IN ('subsidie_huur', 'subsidie_koop', 'subsidie_niet') ORDER BY v.id LIMIT 1),
     intake_afgerond_by = (SELECT v.created_by FROM verzendingen v WHERE v.dossier_id = dossiers.id AND v.mislukt_at IS NULL AND v.sjabloon IN ('subsidie_huur', 'subsidie_koop', 'subsidie_niet') ORDER BY v.id LIMIT 1);
   `,
+  // The first step is called Inschrijving, also in stored step and milestone keys.
+  `
+  ALTER TABLE dossiers RENAME COLUMN intake_afgerond_at TO inschrijving_afgerond_at;
+  ALTER TABLE dossiers RENAME COLUMN intake_afgerond_by TO inschrijving_afgerond_by;
+  UPDATE uitstellen SET stap = 'inschrijving' WHERE stap = 'intake';
+  UPDATE audit SET payload = json_set(payload, '$.stap', 'inschrijving') WHERE type = 'uitgesteld' AND json_extract(payload, '$.stap') = 'intake';
+  UPDATE audit SET payload = json_set(payload, '$.mijlpaal', 'inschrijving_afgerond') WHERE type = 'mijlpaal' AND json_extract(payload, '$.mijlpaal') = 'intake_afgerond';
+  `,
 ];

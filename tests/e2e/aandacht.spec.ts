@@ -34,7 +34,7 @@ test('koopwoning met een goedkeuring van de woningcorporatie: Klopt niet', async
   await status(page, 'Uitvoerder toewijzen');
   await geenAandacht(page);
 
-  await page.goto(`/dossiers/${id}/intake`);
+  await page.goto(`/dossiers/${id}/inschrijving`);
   await kies(page, 'huur_koop', 'koop');
   await opslagKlaar(page);
   await naarDossier(page, id);

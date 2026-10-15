@@ -17,7 +17,7 @@
 
 - **Inloggen met e-maillink en code, zonder wachtwoord: oké?** Login: you type your e-mail address and get a link plus a 6-digit code, no passwords. OK? We can explore more secure options, but this is the easiest for klussers.
 - **Hoe lang moet je ingelogd blijven?** Login: Once you've logged in, how long should your login session last? Claude's initial recommendation was 30 days, for klusser convenience. Do you have a preference?
-- **Wat mogen klussers zelf bewerken?** Klusser permissions: as bezoeker they edit the afspraak, the Bezoek and Plan van Aanpak pages and Notities until "Klaar voor controle"; as uitvoerder the uitvoering date, the Uitvoering page and Notities until "Werk opgeleverd". After that, they ask an admin for changes. Everything else (intake, address, assigning, sending, closing) is admins only. Is that the right boundary? Can you think of situations where a klusser must change something outside it?
+- **Wat mogen klussers zelf bewerken?** Klusser permissions: as bezoeker they edit the afspraak, the Bezoek and Plan van Aanpak pages and Notities until "Klaar voor controle"; as uitvoerder the uitvoering date, the Uitvoering page and Notities until "Werk opgeleverd". After that, they ask an admin for changes. Everything else (inschrijving, address, assigning, sending, closing) is admins only. Is that the right boundary? Can you think of situations where a klusser must change something outside it?
 
 ### Dossiers list & aandacht
 

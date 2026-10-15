@@ -73,3 +73,37 @@ test('een link die al gebruikt is geeft een foutmelding met een weg naar een nie
   await expect(page.locator('.qa-login-fout a')).toHaveAttribute('href', '/inloggen');
   expect(await ingelogd(page)).toBe(401);
 });
+
+test('het e-mailveld en daarna het codeveld krijgen de focus', async ({ page }) => {
+  await start(page);
+  await page.context().clearCookies();
+  await page.goto('/inloggen');
+  await expect(page.locator('.qa-login-email')).toBeFocused();
+  await page.locator('.qa-login-email').fill(KLUSSER.email);
+  await page.locator('.qa-login-aanvragen').click();
+  await expect(page.locator('.qa-login-code')).toBeFocused();
+});
+
+test('een uitgelogde link naar een dossier vult het e-mailadres in en komt na inloggen eenmalig terug op dat dossier', async ({ page }) => {
+  await start(page);
+  await page.goto('/dossiers');
+  await page.locator('.qa-nieuw-dossier').click();
+  await expect(page).toHaveURL(/\/dossiers\/\d+\/inschrijving$/);
+  const id = Number(/\/dossiers\/(\d+)\//.exec(page.url())![1]);
+  await page.context().clearCookies();
+
+  await page.goto(`/dossiers/${id}?email=${encodeURIComponent(BEHEERDER.email)}`);
+  await expect(page).toHaveURL(/\/inloggen\?email=/);
+  await expect(page.locator('.qa-login-email')).toHaveValue(BEHEERDER.email);
+  await expect(page.locator('.qa-login-aanvragen')).toBeFocused();
+  await page.locator('.qa-login-aanvragen').click();
+  const m = (await emails(page)).findLast((e) => e.aan === BEHEERDER.email)!;
+  await page.locator('.qa-login-code').fill(/inlogcode is:\s+(\S+)/.exec(m.tekst)![1]);
+  await page.locator('.qa-login-inloggen').click();
+  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
+
+  const { code } = await vraagCode(page, BEHEERDER.email);
+  await page.locator('.qa-login-code').fill(code);
+  await page.locator('.qa-login-inloggen').click();
+  await expect(page).toHaveURL(/\/$/);
+});

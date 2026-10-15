@@ -1,6 +1,6 @@
 import { useNavigate } from '@solidjs/router';
 import { Show, createSignal, onMount } from 'solid-js';
-import { ApiFout, post } from '../api.ts';
+import { ApiFout, TERUG_SLEUTEL, post } from '../api.ts';
 import { laadSessie, sessie } from '../sessie.ts';
 import { titel } from '../ui.tsx';
 
@@ -8,13 +8,15 @@ const startpagina = () => (sessie()!.ik.rol === 'beheerder' ? '/' : '/dossiers')
 
 async function naInloggen(navigate: (p: string, o?: { replace: boolean }) => void): Promise<void> {
   await laadSessie();
-  navigate(startpagina(), { replace: true });
+  const terug = localStorage.getItem(TERUG_SLEUTEL);
+  localStorage.removeItem(TERUG_SLEUTEL);
+  navigate(terug ?? startpagina(), { replace: true });
 }
 
 export function Inloggen() {
   titel('Inloggen');
   const navigate = useNavigate();
-  const [email, setEmail] = createSignal('');
+  const [email, setEmail] = createSignal(new URLSearchParams(location.search).get('email') ?? '');
   const [code, setCode] = createSignal('');
   const [verstuurd, setVerstuurd] = createSignal(false);
   const [fout, setFout] = createSignal<string | null>(null);
@@ -61,8 +63,17 @@ export function Inloggen() {
         fallback={
           <form onSubmit={vraagAan} class="qa-login-email-form">
             <label class="form-label" for="email">Je e-mailadres</label>
-            <input id="email" type="email" class="form-control mb-3 qa-login-email" autocomplete="email" required value={email()} onInput={(e) => setEmail(e.currentTarget.value)} />
-            <button type="submit" class="btn btn-primary w-100 qa-login-aanvragen" disabled={bezig()}>Stuur mij een inlogcode</button>
+            <input
+              id="email"
+              ref={(el) => !email() && queueMicrotask(() => el.focus())}
+              type="email"
+              class="form-control mb-3 qa-login-email"
+              autocomplete="email"
+              required
+              value={email()}
+              onInput={(e) => setEmail(e.currentTarget.value)}
+            />
+            <button type="submit" ref={(el) => email() && queueMicrotask(() => el.focus())} class="btn btn-primary w-100 qa-login-aanvragen" disabled={bezig()}>Stuur mij een inlogcode</button>
           </form>
         }
       >
@@ -73,6 +84,7 @@ export function Inloggen() {
           <label class="form-label" for="code">Code</label>
           <input
             id="code"
+            ref={(el) => queueMicrotask(() => el.focus())}
             class="form-control form-control-lg mb-3 text-center qa-login-code"
             inputmode="numeric"
             autocomplete="one-time-code"
