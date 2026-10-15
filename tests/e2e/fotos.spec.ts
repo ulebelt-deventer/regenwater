@@ -186,7 +186,7 @@ test('op een vak voor één foto, zoals de straatfoto, vervangt een nieuwe foto 
   await expect(slot.locator('.qa-foto image')).not.toHaveAttribute('href', eerste!);
 });
 
-test('de knoppen staan rechts naast de foto, en de duimnagel is twee keer zo breed als hoog met een rand', async ({ page }) => {
+test('de knoppen staan rechts naast de foto, en de duimnagel is 3:2 met een rand', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-tuinsituatie');
   await sleep(page, slot, [png('tuin.png')]);
@@ -195,7 +195,7 @@ test('de knoppen staan rechts naast de foto, en de duimnagel is twee keer zo bre
   const [d, k] = [(await duim.boundingBox())!, (await slot.locator('.qa-foto-knoppen').boundingBox())!];
   expect(k.x).toBeGreaterThanOrEqual(d.x + d.width);
   expect(k.y).toBeLessThan(d.y + d.height / 2);
-  expect(d.width / d.height).toBeCloseTo(2, 1);
+  expect(d.width / d.height).toBeCloseTo(1.5, 1);
   await expect(duim).toHaveCSS('border-top-width', '1px');
   await expect(duim).not.toHaveCSS('border-top-left-radius', '0px');
 });
@@ -294,7 +294,7 @@ test('tijdens het uploaden staat er Uploaden... bij het vak, de wachtende foto b
   await expect(slot.locator('.qa-uploaden')).toContainText('Uploaden...');
   const wacht = (await slot.locator('.qa-foto-wacht img').boundingBox())!;
   expect(wacht.width).toBeLessThan(180);
-  expect(wacht.height).toBeLessThan(100);
+  expect(wacht.height).toBeLessThan(130);
   expect(await page.evaluate(() => window.scrollY)).toBe(voor);
   laatGaan();
   await expect(slot.locator('.qa-foto')).toHaveCount(1);
