@@ -1,10 +1,10 @@
-// Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen, terrassen and regenpijpen, then what was found.
+// Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen, stenen and regenpijpen, then what was found.
 import { A } from '@solidjs/router';
 import { For, Show, createSignal } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
 import { getal, kaartItems, waterberging } from '../../shared/kaart.ts';
 import { ontbrekend } from '../../shared/velden.ts';
-import { bevestig, gaNaar } from '../ui.tsx';
+import { OnderdeelIcoon, bevestig, gaNaar } from '../ui.tsx';
 import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { TerugLink } from './pagina.tsx';
@@ -67,7 +67,7 @@ export function Bezoek() {
       Er is nog geen dak ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
     </div>
   );
-  const m2Cel = (id: string, soort: 'dak' | 'tuin' | 'terras', m2: number | null, berekend: boolean) => (
+  const m2Cel = (id: string, soort: 'dak' | 'tuin' | 'steen', m2: number | null, berekend: boolean) => (
     <Show when={berekend} fallback={<VeldInvoer k={`${soort}.${id}.m2`} kaal />}>
       {m2 === null ? '--' : `${getal(m2)} m²`}
     </Show>
@@ -81,7 +81,7 @@ export function Bezoek() {
         <KaartVeld />
 
         <div id="veld-daken" class="mb-3 qa-daken">
-          <div class="form-label fw-semibold mb-1">Dak</div>
+          <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="dak" class="me-1" />Dak</div>
           <Show when={items().daken.length} fallback={geenDak()}>
             <Show when={!items().opSchaal}>
               <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
@@ -127,7 +127,7 @@ export function Bezoek() {
         </div>
 
         <div id="veld-tuinen" class="mb-3 qa-tuinen">
-          <div class="form-label fw-semibold mb-1">Tuin</div>
+          <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="tuin" class="me-1" />Tuin</div>
           <Show
             when={items().tuinen.length}
             fallback={
@@ -150,16 +150,16 @@ export function Bezoek() {
           </Show>
         </div>
 
-        <Show when={items().terrassen.length}>
-          <div id="veld-terrassen" class="mb-3 qa-terrassen">
-            <div class="form-label fw-semibold mb-1">Terras</div>
-            <For each={items().terrassen}>
-              {(terras) => (
-                <div class="row g-2 align-items-start border-bottom py-2 qa-terras-rij">
-                  <div class="col-3 col-md-2 fw-semibold">{terras.label}</div>
-                  <div class="col-9 col-md-3">{m2Cel(terras.id, 'terras', terras.m2, terras.m2Berekend)}</div>
+        <Show when={items().stenen.length}>
+          <div id="veld-stenen" class="mb-3 qa-stenen">
+            <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="steen" class="me-1" />Steen</div>
+            <For each={items().stenen}>
+              {(steen) => (
+                <div class="row g-2 align-items-start border-bottom py-2 qa-steen-rij">
+                  <div class="col-3 col-md-2 fw-semibold">{steen.label}</div>
+                  <div class="col-9 col-md-3">{m2Cel(steen.id, 'steen', steen.m2, steen.m2Berekend)}</div>
                   <div class="col-12 col-md-7">
-                    <FotoSlot k={`terras.${terras.id}`} />
+                    <FotoSlot k={`steen.${steen.id}`} />
                   </div>
                 </div>
               )}

@@ -15,13 +15,13 @@ export function letter(i: number): string {
 
 // Labels follow array order, so deleting an item renumbers the rest without touching stored IDs.
 export function annotatieLabels(annots: Annotatie[]): Map<string, string> {
-  const tel = { pijl: 0, dak: 0, tuin: 0, terras: 0, regenpijp: 0, tekst: 0 };
+  const tel = { pijl: 0, dak: 0, tuin: 0, steen: 0, regenpijp: 0, tekst: 0 };
   const labels = new Map<string, string>();
   for (const a of annots) {
     const i = tel[a.type]++;
     if (a.type === 'dak') labels.set(a.id, `D${i + 1}`);
     else if (a.type === 'tuin') labels.set(a.id, `T${i + 1}`);
-    else if (a.type === 'terras') labels.set(a.id, `TR${i + 1}`);
+    else if (a.type === 'steen') labels.set(a.id, `S${i + 1}`);
     else if (a.type === 'regenpijp') labels.set(a.id, letter(i));
   }
   return labels;
@@ -85,7 +85,7 @@ export function dichtstbijzijndeDak(pt: Pt, daken: Annotatie[]): string | null {
 }
 
 // Polygon annotations: drawn corner by corner, filled, and measured on a scaled kaart.
-export const VLAK_TYPES = ['dak', 'tuin', 'terras'] as const;
+export const VLAK_TYPES = ['dak', 'tuin', 'steen'] as const;
 export const isVlak = (t: AnnotatieType): t is (typeof VLAK_TYPES)[number] => (VLAK_TYPES as readonly string[]).includes(t);
 
 export function kaartAnnotaties(d: Dossier): Annotatie[] {
@@ -105,7 +105,7 @@ export interface DakDeel {
   m2Berekend: boolean;
   regenpijpen: string[];
 }
-// A tuindeel or a terras: a measured area with photos.
+// A tuindeel or a steen: a measured area with photos.
 export interface Vlak {
   id: string;
   label: string;
@@ -127,7 +127,7 @@ function handmatigM2(d: Dossier, key: string): number | null {
 export interface KaartItems {
   daken: DakDeel[];
   tuinen: Vlak[];
-  terrassen: Vlak[];
+  stenen: Vlak[];
   regenpijpen: Regenpijp[];
   labels: Map<string, string>;
   opSchaal: boolean;
@@ -160,9 +160,9 @@ export function kaartItems(d: Dossier): KaartItems {
     m2Berekend: schaal !== null,
     regenpijpen: regenpijpen.filter((r) => r.dak === a.id).map((r) => r.id),
   }));
-  const vlakken = (type: 'tuin' | 'terras') =>
+  const vlakken = (type: 'tuin' | 'steen') =>
     annots.filter((a) => a.type === type).map((a) => ({ id: a.id, label: labels.get(a.id)!, m2: m2(a, `${type}.${a.id}.m2`), m2Berekend: schaal !== null }));
-  return { daken, tuinen: vlakken('tuin'), terrassen: vlakken('terras'), regenpijpen, labels, opSchaal: schaal !== null };
+  return { daken, tuinen: vlakken('tuin'), stenen: vlakken('steen'), regenpijpen, labels, opSchaal: schaal !== null };
 }
 
 export function waterberging(dak: DakDeel): { liter: number; uitleg: string } | null {
@@ -187,7 +187,15 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export const KLEUR = { pijl: '#ff713e', tekst: '#ffffff', dak: '#86afe2', tuin: '#88d356', terras: '#e5383b', regenpijp: '#00643c' };
+export const KLEUR = { pijl: '#ff713e', tekst: '#ffffff', dak: '#86afe2', tuin: '#88d356', steen: '#e5383b', regenpijp: '#00643c' };
+// Each kaart onderdeel's Bootstrap Icons name and color, in the app and the PDFs.
+export const ICOON = {
+  dak: { naam: 'house', kleur: '#2f6db5' },
+  tuin: { naam: 'leaf', kleur: '#3d8b2a' },
+  steen: { naam: 'bricks', kleur: '#9c4a2f' },
+  regenpijp: { naam: 'droplet', kleur: '#2f6db5' },
+} as const;
+export type IcoonSoort = keyof typeof ICOON;
 // A Tekst annotation's font size in units of `schaal`; the editor's hit test uses it too.
 export const TEKST_PX = 14 * 1.21;
 
@@ -247,7 +255,7 @@ export function isAnnotatieLijst(v: Json): boolean {
     const o = a as Record<string, Json>;
     return (
       typeof o.id === 'string' &&
-      ['pijl', 'tekst', 'dak', 'tuin', 'terras', 'regenpijp'].includes(o.type as string) &&
+      ['pijl', 'tekst', 'dak', 'tuin', 'steen', 'regenpijp'].includes(o.type as string) &&
       Array.isArray(o.p) &&
       o.p.every((q) => Array.isArray(q) && q.length === 2 && q.every((n) => typeof n === 'number' && Number.isFinite(n))) &&
       (o.tekst === undefined || typeof o.tekst === 'string')

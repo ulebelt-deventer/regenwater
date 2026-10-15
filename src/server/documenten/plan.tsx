@@ -1,10 +1,10 @@
 import { For, type JSX, Show } from 'solid-js';
 import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
-import { getal, kaartAnnotaties, kaartFoto, kaartItems, waterberging } from '../../shared/kaart.ts';
+import { type Vlak, getal, kaartAnnotaties, kaartFoto, kaartItems, waterberging } from '../../shared/kaart.ts';
 import { str } from '../../shared/status.ts';
 import { BEOORDELINGEN, lijst, materiaalRijen, optieLabel, veld } from '../../shared/velden.ts';
-import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, Of, eigenaar, fotosIn, heeft, naamVan } from './onderdelen.tsx';
+import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, eigenaar, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
 function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.Element {
   const rijen = () => materiaalRijen(props.doc.d, props.lijst).filter((r) => r.naam.trim() && r.aantal !== null && r.aantal > 0);
@@ -71,7 +71,7 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
           {(k) => (
             <figure class="qa-pdf-kaart">
               <FotoMetTekening doc={props.doc} foto={k()} annots={kaartAnnotaties(d())} mPerPx={k().m_per_px} />
-              <figcaption>Kadastrale kaart met dakdelen (D), tuindelen (T), terrassen (TR) en regenpijpen (A, B, ...)</figcaption>
+              <figcaption>Kadastrale kaart met dakdelen (D), tuindelen (T), stenen vlakken (S) en regenpijpen (A, B, ...)</figcaption>
             </figure>
           )}
         </Show>
@@ -86,7 +86,10 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
         <table class="tabel">
           <thead>
             <tr>
-              <th>Dak</th>
+              <th>
+                <OnderdeelIcoon soort="dak" />
+                Dak
+              </th>
               <th class="getal">Oppervlakte*</th>
               <th>Regenpijpen</th>
               <th>Waterberging**</th>
@@ -115,34 +118,44 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
   );
 }
 
+function VlakTabel(props: { doc: Doc; soort: 'tuin' | 'steen'; titel: string; vlakken: Vlak[] }): JSX.Element {
+  return (
+    <Show when={props.vlakken.length > 0}>
+      <table class="tabel">
+        <thead>
+          <tr>
+            <th>
+              <OnderdeelIcoon soort={props.soort} />
+              {props.titel}
+            </th>
+            <th class="getal">Oppervlakte</th>
+          </tr>
+        </thead>
+        <tbody>
+          <For each={props.vlakken}>
+            {(t) => (
+              <tr>
+                <td>{t.label}</td>
+                <td class="getal">{t.m2 === null ? <Leeg doc={props.doc} /> : `${getal(t.m2)} m²`}</td>
+              </tr>
+            )}
+          </For>
+        </tbody>
+      </table>
+    </Show>
+  );
+}
+
 function Infiltratie(props: { doc: Doc }): JSX.Element {
   const d = () => props.doc.d;
   const tuinen = () => kaartItems(d()).tuinen;
-  const terrassen = () => kaartItems(d()).terrassen;
+  const stenen = () => kaartItems(d()).stenen;
   const verhard = () => (typeof d().data.verhard === 'number' ? `${getal(d().data.verhard as number)}%` : null);
   return (
     <>
       <h2>2. Infiltratie</h2>
-      <Show when={tuinen().length + terrassen().length > 0}>
-        <table class="tabel">
-          <thead>
-            <tr>
-              <th>Tuin / terras</th>
-              <th class="getal">Oppervlakte</th>
-            </tr>
-          </thead>
-          <tbody>
-            <For each={[...tuinen(), ...terrassen()]}>
-              {(t) => (
-                <tr>
-                  <td>{t.label}</td>
-                  <td class="getal">{t.m2 === null ? <Leeg doc={props.doc} /> : `${getal(t.m2)} m²`}</td>
-                </tr>
-              )}
-            </For>
-          </tbody>
-        </table>
-      </Show>
+      <VlakTabel doc={props.doc} soort="tuin" titel="Tuin" vlakken={tuinen()} />
+      <VlakTabel doc={props.doc} soort="steen" titel="Steen" vlakken={stenen()} />
       <Show when={verhard() || props.doc.concept}>
         <p>
           <strong>Verhard:</strong> <Of doc={props.doc} v={verhard()} />
@@ -157,8 +170,8 @@ function Infiltratie(props: { doc: Doc }): JSX.Element {
       <For each={tuinen().filter((t) => fotosIn(d(), `tuin.${t.id}`).length > 0)}>
         {(t) => <Fotos doc={props.doc} slot={`tuin.${t.id}`} onderschrift={`Tuin ${t.label}`} />}
       </For>
-      <For each={terrassen().filter((t) => fotosIn(d(), `terras.${t.id}`).length > 0)}>
-        {(t) => <Fotos doc={props.doc} slot={`terras.${t.id}`} onderschrift={`Terras ${t.label}`} />}
+      <For each={stenen().filter((t) => fotosIn(d(), `steen.${t.id}`).length > 0)}>
+        {(t) => <Fotos doc={props.doc} slot={`steen.${t.id}`} onderschrift={`Steen ${t.label}`} />}
       </For>
     </>
   );

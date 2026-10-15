@@ -55,6 +55,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
   const [omzetten, setOmzetten] = createSignal(0);
   let kiezer!: HTMLInputElement;
   let camera!: HTMLInputElement;
+  let vak!: HTMLDivElement;
 
   const weiger = (naam: string) => melding('danger', `${naam} kon niet worden toegevoegd. Gebruik een JPG- of PNG-afbeelding.`);
   const zetOm = async (b: File) => {
@@ -96,7 +97,10 @@ export function FotoSlot(props: { k: string; label?: string }) {
       if (blob) await fotoInWachtrij({ dossierId: s.id, slot: k, vervang: i === 0 ? vervang : null, naam: bestanden[i].name, blob });
     }
   };
+  const GEEN_AFBEELDING = 'Er staat geen afbeelding op het klembord. Kopieer eerst een afbeelding. Een gekopieerd bestand plak je met ⌘V of Ctrl+V.';
+  // The button reads the clipboard through the async API, which can't see files copied in Finder or Explorer.
   const plak = async () => {
+    vak.focus(); // so a ⌘V that follows lands in this slot
     if (!navigator.clipboard?.read) return melding('danger', 'Plakken van een afbeelding werkt niet in deze browser. Gebruik Uploaden.');
     let items: ClipboardItems;
     try {
@@ -104,7 +108,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
     } catch (e) {
       // Chrome refuses an empty or text-only clipboard with a DataError; a denied permission is a NotAllowedError.
       if (e instanceof DOMException && e.name === 'NotAllowedError') return melding('danger', 'De browser gaf geen toegang tot het klembord. Sta plakken toe en probeer het opnieuw.');
-      if (e instanceof DOMException && e.name === 'DataError') return melding('danger', 'Er staat geen afbeelding op het klembord. Kopieer eerst een afbeelding.');
+      if (e instanceof DOMException && e.name === 'DataError') return melding('danger', GEEN_AFBEELDING);
       throw e;
     }
     const bestanden: File[] = [];
@@ -112,8 +116,16 @@ export function FotoSlot(props: { k: string; label?: string }) {
       const type = item.types.find((t) => t.startsWith('image/'));
       if (type) bestanden.push(new File([await item.getType(type)], `geplakt.${type.slice('image/'.length)}`, { type }));
     }
-    if (!bestanden.length) return melding('danger', 'Er staat geen afbeelding op het klembord. Kopieer eerst een afbeelding.');
+    if (!bestanden.length) return melding('danger', GEEN_AFBEELDING);
     await voegToe(bestanden);
+  };
+  // A real paste (⌘V / Ctrl+V) into the focused slot also carries copied files.
+  const plakToets = (e: ClipboardEvent) => {
+    if (uit() || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    const bestanden = [...e.clipboardData!.files];
+    if (!bestanden.length) return melding('danger', GEEN_AFBEELDING);
+    e.preventDefault();
+    void voegToe(bestanden);
   };
   const uitInvoer = (e: Event & { currentTarget: HTMLInputElement }) => {
     const bestanden = [...e.currentTarget.files!];
@@ -123,6 +135,9 @@ export function FotoSlot(props: { k: string; label?: string }) {
 
   return (
     <div
+      ref={vak}
+      tabindex="-1"
+      onPaste={plakToets}
       class={`foto-slot qa-fotoslot qa-fotoslot-${slot.key.replace(/\.\*\./g, '-').replace(/\.\*$/, '').replace(/\./g, '-')}`}
       classList={{ sleep: sleep() }}
       onDragOver={(e) => {
@@ -161,9 +176,9 @@ export function FotoSlot(props: { k: string; label?: string }) {
             <div class="d-flex flex-wrap gap-2">
               <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-1" aria-hidden="true" />Foto</button>
               <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-1" aria-hidden="true" />Uploaden</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-1" aria-hidden="true" />Plakken</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-plakken" aria-label="Plakken" title="Plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-sm-1" aria-hidden="true" /><span class="d-none d-sm-inline">Plakken</span></button>
             </div>
-            <div class="small text-muted mt-1 d-none d-md-block">Of sleep een foto hierheen.</div>
+            <div class="small text-muted mt-1 d-none d-md-block">Of hierheen slepen.</div>
             <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
             <input ref={kiezer} type="file" accept="image/*" multiple={!slot.enkel} class="d-none qa-foto-invoer" onChange={uitInvoer} />
           </div>
@@ -190,7 +205,7 @@ export function KaartVeld() {
           {(a) => <a href={kadastraleKaartUrl(a().rd)} target="_blank" rel="noopener" class="small qa-kadastrale-kaart">Kadastrale kaart</a>}
         </Show>
       </div>
-      <div class="form-text mt-0 mb-1">Teken de daken, tuinen, terrassen en regenpijpen in. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
+      <div class="form-text mt-0 mb-1">Teken de daken, tuinen, stenen vlakken en regenpijpen in. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
       <Show when={s.kaartVervangen()}>
         <div class="small text-warning mb-1 qa-kaart-vervangen">Je hebt de kaart vervangen, dus de tekeningen kloppen mogelijk niet meer. Verplaats of pas ze aan waar nodig.</div>
       </Show>

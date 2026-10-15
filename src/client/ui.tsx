@@ -2,6 +2,7 @@ import { A } from '@solidjs/router';
 import { For, type JSX, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { tijd } from '../shared/datum.ts';
+import { ICOON, type IcoonSoort } from '../shared/kaart.ts';
 import type { LigtBij } from '../shared/status.ts';
 import { isBeheerderNu } from './sessie.ts';
 
@@ -51,6 +52,10 @@ export async function probeer(fn: () => Promise<unknown>): Promise<boolean> {
     melding('danger', e instanceof Error ? e.message : String(e));
     return false;
   }
+}
+
+export function OnderdeelIcoon(props: { soort: IcoonSoort; class?: string }) {
+  return <i class={`bi bi-${ICOON[props.soort].naam} ${props.class ?? ''}`} style={{ color: ICOON[props.soort].kleur }} aria-hidden="true" />;
 }
 
 // ---- Modal ----

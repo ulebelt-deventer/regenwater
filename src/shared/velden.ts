@@ -84,7 +84,7 @@ export const VELDEN: Veld[] = [
   // Bezoek
   { key: 'dak.*.m2', label: 'Dak m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'tuin.*.m2', label: 'Tuin m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
-  { key: 'terras.*.m2', label: 'Terras m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
+  { key: 'steen.*.m2', label: 'Steen m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'verhard', label: 'Verhard (%)', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, min: 0, max: 100, hint: 'Hoeveel van de hele tuin is verhard (terras, pad, tegels)?' },
   { key: 'tuinsituatie', label: 'Tuinsituatie & infiltratie', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'tuinsituatie', hint: 'Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?' },
   { key: 'regenpijp.*.dak', label: 'Voert af van', type: 'select', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
@@ -121,13 +121,13 @@ export const VELDEN: Veld[] = [
   { key: 'gebruikt.*.aantal', label: 'Aantal', type: 'number', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true, min: 0 },
 ];
 
-// A tuin's or terras's photos and the kaart sit next to Inschrijving/Bezoek fields; the kaart is shared by both pages.
+// A tuin's or steen's photos and the kaart sit next to Inschrijving/Bezoek fields; the kaart is shared by both pages.
 export const FOTO_SLOTS: FotoSlot[] = [
   { key: 'straatfoto', label: 'Straatfoto / vooraanzicht', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true },
   { key: 'kaart', label: 'Plattegrond van kadaster', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, enkel: true },
   { key: 'boorprofiel', label: 'Boorprofiel', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true },
   { key: 'tuin.*', label: 'Foto’s van de tuin', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
-  { key: 'terras.*', label: 'Foto’s van het terras', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
+  { key: 'steen.*', label: 'Foto’s van het stenen vlak', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'tuinsituatie', label: 'Foto’s tuinsituatie', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'regenpijp.*.ondergrond', label: 'Foto’s ondergrond', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'regenpijp.*.waar', label: 'Foto’s waar het water heen gaat', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
@@ -283,7 +283,7 @@ export function ontbrekend(d: Dossier, pagina: 'bezoek' | 'plan'): Ontbrekend[] 
       if (dak.regenpijpen.length === 0) uit.push({ label: `${dak.label}: geen regenpijp`, anker: 'veld-kaart' });
     }
     for (const tuin of items.tuinen) if (tuin.m2 === null) uit.push({ label: `${tuin.label}: m²`, anker: `veld-tuin.${tuin.id}.m2` });
-    for (const terras of items.terrassen) if (terras.m2 === null) uit.push({ label: `${terras.label}: m²`, anker: `veld-terras.${terras.id}.m2` });
+    for (const steen of items.stenen) if (steen.m2 === null) uit.push({ label: `${steen.label}: m²`, anker: `veld-steen.${steen.id}.m2` });
   }
   for (const v of VELDEN) {
     if (v.pagina !== pagina || !v.controle) continue;

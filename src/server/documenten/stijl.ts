@@ -33,6 +33,7 @@ a { color: #00643c; }
 .kop { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 8px; }
 .kop .logo { width: 150px; flex: none; }
 .kop .logo svg { width: 100%; height: auto; display: block; }
+.icoon svg { width: 1em; height: 1em; vertical-align: -.125em; margin-right: 4px; }
 .kop-tabel td { padding: 1px 12px 1px 0; vertical-align: top; }
 .kop-tabel td:first-child { font-weight: 700; white-space: nowrap; }
 table.tabel { border-collapse: collapse; width: 100%; margin: 6px 0 8px; break-inside: avoid; }

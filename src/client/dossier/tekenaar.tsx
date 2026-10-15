@@ -1,10 +1,10 @@
 // Full-screen photo viewer and drawing tool. Zoom and pan move the SVG viewBox, so image coordinates never change.
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
-import { KLEUR, TEKST_PX, afstandTotLijn, afstandTotPolygoon, afstandTotRand, annotatieLabels, annotatiesSvg, binnen, isVlak, kaartAnnotaties } from '../../shared/kaart.ts';
+import { ICOON, KLEUR, TEKST_PX, afstandTotLijn, afstandTotPolygoon, afstandTotRand, annotatieLabels, annotatiesSvg, binnen, isVlak, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
 import { del } from '../api.ts';
-import { Modal, bevestig, probeer } from '../ui.tsx';
+import { Modal, OnderdeelIcoon, bevestig, probeer } from '../ui.tsx';
 import { useDossier } from './staat.ts';
 
 type Pt = [number, number];
@@ -23,13 +23,13 @@ const HINT: Record<string, string> = {
   tekst: 'Tik waar de tekst moet komen.',
   dak: 'Tik de hoeken van het dak aan. Tik op het eerste punt of op Klaar om te sluiten.',
   tuin: 'Tik de hoeken van de tuin aan. Tik op het eerste punt of op Klaar om te sluiten.',
-  terras: 'Tik de hoeken van het terras aan. Tik op het eerste punt of op Klaar om te sluiten.',
+  steen: 'Tik de hoeken van het stenen vlak aan. Tik op het eerste punt of op Klaar om te sluiten.',
   regenpijp: 'Tik waar de regenpijp staat.',
   bekijk: 'Knijp of scroll om te zoomen; sleep om te schuiven.',
 };
 
-const NAAM: Record<AnnotatieType, string> = { pijl: 'Pijl', tekst: 'Tekst', dak: 'Dak', tuin: 'Tuin', terras: 'Terras', regenpijp: 'Regenpijp' };
-const MET_GEGEVENS = new Set<AnnotatieType>(['dak', 'tuin', 'terras', 'regenpijp']);
+const NAAM: Record<AnnotatieType, string> = { pijl: 'Pijl', tekst: 'Tekst', dak: 'Dak', tuin: 'Tuin', steen: 'Steen', regenpijp: 'Regenpijp' };
+const MET_GEGEVENS = new Set<AnnotatieType>(['dak', 'tuin', 'steen', 'regenpijp']);
 
 const kloon = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
 
@@ -324,7 +324,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     setInWording([]);
   };
 
-  // ---- Deleting: a dak, tuin, terras or regenpijp takes its filled-in fields along (and undo brings them back) ----
+  // ---- Deleting: a dak, tuin, steen or regenpijp takes its filled-in fields along (and undo brings them back) ----
   const gegevensVan = (a: Annotatie): Record<string, Json> => {
     const voor = `${a.type}.${a.id}.`;
     return Object.fromEntries(Object.entries(s.d.data).filter(([k]) => k.startsWith(voor)).map(([k, v]) => [k, kloon(v)]));
@@ -349,10 +349,12 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
   const fotoVerwijderen = async () => {
     const ok = await bevestig('Foto verwijderen?', isKaart ? 'De tekeningen blijven bewaard voor een nieuwe kaart.' : 'De foto en de tekeningen erop worden verwijderd.', { ja: 'Verwijderen', gevaar: true });
     if (!ok) return;
+    // onSluit unmounts this component, after which reading props.fotoId throws.
+    const id = props.fotoId;
     await probeer(async () => {
-      const r = await del<{ plan_gewijzigd_at: string | null }>(`/api/fotos/${props.fotoId}`);
+      const r = await del<{ plan_gewijzigd_at: string | null }>(`/api/fotos/${id}`);
       props.onSluit();
-      s.verwijderFoto(props.fotoId, r.plan_gewijzigd_at);
+      s.verwijderFoto(id, r.plan_gewijzigd_at);
     });
   };
 
@@ -380,7 +382,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     }
   }
 
-  const gereedschappen = (): AnnotatieType[] => (isKaart ? ['dak', 'tuin', 'terras', 'regenpijp', 'pijl', 'tekst'] : ['pijl', 'tekst']);
+  const gereedschappen = (): AnnotatieType[] => (isKaart ? ['dak', 'tuin', 'steen', 'regenpijp', 'pijl', 'tekst'] : ['pijl', 'tekst']);
   const geselecteerd = () => annots().find((x) => x.id === gekozen());
   const hint = () => (uit() ? HINT.bekijk : HINT[gereedschap() ?? 'kies']);
   const svg = () => annotatiesSvg(annots(), { schaal: u(), mPerPx: foto().m_per_px, geselecteerd: gekozen() });
@@ -394,6 +396,14 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
             {(g) => (
               <button type="button" class={`btn btn-sm btn-outline-secondary qa-gereedschap-${g}`} classList={{ active: gereedschap() === g }} aria-label={NAAM[g]} title={NAAM[g]} onClick={() => kies(g)}>
                 <Switch fallback={NAAM[g]}>
+                  <Match when={g in ICOON && (g as keyof typeof ICOON)}>
+                    {(soort) => (
+                      <>
+                        <OnderdeelIcoon soort={soort()} class="me-1" />
+                        {NAAM[g]}
+                      </>
+                    )}
+                  </Match>
                   <Match when={g === 'pijl'}><i class="bi bi-arrow-up-right" aria-hidden="true" /></Match>
                   <Match when={g === 'tekst'}><span class="fw-bold font-serif" aria-hidden="true">T</span></Match>
                 </Switch>

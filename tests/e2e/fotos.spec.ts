@@ -60,6 +60,18 @@ test('Plakken zet een afbeelding van het klembord in het vak, en meldt het als e
   await opslagKlaar(page);
 });
 
+test('⌘V in een vak plakt gekopieerde bestanden, zoals uit Finder', async ({ page }) => {
+  await nieuwBezoekDossier(page);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  await slot.evaluate((el, b64) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'uit-finder.png', { type: 'image/png' }));
+    el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, PNG);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await opslagKlaar(page);
+});
+
 test('een PDF en een foto tegelijk: de foto komt erbij, de PDF geeft een melding', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-tuinsituatie');

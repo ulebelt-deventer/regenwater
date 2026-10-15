@@ -120,22 +120,24 @@ test('de knop Klaar verschijnt pas bij drie punten en sluit de tuin', async ({ p
   await expect(page.locator('.qa-tuin-rij')).toContainText('T1');
 });
 
-test('een terras krijgt pas na het tekenen een eigen tabel met fotovak', async ({ page }) => {
+test('een steen krijgt pas na het tekenen een eigen tabel met fotovak', async ({ page }) => {
   const id = await openKaart(page);
-  await expect(page.locator('.qa-terrassen')).toHaveCount(0);
-  await gereedschap(page, 'terras');
+  await expect(page.locator('.qa-stenen')).toHaveCount(0);
+  await expect(page.locator('.qa-gereedschap-steen .bi-bricks')).toHaveCount(1);
+  await gereedschap(page, 'steen');
   for (const [x, y] of VIERKANT) await tik(page, x, y);
   await page.locator('.qa-klaar').click();
   await sluitTekenaar(page);
 
-  expect((await kaart(page, id)).map((a) => [a.type, a.p.length])).toEqual([['terras', 4]]);
-  const rij = page.locator('.qa-terras-rij');
+  expect((await kaart(page, id)).map((a) => [a.type, a.p.length])).toEqual([['steen', 4]]);
+  const rij = page.locator('.qa-steen-rij');
   await expect(rij).toHaveCount(1);
-  await expect(rij).toContainText('TR1');
-  await rij.locator('.qa-fotoslot-terras .qa-foto-invoer').setInputFiles({ name: 'terras.png', mimeType: 'image/png', buffer: PNG });
+  await expect(rij).toContainText('S1');
+  await expect(page.locator('.qa-stenen .bi-bricks')).toHaveCount(1);
+  await rij.locator('.qa-fotoslot-steen .qa-foto-invoer').setInputFiles({ name: 'steen.png', mimeType: 'image/png', buffer: PNG });
   await expect(rij.locator('.qa-foto')).toHaveCount(1);
   await opslagKlaar(page);
-  expect((await serverDossier(page, id)).fotos.map((f) => f.slot)).toEqual(['kaart', `terras.${(await kaart(page, id))[0].id}`]);
+  expect((await serverDossier(page, id)).fotos.map((f) => f.slot)).toEqual(['kaart', `steen.${(await kaart(page, id))[0].id}`]);
 });
 
 test('met een vlakgereedschap kiest een eerste tik binnen een bestaand vlak dat vlak', async ({ page }) => {
@@ -351,4 +353,20 @@ test.describe('op een touchscreen', () => {
     const foto = (await serverDossier(page, id)).fotos.find((f) => f.slot === 'tuinsituatie')!;
     expect(foto.annotaties.map((a) => [a.type, a.tekst])).toEqual([['tekst', 'Put']]);
   });
+});
+
+test('de derde foto uit een vak verwijderen sluit de tekenaar zonder foutmelding', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  await slot.locator('.qa-foto-invoer').setInputFiles(['a', 'b', 'c'].map((n) => ({ name: `${n}.png`, mimeType: 'image/png', buffer: PNG })));
+  await expect(slot.locator('.qa-foto')).toHaveCount(3);
+  await openTekenaar(page, 'tuinsituatie', slot.locator('.qa-foto').nth(2));
+  await page.locator('.qa-foto-verwijderen').click();
+  await ja(page);
+  await expect(page.locator('.qa-tekenaar')).toHaveCount(0);
+  await expect(slot.locator('.qa-foto')).toHaveCount(2);
+  await expect(page.locator('.qa-melding-danger')).toHaveCount(0);
+  expect((await serverDossier(page, id)).fotos).toHaveLength(2);
 });

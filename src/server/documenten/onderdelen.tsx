@@ -1,6 +1,10 @@
 import { For, type JSX, Show } from 'solid-js';
+import bricks from 'bootstrap-icons/icons/bricks.svg?raw';
+import droplet from 'bootstrap-icons/icons/droplet.svg?raw';
+import house from 'bootstrap-icons/icons/house.svg?raw';
+import leaf from 'bootstrap-icons/icons/leaf.svg?raw';
 import logo from '../../client/public/ulebelt-logo.svg?raw';
-import { annotatiesSvg } from '../../shared/kaart.ts';
+import { ICOON, type IcoonSoort, annotatiesSvg } from '../../shared/kaart.ts';
 import { corporatieNaam, adresRegel, str } from '../../shared/status.ts';
 import { kortDatum } from '../../shared/datum.ts';
 import type { Annotatie, Dossier, Foto, Gebruiker } from '../../shared/types.ts';
@@ -12,6 +16,13 @@ export interface Doc {
   gm: Map<number, Gebruiker>;
   concept: boolean;
   foto: (id: string) => string;
+}
+
+const ICOON_SVG: Record<(typeof ICOON)[IcoonSoort]['naam'], string> = { house, leaf, bricks, droplet };
+
+// The app's onderdeel icon, inlined since the PDF has no icon font.
+export function OnderdeelIcoon(props: { soort: IcoonSoort }): JSX.Element {
+  return <span class="icoon" style={{ color: ICOON[props.soort].kleur }} innerHTML={ICOON_SVG[ICOON[props.soort].naam]} />;
 }
 
 export const naamVan = (doc: Doc, id: number | null) => (id === null ? null : doc.gm.get(id)!.naam);
