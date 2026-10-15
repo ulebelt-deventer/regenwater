@@ -169,4 +169,11 @@ export const MIGRATIES: string[] = [
   UPDATE audit SET payload = json_set(payload, '$.stap', 'inschrijving') WHERE type = 'uitgesteld' AND json_extract(payload, '$.stap') = 'intake';
   UPDATE audit SET payload = json_set(payload, '$.mijlpaal', 'inschrijving_afgerond') WHERE type = 'mijlpaal' AND json_extract(payload, '$.mijlpaal') = 'intake_afgerond';
   `,
+  // Terras is called Steen: annotation type, steen.<id>.* fields and photo slots, also in audit history.
+  `
+  UPDATE dossiers SET data = replace(replace(replace(data, '"type":"terras"', '"type":"steen"'), '"terras.', '"steen.'), '"fotos.terras.', '"fotos.steen.') WHERE data LIKE '%terras%';
+  UPDATE audit SET payload = replace(replace(replace(payload, '"type":"terras"', '"type":"steen"'), '"terras.', '"steen.'), '"fotos.terras.', '"fotos.steen.') WHERE payload LIKE '%terras%';
+  UPDATE fotos SET annotaties = replace(annotaties, '"type":"terras"', '"type":"steen"') WHERE annotaties LIKE '%terras%';
+  UPDATE fotos SET slot = 'steen' || substr(slot, 7) WHERE slot LIKE 'terras.%';
+  `,
 ];

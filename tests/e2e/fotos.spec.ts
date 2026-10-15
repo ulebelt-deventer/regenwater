@@ -97,13 +97,77 @@ test('een tweede foto op een vak met één foto vraagt vervangen of toevoegen', 
   await expect(slot.locator('.qa-foto')).toHaveCount(1);
 
   await sleep(page, slot, [png('twee.png')]);
-  await page.locator('.qa-bevestig .qa-nee').click();
+  await expect(page.locator('.qa-bevestig .qa-toevoegen')).toHaveClass(/btn-success/);
+  await expect(page.locator('.qa-bevestig .qa-toevoegen .bi-plus-lg')).toHaveCount(1);
+  await expect(page.locator('.qa-bevestig .qa-vervangen')).toHaveClass(/btn-warning/);
+  await expect(page.locator('.qa-bevestig .qa-vervangen .bi-arrow-left-right')).toHaveCount(1);
+  await page.locator('.qa-bevestig .qa-toevoegen').click();
   await expect(slot.locator('.qa-foto')).toHaveCount(2);
 
   // With two photos there is nothing to replace, so a third is just added.
   await sleep(page, slot, [png('drie.png')]);
   await expect(slot.locator('.qa-foto')).toHaveCount(3);
   await expect(page.locator('.qa-bevestig')).toHaveCount(0);
+});
+
+test('de vraag toevoegen of vervangen sluiten met het kruisje of Annuleren voegt niets toe', async ({ page }) => {
+  await nieuwBezoekDossier(page);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  await sleep(page, slot, [png('een.png')]);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await opslagKlaar(page);
+  const eerste = await slot.locator('.qa-foto image').getAttribute('href');
+
+  await sleep(page, slot, [png('twee.png')]);
+  await page.locator('.qa-bevestig .btn-close').click();
+  await expect(page.locator('.qa-bevestig')).toHaveCount(0);
+  await sleep(page, slot, [png('drie.png')]);
+  await page.locator('.qa-bevestig .qa-annuleren').click();
+  await expect(page.locator('.qa-bevestig')).toHaveCount(0);
+
+  await opslagKlaar(page);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await expect(slot.locator('.qa-foto-wacht')).toHaveCount(0);
+  await expect(slot.locator('.qa-foto image')).toHaveAttribute('href', eerste!);
+});
+
+test('een vak met een foto toont de toevoegknoppen in een menu: + voor meer foto’s, wisselpijlen voor één foto', async ({ page }) => {
+  await nieuwBezoekDossier(page);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  await expect(slot.locator('.qa-foto-menu')).toHaveCount(0);
+  await expect(slot.locator('.qa-foto-kiezen')).toBeVisible();
+  await sleep(page, slot, [png('een.png')]);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await expect(slot.locator('.qa-foto-menu .bi-plus-lg')).toHaveCount(1);
+  await expect(slot.locator('.qa-foto-kiezen')).toBeHidden();
+  await slot.locator('.qa-foto-menu').click();
+  for (const knop of ['.qa-foto-maken', '.qa-foto-kiezen', '.qa-foto-plakken']) await expect(slot.locator(`.dropdown-menu ${knop}`)).toBeVisible();
+  await expect(slot.locator('.dropdown-menu')).toContainText('Of hierheen slepen.');
+  const [kiezer] = await Promise.all([page.waitForEvent('filechooser'), slot.locator('.qa-foto-kiezen').click()]);
+  await kiezer.setFiles({ name: 'twee.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') });
+  await page.locator('.qa-bevestig .qa-toevoegen').click();
+  await expect(slot.locator('.qa-foto')).toHaveCount(2);
+  await opslagKlaar(page);
+
+  const kaart = page.locator('.qa-fotoslot-kaart');
+  await sleep(page, kaart, [png('kaart.png')]);
+  await expect(kaart.locator('.qa-foto-menu .bi-arrow-left-right')).toHaveCount(1);
+  await opslagKlaar(page);
+});
+
+test('de kaart staat er heel en anderhalf keer zo breed als een gewone duimnagel', async ({ page }) => {
+  await nieuwBezoekDossier(page);
+  const kaart = page.locator('.qa-fotoslot-kaart');
+  const tuin = page.locator('.qa-fotoslot-tuinsituatie');
+  await sleep(page, kaart, [png('kaart.png')]);
+  await sleep(page, tuin, [png('tuin.png')]);
+  await expect(kaart.locator('.qa-foto')).toHaveCount(1);
+  await expect(tuin.locator('.qa-foto')).toHaveCount(1);
+  const [k, t] = [(await kaart.locator('.qa-foto').boundingBox())!, (await tuin.locator('.qa-foto').boundingBox())!];
+  expect(k.width / t.width).toBeCloseTo(1.5, 1);
+  expect(k.width / k.height).toBeCloseTo(400 / 300, 1);
+  await expect(kaart.locator('.qa-foto svg')).toHaveAttribute('preserveAspectRatio', 'xMidYMid meet');
+  await opslagKlaar(page);
 });
 
 test('op een vak voor één foto, zoals de straatfoto, vervangt een nieuwe foto de oude zonder te vragen', async ({ page }) => {
@@ -144,7 +208,7 @@ test('vervangen haalt de oude foto weg', async ({ page }) => {
   const oud = await slot.locator('.qa-foto image').getAttribute('href');
 
   await sleep(page, slot, [png('twee.png')]);
-  await page.locator('.qa-bevestig .qa-ja').click();
+  await page.locator('.qa-bevestig .qa-vervangen').click();
   await opslagKlaar(page);
   await expect(slot.locator('.qa-foto')).toHaveCount(1);
   await expect(slot.locator('.qa-foto image')).not.toHaveAttribute('href', oud!);

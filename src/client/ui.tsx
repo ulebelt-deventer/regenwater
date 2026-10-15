@@ -92,38 +92,61 @@ export function Modal(props: { titel: string; onSluit: () => void; children: JSX
   );
 }
 
-// A yes/no question as a pop-up, awaited like window.confirm.
+// A question as a pop-up, awaited like window.confirm. Closing it (X, Esc, backdrop) answers null.
+export interface Keuze {
+  label: string;
+  class: string;
+  qa: string;
+  icoon?: string;
+}
 interface Vraag {
   titel: string;
   tekst: JSX.Element;
-  ja: string;
-  nee: string;
-  gevaar: boolean;
-  klaar: (ja: boolean) => void;
+  keuzes: Keuze[];
+  annuleren: boolean;
+  klaar: (keuze: number | null) => void;
 }
 const [vraag, setVraag] = createSignal<Vraag | null>(null);
 
 export function bevestig(titel: string, tekst: JSX.Element, opts: { ja?: string; nee?: string; gevaar?: boolean } = {}): Promise<boolean> {
-  return new Promise((klaar) => setVraag({ titel, tekst, ja: opts.ja ?? 'OK', nee: opts.nee ?? 'Annuleren', gevaar: opts.gevaar ?? false, klaar }));
+  const keuzes = [
+    { label: opts.nee ?? 'Annuleren', class: 'btn-outline-secondary', qa: 'qa-nee' },
+    { label: opts.ja ?? 'OK', class: opts.gevaar ? 'btn-danger' : 'btn-primary', qa: 'qa-ja' },
+  ];
+  return new Promise((klaar) => setVraag({ titel, tekst, keuzes, annuleren: false, klaar: (i) => klaar(i === 1) }));
+}
+
+// Like bevestig, but with any number of choices plus an Annuleren link; resolves to the chosen index, or null when cancelled.
+export function kies(titel: string, tekst: JSX.Element, keuzes: Keuze[]): Promise<number | null> {
+  return new Promise((klaar) => setVraag({ titel, tekst, keuzes, annuleren: true, klaar }));
 }
 
 export function Vragen() {
-  const antwoord = (ja: boolean) => {
+  const antwoord = (keuze: number | null) => {
     const v = vraag()!;
     setVraag(null);
-    v.klaar(ja);
+    v.klaar(keuze);
   };
   return (
     <Show when={vraag()}>
       {(v) => (
         <Modal
           titel={v().titel}
-          onSluit={() => antwoord(false)}
+          onSluit={() => antwoord(null)}
           class="qa-bevestig"
           voet={
             <>
-              <button type="button" class="btn btn-outline-secondary qa-nee" onClick={() => antwoord(false)}>{v().nee}</button>
-              <button type="button" class={`btn ${v().gevaar ? 'btn-danger' : 'btn-primary'} qa-ja`} onClick={() => antwoord(true)}>{v().ja}</button>
+              <Show when={v().annuleren}>
+                <button type="button" class="btn btn-link qa-annuleren" onClick={() => antwoord(null)}>Annuleren</button>
+              </Show>
+              <For each={v().keuzes}>
+                {(k, i) => (
+                  <button type="button" class={`btn ${k.class} ${k.qa}`} onClick={() => antwoord(i())}>
+                    <Show when={k.icoon}><i class={`bi bi-${k.icoon} me-1`} aria-hidden="true" /></Show>
+                    {k.label}
+                  </button>
+                )}
+              </For>
             </>
           }
         >

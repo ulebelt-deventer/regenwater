@@ -5,18 +5,26 @@ import { annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Foto } from '../../shared/types.ts';
 import { fotoSlotVoor } from '../../shared/velden.ts';
 import { fotoInWachtrij, naarJpeg, wachtendeFotos } from '../opslag.ts';
-import { bevestig, melding, probeer } from '../ui.tsx';
+import { Dropdown, kies, melding, probeer } from '../ui.tsx';
 import { Luchtfoto } from './luchtfoto.tsx';
 import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
 
-export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean }) {
+// `heel`: the whole image at its own aspect ratio, wider than a cropped thumbnail (the kaart).
+export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean }) {
   const s = useDossier();
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
   const svg = () => annotatiesSvg(annots(), { schaal: Math.max(props.foto.breedte, props.foto.hoogte) / 450, mPerPx: null });
   return (
-    <button type="button" class="thumb p-0 border rounded overflow-hidden qa-foto" classList={{ 'thumb-klein': props.klein }} onClick={() => props.onClick()} aria-label="Foto bekijken">
-      <svg viewBox={`0 0 ${props.foto.breedte} ${props.foto.hoogte}`} preserveAspectRatio="xMidYMid slice" width="100%" height="100%">
+    <button
+      type="button"
+      class="thumb p-0 border rounded overflow-hidden qa-foto"
+      classList={{ 'thumb-klein': props.klein, 'thumb-heel': props.heel }}
+      style={props.heel ? { 'aspect-ratio': `${props.foto.breedte} / ${props.foto.hoogte}` } : undefined}
+      onClick={() => props.onClick()}
+      aria-label="Foto bekijken"
+    >
+      <svg viewBox={`0 0 ${props.foto.breedte} ${props.foto.hoogte}`} preserveAspectRatio={props.heel ? 'xMidYMid meet' : 'xMidYMid slice'} width="100%" height="100%">
         <image href={`/api/fotos/${props.foto.id}`} width={props.foto.breedte} height={props.foto.hoogte} />
         {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
         <g innerHTML={svg()} />
@@ -88,8 +96,15 @@ export function FotoSlot(props: { k: string; label?: string }) {
       vervang = huidig.length ? huidig[huidig.length - 1].id : null;
       blobs = [await zetOm(bestanden[0])];
     } else if (huidig.length === 1 && bestanden.length === 1) {
-      const [blob, vervangen] = await Promise.all([zetOm(bestanden[0]), bevestig('Foto toevoegen of vervangen?', 'Er staat al een foto. Wil je die vervangen of deze foto erbij zetten?', { ja: 'Vervangen', nee: 'Nog een toevoegen' })]);
-      if (vervangen) vervang = huidig[0].id;
+      const [blob, keuze] = await Promise.all([
+        zetOm(bestanden[0]),
+        kies('Foto toevoegen of vervangen?', 'Er staat al een foto. Wil je die vervangen of deze foto erbij zetten?', [
+          { label: 'Nog een toevoegen', class: 'btn-success', qa: 'qa-toevoegen', icoon: 'plus-lg' },
+          { label: 'Vervangen', class: 'btn-warning', qa: 'qa-vervangen', icoon: 'arrow-left-right' },
+        ]),
+      ]);
+      if (keuze === null) return;
+      if (keuze === 1) vervang = huidig[0].id;
       blobs = [blob];
     } else blobs = await Promise.all(bestanden.map(zetOm));
     if (k === 'kaart' && vervang && kaartAnnotaties(s.d).length) s.setKaartVervangen(true);
@@ -157,7 +172,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
       </Show>
       {/* The buttons sit right of the photos, and wrap below them only when there's no room. */}
       <div class="d-flex flex-wrap align-items-start gap-2">
-        <For each={fotos()}>{(f) => <FotoDuim foto={f} onClick={() => setOpen(f.id)} />}</For>
+        <For each={fotos()}>{(f) => <FotoDuim foto={f} heel={k === 'kaart'} onClick={() => setOpen(f.id)} />}</For>
         <For each={wachtend()}>
           {(w) => (
             <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht">
@@ -173,12 +188,31 @@ export function FotoSlot(props: { k: string; label?: string }) {
         </Show>
         <Show when={!uit()}>
           <div class="foto-knoppen qa-foto-knoppen">
-            <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-1" aria-hidden="true" />Foto</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-1" aria-hidden="true" />Uploaden</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-plakken" aria-label="Plakken" title="Plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-sm-1" aria-hidden="true" /><span class="d-none d-sm-inline">Plakken</span></button>
-            </div>
-            <div class="small text-muted mt-1 d-none d-md-block">Of hierheen slepen.</div>
+            {/* Once the slot has a photo, the add options fold into a menu so they don't crowd the thumbnails. */}
+            <Show
+              when={fotos().length}
+              fallback={
+                <>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-1" aria-hidden="true" />Foto</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-1" aria-hidden="true" />Uploaden</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-plakken" aria-label="Plakken" title="Plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-sm-1" aria-hidden="true" /><span class="d-none d-sm-inline">Plakken</span></button>
+                  </div>
+                  <div class="small text-muted mt-1 d-none d-md-block">Of hierheen slepen.</div>
+                </>
+              }
+            >
+              <Dropdown
+                knop={<i class={`bi bi-${slot.enkel ? 'arrow-left-right' : 'plus-lg'}`} aria-hidden="true" />}
+                knopClass="btn btn-sm btn-outline-secondary qa-foto-menu"
+                label={slot.enkel ? 'Foto vervangen' : 'Foto toevoegen'}
+              >
+                <button type="button" class="dropdown-item qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-2" aria-hidden="true" />Foto</button>
+                <button type="button" class="dropdown-item qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-2" aria-hidden="true" />Uploaden</button>
+                <button type="button" class="dropdown-item qa-foto-plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-2" aria-hidden="true" />Plakken</button>
+                <div class="dropdown-item-text small text-muted d-none d-md-block">Of hierheen slepen.</div>
+              </Dropdown>
+            </Show>
             <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
             <input ref={kiezer} type="file" accept="image/*" multiple={!slot.enkel} class="d-none qa-foto-invoer" onChange={uitInvoer} />
           </div>

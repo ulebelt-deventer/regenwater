@@ -110,6 +110,7 @@ details.accordion-item > summary.accordion-button {
 .thumb { width: 11rem; height: 5.5rem; background: #eee; cursor: pointer; display: block; }
 .thumb.wacht { opacity: .5; }
 .thumb.thumb-klein { width: 7rem; height: 3.5rem; }
+.thumb.thumb-heel { width: 16.5rem; height: auto; }
 
 // Full-screen photo viewer and drawing editor
 .annot { position: fixed; inset: 0; background: $ub-zwart; z-index: 1050; display: flex; flex-direction: column; }
