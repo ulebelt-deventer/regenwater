@@ -14,5 +14,9 @@ if grep -Eq '^(APP_MODUS|HOST|PORT|DATA_DIR|TZ|PLAYWRIGHT_BROWSERS_PATH)=' "${SR
 fi
 remote_sudo "umask 077 && cat > '${ENV_FILE}.new' && chown root:'${SERVICE_USER}' '${ENV_FILE}.new' && chmod 640 '${ENV_FILE}.new' && mv '${ENV_FILE}.new' '${ENV_FILE}'" < "${SRC}"
 echo "==> Wrote ${ENV_FILE} on ${DEPLOY_HOST}"
-remote_sudo systemctl try-restart "${SERVICE_NAME}.service"
-if [ "${BACKUPS}" = s3 ]; then remote_sudo systemctl try-restart "${SERVICE_NAME}-litestream.service"; fi
+# try-restart restarts only a running unit; a stopped one reads the new file when it next starts.
+for unit in "${SERVICE_NAME}.service" $([ "${BACKUPS}" = s3 ] && echo "${SERVICE_NAME}-litestream.service"); do
+  remote_sudo systemctl try-restart "${unit}"
+  state="$(remote_sudo systemctl is-active "${unit}" || true)"
+  if [ "${state}" = active ]; then echo "==> Restarted ${unit} with the new env"; else echo "==> ${unit} is ${state}, so it was not restarted; it reads the new env when it next starts"; fi
+done
