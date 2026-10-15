@@ -51,6 +51,7 @@ test('alleen het openen van de link logt niet in; de knop wel, en een beheerder 
   await start(page);
   const { link } = await vraagCode(page, BEHEERDER.email);
   await page.goto(link);
+  await expect(page.locator('.qa-link-uitleg')).toContainText('bijna ingelogd');
   await expect(page.locator('.qa-link-inloggen')).toBeVisible();
   expect(await ingelogd(page)).toBe(401);
 
@@ -106,4 +107,14 @@ test('een uitgelogde link naar een dossier vult het e-mailadres in en komt na in
   await page.locator('.qa-login-code').fill(code);
   await page.locator('.qa-login-inloggen').click();
   await expect(page).toHaveURL(/\/$/);
+});
+
+test('de privacypagina is uitgelogd te lezen, zonder doorsturen naar inloggen', async ({ page }) => {
+  await start(page);
+  await page.context().clearCookies();
+  await page.goto('/privacy');
+  await expect(page.locator('.qa-privacy-titel')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.locator('.qa-privacy-titel')).toBeVisible();
 });

@@ -24,11 +24,15 @@ export async function api<T = any>(methode: string, pad: string, inhoud?: unknow
   const tekst = await res.text();
   const json = tekst ? JSON.parse(tekst) : {};
   if (!res.ok) {
-    if (res.status === 401 && !location.pathname.startsWith('/inloggen')) naarInloggen();
+    if (res.status === 401 && !isOpenbaar(location.pathname)) naarInloggen();
     throw new ApiFout(res.status, typeof json.fout === 'string' ? json.fout : `Fout ${res.status}`);
   }
   return json as T;
 }
+
+// Pages readable without logging in.
+const OPENBAAR = ['/inloggen', '/privacy'];
+export const isOpenbaar = (pad: string) => OPENBAAR.some((p) => pad.startsWith(p));
 
 export const TERUG_SLEUTEL = 'terugNaInloggen';
 

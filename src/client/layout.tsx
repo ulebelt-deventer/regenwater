@@ -1,6 +1,6 @@
 import { A, type RouteSectionProps, useLocation, useNavigate } from '@solidjs/router';
 import { type JSX, Show, createResource, createSignal } from 'solid-js';
-import { post } from './api.ts';
+import { isOpenbaar, post } from './api.ts';
 import { opgeslagenOm, opslagStatus } from './opslag.ts';
 import { laadOmgeving, laadSessie, omgeving, sessie } from './sessie.ts';
 import { Dropdown, Meldingen, Modal, Opgeslagen, Vragen, melding, probeer } from './ui.tsx';
@@ -168,12 +168,10 @@ function Footer() {
   );
 }
 
-const OPENBAAR = ['/inloggen', '/privacy'];
-
 export function Layout(props: RouteSectionProps) {
   const loc = useLocation();
   const navigate = useNavigate();
-  const openbaar = () => OPENBAAR.some((p) => loc.pathname.startsWith(p));
+  const openbaar = () => isOpenbaar(loc.pathname);
   const [geladen] = createResource(async () => {
     const [s] = await Promise.all([laadSessie(), laadOmgeving()]);
     if (!s && !openbaar()) navigate('/inloggen', { replace: true });

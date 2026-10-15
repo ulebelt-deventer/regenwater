@@ -12,6 +12,7 @@
 - **Staan er stappen in de verkeerde volgorde?** I know that this prototype likely has some steps out of order. For example, the bezoeker doesn't fill in Afspraken until after they've completed the on-site visit. Please take a look and let me know what you think, and we can polish it up / adjust accordingly.
 - **Werken jullie ook voor huishoudens zonder subsidie?** Can you still do work with a household that wants a rain capture system, even if they don't get a subsidy for it? or do we immediately close dossiers that don't have a subsidy available?
 - Should the dossier page form be all on the main Dossier page? or is it useful to have the subforms for each step on separated subpages? I'm iffy about that design decision.
+- For GDPR, we need our data privacy policy to clearly state what personal data we collect and why and how long we keep it. How long do you need to hold onto these dossiers after completion? Claude recommends committing to deleting all personal data after 5 years -- that basically means deleting the whole dossier, all record of the project completed. How do you feel about that? The most sensitive data is bewoner name, email, phone, and any photos taken. If you have a clear legal need to store it for longer, we can raise that to 20. Nobody will ever ask or care, but we do need to have a clear transparent documented policy.
 
 ### Login & permissions
 

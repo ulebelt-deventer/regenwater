@@ -1,10 +1,15 @@
 # Privacy and AVG
 
-Internal notes on how the app handles personal data and where it stands on AVG (GDPR) compliance. The public text is the `/privacy` page (`Privacy()` in `src/client/paginas/uitleg.tsx`), reachable without logging in; it stays marked as a concept until the open questions below are settled.
+Internal notes on how the app handles personal data and where it stands on AVG (GDPR) compliance. The public text is the `/privacy` page (`Privacy()` in `src/client/paginas/uitleg.tsx`), reachable without logging in.
 
 ## Roles
 
-- **Verwerkingsverantwoordelijke (controller):** not decided yet. The public text, the retention period and who signs the DPAs all depend on it.
+- **Verwerkingsverantwoordelijke (controller):** De Ulebelt, Duikerstraat 15 Maatmansweg 3, 7425 NC Deventer. It signs the DPAs.
+
+## Legal basis and retention
+
+- Bewoners: performance of the agreement they signed up for (Art. 6(1)(b)). Volunteers and admins: legitimate interest in organizing the work and accounting for who did what (Art. 6(1)(f)).
+- Retention: 5 years after a dossier is closed, and 5 years after a user's account is archived; then the personal data is deleted. The 5 years echoes the Dutch limitation period for claims (BW 3:310), though that runs from when damage becomes known, so a claim can still come later; the period is provisional until the team confirms it. Nothing deletes automatically yet.
 - **Technisch beheerder (maintainer):** a volunteer acting under Ulebelt's authority (AVG Art. 29), so part of the organization rather than a processor; no separate agreement needed. The privacy page mentions the role, not the person.
 
 ## Personal data stored
@@ -43,6 +48,5 @@ Healthchecks pings are empty POSTs and fonts are self-hosted, so neither receive
 
 ## Open
 
-- Decide the controller (see Roles).
-- Retention period, for live data and for backups (backup retention decides how long deleted data lingers).
-- Final public text on `/privacy`, then drop the concept banner.
+- Detect and delete personal data past its retention period (nothing does this yet).
+- Backup retention, which decides how long deleted data lingers.

@@ -1,5 +1,5 @@
 // Explanation pages: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Installeren and Privacy.
-import { For, Show, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, type JSX, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { KLOPT_NIET_KOP, KLOPT_NIET_REGELS, LIGT_STIL_REGELS } from '../../shared/aandacht.ts';
 import { ULEBELT_CONTACT_EMAIL } from '../../shared/constants.ts';
 import { LIGT_BIJ_LABEL, STAPPEN } from '../../shared/status.ts';
@@ -223,7 +223,7 @@ export function Installeren() {
     setPrompt(null);
   };
 
-  const stappen = (kop: string, qa: string, items: string[]) => (
+  const stappen = (kop: string, qa: string, items: (string | JSX.Element)[]) => (
     <section class="col-md-6">
       <div class={`card card-body h-100 ${qa}`}>
         <h2 class="h5">{kop}</h2>
@@ -240,7 +240,10 @@ export function Installeren() {
     'Tik op “Voeg toe”.',
   ]);
   const androidStappen = stappen('Android (Chrome)', 'qa-stappen-android', [
-    'Tik in Chrome op het menu ⋮ rechtsboven.',
+    'Open deze pagina in Chrome, niet in Firefox of een andere browser. Alleen dan openen de links in je e-mails in de app.',
+    <>
+      Tik in Chrome op het menu <span class='px-2 border rounded'>⋮</span> rechtsboven.
+    </>,
     'Kies “App installeren” (of “Toevoegen aan startscherm”).',
   ]);
 
@@ -266,16 +269,28 @@ export function Installeren() {
   );
 }
 
-// PLACEHOLDER: the text waits on who the data controller is and the retention period (see docs/privacy.md).
+// The public privacy notice; the reasoning behind it is in docs/privacy.md.
 export function Privacy() {
   titel('Privacy');
   return (
     <>
-      <h1 class="h3">Privacy</h1>
-      <div class="alert alert-warning qa-privacy-concept">Dit is een concepttekst. De definitieve versie volgt zodra vaststaat wie verwerkingsverantwoordelijke is.</div>
+      <h1 class="h3 qa-privacy-titel">Privacy</h1>
+      <section class="card card-body mb-3">
+        <h2 class="h5">Wie</h2>
+        <p class="mb-0">
+          De Ulebelt, Duikerstraat 15 Maatmansweg 3, 7425 NC Deventer, is verantwoordelijk voor de gegevens in deze app. Contact: <a href={`mailto:${ULEBELT_CONTACT_EMAIL}`}>{ULEBELT_CONTACT_EMAIL}</a>.
+        </p>
+      </section>
       <section class="card card-body mb-3">
         <h2 class="h5">Waarvoor</h2>
         <p class="mb-0">Ulebelt helpt bewoners hun regenpijpen af te koppelen van het riool. In deze app houden vrijwilligers en beheerders per woning een dossier bij: van de aanvraag via het bezoek en het Plan van Aanpak tot de uitvoering.</p>
+      </section>
+      <section class="card card-body mb-3">
+        <h2 class="h5">Grondslag</h2>
+        <ul class="mb-0">
+          <li>Gegevens van bewoners gebruiken we om de afkoppeling uit te voeren waarvoor ze zich hebben aangemeld (uitvoering van een overeenkomst, art. 6 lid 1 sub b AVG).</li>
+          <li>Gegevens van vrijwilligers en beheerders gebruiken we om het werk te organiseren en te kunnen laten zien wie wat heeft gedaan (gerechtvaardigd belang, art. 6 lid 1 sub f AVG).</li>
+        </ul>
       </section>
       <section class="card card-body mb-3">
         <h2 class="h5">Welke gegevens</h2>
@@ -300,7 +315,15 @@ export function Privacy() {
       </section>
       <section class="card card-body mb-3">
         <h2 class="h5">Bewaren en je rechten</h2>
-        <p class="mb-0">Hoe lang gegevens bewaard blijven, wordt nog vastgesteld. Wil je weten welke gegevens over jou zijn vastgelegd, of wil je ze laten verwijderen of aanpassen? Mail <a href={`mailto:${ULEBELT_CONTACT_EMAIL}`}>{ULEBELT_CONTACT_EMAIL}</a>.</p>
+        <p>
+          We bewaren een dossier tot vijf jaar nadat het is afgesloten, zodat we vragen over het uitgevoerde werk kunnen beantwoorden. Gegevens van een gebruiker van de app bewaren we tot vijf jaar nadat diens account is gearchiveerd. Daarna verwijderen we de persoonsgegevens.
+        </p>
+        <p>
+          Wil je weten welke gegevens over jou zijn vastgelegd, of wil je ze laten verwijderen of aanpassen? Mail <a href={`mailto:${ULEBELT_CONTACT_EMAIL}`}>{ULEBELT_CONTACT_EMAIL}</a>.
+        </p>
+        <p class="mb-0">
+          Ben je het niet eens met hoe wij met je gegevens omgaan? Dan kun je een klacht indienen bij de <a href="https://autoriteitpersoonsgegevens.nl">Autoriteit Persoonsgegevens</a>.
+        </p>
       </section>
     </>
   );

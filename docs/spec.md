@@ -25,7 +25,7 @@
   - If you're not logged in, display an email address form, autofocused. If the URL has `?email=` (the dossier link in a bezoeker or uitvoerder email carries it), the form arrives filled in and the button is focused instead, so one tap sends the code. Enter your email and submit. If that email is not in our system, display an error message saying so and asking you to contact the Ulebelt contact address (a constant in code). Archived users get the same message. If that email IS found, send that email a login link plus a 6-digit code, and display a confirmation message with an autofocused code input field.
     - *Why the code: on phones, mail apps often open links in their own built-in browser, so the login cookie lands there instead of in Safari/Chrome. Typing the code into the browser they actually use avoids that.*
     - The email shows the code first, then the link, with wording like "Op je telefoon: typ deze code in. Op een computer: klik op de link."
-    - The link opens an otherwise empty page with one centered "Inloggen" button; only tapping it logs in. *Mail scanners (eg Outlook Safe Links) open every link in an email, which would use up a one-use link.*
+    - The link opens a page with a short welcome ("Je bent bijna ingelogd. Tik op de knop hieronder om het inloggen af te ronden.") and one centered "Inloggen" button; only tapping it logs in. *Mail scanners (eg Outlook Safe Links) open every link in an email, which would use up a one-use link.*
     - Sessions last 30 days.
     - A code and link stay valid for 15 minutes and for one use; requesting a new one invalidates the old. After 5 wrong codes the code is void and you request a new one. At most 5 login emails per address per hour, and at most 20 login requests or code attempts per IP address per hour. (All constants in code.)
     - Hitting any of these limits, a voided code included, records a "login geblokkeerd" audit event (e-mail address, IP address, which limit) and logs a warning, which trips the Healthchecks error alert to the maintainer (see Monitoring in `architecture.md`). A single wrong code doesn't.
@@ -468,7 +468,7 @@
   - Where the browser offers its own install prompt (Chrome and Edge on Android, via `beforeinstallprompt`), a big "Installeren" button on top opens it; the steps below stay as a fallback. iOS Safari has no such prompt, so there the steps are all there is. Opened from the installed app itself, the page just says "De app staat al op je telefoon."
   - Short steps with a screenshot each, the detected platform's steps first and the other platform's collapsed below.
   - iPhone (Safari): open this page in Safari itself, not in the mail app's built-in browser; tap the Deel button; "Zet op beginscherm"; "Voeg toe".
-  - Android (Chrome): tap the ⋮ menu; "App installeren" (or "Toevoegen aan startscherm").
+  - Android (Chrome): open the page in Chrome, not Firefox or another browser, since only a Chrome-installed app receives the links in emails; tap the ⋮ menu; "App installeren" (or "Toevoegen aan startscherm").
   - Then: open the app from the new icon and log in once more with your e-mail and code. *The home-screen app keeps its own login, separate from the browser's.*
   - On a desktop browser: a big amber banner on top, "Open deze pagina op je telefoon", without hiding the steps.
 - Meldingen aan beheerders (automatic emails, no page)
@@ -484,7 +484,7 @@
 ## Footer & other UI
 
 - Footer needs a couple links:
-  - Data privacy (page that details the privacy policy, data handling, subprocessors, and other GDPR requirements; placeholder text until the data controller question is settled)
+  - Data privacy (page that details the privacy policy, data handling, subprocessors, and other GDPR requirements)
   - Give Feedback
     - opens a pop-up where you can fill in feedback similar to what the prototype had, with the cursor already in the text box. Admin and dev (me) are notified via email on each feedback. Admin nav dropdown has a "Feedback" page that lists all feedback; each can be marked as "Handled" to hide it from the default list (toggle at the top to show all vs default of showing just unhandled)
 
