@@ -163,7 +163,10 @@ export function Vragen() {
 // `label` names a caret-only button (knop=""), which must stay :empty for Bootstrap to center the caret.
 export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean; kiezer?: boolean }) {
   const [open, setOpen] = createSignal(false);
+  // A left-aligned menu that would run off the right of the screen opens right-aligned instead.
+  const [omklappen, setOmklappen] = createSignal(false);
   let el!: HTMLDivElement;
+  let menu!: HTMLDivElement;
   // composedPath, not el.contains(e.target): a click that removes its own target (eg a button hidden by the change it makes) is no longer inside el by the time this runs.
   const buiten = (e: MouseEvent) => {
     if (!e.composedPath().includes(el)) setOpen(false);
@@ -178,7 +181,9 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?:
     document.removeEventListener('keydown', esc);
   });
   const wissel = () => {
+    setOmklappen(false);
     setOpen(!open());
+    if (open() && !props.rechts) setOmklappen(menu.getBoundingClientRect().right > document.documentElement.clientWidth);
     if (open() && props.kiezer) el.querySelector<HTMLInputElement>('.dropdown-menu input')!.focus();
   };
   return (
@@ -187,7 +192,7 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?:
         {props.knop}
       </button>
       {/* Bootstrap positions the menu (incl. -end alignment) only when data-bs-popper is set; "static" is its no-Popper mode. */}
-      <div class={`dropdown-menu ${props.rechts ? 'dropdown-menu-end' : ''} shadow`} data-bs-popper="static" classList={{ show: open() }} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
+      <div ref={menu} class={`dropdown-menu ${props.rechts || omklappen() ? 'dropdown-menu-end' : ''} shadow`} data-bs-popper="static" classList={{ show: open() }} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
         {props.children}
       </div>
     </div>

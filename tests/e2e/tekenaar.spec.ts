@@ -352,6 +352,59 @@ test('op een gewone foto zijn alleen pijl en tekst te tekenen, en een lege tekst
   expect(foto.annotaties.map((a) => [a.type, a.tekst])).toEqual([['tekst', 'Put']]);
 });
 
+test('Vrij tekenen staat voor de pijl, tekent een rode lijn, en die lijn is te kiezen, te verslepen en via een hoek te schalen', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  await page.locator('.qa-fotoslot-tuinsituatie .qa-foto-invoer').setInputFiles({ name: 'tuin.png', mimeType: 'image/png', buffer: PNG });
+  await openTekenaar(page, 'tuinsituatie');
+  const knoppen = await page.locator('.qa-tekenaar .tools button').evaluateAll((bs) => bs.map((b) => /qa-gereedschap-(\w+)/.exec(b.className)?.[1]).filter(Boolean));
+  expect(knoppen).toEqual(['kies', 'schets', 'pijl', 'tekst']);
+  await expect(page.locator('.qa-gereedschap-schets .bi-brush')).toBeVisible();
+
+  const sleep = async (punten: [number, number][]) => {
+    await page.mouse.move(...(await schermPunt(page, ...punten[0])));
+    await page.mouse.down();
+    for (const q of punten.slice(1)) await page.mouse.move(...(await schermPunt(page, ...q)), { steps: 5 });
+    await page.mouse.up();
+  };
+  const schets = async () => {
+    await tekenaarOpgeslagen(page);
+    const annots = (await serverDossier(page, id)).fotos.find((f) => f.slot === 'tuinsituatie')!.annotaties;
+    expect(annots.map((a) => a.type)).toEqual(['schets']);
+    const xs = annots[0].p.map((q) => q[0]);
+    const ys = annots[0].p.map((q) => q[1]);
+    return { n: xs.length, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+  };
+
+  await gereedschap(page, 'schets');
+  await sleep([[0.2, 0.5], [0.3, 0.4], [0.4, 0.5], [0.5, 0.4]]);
+  await tik(page, 0.8, 0.8); // a tap with the brush draws nothing
+  const getekend = await schets();
+  expect(getekend.n).toBeGreaterThan(4);
+  expect(getekend.x0).toBeCloseTo(80, -1);
+  expect(getekend.x1).toBeCloseTo(200, -1);
+  await expect(page.locator('.qa-tekenaar-svg path[stroke="#ff0000"]')).toHaveCount(1);
+
+  await gereedschap(page, 'kies');
+  await tik(page, 0.3, 0.4);
+  await expect(page.locator('.qa-verwijder')).toBeVisible();
+  await sleep([[0.3, 0.4], [0.4, 0.6]]);
+  const versleept = await schets();
+  expect(versleept.x0 - getekend.x0).toBeCloseTo(40, 0);
+  expect(versleept.y0 - getekend.y0).toBeCloseTo(60, 0);
+
+  // Dragging the bottom-right corner scales towards the top-left one, which stays put.
+  const b = versleept;
+  await sleep([[b.x1 / 400, b.y1 / 300], [(b.x0 + 2 * (b.x1 - b.x0)) / 400, (b.y0 + 2 * (b.y1 - b.y0)) / 300]]);
+  const geschaald = await schets();
+  expect(geschaald.x0).toBeCloseTo(b.x0, 0);
+  expect(geschaald.y0).toBeCloseTo(b.y0, 0);
+  expect((geschaald.x1 - geschaald.x0) / (b.x1 - b.x0)).toBeCloseTo(2, 1);
+  expect((geschaald.y1 - geschaald.y0) / (b.y1 - b.y0)).toBeCloseTo(2, 1);
+  await sluitTekenaar(page);
+});
+
 test('een foto op de dossierpagina opent als duimpje in de tekenaar, en wat je tekent wordt opgeslagen', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });

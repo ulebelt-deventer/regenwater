@@ -37,6 +37,7 @@ export interface FotoSlot {
   inPlan?: boolean;
   inOplever?: boolean;
   enkel?: boolean; // a single-photo slot, where a new upload replaces the photo without asking
+  liggend?: boolean; // a multi-photo slot whose small thumbnails stay 3:2 instead of square
 }
 
 const isHuur = (d: Dossier) => d.huur_koop === 'huur';
@@ -93,7 +94,7 @@ export const VELDEN: Veld[] = [
   { key: 'regenpijp.*.diameter', label: 'Diameter', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, opties: [['80', '80 mm'], ['100', '100 mm'], ['anders', 'Anders, namelijk:']] },
   { key: 'regenpijp.*.regenton', label: 'Regenton aanwezig?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['aanwezig', 'Is al aanwezig'], ['gewenst', 'Niet aanwezig, wel gewenst'], ['niet', 'Niet gewenst']] },
   { key: 'regenpijp.*.ondergrond', label: 'Hoe is de ondergrond bij de pijp?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.ondergrond', zichtbaar: (d, id) => regenpijpWaarde(d, id, 'regenton') === 'gewenst' },
-  { key: 'regenpijp.*.afkoppelen', label: 'Afkoppelen?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['ja', 'Ja'], ['nee', 'Nee'], ['twijfel', 'Twijfel']] },
+  { key: 'regenpijp.*.afkoppelen', label: 'Afkoppelen?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['ja', 'Ja'], ['nee', 'Nee (blijft naar riool gaan)'], ['twijfel', 'Twijfel']] },
   { key: 'regenpijp.*.waar', label: 'Waar moet het water naartoe?', type: 'textarea', rijen: 2, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.waar' },
   { key: 'regenpijp.*.hoe', label: 'Hoe moet het water daarnaartoe komen?', type: 'checks', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, fotos: 'regenpijp.*.hoe', opties: [['holie_molie', 'Holie Molie'], ['drainageslang', 'Drainageslang bovengronds'], ['ondergronds', 'Ondergronds'], ['anders', 'Anders, namelijk:']] },
   { key: 'hoosbuien', label: 'Wat gebeurt er bij hoosbuien?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'hoosbuien', hint: 'Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst?' },
@@ -131,7 +132,7 @@ export const FOTO_SLOTS: FotoSlot[] = [
   { key: 'steen.*', label: 'Foto’s van het stenen vlak', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'tuinsituatie', label: 'Foto’s tuinsituatie', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'regenpijp.*.ondergrond', label: 'Foto’s ondergrond', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
-  { key: 'regenpijp.*.waar', label: 'Foto’s waar het water heen moet', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
+  { key: 'regenpijp.*.waar', label: 'Foto’s waar het water heen moet', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, liggend: true },
   { key: 'regenpijp.*.hoe', label: 'Foto’s hoe het water er moet komen', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'hoosbuien', label: 'Foto’s hoosbuien', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'opleverfotos', label: 'Opleverfoto’s', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true },

@@ -32,6 +32,9 @@ $container-max-widths: (lg: 1200px);
 .fw-xbold { font-weight: 800; }
 .text-groen { color: $ub-groen; }
 .cursor-pointer { cursor: pointer; }
+.cursor-help { cursor: help; }
+// 90% text in the line box of normal text, cut off on one line.
+.label-klein { font-size: 90%; line-height: $line-height-base * $font-size-base; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pre-wrap { white-space: pre-wrap; }
 .font-serif { font-family: Georgia, 'Times New Roman', serif; }
 // The label column of a read-only Regel: narrower on phones so the value keeps room.
@@ -130,13 +133,18 @@ $container-max-widths: (lg: 1200px);
 .topbar .dropdown-menu::before { top: -.5rem; border-bottom-color: var(--bs-dropdown-border-color); }
 .topbar .dropdown-menu::after { top: calc(-.5rem + 1px); border-bottom-color: var(--bs-dropdown-bg); }
 
-// Below md, each table row becomes a compact card; a cell's data-label shows as its caption.
+// Below md, each table row becomes a compact card; a cell's data-label shows as its caption. Child selectors, so a table
+// nested in a cell (eg in a dropdown) stays a table.
 @include media-breakpoint-down(md) {
-  .tabel-kaarten thead { display: none; }
-  .tabel-kaarten, .tabel-kaarten tbody, .tabel-kaarten tr, .tabel-kaarten td { display: block; }
-  .tabel-kaarten tr { border: 1px solid $ub-rand; border-radius: $border-radius; padding: .5rem .75rem; margin-bottom: .5rem; }
+  .tabel-kaarten > thead { display: none; }
+  .tabel-kaarten, .tabel-kaarten > tbody, .tabel-kaarten > tbody > tr > td { display: block; }
+  .tabel-kaarten > tbody > tr { display: flex; flex-wrap: wrap; align-items: center; column-gap: .5rem; border: 1px solid $ub-rand; border-radius: $border-radius; padding: .5rem .75rem; margin-bottom: .5rem; }
   .tabel-kaarten > :not(caption) > * > * { border: 0; padding: 0; text-align: start !important; white-space: normal !important; }
-  .tabel-kaarten td[data-label]::before { content: attr(data-label) ': '; color: var(--bs-secondary-color); }
+  // Cells stack full-width; a .kaart-titel and the .kaart-hoek after it share the top line, the latter at the right.
+  .tabel-kaarten > tbody > tr > td { flex: 1 1 100%; }
+  .tabel-kaarten > tbody > tr > td.kaart-titel { flex: 1 1 0; }
+  .tabel-kaarten > tbody > tr > td.kaart-hoek { flex: 0 0 auto; }
+  .tabel-kaarten > tbody > tr > td[data-label]::before { content: attr(data-label) ': '; color: var(--bs-secondary-color); }
 }
 .modal.d-block { background: rgba(26, 26, 26, .55); overflow-y: auto; }
 

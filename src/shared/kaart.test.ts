@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   type DakDeel, afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, binnen, bronnenTekst, dichtstbijzijndeDak, dichtstbijzijndeVerdeling, getal, herverdeel, isAnnotatieLijst,
-  kaartItems, letter, oppervlakPx, procenten, verdelingTekst, verdelingVoor, verdelingWaarde, verdelingenTeWissen, vierkanteUitsnede, waterberging, zijdeLengtes,
+  kaartItems, letter, oppervlakPx, procenten, verdelingTekst, verdelingVoor, verdelingWaarde, verdelingenTeWissen, regenpijpUitsnede, vierkanteUitsnede, waterberging, zijdeLengtes,
 } from './kaart.ts';
 import { ontbrekend } from './velden.ts';
 import { dossier } from './testhulp.ts';
@@ -95,6 +95,16 @@ describe('vierkanteUitsnede', () => {
   });
 });
 
+describe('regenpijpUitsnede', () => {
+  it('centers 5 m each way on the pijp on a kaart to scale, even past the edge of the image', () => {
+    expect(regenpijpUitsnede([20, 500], [[20, 500], [900, 900]], kaart(0.1))).toEqual({ x: -30, y: 450, zijde: 100 });
+  });
+
+  it('frames the pijp and its dakdelen on a kaart not to scale', () => {
+    expect(regenpijpUitsnede([500, 400], [[500, 400]], kaart(null))).toEqual(vierkanteUitsnede([[500, 400]], 1000, 1000));
+  });
+});
+
 describe('dichtstbijzijndeDak', () => {
   const dak = (id: string, p: [number, number][]): Annotatie => ({ id, type: 'dak', p });
 
@@ -124,7 +134,7 @@ describe('dichtstbijzijndeDak', () => {
 describe('isAnnotatieLijst', () => {
   it('accepts an empty list and every annotation type', () => {
     expect(isAnnotatieLijst([])).toBe(true);
-    expect(isAnnotatieLijst(['pijl', 'tekst', 'dak', 'tuin', 'steen', 'regenpijp'].map((type, i) => ({ id: `a${i}`, type, p: [[1, 2]], ...(type === 'tekst' ? { tekst: 'x' } : {}) })))).toBe(true);
+    expect(isAnnotatieLijst(['schets', 'pijl', 'tekst', 'dak', 'tuin', 'steen', 'regenpijp'].map((type, i) => ({ id: `a${i}`, type, p: [[1, 2]], ...(type === 'tekst' ? { tekst: 'x' } : {}) })))).toBe(true);
   });
 
   it('refuses anything that would break drawing or the PDFs', () => {
@@ -348,6 +358,11 @@ describe('annotatiesSvg', () => {
     const breed = Number(/<line [^>]*stroke-width="([\d.]+)"/.exec(svg)![1]);
     expect(x2 + breed / 2).toBeLessThan(100);
     expect(x2).toBeGreaterThan(100 - 14 * Math.cos(0.45));
+  });
+
+  it('draws a schets as one round-capped red path through its points', () => {
+    const svg = annotatiesSvg([{ id: 's', type: 'schets', p: [[0, 0], [10, 5], [20, 0]] }], { schaal: 2, mPerPx: null });
+    expect(svg).toBe('<path d="M0 0 L10 5 L20 0" fill="none" stroke="#ff0000" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>');
   });
 
   it('escapes free text', () => {

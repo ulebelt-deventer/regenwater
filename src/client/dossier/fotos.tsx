@@ -172,11 +172,11 @@ export function FotoSlot(props: { k: string; label?: string }) {
       </Show>
       {/* The buttons sit right of the photos, and wrap below them only when there's no room. */}
       <div class="d-flex flex-wrap align-items-start gap-2">
-        {/* Multi-photo slots get small squares so several fit side by side. */}
-        <For each={fotos()}>{(f) => <FotoDuim foto={f} heel={k === 'kaart'} vierkant={!slot.enkel} onClick={() => setOpen(f.id)} />}</For>
+        {/* Multi-photo slots get small thumbnails so several fit side by side. */}
+        <For each={fotos()}>{(f) => <FotoDuim foto={f} heel={k === 'kaart'} klein={!slot.enkel && slot.liggend} vierkant={!slot.enkel && !slot.liggend} onClick={() => setOpen(f.id)} />}</For>
         <For each={wachtend()}>
           {(w) => (
-            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht" classList={{ 'thumb-vierkant': !slot.enkel }}>
+            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht" classList={{ 'thumb-klein': !slot.enkel && slot.liggend, 'thumb-vierkant': !slot.enkel && !slot.liggend }}>
               <img src={w.url} alt="" class="w-100 h-100 object-fit-cover" />
             </div>
           )}
@@ -188,7 +188,8 @@ export function FotoSlot(props: { k: string; label?: string }) {
           </div>
         </Show>
         <Show when={!uit()}>
-          <div class="foto-knoppen qa-foto-knoppen">
+          {/* The folded menu needs no 8rem basis: it fits beside the photos wherever the small button does. */}
+          <div class="qa-foto-knoppen" classList={{ 'foto-knoppen': !fotos().length }}>
             {/* Once the slot has a photo, the add options fold into a menu so they don't crowd the thumbnails. */}
             <Show
               when={fotos().length}

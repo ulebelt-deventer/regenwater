@@ -90,21 +90,38 @@ test('een bestand zonder afbeelding erin, ook met een afbeeldingtype, geeft deze
   await expect(slot.locator('.qa-foto')).toHaveCount(0);
 });
 
-test('in een vak voor meerdere foto’s zijn de foto’s kleine vierkantjes naast elkaar, de eerste recht onder het label', async ({ page }) => {
+test('in een vak voor meerdere foto’s zijn de foto’s kleine vierkantjes naast elkaar, de eerste recht onder het label; bij Waar zijn ze 3:2', async ({ page }) => {
+  const id = await nieuwBezoekDossier(page);
+  await zet(page, id, { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }] });
+  await page.reload();
+  for (const [v, verhouding] of [['hoe', 1], ['waar', 1.5]] as const) {
+    const slot = page.locator(`.qa-fotoslot-regenpijp-${v}`);
+    await sleep(page, slot, [png('een.png'), png('twee.png')]);
+    const fotos = slot.locator('.qa-foto');
+    await expect(fotos).toHaveCount(2);
+    const [een, twee] = await Promise.all([0, 1].map((i) => fotos.nth(i).evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect)));
+    const label = await veld(page, `regenpijp-${v}`).locator('.form-label').evaluate((el) => el.getBoundingClientRect().left);
+    expect(een.width).toBeCloseTo((v === 'hoe' ? 7.7 : 7) * 16, 0);
+    expect(een.width / een.height).toBeCloseTo(verhouding, 1);
+    expect(twee.top).toBe(een.top);
+    expect(twee.left).toBeGreaterThan(een.right);
+    expect(een.left).toBe(label);
+  }
+  await opslagKlaar(page);
+});
+
+test('met twee foto’s in een regenpijpvak staat het toevoegmenu rechts naast de laatste foto, niet eronder', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
   const id = await nieuwBezoekDossier(page);
   await zet(page, id, { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }] });
   await page.reload();
   const slot = page.locator('.qa-fotoslot-regenpijp-waar');
   await sleep(page, slot, [png('een.png'), png('twee.png')]);
-  const fotos = slot.locator('.qa-foto');
-  await expect(fotos).toHaveCount(2);
-  const [een, twee] = await Promise.all([0, 1].map((i) => fotos.nth(i).evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect)));
-  const label = await veld(page, 'regenpijp-waar').locator('.form-label').evaluate((el) => el.getBoundingClientRect().left);
-  expect(een.width).toBeCloseTo(7.7 * 16, 0);
-  expect(een.height).toBeCloseTo(een.width, 0);
-  expect(twee.top).toBe(een.top);
-  expect(twee.left).toBeGreaterThan(een.right);
-  expect(een.left).toBe(label);
+  await expect(slot.locator('.qa-foto')).toHaveCount(2);
+  const laatste = await slot.locator('.qa-foto').nth(1).evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect);
+  const menu = await slot.locator('.qa-foto-menu').evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect);
+  expect(menu.top).toBe(laatste.top);
+  expect(menu.left).toBeGreaterThan(laatste.right);
   await opslagKlaar(page);
 });
 

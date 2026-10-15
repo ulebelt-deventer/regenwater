@@ -20,8 +20,8 @@ function Hint(props: { veld: Veld }) {
   );
 }
 
-// `fotoOnder` stacks the photo slot under the input instead of beside it, for narrow columns.
-export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean }) {
+// `fotoOnder` stacks the photo slot under the input instead of beside it, and `breed` stretches a dropdown to its column; both for grid columns.
+export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
   const def = veldVoor(k);
@@ -32,10 +32,10 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
   const inhoud = (
     <>
       <Show when={!props.kaal}>
-        <div class="form-label fw-semibold mb-1">{props.label ?? v.label}</div>
+        <div class={`form-label fw-semibold mb-1 ${props.labelClass ?? ''}`}>{props.label ?? v.label}</div>
         <Hint veld={v} />
       </Show>
-      <Invoer k={props.k} veld={v} opties={props.opties ?? v.opties} uit={!s.mag(v.bewerkers)} />
+      <Invoer k={props.k} veld={v} opties={props.opties ?? v.opties} uit={!s.mag(v.bewerkers)} breed={props.breed} />
     </>
   );
   return (
@@ -56,7 +56,7 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
   );
 }
 
-function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | undefined; uit: boolean }) {
+function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | undefined; uit: boolean; breed?: boolean }) {
   const s = useDossier();
   const w = () => waarde(s.d, props.k);
   const zet = (v: Json) => s.zet(props.k, v);
@@ -111,7 +111,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
       <Match when={props.veld.type === 'radio' && props.veld.lijst}>
         {/* Per-option `selected`: a select's `value` is lost when its options re-render. */}
         <div class="d-sm-flex align-items-center gap-2">
-          <select class="form-select w-auto mw-100 qa-invoer" disabled={props.uit} onChange={(e) => { kiesAnders(e.currentTarget.value); zet(e.currentTarget.value === '' ? null : e.currentTarget.value); }}>
+          <select class={`form-select mw-100 qa-invoer ${props.breed ? 'w-100' : 'w-auto'}`} disabled={props.uit} onChange={(e) => { kiesAnders(e.currentTarget.value); zet(e.currentTarget.value === '' ? null : e.currentTarget.value); }}>
             <option value="" selected={!w()}>- kies -</option>
             <For each={props.opties}>{([k, label]) => <option value={k} selected={w() === k}>{label.replace(/, namelijk:$/, '...')}</option>}</For>
           </select>
@@ -132,7 +132,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
         </div>
       </Match>
       <Match when={props.veld.type === 'checks' && props.veld.lijst}>
-        <Dropdown sluitBijKlik={false} knopClass="btn btn-light border text-start mw-100 text-wrap qa-invoer" knop={<span class="qa-keuzes-tekst">{gekozenTekst() || '- kies -'}</span>}>
+        <Dropdown sluitBijKlik={false} knopClass={`btn btn-light border text-start mw-100 text-wrap qa-invoer ${props.breed ? 'w-100 d-flex justify-content-between align-items-center gap-2' : ''}`} knop={<span class="qa-keuzes-tekst">{gekozenTekst() || '- kies -'}</span>}>
           <For each={props.opties}>
             {([k, label]) => (
               <div class="px-3 py-1 text-nowrap qa-keuze">

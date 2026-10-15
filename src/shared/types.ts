@@ -112,7 +112,7 @@ export interface Foto {
   created_at: string;
 }
 
-export type AnnotatieType = 'pijl' | 'tekst' | 'dak' | 'tuin' | 'steen' | 'regenpijp';
+export type AnnotatieType = 'schets' | 'pijl' | 'tekst' | 'dak' | 'tuin' | 'steen' | 'regenpijp';
 export interface Annotatie {
   id: string;
   type: AnnotatieType;

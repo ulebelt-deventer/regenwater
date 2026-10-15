@@ -15,7 +15,7 @@ export function letter(i: number): string {
 
 // Labels follow array order, so deleting an item renumbers the rest without touching stored IDs.
 export function annotatieLabels(annots: Annotatie[]): Map<string, string> {
-  const tel = { pijl: 0, dak: 0, tuin: 0, steen: 0, regenpijp: 0, tekst: 0 };
+  const tel = { schets: 0, pijl: 0, dak: 0, tuin: 0, steen: 0, regenpijp: 0, tekst: 0 };
   const labels = new Map<string, string>();
   for (const a of annots) {
     const i = tel[a.type]++;
@@ -339,6 +339,13 @@ export function vierkanteUitsnede(punten: Pt[], breedte: number, hoogte: number)
   return { x: binnen((x0 + x1) / 2, breedte), y: binnen((y0 + y1) / 2, hoogte), zijde };
 }
 
+// A regenpijp's thumbnail: centred on the pijp and 5 m each way on a kaart to scale; otherwise around `punten` (the pijp and its dakdelen).
+export function regenpijpUitsnede(pijp: Pt, punten: Pt[], foto: Pick<Foto, 'breedte' | 'hoogte' | 'm_per_px'>): { x: number; y: number; zijde: number } {
+  if (foto.m_per_px === null) return vierkanteUitsnede(punten, foto.breedte, foto.hoogte);
+  const r = 5 / foto.m_per_px;
+  return { x: pijp[0] - r, y: pijp[1] - r, zijde: 2 * r };
+}
+
 export function getal(n: number): string {
   return n.toLocaleString('nl-NL', { maximumFractionDigits: 1 });
 }
@@ -354,7 +361,7 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export const KLEUR = { pijl: '#ff713e', tekst: '#ffffff', dak: '#86afe2', tuin: '#88d356', steen: '#e5383b', regenpijp: '#00643c' };
+export const KLEUR = { schets: '#ff0000', pijl: '#ff713e', tekst: '#ffffff', dak: '#86afe2', tuin: '#88d356', steen: '#e5383b', regenpijp: '#00643c' };
 // Each kaart onderdeel's Bootstrap Icons name and color, in the app and the PDFs.
 export const ICOON = {
   dak: { naam: 'house', kleur: '#2f6db5' },
@@ -398,6 +405,8 @@ export function annotatiesSvg(annots: Annotatie[], opts: { schaal: number; mPerP
       const [x, y] = a.p[0];
       out.push(`<circle cx="${x}" cy="${y}" r="${11 * u}" fill="${KLEUR.regenpijp}" stroke="#ffffff" stroke-width="${(sel ? 4 : 2) * u}"/>`);
       out.push(`<text x="${x}" y="${y}" font-size="${13 * u}" font-family="Figtree, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${esc(label!)}</text>`);
+    } else if (a.type === 'schets') {
+      out.push(`<path d="M${a.p.map((q) => q.join(' ')).join(' L')}" fill="none" stroke="${KLEUR.schets}" stroke-width="${7 * u}" stroke-linecap="round" stroke-linejoin="round"/>`);
     } else if (a.type === 'pijl') {
       const [[x1, y1], [x2, y2]] = a.p;
       const hoek = Math.atan2(y2 - y1, x2 - x1);
@@ -422,7 +431,7 @@ export function isAnnotatieLijst(v: Json): boolean {
     const o = a as Record<string, Json>;
     return (
       typeof o.id === 'string' &&
-      ['pijl', 'tekst', 'dak', 'tuin', 'steen', 'regenpijp'].includes(o.type as string) &&
+      ['schets', 'pijl', 'tekst', 'dak', 'tuin', 'steen', 'regenpijp'].includes(o.type as string) &&
       Array.isArray(o.p) &&
       o.p.every((q) => Array.isArray(q) && q.length === 2 && q.every((n) => typeof n === 'number' && Number.isFinite(n))) &&
       (o.tekst === undefined || typeof o.tekst === 'string')

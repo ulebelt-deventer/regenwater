@@ -19,6 +19,7 @@ const DUBBELTIK_MS = 350;
 
 const HINT: Record<string, string> = {
   kies: 'Tik op een tekening om die te kiezen en te verslepen. Sleep de foto om te schuiven; knijp of scroll om te zoomen.',
+  schets: 'Teken met je vinger of de muis.',
   pijl: 'Sleep om een pijl te tekenen.',
   tekst: 'Tik waar de tekst moet komen.',
   dak: 'Tik de hoeken van het dak aan. Tik op het eerste punt of op Klaar om te sluiten.',
@@ -28,10 +29,30 @@ const HINT: Record<string, string> = {
   bekijk: 'Knijp of scroll om te zoomen; sleep om te schuiven.',
 };
 
-const NAAM: Record<AnnotatieType, string> = { pijl: 'Pijl', tekst: 'Tekst', dak: 'Dak', tuin: 'Tuin', steen: 'Steen', regenpijp: 'Regenpijp' };
+const NAAM: Record<AnnotatieType, string> = { schets: 'Vrij tekenen', pijl: 'Pijl', tekst: 'Tekst', dak: 'Dak', tuin: 'Tuin', steen: 'Steen', regenpijp: 'Regenpijp' };
 const MET_GEGEVENS = new Set<AnnotatieType>(['dak', 'tuin', 'steen', 'regenpijp']);
 
 const kloon = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
+const rond = (q: Pt): Pt => [Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10];
+
+// A schets's bounding box corners, clockwise from top left; dragging one scales the schets towards the opposite corner.
+const hoeken = (p: Pt[]): Pt[] => {
+  const xs = p.map((q) => q[0]);
+  const ys = p.map((q) => q[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+};
+const handvatten = (a: Annotatie): Pt[] => (a.type === 'schets' ? hoeken(a.p) : a.type === 'regenpijp' || a.type === 'tekst' ? [] : a.p);
+// The annotation with handle `i` dragged to `p`.
+const metHandvat = (a: Annotatie, i: number, p: Pt): Annotatie => {
+  if (a.type !== 'schets') return { ...a, p: a.p.map((q, j) => (j === i ? p : q)) };
+  const h = hoeken(a.p);
+  const [ax, ay] = h[(i + 2) % 4];
+  const [cx, cy] = h[i];
+  const sx = cx === ax ? 1 : (p[0] - ax) / (cx - ax);
+  const sy = cy === ay ? 1 : (p[1] - ay) / (cy - ay);
+  return { ...a, p: a.p.map((q) => [ax + (q[0] - ax) * sx, ay + (q[1] - ay) * sy] as Pt) };
+};
 
 interface Stap {
   annots: Annotatie[];
@@ -144,6 +165,8 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
   // ---- Hit testing, in image units ----
   const raakt = (a: Annotatie, p: Pt, tol: number): boolean => {
     switch (a.type) {
+      case 'schets':
+        return a.p.slice(1).some((q, i) => afstandTotLijn(p, a.p[i], q) < 3.5 * u() + tol);
       case 'pijl':
         return afstandTotLijn(p, a.p[0], a.p[1]) < tol;
       case 'regenpijp':
@@ -165,9 +188,9 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
   };
   const handvatOp = (p: Pt): number | null => {
     const a = annots().find((x) => x.id === gekozen());
-    if (!a || a.type === 'regenpijp' || a.type === 'tekst') return null;
+    if (!a) return null;
     const tol = RAAK_PX / px();
-    const i = a.p.findIndex((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < tol);
+    const i = handvatten(a).findIndex((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < tol);
     return i < 0 ? null : i;
   };
 
@@ -175,6 +198,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
   const wijzers = new Map<number, Pt>();
   type Actie =
     | { soort: 'schuif' }
+    | { soort: 'schets'; punten: Pt[] }
     | { soort: 'pijl'; start: Pt }
     | { soort: 'versleep'; id: string; start: Pt; origineel: Annotatie[]; wasGekozen: boolean; ids: string[] }
     | { soort: 'hoek'; id: string; i: number; origineel: Annotatie[] }
@@ -208,6 +232,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     const p = naarBeeld(...sp);
     const g = gereedschap();
     if (uit()) actie = { soort: 'schuif' };
+    else if (g === 'schets') actie = { soort: 'schets', punten: [p] };
     else if (g === 'pijl') actie = { soort: 'pijl', start: p };
     else if (g !== null) actie = { soort: 'schuif' }; // a tap places; a drag pans
     else {
@@ -249,14 +274,19 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     bewogen = true;
     const p = naarBeeld(...sp);
     if (actie.soort === 'schuif') schuif(sp[0] - vorig[0], sp[1] - vorig[1]);
-    else if (actie.soort === 'pijl') setConcept([...opgeslagen(), { id: 'nieuw', type: 'pijl', p: [actie.start, p] }]);
+    else if (actie.soort === 'schets') {
+      const laatste = actie.punten[actie.punten.length - 1];
+      if (Math.hypot(p[0] - laatste[0], p[1] - laatste[1]) * px() < 2) return;
+      actie.punten.push(p);
+      setConcept([...opgeslagen(), { id: 'nieuw', type: 'schets', p: actie.punten }]);
+    }    else if (actie.soort === 'pijl') setConcept([...opgeslagen(), { id: 'nieuw', type: 'pijl', p: [actie.start, p] }]);
     else if (actie.soort === 'versleep') {
       const [dx, dy] = [p[0] - actie.start[0], p[1] - actie.start[1]];
       const id = actie.id;
       setConcept(actie.origineel.map((a) => (a.id === id ? { ...a, p: a.p.map((q) => [q[0] + dx, q[1] + dy] as Pt) } : a)));
     } else {
       const { id, i } = actie;
-      setConcept(actie.origineel.map((a) => (a.id === id ? { ...a, p: a.p.map((q, j) => (j === i ? p : q)) } : a)));
+      setConcept(actie.origineel.map((a) => (a.id === id ? metHandvat(a, i, p) : a)));
     }
   };
 
@@ -274,7 +304,9 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     const p = naarBeeld(...scherm(e));
     const c = concept();
     setConcept(null);
-    if (a.soort === 'pijl') {
+    if (a.soort === 'schets') {
+      if (c) wijzig([...opgeslagen(), { id: nieuwId(), type: 'schets', p: [...a.punten, p].map(rond) }]);
+    } else if (a.soort === 'pijl') {
       if (c && Math.hypot(p[0] - a.start[0], p[1] - a.start[1]) * px() > 10) {
         const id = nieuwId();
         wijzig([...opgeslagen(), { id, type: 'pijl', p: [a.start, p] }]);
@@ -385,7 +417,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     }
   }
 
-  const gereedschappen = (): AnnotatieType[] => (isKaart ? ['dak', 'tuin', 'steen', 'regenpijp', 'pijl', 'tekst'] : ['pijl', 'tekst']);
+  const gereedschappen = (): AnnotatieType[] => (isKaart ? ['dak', 'tuin', 'steen', 'regenpijp', 'schets', 'pijl', 'tekst'] : ['schets', 'pijl', 'tekst']);
   const geselecteerd = () => annots().find((x) => x.id === gekozen());
   const hint = () => (uit() ? HINT.bekijk : HINT[gereedschap() ?? 'kies']);
   const svg = () => annotatiesSvg(annots(), { schaal: u(), mPerPx: foto().m_per_px, geselecteerd: gekozen() });
@@ -407,6 +439,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
                       </>
                     )}
                   </Match>
+                  <Match when={g === 'schets'}><i class="bi bi-brush" aria-hidden="true" /></Match>
                   <Match when={g === 'pijl'}><i class="bi bi-arrow-up-right" aria-hidden="true" /></Match>
                   <Match when={g === 'tekst'}><span class="fw-bold font-serif" aria-hidden="true">T</span></Match>
                 </Switch>
@@ -438,9 +471,12 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
           <g innerHTML={svg()} />
           <Show when={geselecteerd()}>
             {(a) => (
-              <Show when={a().type !== 'regenpijp' && a().type !== 'tekst'}>
-                <For each={a().p}>{(q) => <circle cx={q[0]} cy={q[1]} r={HANDVAT_PX / px()} fill="#fff" stroke="#1a1a1a" stroke-width={2 / px()} />}</For>
-              </Show>
+              <>
+                <Show when={a().type === 'schets' && hoeken(a().p)}>
+                  {(h) => <rect x={h()[0][0]} y={h()[0][1]} width={h()[2][0] - h()[0][0]} height={h()[2][1] - h()[0][1]} fill="none" stroke="#1a1a1a" stroke-width={1.5 / px()} stroke-dasharray={`${6 / px()} ${4 / px()}`} />}
+                </Show>
+                <For each={handvatten(a())}>{(q) => <circle cx={q[0]} cy={q[1]} r={HANDVAT_PX / px()} fill="#fff" stroke="#1a1a1a" stroke-width={2 / px()} />}</For>
+              </>
             )}
           </Show>
           <Show when={inWording().length}>

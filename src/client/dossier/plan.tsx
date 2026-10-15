@@ -18,7 +18,7 @@ export function Plan() {
   return (
     <>
       <TerugLink />
-      <section class="card card-body mb-3 qa-plan">
+      <section class="mb-3 qa-plan">
         <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
           <h2 class="h5 mb-0">Plan van Aanpak</h2>
           <a href={`/docs/dossiers/${s.id}/concept-plan`} target="_blank" class="small qa-concept-plan">Bekijk concept-Plan</a>

@@ -41,7 +41,7 @@ export function Inschrijving() {
   return (
     <>
       <TerugLink />
-      <section class="card card-body mb-3 qa-inschrijving">
+      <section class="mb-3 qa-inschrijving">
         <h2 class="h5">Inschrijving</h2>
         <AdresVeld />
         <VeldInvoer k="bewoner_naam" />

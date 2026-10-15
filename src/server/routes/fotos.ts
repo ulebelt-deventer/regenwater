@@ -131,13 +131,13 @@ export function fotoRoutes(app: Hono<Env>, ctx: Ctx): void {
     return c.json({ ok: true, plan_gewijzigd_at: plan });
   });
 
-  // Ordinary photos take Pijl and Tekst only; the kaart's tekeningen live in the dossier data instead.
+  // Ordinary photos take Schets, Pijl and Tekst only; the kaart's tekeningen live in the dossier data instead.
   app.put('/api/fotos/:id/annotaties', async (c) => {
     const { f, d, slot } = haalFoto(ctx, c);
     magFotoBewerken(c, d, slot);
     if (f.slot === 'kaart') fout(400, 'De tekeningen op de kaart worden bij het dossier opgeslagen');
     const { annotaties } = await body<{ annotaties: unknown }>(c);
-    if (!isAnnotatieLijst(annotaties as Json) || !(annotaties as Annotatie[]).every((a) => a.type === 'pijl' || a.type === 'tekst')) fout(400, 'Ongeldige tekeningen');
+    if (!isAnnotatieLijst(annotaties as Json) || !(annotaties as Annotatie[]).every((a) => a.type === 'schets' || a.type === 'pijl' || a.type === 'tekst')) fout(400, 'Ongeldige tekeningen');
     const oud = JSON.parse((ctx.db.prepare('SELECT annotaties FROM fotos WHERE id = ?').get(f.id) as { annotaties: string }).annotaties) as Json;
     if (JSON.stringify(oud) === JSON.stringify(annotaties)) return c.json({ ok: true, plan_gewijzigd_at: null });
     ctx.db.transaction(() => {
