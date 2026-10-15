@@ -92,7 +92,7 @@ else row OK "Errors (24h)" "none"; fi
 if [ -n "${S_DB_BYTES}" ]; then row OK Database "$(( S_DB_BYTES / 1024 ))KB, photos ${S_FOTOS:-0}"; else row FAIL Database "missing: ${DATA_DIR}/app.db"; fi
 
 check_val="last $(ago "${S_CHECK_LAST}"), next in $(( (${S_CHECK_NEXT:-$S_NOW} - S_NOW) / 3600 ))h"
-if [ "${BACKUPS}" = none ]; then row WARN Backups "none (BACKUPS=none in deploy.env)"
+if [ "${BACKUPS}" = none ]; then row WARN Backups "none (BACKUPS=none in deploy.${ENVIRONMENT}.env)"
 elif [ "${S_LITESTREAM}" != active/running ]; then row FAIL Litestream "${S_LITESTREAM}; see devops/logs.sh"
 else row OK Litestream "${S_LITESTREAM}"; fi
 if [ "${BACKUPS}" = none ]; then :

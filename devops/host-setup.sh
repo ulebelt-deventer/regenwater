@@ -2,11 +2,13 @@
 # Once per VPS: packages, Node, Caddy, Litestream, rclone, firewall, swap, timezone. The VPS runs only this app (one or both environments); either environment's argument picks the host.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
+echo "==> Host setup on ${DEPLOY_HOST} (via ${ENVIRONMENT}'s deploy.${ENVIRONMENT}.env). FYI: this does the same thing for either environment; the argument only picks the host."
 remote_sudo "env NODE_MAJOR='${NODE_MAJOR}' SSH_PORT='${SSH_PORT}' bash -s" <<'REMOTE'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y rsync curl ca-certificates gnupg ufw fail2ban unattended-upgrades rclone
+# build-essential: npm compiles better-sqlite3 from source when no prebuilt binary matches the Node version.
+apt-get install -y rsync curl ca-certificates gnupg ufw fail2ban unattended-upgrades rclone build-essential
 systemctl enable --now fail2ban
 systemctl enable --now unattended-upgrades
 timedatectl set-timezone Europe/Amsterdam

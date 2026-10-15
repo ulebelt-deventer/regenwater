@@ -32,7 +32,7 @@ Per environment (`<env>` = `production` or `staging`):
 2. The S3 bucket (EU): turn on versioning with a retention rule; that is the backup's protection against a bad delete. One bucket can serve both environments (each writes under its own prefix).
 3. `cp devops/deploy.env.example devops/deploy.<env>.env` and fill in host and domain.
 4. `bash devops/host-setup.sh <env>` (once per VPS), then `bash devops/provision.sh <env>`.
-5. `cp devops/app.env.example devops/<env>.env`, fill it in, then `bash devops/push-env.sh <env>`.
+5. `cp devops/staging.env.example devops/<env>.env` (for production, drop `STAGING=1`), fill it in, then `bash devops/push-env.sh <env>`.
 6. `bash devops/deploy.sh <env>`.
 7. The first admin, run with the unit's user and env file (staging shown): `ssh <host> "systemd-run --pipe --wait --quiet -p User=regenton-staging -p WorkingDirectory=/srv/regenton/staging/app -p EnvironmentFile=/etc/regenton-staging.env -E APP_MODUS=production -E DATA_DIR=/srv/regenton/staging/data -E TZ=Europe/Amsterdam <NODE_BIN> dist/server/jobs.js beheerder 'Naam' naam@example.org"`. Everyone else is added in the app.
 8. Once before launch: restore to a fresh VPS (host-setup, provision, push-env, then `litestream restore -config /etc/regenton-production-litestream.yml /srv/regenton/production/data/app.db` and `rclone copy` of `fotos/` before the first deploy) and write down what differed.
