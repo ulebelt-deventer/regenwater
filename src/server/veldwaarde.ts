@@ -41,9 +41,14 @@ export function controleerWaarde(veld: Veld, anders: boolean, v: Json): Json {
     case 'radio':
       if (typeof v !== 'string' || !veld.opties!.some(([k]) => k === v)) ongeldig();
       return v;
-    case 'select':
-      if (typeof v !== 'string' || !ITEM_ID.test(v)) ongeldig();
+    case 'verdeling': {
+      // `{}` is a deliberate "no regenpijp", so it stays; otherwise whole percents 1-100 adding up to 100.
+      if (typeof v !== 'object' || Array.isArray(v)) ongeldig();
+      const pcts = Object.entries(v);
+      if (!pcts.every(([id, p]) => ITEM_ID.test(id) && Number.isInteger(p) && (p as number) >= 1 && (p as number) <= 100)) ongeldig();
+      if (pcts.length && pcts.reduce((s, [, p]) => s + (p as number), 0) !== 100) ongeldig();
       return v;
+    }
     case 'checks':
       if (!uniekeLijst(v, (s) => veld.opties!.some(([k]) => k === s))) ongeldig();
       return v.length ? v : null;

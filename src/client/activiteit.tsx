@@ -74,6 +74,8 @@ function veldLabel(key: string): string {
 }
 
 function waardeTekst(key: string, v: Json): string {
+  // A verdeling's regenpijp labels depend on the kaart at that time, so only the percents show.
+  if (key.endsWith('.verdeling')) return v === null ? '(automatisch)' : Object.values(v as Record<string, number>).map((p) => `${p}%`).join(', ') || 'geen regenpijp';
   if (v === null || v === '' || (Array.isArray(v) && v.length === 0)) return '(leeg)';
   if (key.startsWith('fotos.') && Array.isArray(v)) return `${v.length} foto${v.length === 1 ? '' : '’s'}`;
   if ((key.startsWith('annotaties.') || key === 'kaart_annotaties') && Array.isArray(v)) return `${v.length} tekening${v.length === 1 ? '' : 'en'}`;

@@ -1,10 +1,10 @@
 // Full-screen photo viewer and drawing tool. Zoom and pan move the SVG viewBox, so image coordinates never change.
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
-import { ICOON, KLEUR, TEKST_PX, afstandTotLijn, afstandTotPolygoon, afstandTotRand, annotatieLabels, annotatiesSvg, binnen, isVlak, kaartAnnotaties } from '../../shared/kaart.ts';
+import { ICOON, KLEUR, TEKST_PX, afstandTotLijn, afstandTotPolygoon, afstandTotRand, annotatieLabels, annotatiesSvg, binnen, isVlak, kaartAnnotaties, verdelingenTeWissen } from '../../shared/kaart.ts';
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
 import { del } from '../api.ts';
-import { Modal, OnderdeelIcoon, bevestig, probeer } from '../ui.tsx';
+import { Modal, OnderdeelIcoon, bevestig, melding, probeer } from '../ui.tsx';
 import { useDossier } from './staat.ts';
 
 type Pt = [number, number];
@@ -73,10 +73,16 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     for (const [k, v] of Object.entries(stap.data)) s.zet(k, v);
     setGekozen(null);
   };
-  const wijzig = (lijst: Annotatie[]) => {
-    onthoud();
+  // Saves `lijst` and clears the `data` keys, undoably. On the kaart it also clears the hand-set verdeling of every dakdeel the edit touches.
+  const pasToe = (lijst: Annotatie[], data: Record<string, Json>) => {
+    const wissen = isKaart ? verdelingenTeWissen(s.d, opgeslagen(), lijst) : [];
+    for (const id of wissen) data[`dak.${id}.verdeling`] = kloon(s.d.data[`dak.${id}.verdeling`]);
+    onthoud(data);
     bewaar(lijst);
+    for (const k of Object.keys(data)) s.zet(k, null);
+    if (wissen.length) melding('success', `Verdeling van ${wissen.map((id) => labels().get(id)!).join(', ')} opnieuw berekend.`);
   };
+  const wijzig = (lijst: Annotatie[]) => pasToe(lijst, {});
 
   const [gereedschap, setGereedschap] = createSignal<Gereedschap>(null);
   const [gekozen, setGekozen] = createSignal<string | null>(null);
@@ -330,11 +336,8 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     return Object.fromEntries(Object.entries(s.d.data).filter(([k]) => k.startsWith(voor)).map(([k, v]) => [k, kloon(v)]));
   };
   const wisMet = (weg: Annotatie[]) => {
-    const data = Object.assign({}, ...weg.map(gegevensVan)) as Record<string, Json>;
-    onthoud(data);
     const ids = new Set(weg.map((a) => a.id));
-    bewaar(opgeslagen().filter((a) => !ids.has(a.id)));
-    for (const k of Object.keys(data)) s.zet(k, null);
+    pasToe(opgeslagen().filter((a) => !ids.has(a.id)), Object.assign({}, ...weg.map(gegevensVan)) as Record<string, Json>);
     setGekozen(null);
   };
   const verwijder = async () => {

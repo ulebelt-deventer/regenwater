@@ -1,6 +1,6 @@
 // The Bezoek sub-page: each regenpijp is its own accordion whose header sticks to the top while you scroll through it.
 import { type Page, expect, test } from '@playwright/test';
-import { nieuwDossier, start, zet } from './hulp.ts';
+import { nieuwDossier, opslagKlaar, start, zet } from './hulp.ts';
 
 async function drieRegenpijpen(page: Page): Promise<void> {
   await start(page);
@@ -69,24 +69,67 @@ test('midden in Regenpijp C staat zijn kop bovenaan in beeld, en tikken erop sch
   expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(begin, -1);
 });
 
-test('op een telefoon is elk dakdeel een kaartje met labels, zonder zijwaarts scrollen', async ({ page }) => {
+test('op een telefoon is elk dakdeel en elke regenpijp een kaartje met labels, zonder zijwaarts scrollen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await zet(page, id, {
     kaart_annotaties: [
       { id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] },
-      { id: 'r1', type: 'regenpijp', p: [[1, 1]] },
-      { id: 'r2', type: 'regenpijp', p: [[2, 2]] },
+      { id: 'r1', type: 'regenpijp', p: [[0, 5]] },
+      { id: 'r2', type: 'regenpijp', p: [[10, 5]] },
     ],
     'dak.d1.m2': 24,
   });
   await page.goto(`/dossiers/${id}/bezoek`);
-  const tabel = page.locator('.qa-daken-tabel');
-  await expect(tabel.locator('thead')).toBeHidden();
-  await expect(tabel.locator('.qa-waterberging')).toContainText('240 liter');
-  const label = await tabel.locator('.qa-waterberging').evaluate((el) => getComputedStyle(el, '::before').content);
-  expect(label).toBe('"Waterberging per regenpijp**: "');
-  const breedte = await tabel.evaluate((el) => [el.scrollWidth, el.parentElement!.clientWidth]);
-  expect(breedte[0]).toBeLessThanOrEqual(breedte[1]);
+  for (const tabel of [page.locator('.qa-daken-tabel'), page.locator('.qa-regenpijpen-tabel')]) {
+    await expect(tabel.locator('thead')).toBeHidden();
+    const breedte = await tabel.evaluate((el) => [el.scrollWidth, el.parentElement!.clientWidth]);
+    expect(breedte[0]).toBeLessThanOrEqual(breedte[1]);
+  }
+  await expect(page.locator('.qa-verdeling-tekst')).toHaveText('A 50% · B 50%');
+  const wb = page.locator('.qa-regenpijp-rij .qa-waterberging').first();
+  await expect(wb).toContainText('240 liter');
+  expect(await wb.evaluate((el) => getComputedStyle(el, '::before').content)).toBe('"Waterberging**: "');
+});
+
+test('een dakdeel over twee regenpijpen verdelen past de andere regenpijp en de liters aan, en Terug naar automatisch herstelt het', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await zet(page, id, {
+    kaart_annotaties: [
+      { id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] },
+      { id: 'd2', type: 'dak', p: [[100, 0], [110, 0], [110, 10], [100, 10]] },
+      { id: 'r1', type: 'regenpijp', p: [[0, 5]] },
+      { id: 'r2', type: 'regenpijp', p: [[105, 5]] },
+    ],
+    'dak.d1.m2': 40,
+    'dak.d2.m2': 10,
+  });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const d1 = page.locator('#veld-dak\\.d1\\.verdeling');
+  const knop = d1.locator('.qa-verdeling-knop');
+  const liters = page.locator('.qa-regenpijp-rij .qa-waterberging');
+  await expect(knop).toHaveText('A(automatisch)');
+  await expect(liters.nth(1)).toContainText('200 liter');
+
+  await knop.click();
+  const pijpen = d1.locator('.qa-verdeling-pijp');
+  await pijpen.nth(1).locator('.qa-verdeling-aan').check();
+  await expect(pijpen.nth(0).locator('.qa-verdeling-pct')).toHaveValue('99');
+  await expect(pijpen.nth(1).locator('.qa-verdeling-pct')).toHaveValue('1');
+  await pijpen.nth(0).locator('.qa-verdeling-pct').fill('75');
+  await pijpen.nth(0).locator('.qa-verdeling-pct').blur();
+  await expect(pijpen.nth(1).locator('.qa-verdeling-pct')).toHaveValue('25');
+  await expect(knop).toHaveText('A 75% · B 25%');
+  await expect(liters.nth(1)).toContainText('25% × 40 m² + 10 m² = 20 m²');
+  await expect(liters.nth(1)).toContainText('400 liter');
+  await expect(page.locator('#veld-regenpijp\\.r2\\.bronnen .qa-bronnen')).toHaveText('D1 (25%), D2');
+  await opslagKlaar(page);
+  const res = await page.request.get(`/api/dossiers/${id}`);
+  expect(((await res.json()) as { dossier: { data: Record<string, unknown> } }).dossier.data['dak.d1.verdeling']).toEqual({ r1: 75, r2: 25 });
+
+  await d1.locator('.qa-verdeling-automatisch').click();
+  await expect(knop).toHaveText('A(automatisch)');
+  await expect(liters.nth(1)).toContainText('200 liter');
 });

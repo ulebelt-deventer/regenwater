@@ -2,16 +2,16 @@
 import { A } from '@solidjs/router';
 import { For, Show, createSignal } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
-import { getal, kaartItems, waterberging } from '../../shared/kaart.ts';
-import { ontbrekend } from '../../shared/velden.ts';
-import { OnderdeelIcoon, bevestig, gaNaar } from '../ui.tsx';
+import { type Aandeel, KOPPEL_M, bronnenTekst, getal, herverdeel, kaartItems, verdelingTekst, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
+import { ontbrekend, veld } from '../../shared/velden.ts';
+import { Dropdown, OnderdeelIcoon, bevestig, gaNaar } from '../ui.tsx';
 import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
-const REGENPIJP_VELDEN = ['dak', 'soort', 'diameter', 'regenton', 'ondergrond', 'afkoppelen', 'waar', 'hoe'];
+const REGENPIJP_VELDEN = ['soort', 'diameter', 'regenton', 'ondergrond', 'afkoppelen', 'waar', 'hoe'];
 
 // Opens a collapsed regenpijp section before scrolling, since gaNaar can't scroll to a hidden field.
 function naarVeld(anker: string) {
@@ -38,7 +38,14 @@ function scrollNaar(y: number, ms: number, klaar: () => void) {
 }
 
 // One regenpijp as its own accordion. Its header sticks to the top of the screen while you scroll through its fields; tapping it while stuck scrolls back to the start of the section first, then collapses it.
-function RegenpijpSectie(props: { id: string; label: string }) {
+function RegenpijpSectie(props: { id: string }) {
+  const s = useDossier();
+  const items = () => kaartItems(s.d);
+  const pijp = () => {
+    const p = items().regenpijpen.find((r) => r.id === props.id);
+    if (!p) throw new Error(`Regenpijp ${props.id} staat niet op de kaart`);
+    return p;
+  };
   const [open, setOpen] = createSignal(true);
   let item!: HTMLDetailsElement;
   const tik = (e: MouseEvent) => {
@@ -50,11 +57,92 @@ function RegenpijpSectie(props: { id: string; label: string }) {
   return (
     <div class="accordion mb-3">
       <details ref={item} open class="accordion-item qa-regenpijp" onToggle={(e) => setOpen(e.currentTarget.open)}>
-        <summary class="accordion-button fw-semibold qa-regenpijp-kop" classList={{ collapsed: !open() }} onClick={tik}>Regenpijp {props.label}</summary>
+        <summary class="accordion-button fw-semibold qa-regenpijp-kop" classList={{ collapsed: !open() }} onClick={tik}>Regenpijp {pijp().label}</summary>
         <div class="accordion-body">
+          <div id={`veld-regenpijp.${props.id}.bronnen`} class="mb-3 qa-veld qa-veld-regenpijp-bronnen">
+            <div class="form-label fw-semibold mb-1">Voert af van</div>
+            <div class="d-flex align-items-center gap-2">
+              <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
+                <span class="qa-bronnen">{bronnenTekst(pijp(), items().labels)}</span>
+              </Show>
+              <button type="button" class="btn btn-sm btn-outline-secondary qa-bronnen-wijzig" aria-label="Wijzigen bij Dak" onClick={() => gaNaar('veld-daken')}><i class="bi bi-pencil" aria-hidden="true" /></button>
+            </div>
+          </div>
           <For each={REGENPIJP_VELDEN}>{(v) => <VeldInvoer k={`regenpijp.${props.id}.${v}`} />}</For>
         </div>
       </details>
+    </div>
+  );
+}
+
+// A dakdeel's regenpijpen and each one's share. Ticking a regenpijp re-runs the nearest-pijp split; typing a % scales the others.
+function VerdelingKeuze(props: { id: string }) {
+  const s = useDossier();
+  const items = () => kaartItems(s.d);
+  const dak = () => items().daken.find((x) => x.id === props.id)!;
+  const uit = () => !s.mag(veld('dak.*.verdeling').bewerkers);
+  const k = () => `dak.${props.id}.verdeling`;
+  const bewaar = (v: Aandeel[]) => s.zet(k(), verdelingWaarde(dak(), v));
+  const aandeel = (pijp: string) => dak().verdeling.find((a) => a.pijp === pijp);
+  const afstand = (pijp: string) => dak().afstandM.get(pijp)!;
+  const wissel = (pijp: string, aan: boolean) =>
+    bewaar(verdelingVoor(s.d, props.id, items().regenpijpen.map((r) => r.id).filter((id) => (id === pijp ? aan : aandeel(id) !== undefined))));
+  return (
+    <div id={`veld-${k()}`} class="qa-veld qa-veld-dak-verdeling">
+      <Dropdown
+        sluitBijKlik={false}
+        knopClass="btn btn-sm btn-outline-secondary text-start qa-verdeling-knop"
+        knop={
+          <>
+            <span class="qa-verdeling-tekst">{dak().verdeling.length ? verdelingTekst(dak(), items().labels) : 'geen regenpijp'}</span>
+            <Show when={dak().automatisch}><span class="text-muted ms-1">(automatisch)</span></Show>
+          </>
+        }
+      >
+        <Show when={items().regenpijpen.length} fallback={<span class="dropdown-item-text text-muted">Nog geen regenpijp op de kaart</span>}>
+          <For each={items().regenpijpen}>
+            {(r) => (
+              <div class="dropdown-item-text d-flex align-items-center gap-2 text-nowrap qa-verdeling-pijp">
+                <input class="form-check-input mt-0 qa-verdeling-aan" type="checkbox" id={`in-${k()}-${r.id}`} disabled={uit()} checked={aandeel(r.id) !== undefined} onChange={(e) => wissel(r.id, e.currentTarget.checked)} />
+                <label class="form-check-label me-auto" for={`in-${k()}-${r.id}`}>Regenpijp {r.label}</label>
+                <Show when={aandeel(r.id)}>
+                  {(a) => (
+                    <div class="input-group input-group-sm w-auto">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        class="form-control qa-verdeling-pct"
+                        style={{ width: '4.5rem' }}
+                        disabled={uit() || dak().verdeling.length === 1}
+                        value={a().pct}
+                        onChange={(e) => {
+                          const n = e.currentTarget.valueAsNumber;
+                          if (Number.isFinite(n)) bewaar(herverdeel(dak().verdeling, r.id, n));
+                          else e.currentTarget.value = String(a().pct);
+                        }}
+                      />
+                      <span class="input-group-text">%</span>
+                    </div>
+                  )}
+                </Show>
+                <Show when={afstand(r.id) !== null}>
+                  <span class="small text-muted qa-verdeling-afstand">{getal(Math.round(afstand(r.id)! * 10) / 10)} m</span>
+                  <Show when={afstand(r.id)! > KOPPEL_M}><span class="badge text-bg-danger qa-verdeling-ver">&gt; {KOPPEL_M} m weg</span></Show>
+                </Show>
+              </div>
+            )}
+          </For>
+        </Show>
+        <Show when={!dak().automatisch && !uit()}>
+          <div class="dropdown-divider" />
+          <button type="button" class="dropdown-item qa-verdeling-automatisch" onClick={() => s.zet(k(), null)}>Terug naar automatisch</button>
+        </Show>
+      </Dropdown>
+      <Show when={dak().verlopen}>
+        <div class="small text-warning qa-verdeling-verlopen">Een regenpijp is weg: controleer de verdeling.</div>
+      </Show>
     </div>
   );
 }
@@ -86,33 +174,53 @@ export function Bezoek() {
             <Show when={!items().opSchaal}>
               <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
             </Show>
-            <div class="table-responsive">
-              <table class="table table-sm align-middle mb-1 tabel-kaarten qa-daken-tabel">
+            {/* No table-responsive wrapper: its overflow would clip the Regenpijpen dropdown. Rows go by id so they, and an open dropdown, survive a change to the dak. */}
+            <table class="table table-sm align-middle mb-1 tabel-kaarten qa-daken-tabel">
+              <thead>
+                <tr>
+                  <th>Dakdeel</th>
+                  <th style={{ width: '9rem' }}>m²*</th>
+                  <th>Regenpijpen</th>
+                </tr>
+              </thead>
+              <tbody>
+                <For each={items().daken.map((x) => x.id)}>
+                  {(id) => {
+                    const dak = () => items().daken.find((x) => x.id === id)!;
+                    return (
+                      <tr class="qa-dak-rij">
+                        <td class="fw-semibold">{dak().label}</td>
+                        <td class="d-flex d-md-table-cell align-items-center gap-2" data-label="m²*">{m2Cel(id, 'dak', dak().m2, dak().m2Berekend)}</td>
+                        <td data-label="Regenpijpen"><VerdelingKeuze id={id} /></td>
+                      </tr>
+                    );
+                  }}
+                </For>
+              </tbody>
+            </table>
+            <Show when={items().regenpijpen.length}>
+              <table class="table table-sm align-middle mt-3 mb-1 tabel-kaarten qa-regenpijpen-tabel">
                 <thead>
                   <tr>
-                    <th>Dakdeel</th>
-                    <th style={{ width: '9rem' }}>m²*</th>
-                    <th>Regenpijpen</th>
-                    <th>Waterberging per regenpijp**</th>
+                    <th>Regenpijp</th>
+                    <th>Voert af van</th>
+                    <th>Waterberging**</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <For each={items().daken}>
-                    {(dak) => (
-                      <tr class="qa-dak-rij">
-                        <td class="fw-semibold">{dak.label}</td>
-                        <td class="d-flex d-md-table-cell align-items-center gap-2" data-label="m²*">{m2Cel(dak.id, 'dak', dak.m2, dak.m2Berekend)}</td>
-                        <td data-label="Regenpijpen">{dak.regenpijpen.map((id) => items().labels.get(id)).join(', ') || '--'}</td>
-                        <td class="qa-waterberging" data-label="Waterberging per regenpijp**">
-                          <Show when={dak.regenpijpen.length} fallback={<span class="text-muted">-- (geen regenpijp)</span>}>
-                            <Show when={waterberging(dak)} fallback="--">
-                              {(w) => (
-                                <>
-                                  {w().liter} liter
-                                  <div class="small text-muted">{w().uitleg}</div>
-                                </>
-                              )}
-                            </Show>
+                  <For each={items().regenpijpen}>
+                    {(r) => (
+                      <tr class="qa-regenpijp-rij">
+                        <td class="fw-semibold">{r.label}</td>
+                        <td class="qa-bronnen" data-label="Voert af van">{bronnenTekst(r, items().labels) || <span class="text-danger">geen dak</span>}</td>
+                        <td class="qa-waterberging" data-label="Waterberging**">
+                          <Show when={waterberging(r, items().daken)} fallback="--">
+                            {(w) => (
+                              <>
+                                {w().liter} liter
+                                <div class="small text-muted">{w().uitleg}</div>
+                              </>
+                            )}
                           </Show>
                         </td>
                       </tr>
@@ -120,7 +228,7 @@ export function Bezoek() {
                   </For>
                 </tbody>
               </table>
-            </div>
+            </Show>
             <div class="small text-muted">* bron: kadastrale kaart (PDOK)</div>
             <div class="small text-muted">** per regenpijp gebaseerd op normafvoer {NORMAFVOER_MM} mm regenwater</div>
           </Show>
@@ -170,7 +278,7 @@ export function Bezoek() {
         <VeldInvoer k="verhard" />
         <VeldInvoer k="tuinsituatie" />
 
-        <For each={items().regenpijpen}>{(r) => <RegenpijpSectie id={r.id} label={r.label} />}</For>
+        <For each={items().regenpijpen.map((r) => r.id)}>{(id) => <RegenpijpSectie id={id} />}</For>
 
         <VeldInvoer k="hoosbuien" />
         <VeldInvoer k="wensen" />

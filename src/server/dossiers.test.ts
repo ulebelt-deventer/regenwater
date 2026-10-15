@@ -196,6 +196,13 @@ describe('autosave values', () => {
     expect('bewoner_doet' in (await data())).toBe(false);
   });
 
+  it('accepts a verdeling of whole percents 1-100 adding up to 100, or {} for no regenpijp', async () => {
+    for (const fout of [[], 'r1', { r1: 60, r2: 30 }, { r1: 100, r2: 0 }, { r1: 50.5, r2: 49.5 }, { r1: 101 }, { R1: 100 }, { r1: '100' }]) await zet(kees, 'dak.d1.verdeling', fout, 400);
+    await zet(kees, 'dak.d1.verdeling', { r1: 62, r2: 38 });
+    await zet(kees, 'dak.d2.verdeling', {});
+    expect(await data()).toMatchObject({ 'dak.d1.verdeling': { r1: 62, r2: 38 }, 'dak.d2.verdeling': {} });
+  });
+
   it('stores the Anders write-in next to its field', async () => {
     await zet(bea, 'woningtype', 'anders');
     await zet(bea, 'woningtype_anders', 'Woonboot');

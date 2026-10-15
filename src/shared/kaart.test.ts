@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, binnen, dichtstbijzijndeDak, getal, isAnnotatieLijst, kaartItems, letter, oppervlakPx, waterberging, zijdeLengtes,
+  type DakDeel, afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, binnen, bronnenTekst, dichtstbijzijndeDak, dichtstbijzijndeVerdeling, getal, herverdeel, isAnnotatieLijst,
+  kaartItems, letter, oppervlakPx, procenten, verdelingTekst, verdelingVoor, verdelingWaarde, verdelingenTeWissen, waterberging, zijdeLengtes,
 } from './kaart.ts';
 import { ontbrekend } from './velden.ts';
 import { dossier } from './testhulp.ts';
@@ -145,19 +146,46 @@ describe('kaartItems', () => {
     });
     const k = kaartItems(d);
     expect(oppervlakPx(vierkant(0, 0, 60))).toBe(3600);
-    expect(k.daken.map((x) => [x.label, x.m2, x.regenpijpen])).toEqual([['D1', 36, ['r1']], ['D2', 36, ['r2']]]);
+    expect(k.daken.map((x) => [x.label, x.m2, x.verdeling, x.automatisch])).toEqual([['D1', 36, [{ pijp: 'r1', pct: 100 }], true], ['D2', 36, [{ pijp: 'r2', pct: 100 }], true]]);
+    expect(k.regenpijpen.map((r) => r.bronnen)).toEqual([[{ dak: 'd1', pct: 100 }], [{ dak: 'd2', pct: 100 }]]);
+    expect(k.daken[0].afstandM.get('r2')).toBeCloseTo(3.5);
   });
 
-  it('honours a manual dak choice and falls back to the nearest when that dak is gone', () => {
-    const anns = [
-      { id: 'd1', type: 'dak', p: vierkant(0, 0, 60) },
-      { id: 'd2', type: 'dak', p: vierkant(100, 0, 60) },
-      { id: 'r1', type: 'regenpijp', p: [[30, 30]] },
-    ];
-    const d = dossier({ data: { kaart_annotaties: anns, 'regenpijp.r1.dak': 'd2' } });
-    expect(kaartItems(d).regenpijpen[0]).toMatchObject({ dak: 'd2', dakAutomatisch: false });
-    d.data['regenpijp.r1.dak'] = 'weg';
-    expect(kaartItems(d).regenpijpen[0]).toMatchObject({ dak: 'd1', dakAutomatisch: true });
+  // 0.1 m per px, so KOPPEL_M is 10 px. The daken are 5 px apart.
+  const tweeDaken = (pijp: [number, number]) => [
+    { id: 'd1', type: 'dak', p: vierkant(0, 0, 60) },
+    { id: 'd2', type: 'dak', p: vierkant(65, 0, 60) },
+    { id: 'r1', type: 'regenpijp', p: [pijp] },
+  ];
+
+  it('links a regenpijp to every dakdeel within 1 m, and else to the nearest one only', () => {
+    const bronnen = (pijp: [number, number], fotos: Foto[]) => kaartItems(dossier({ fotos, data: { kaart_annotaties: tweeDaken(pijp) } })).regenpijpen[0].bronnen;
+    expect(bronnen([62, 30], [kaart(0.1)])).toEqual([{ dak: 'd1', pct: 100 }, { dak: 'd2', pct: 100 }]);
+    expect(bronnen([200, 30], [kaart(0.1)])).toEqual([{ dak: 'd2', pct: 100 }]);
+    expect(bronnen([62, 30], [kaart(null)])).toEqual([{ dak: 'd1', pct: 100 }]);
+  });
+
+  it('splits a dakdeel between its regenpijpen by which one each part is nearest to', () => {
+    const d = dossier({ fotos: [kaart(0.1)], data: { kaart_annotaties: [{ id: 'd1', type: 'dak', p: vierkant(0, 0, 60) }, { id: 'r1', type: 'regenpijp', p: [[0, 0]] }, { id: 'r2', type: 'regenpijp', p: [[40, 0]] }] } });
+    expect(kaartItems(d).daken[0].verdeling).toEqual([{ pijp: 'r1', pct: 33 }, { pijp: 'r2', pct: 67 }]);
+  });
+
+  it('leaves a linked regenpijp out of the automatic split when no part of the dakdeel is nearest to it', () => {
+    const d = dossier({ fotos: [kaart(0.1)], data: { kaart_annotaties: [{ id: 'd1', type: 'dak', p: vierkant(0, 0, 60) }, { id: 'r1', type: 'regenpijp', p: [[0, 30]] }, { id: 'r2', type: 'regenpijp', p: [[-9, 30]] }] } });
+    expect(kaartItems(d).daken[0].verdeling).toEqual([{ pijp: 'r1', pct: 100 }]);
+    expect(verdelingVoor(d, 'd1', ['r1', 'r2'])).toEqual([{ pijp: 'r1', pct: 99 }, { pijp: 'r2', pct: 1 }]);
+  });
+
+  it('honours a hand-set verdeling, {} as no regenpijp, and falls back to the automatic one when a regenpijp in it is gone', () => {
+    const d = dossier({ fotos: [kaart(0.1)], data: { kaart_annotaties: [...tweeDaken([30, 30]), { id: 'r2', type: 'regenpijp', p: [[40, 30]] }], 'dak.d1.verdeling': { r2: 30, r1: 70 } } });
+    expect(kaartItems(d).daken[0]).toMatchObject({ verdeling: [{ pijp: 'r1', pct: 70 }, { pijp: 'r2', pct: 30 }], automatisch: false, verlopen: false });
+    expect(kaartItems(d).regenpijpen[1].bronnen).toEqual([{ dak: 'd1', pct: 30 }]);
+    d.data['dak.d1.verdeling'] = {};
+    expect(kaartItems(d).daken[0]).toMatchObject({ verdeling: [], automatisch: false });
+    expect(ontbrekend(d, 'bezoek')).toContainEqual({ label: 'D1: geen regenpijp', anker: 'veld-dak.d1.verdeling' });
+    d.data['dak.d1.verdeling'] = { weg: 50, r1: 50 };
+    expect(kaartItems(d).daken[0]).toMatchObject({ verdeling: kaartItems(d).daken[0].automatischeVerdeling, automatisch: true, verlopen: true });
+    expect(ontbrekend(d, 'bezoek')).toContainEqual({ label: 'D1: verdeling opnieuw controleren', anker: 'veld-dak.d1.verdeling' });
   });
 
   it('uses the manual m² on an unscaled kaart', () => {
@@ -172,13 +200,116 @@ describe('kaartItems', () => {
   });
 });
 
-describe('waterberging', () => {
-  it('splits the dak over its regenpijpen at the normafvoer, with the sum shown', () => {
-    expect(waterberging({ id: 'd', label: 'D1', m2: 18, m2Berekend: true, regenpijpen: ['a', 'b'] })).toEqual({ liter: 180, uitleg: '18 m² ÷ 2 × 20 mm = 180 liter' });
+describe('verdeling', () => {
+  // The L from 'geometry', symmetric about y = x.
+  const L: [number, number][] = [[0, 0], [20, 0], [20, 10], [10, 10], [10, 20], [0, 20]];
+
+  it('rounds to whole percents that add up to the total, evenly for all-zero weights', () => {
+    expect(procenten([1, 1, 1])).toEqual([34, 33, 33]);
+    expect(procenten([0, 0])).toEqual([50, 50]);
+    expect(procenten([3, 1], 20)).toEqual([15, 5]);
+    expect(procenten([])).toEqual([]);
   });
 
-  it('gives nothing for a dak without a regenpijp', () => {
-    expect(waterberging({ id: 'd', label: 'D1', m2: 18, m2Berekend: true, regenpijpen: [] })).toBeNull();
+  it('gives one regenpijp all of the dakdeel, also from outside it', () => {
+    expect(dichtstbijzijndeVerdeling(vierkant(0, 0, 60), [[-5, 30]])).toEqual([100]);
+  });
+
+  it('splits by the nearest regenpijp: evenly on a symmetric shape, by area on a concave one', () => {
+    expect(dichtstbijzijndeVerdeling(vierkant(0, 0, 60), [[0, 30], [60, 30]])).toEqual([50, 50]);
+    expect(dichtstbijzijndeVerdeling(L, [[20, 5], [5, 20]])).toEqual([50, 50]);
+    // The bisector 4x + y = 42.5 leaves 137.5 of the L's 300 to (20, 5).
+    expect(dichtstbijzijndeVerdeling(L, [[0, 0], [20, 5]])).toEqual([54, 46]);
+  });
+
+  it('splits evenly between regenpijpen on the same spot, and always adds up to 100', () => {
+    expect(dichtstbijzijndeVerdeling(vierkant(0, 0, 60), [[5, 5], [5, 5]])).toEqual([50, 50]);
+    for (const pijpen of [[[0, 0], [60, 0], [30, 60]], [[1, 2], [3, 50], [59, 59], [30, 30]], [[0, 0], [0, 0], [60, 60]]] as [number, number][][]) {
+      expect(dichtstbijzijndeVerdeling(L, pijpen).reduce((s, p) => s + p, 0)).toBe(100);
+    }
+  });
+
+  it('sets one percent and scales the others to the rest, keeping their ratio', () => {
+    expect(herverdeel([{ pijp: 'a', pct: 50 }, { pijp: 'b', pct: 30 }, { pijp: 'c', pct: 20 }], 'a', 80)).toEqual([{ pijp: 'a', pct: 80 }, { pijp: 'b', pct: 12 }, { pijp: 'c', pct: 8 }]);
+    expect(herverdeel([{ pijp: 'a', pct: 100 }, { pijp: 'b', pct: 0 }, { pijp: 'c', pct: 0 }], 'a', 40)).toEqual([{ pijp: 'a', pct: 40 }, { pijp: 'b', pct: 30 }, { pijp: 'c', pct: 30 }]);
+  });
+
+  it('drops a regenpijp that ends at 0%, clamps to 0-100, and keeps a lone regenpijp at 100%', () => {
+    const twee = [{ pijp: 'a', pct: 60 }, { pijp: 'b', pct: 40 }];
+    expect(herverdeel(twee, 'a', 150)).toEqual([{ pijp: 'a', pct: 100 }]);
+    expect(herverdeel(twee, 'a', -5)).toEqual([{ pijp: 'b', pct: 100 }]);
+    expect(herverdeel([{ pijp: 'a', pct: 100 }], 'a', 40)).toEqual([{ pijp: 'a', pct: 100 }]);
+    expect(() => herverdeel(twee, 'x', 10)).toThrow('hoort niet bij');
+  });
+
+  // On an unscaled kaart: r1 drains D1 and r2 drains D2.
+  const tweeDaken = [
+    { id: 'd1', type: 'dak', p: vierkant(0, 0, 60) },
+    { id: 'd2', type: 'dak', p: vierkant(100, 0, 60) },
+    { id: 'r1', type: 'regenpijp', p: [[0, 30]] },
+    { id: 'r2', type: 'regenpijp', p: [[130, 30]] },
+  ];
+
+  it('stores null while the verdeling equals the automatic one, {} for none', () => {
+    const dak = kaartItems(dossier({ data: { kaart_annotaties: tweeDaken } })).daken[0];
+    expect(dak.automatischeVerdeling).toEqual([{ pijp: 'r1', pct: 100 }]);
+    expect(verdelingWaarde(dak, [{ pijp: 'r1', pct: 100 }])).toBeNull();
+    expect(verdelingWaarde(dak, [{ pijp: 'r1', pct: 50 }, { pijp: 'r2', pct: 50 }])).toEqual({ r1: 50, r2: 50 });
+    expect(verdelingWaarde(dak, [])).toEqual({});
+  });
+
+  it('writes the verdeling per dakdeel and the bronnen per regenpijp, leaving out 100%', () => {
+    const k = kaartItems(dossier({ data: { kaart_annotaties: tweeDaken, 'dak.d1.verdeling': { r1: 62, r2: 38 } } }));
+    expect(verdelingTekst(k.daken[0], k.labels)).toBe('A 62% · B 38%');
+    expect(verdelingTekst(k.daken[1], k.labels)).toBe('B');
+    expect(bronnenTekst(k.regenpijpen[1], k.labels)).toBe('D1 (38%), D2');
+  });
+});
+
+describe('verdelingenTeWissen', () => {
+  // 0.1 m per px; both dakdelen have a hand-set verdeling.
+  const oud: Annotatie[] = [
+    { id: 'd1', type: 'dak', p: vierkant(0, 0, 60) },
+    { id: 'd2', type: 'dak', p: vierkant(200, 0, 60) },
+    { id: 'r1', type: 'regenpijp', p: [[30, 30]] },
+    { id: 'r2', type: 'regenpijp', p: [[230, 30]] },
+    { id: 't1', type: 'tuin', p: vierkant(0, 100, 60) },
+  ];
+  const d = dossier({ fotos: [kaart(0.1)], data: { 'dak.d1.verdeling': { r1: 100 }, 'dak.d2.verdeling': { r2: 100 } } });
+  const met = (id: string, p: [number, number][]) => oud.map((a) => (a.id === id ? { ...a, p } : a));
+
+  it('clears a dakdeel that was moved or reshaped', () => {
+    expect(verdelingenTeWissen(d, oud, met('d2', vierkant(210, 0, 60)))).toEqual(['d2']);
+  });
+
+  it('clears the dakdelen near a regenpijp at its old and its new spot', () => {
+    expect(verdelingenTeWissen(d, oud, met('r1', [[35, 30]]))).toEqual(['d1']);
+    expect(verdelingenTeWissen(d, oud, met('r1', [[230, 40]]))).toEqual(['d1', 'd2']);
+    expect(verdelingenTeWissen(d, oud, [...oud, { id: 'r3', type: 'regenpijp', p: [[262, 30]] }])).toEqual(['d2']);
+  });
+
+  it('clears a dakdeel whose verdeling names a removed regenpijp', () => {
+    expect(verdelingenTeWissen(d, oud, oud.filter((a) => a.id !== 'r2'))).toEqual(['d2']);
+  });
+
+  it('leaves alone a tuin edit and a dakdeel that follows the kaart anyway', () => {
+    expect(verdelingenTeWissen(d, oud, met('t1', vierkant(0, 120, 60)))).toEqual([]);
+    expect(verdelingenTeWissen(dossier({ fotos: [kaart(0.1)] }), oud, met('r1', [[35, 30]]))).toEqual([]);
+  });
+});
+
+describe('waterberging', () => {
+  const dakDeel = (id: string, m2: number | null): DakDeel => ({ id, label: id, m2, m2Berekend: true, verdeling: [], automatischeVerdeling: [], automatisch: true, verlopen: false, afstandM: new Map() });
+  const daken = [dakDeel('d1', 42), dakDeel('d2', 8), dakDeel('d3', null)];
+
+  it('takes each regenpijp’s share of its dakdelen at the normafvoer, with the sum shown', () => {
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd1', pct: 62 }, { dak: 'd2', pct: 100 }] }, daken)).toEqual({ liter: 681, uitleg: '62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter' });
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd2', pct: 100 }] }, daken)).toEqual({ liter: 160, uitleg: '8 m² × 20 mm = 160 liter' });
+  });
+
+  it('gives nothing for a regenpijp without a dakdeel, or with a dakdeel of unknown m²', () => {
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [] }, daken)).toBeNull();
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd1', pct: 50 }, { dak: 'd3', pct: 100 }] }, daken)).toBeNull();
   });
 });
 
@@ -225,6 +356,11 @@ describe('ontbrekend (Controle)', () => {
     expect(labels).toContain('D1: m²');
     expect(labels).toContain('Regenpijp A: Hoe is de ondergrond bij de pijp?');
     expect(labels).not.toContain('Regenpijp A: Regenton aanwezig?');
+  });
+
+  it('lists a regenpijp that drains no dakdeel', () => {
+    const d = dossier({ data: { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[5, 5]] }] } });
+    expect(ontbrekend(d, 'bezoek')).toContainEqual({ label: 'Regenpijp A: aan geen dak gekoppeld', anker: 'veld-regenpijp.r1.bronnen' });
   });
 
   it('never asks for a steen, but asks for the m² of a drawn one on an unscaled kaart', () => {

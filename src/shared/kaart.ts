@@ -98,12 +98,24 @@ export function kaartFoto(d: Dossier): Foto | null {
   return fotos.length ? fotos[fotos.length - 1] : null;
 }
 
+// A regenpijp this close to a dakdeel is linked to it automatically. On an unscaled kaart, and for a pijp near no dakdeel, it's the nearest dakdeel only.
+export const KOPPEL_M = 1;
+
+// How much of a dakdeel drains through one regenpijp, in whole percents. A dakdeel's aandelen add up to 100.
+export interface Aandeel {
+  pijp: string;
+  pct: number;
+}
 export interface DakDeel {
   id: string;
   label: string;
   m2: number | null;
   m2Berekend: boolean;
-  regenpijpen: string[];
+  verdeling: Aandeel[]; // in regenpijp order; empty when no regenpijp drains it
+  automatischeVerdeling: Aandeel[];
+  automatisch: boolean;
+  verlopen: boolean; // the hand-set verdeling names a regenpijp that's gone, so the automatic one applies
+  afstandM: Map<string, number | null>; // per regenpijp; null on an unscaled kaart
 }
 // A tuindeel or a steen: a measured area with photos.
 export interface Vlak {
@@ -112,11 +124,14 @@ export interface Vlak {
   m2: number | null;
   m2Berekend: boolean;
 }
+export interface Bron {
+  dak: string;
+  pct: number;
+}
 export interface Regenpijp {
   id: string;
   label: string;
-  dak: string | null;
-  dakAutomatisch: boolean;
+  bronnen: Bron[]; // in dakdeel order
 }
 
 function handmatigM2(d: Dossier, key: string): number | null {
@@ -141,35 +156,177 @@ export function kaartItems(d: Dossier): KaartItems {
   const m2 = (a: Annotatie, key: string) =>
     schaal !== null ? Math.round(oppervlakPx(a.p) * schaal * schaal * 10) / 10 : handmatigM2(d, key);
   const dakAnnots = annots.filter((a) => a.type === 'dak');
-  const regenpijpen: Regenpijp[] = annots
-    .filter((a) => a.type === 'regenpijp')
-    .map((a) => {
-      const gekozen = d.data[`regenpijp.${a.id}.dak`];
-      const geldig = typeof gekozen === 'string' && dakAnnots.some((x) => x.id === gekozen);
-      return {
-        id: a.id,
-        label: labels.get(a.id)!,
-        dak: geldig ? (gekozen as string) : dichtstbijzijndeDak(a.p[0], dakAnnots),
-        dakAutomatisch: !geldig,
-      };
-    });
-  const daken = dakAnnots.map((a) => ({
+  const pijpAnnots = annots.filter((a) => a.type === 'regenpijp');
+  const auto = new Map(pijpAnnots.map((p) => [p.id, automatischeDaken(p.p[0], dakAnnots, schaal)]));
+  const daken: DakDeel[] = dakAnnots.map((a) => {
+    const automatischeVerdeling = verdeel(a, pijpAnnots.filter((p) => auto.get(p.id)!.includes(a.id))).filter((x) => x.pct > 0);
+    const hand = handmatigeVerdeling(d, a.id);
+    const verlopen = hand !== null && Object.keys(hand).some((id) => !pijpAnnots.some((p) => p.id === id));
+    const geldig = hand !== null && !verlopen ? hand : null;
+    return {
+      id: a.id,
+      label: labels.get(a.id)!,
+      m2: m2(a, `dak.${a.id}.m2`),
+      m2Berekend: schaal !== null,
+      verdeling: geldig ? pijpAnnots.filter((p) => p.id in geldig).map((p) => ({ pijp: p.id, pct: geldig[p.id] })) : automatischeVerdeling,
+      automatischeVerdeling,
+      automatisch: geldig === null,
+      verlopen,
+      afstandM: new Map(pijpAnnots.map((p) => [p.id, schaal === null ? null : afstandTotPolygoon(p.p[0], a.p) * schaal])),
+    };
+  });
+  const regenpijpen = pijpAnnots.map((a) => ({
     id: a.id,
     label: labels.get(a.id)!,
-    m2: m2(a, `dak.${a.id}.m2`),
-    m2Berekend: schaal !== null,
-    regenpijpen: regenpijpen.filter((r) => r.dak === a.id).map((r) => r.id),
+    bronnen: daken.flatMap((dak) => dak.verdeling.filter((x) => x.pijp === a.id).map((x) => ({ dak: dak.id, pct: x.pct }))),
   }));
   const vlakken = (type: 'tuin' | 'steen') =>
     annots.filter((a) => a.type === type).map((a) => ({ id: a.id, label: labels.get(a.id)!, m2: m2(a, `${type}.${a.id}.m2`), m2Berekend: schaal !== null }));
   return { daken, tuinen: vlakken('tuin'), stenen: vlakken('steen'), regenpijpen, labels, opSchaal: schaal !== null };
 }
 
-export function waterberging(dak: DakDeel): { liter: number; uitleg: string } | null {
-  if (dak.m2 === null || dak.regenpijpen.length === 0) return null;
-  const n = dak.regenpijpen.length;
-  const liter = Math.round((dak.m2 / n) * NORMAFVOER_MM);
-  return { liter, uitleg: `${getal(dak.m2)} m² ÷ ${n} × ${NORMAFVOER_MM} mm = ${liter} liter` };
+// ---- Which regenpijpen drain a dakdeel, and how much each takes. The method and its limits: docs/berekening.md ----
+
+function handmatigeVerdeling(d: Dossier, dakId: string): Record<string, number> | null {
+  const v = d.data[`dak.${dakId}.verdeling`];
+  return v === undefined || v === null ? null : (v as Record<string, number>);
+}
+
+function automatischeDaken(pijp: Pt, daken: Annotatie[], schaal: number | null): string[] {
+  if (schaal !== null) {
+    const dichtbij = daken.filter((d) => afstandTotPolygoon(pijp, d.p) * schaal <= KOPPEL_M).map((d) => d.id);
+    if (dichtbij.length) return dichtbij;
+  }
+  const dichtst = dichtstbijzijndeDak(pijp, daken);
+  return dichtst === null ? [] : [dichtst];
+}
+
+// Whole percents adding up to exactly `totaal` (largest remainder), in proportion to the weights; all-zero weights split evenly.
+export function procenten(gewichten: number[], totaal = 100): number[] {
+  if (!gewichten.length) return [];
+  const som = gewichten.reduce((s, g) => s + g, 0);
+  const ruw = gewichten.map((g) => (som > 0 ? (g / som) * totaal : totaal / gewichten.length));
+  const heel = ruw.map(Math.floor);
+  let over = totaal - heel.reduce((s, h) => s + h, 0);
+  const volgorde = ruw.map((r, i) => ({ rest: r - heel[i], i })).sort((a, b) => b.rest - a.rest || a.i - b.i);
+  for (const { i } of volgorde) {
+    if (over <= 0) break;
+    heel[i]++;
+    over--;
+  }
+  return heel;
+}
+
+// The part of `poly` on the near side of the line through `m` with normal `n` (Sutherland-Hodgman, one edge). A concave poly can come out with zero-width bridges along the line; they add no area.
+function knip(poly: Pt[], m: Pt, n: Pt): Pt[] {
+  const kant = (p: Pt) => (p[0] - m[0]) * n[0] + (p[1] - m[1]) * n[1];
+  const uit: Pt[] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % poly.length];
+    const [ka, kb] = [kant(a), kant(b)];
+    if (ka <= 0) uit.push(a);
+    if ((ka < 0 && kb > 0) || (ka > 0 && kb < 0)) {
+      const t = ka / (ka - kb);
+      uit.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+    }
+  }
+  return uit;
+}
+
+// Each pijp's share of the dakdeel: the part of it closer to that pijp than to the others, since water runs to the nearest downpipe. Pijpen on the same spot split their part evenly.
+export function dichtstbijzijndeVerdeling(dak: Pt[], pijpen: Pt[]): number[] {
+  return procenten(
+    pijpen.map((p, i) => {
+      let cel = dak;
+      pijpen.forEach((q, j) => {
+        if (j !== i && (q[0] !== p[0] || q[1] !== p[1])) cel = knip(cel, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], [q[0] - p[0], q[1] - p[1]]);
+      });
+      return oppervlakPx(cel);
+    }),
+  );
+}
+
+function verdeel(dak: Annotatie, pijpen: Annotatie[]): Aandeel[] {
+  const pct = dichtstbijzijndeVerdeling(dak.p, pijpen.map((p) => p.p[0]));
+  return pijpen.map((p, i) => ({ pijp: p.id, pct: pct[i] }));
+}
+
+// The verdeling after the bezoeker ticks a set of regenpijpen: the nearest-pijp split again, with at least 1% for each ticked one so it stays ticked.
+export function verdelingVoor(d: Dossier, dakId: string, pijpIds: string[]): Aandeel[] {
+  const annots = kaartAnnotaties(d);
+  const dak = annots.find((a) => a.id === dakId && a.type === 'dak');
+  if (!dak) throw new Error(`Dak ${dakId} staat niet op de kaart`);
+  const pijpen = annots.filter((a) => a.type === 'regenpijp' && pijpIds.includes(a.id));
+  const uit = verdeel(dak, pijpen);
+  for (const nul of uit.filter((a) => a.pct === 0)) {
+    nul.pct = 1;
+    uit.reduce((max, a) => (a.pct > max.pct ? a : max)).pct--;
+  }
+  return uit;
+}
+
+// Sets one pijp's percent and scales the others to fill the rest, keeping their mutual ratio (evenly when they're all 0). A pijp that ends up at 0% drops out.
+export function herverdeel(verdeling: Aandeel[], pijp: string, pct: number): Aandeel[] {
+  if (!verdeling.some((a) => a.pijp === pijp)) throw new Error(`Regenpijp ${pijp} hoort niet bij deze verdeling`);
+  const rest = verdeling.filter((a) => a.pijp !== pijp);
+  const p = rest.length ? Math.max(0, Math.min(100, Math.round(pct))) : pct > 0 ? 100 : 0;
+  const restPct = procenten(rest.map((a) => a.pct), 100 - p);
+  return verdeling.map((a) => (a.pijp === pijp ? { pijp, pct: p } : { pijp: a.pijp, pct: restPct[rest.indexOf(a)] })).filter((a) => a.pct > 0);
+}
+
+// What to store for a dakdeel's verdeling: null while it equals the automatic one.
+export function verdelingWaarde(dak: DakDeel, verdeling: Aandeel[]): Json {
+  const zelfde = verdeling.length === dak.automatischeVerdeling.length && verdeling.every((a, i) => a.pijp === dak.automatischeVerdeling[i].pijp && a.pct === dak.automatischeVerdeling[i].pct);
+  return zelfde ? null : Object.fromEntries(verdeling.map((a) => [a.pijp, a.pct]));
+}
+
+// The dakdelen whose hand-set verdeling a kaart edit voids: a dakdeel that was moved or reshaped, and every dakdeel near or linked to a regenpijp that was added, moved or removed.
+export function verdelingenTeWissen(d: Dossier, oud: Annotatie[], nieuw: Annotatie[]): string[] {
+  const foto = kaartFoto(d);
+  const schaal = foto ? foto.m_per_px : null;
+  const zelfde = (a: Annotatie, b: Annotatie | undefined) => b !== undefined && JSON.stringify(a.p) === JSON.stringify(b.p);
+  const gewijzigd = (type: AnnotatieType) => {
+    const o = oud.filter((a) => a.type === type);
+    const n = nieuw.filter((a) => a.type === type);
+    return [...o.filter((a) => !zelfde(a, n.find((x) => x.id === a.id))), ...n.filter((a) => !zelfde(a, o.find((x) => x.id === a.id)))];
+  };
+  const daken = nieuw.filter((a) => a.type === 'dak');
+  const wissen = new Set(gewijzigd('dak').map((a) => a.id));
+  for (const p of gewijzigd('regenpijp')) {
+    for (const id of automatischeDaken(p.p[0], daken, schaal)) wissen.add(id);
+    for (const dak of daken) {
+      const hand = handmatigeVerdeling(d, dak.id);
+      if (hand !== null && p.id in hand) wissen.add(dak.id);
+    }
+  }
+  return daken.filter((a) => wissen.has(a.id) && handmatigeVerdeling(d, a.id) !== null).map((a) => a.id);
+}
+
+// Per regenpijp: its share of each dakdeel's m², times the normafvoer. Null while a dakdeel's m² is unknown.
+export function waterberging(pijp: Regenpijp, daken: DakDeel[]): { liter: number; uitleg: string } | null {
+  if (!pijp.bronnen.length) return null;
+  const delen = pijp.bronnen.map((b) => {
+    const dak = daken.find((x) => x.id === b.dak);
+    if (!dak) throw new Error(`Dak ${b.dak} van regenpijp ${pijp.label} ontbreekt`);
+    return { pct: b.pct, m2: dak.m2 };
+  });
+  if (delen.some((x) => x.m2 === null)) return null;
+  const m2 = delen.reduce((s, x) => s + (x.pct / 100) * x.m2!, 0);
+  const liter = Math.round(m2 * NORMAFVOER_MM);
+  const termen = delen.map((x) => (x.pct === 100 ? `${getal(x.m2!)} m²` : `${x.pct}% × ${getal(x.m2!)} m²`));
+  const som = delen.length === 1 && delen[0].pct === 100 ? '' : ` = ${getal(m2)} m²`;
+  return { liter, uitleg: `${termen.join(' + ')}${som} × ${NORMAFVOER_MM} mm = ${liter} liter` };
+}
+
+// "A 62% · B 38%", or just "A" for a single pijp.
+export function verdelingTekst(dak: DakDeel, labels: Map<string, string>): string {
+  return dak.verdeling.map((a) => (a.pct === 100 ? labels.get(a.pijp)! : `${labels.get(a.pijp)!} ${a.pct}%`)).join(' · ');
+}
+
+// "D1 (62%), D2": how much of each dakdeel this pijp takes.
+export function bronnenTekst(pijp: Regenpijp, labels: Map<string, string>): string {
+  return pijp.bronnen.map((b) => (b.pct === 100 ? labels.get(b.dak)! : `${labels.get(b.dak)!} (${b.pct}%)`)).join(', ');
 }
 
 export function getal(n: number): string {

@@ -205,9 +205,40 @@ test('een regenpijp hoort automatisch bij het dichtstbijzijnde dak', async ({ pa
   const rijen = page.locator('.qa-dak-rij');
   await expect(rijen).toHaveCount(2);
   await expect(rijen.nth(0)).toContainText('D1');
-  await expect(rijen.nth(0).locator('.qa-waterberging')).toContainText('geen regenpijp');
+  await expect(rijen.nth(0).locator('.qa-verdeling-knop')).toContainText('geen regenpijp');
   await expect(rijen.nth(1)).toContainText('D2');
-  await expect(rijen.nth(1).locator('td').nth(2)).toHaveText('A');
+  await expect(rijen.nth(1).locator('.qa-verdeling-tekst')).toHaveText('A');
+});
+
+test('een regenpijp bijzetten zet een met de hand verdeeld dak terug op automatisch met een melding, en ongedaan maken brengt de verdeling terug', async ({ page }) => {
+  const id = await openKaart(page);
+  await gereedschap(page, 'dak');
+  for (const [x, y] of [...VIERKANT, VIERKANT[0]]) await tik(page, x, y);
+  await gereedschap(page, 'regenpijp');
+  await tik(page, 0.4, 0.5);
+  await tik(page, 0.6, 0.5);
+  await sluitTekenaar(page);
+  const [dak, a, b] = (await kaart(page, id)).map((x) => x.id);
+  const knop = page.locator('.qa-verdeling-knop');
+  await expect(knop).toHaveText(/^A \d+% · B \d+%\(automatisch\)$/);
+  await knop.click();
+  await page.locator('.qa-verdeling-pct').first().fill('70');
+  await page.locator('.qa-verdeling-pct').first().blur();
+  await expect(knop).toHaveText('A 70% · B 30%');
+  await opslagKlaar(page);
+
+  await openTekenaar(page, 'kaart');
+  await gereedschap(page, 'regenpijp');
+  await tik(page, 0.5, 0.6);
+  await expect(page.locator('.qa-melding-success')).toContainText('Verdeling van D1 opnieuw berekend.');
+  await tekenaarOpgeslagen(page);
+  expect((await serverDossier(page, id)).data).not.toHaveProperty([`dak.${dak}.verdeling`]);
+
+  await page.keyboard.press('Control+z');
+  await tekenaarOpgeslagen(page);
+  expect((await serverDossier(page, id)).data[`dak.${dak}.verdeling`]).toEqual({ [a]: 70, [b]: 30 });
+  await sluitTekenaar(page);
+  await expect(knop).toHaveText('A 70% · B 30%');
 });
 
 test('de gum staat er pas als er iets gekozen is, en in kiesmodus wordt de muis een handje boven een tekening', async ({ page }) => {

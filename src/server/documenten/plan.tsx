@@ -1,7 +1,7 @@
 import { For, type JSX, Show } from 'solid-js';
 import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
-import { type Vlak, getal, kaartAnnotaties, kaartFoto, kaartItems, waterberging } from '../../shared/kaart.ts';
+import { type Vlak, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { str } from '../../shared/status.ts';
 import { BEOORDELINGEN, lijst, materiaalRijen, optieLabel, veld } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, eigenaar, fotosIn, heeft, naamVan } from './onderdelen.tsx';
@@ -41,7 +41,6 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
     const e = eigenaar(d());
     return hk && d().huur_koop === 'huur' && e ? `${hk}, ${e}` : hk;
   };
-  const regenpijpLabels = (ids: string[]) => ids.map((id) => items().labels.get(id)!).join(', ');
   return (
     <>
       <h2>1. Regenwatervolume</h2>
@@ -92,25 +91,48 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
               </th>
               <th class="getal">Oppervlakte*</th>
               <th>Regenpijpen</th>
-              <th>Waterberging**</th>
             </tr>
           </thead>
           <tbody>
             <For each={items().daken}>
-              {(dak) => {
-                const wb = waterberging(dak);
-                return (
-                  <tr>
-                    <td>{dak.label}</td>
-                    <td class="getal">{dak.m2 === null ? <Leeg doc={props.doc} /> : `${getal(dak.m2)} m²`}</td>
-                    <td>{dak.regenpijpen.length ? regenpijpLabels(dak.regenpijpen) : '--'}</td>
-                    <td>{wb ? wb.uitleg : '-- (geen regenpijp)'}</td>
-                  </tr>
-                );
-              }}
+              {(dak) => (
+                <tr>
+                  <td>{dak.label}</td>
+                  <td class="getal">{dak.m2 === null ? <Leeg doc={props.doc} /> : `${getal(dak.m2)} m²`}</td>
+                  <td>{dak.verdeling.length ? verdelingTekst(dak, items().labels) : '--'}</td>
+                </tr>
+              )}
             </For>
           </tbody>
         </table>
+        <Show when={items().regenpijpen.length > 0}>
+          <table class="tabel qa-pdf-waterberging">
+            <thead>
+              <tr>
+                <th>
+                  <OnderdeelIcoon soort="regenpijp" />
+                  Regenpijp
+                </th>
+                <th>Voert af van</th>
+                <th>Waterberging**</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={items().regenpijpen}>
+                {(r) => {
+                  const wb = waterberging(r, items().daken);
+                  return (
+                    <tr>
+                      <td>{r.label}</td>
+                      <td>{r.bronnen.length ? bronnenTekst(r, items().labels) : '--'}</td>
+                      <td>{wb ? wb.uitleg : r.bronnen.length ? <Leeg doc={props.doc} /> : '-- (geen dak)'}</td>
+                    </tr>
+                  );
+                }}
+              </For>
+            </tbody>
+          </table>
+        </Show>
         <p class="voetnoot">* bron: kadastrale kaart (PDOK)</p>
         <p class="voetnoot">** per regenpijp gebaseerd op normafvoer 20 mm regenwater</p>
       </Show>
@@ -261,7 +283,7 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
               {(r) => (
                 <tr>
                   <td>{r.label}</td>
-                  <td>{r.dak ? labels().get(r.dak)! : '--'}</td>
+                  <td>{r.bronnen.length ? bronnenTekst(r, labels()) : '--'}</td>
                   <td><Of doc={props.doc} v={kies(r.id, 'soort')} /></td>
                   <td><Of doc={props.doc} v={kies(r.id, 'diameter')} /></td>
                   <td><Of doc={props.doc} v={kies(r.id, 'regenton')} /></td>

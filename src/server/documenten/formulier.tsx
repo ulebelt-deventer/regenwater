@@ -1,6 +1,6 @@
 import { For, type JSX, Show } from 'solid-js';
 import { datumTijd } from '../../shared/datum.ts';
-import { kaartAnnotaties, kaartFoto, kaartItems } from '../../shared/kaart.ts';
+import { bronnenTekst, kaartAnnotaties, kaartFoto, kaartItems } from '../../shared/kaart.ts';
 import { adresRegel, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { VELDEN, type Veld, materiaalRijen } from '../../shared/velden.ts';
@@ -9,7 +9,7 @@ import { type Doc, Fotos, FotoMetTekening, Kop } from './onderdelen.tsx';
 // Item fields get their own blocks below; `kaart_annotaties` is the kaart itself.
 const losseVelden = (pagina: 'bezoek' | 'plan') =>
   VELDEN.filter((v) => v.pagina === pagina && !v.key.includes('*') && v.type !== 'annotaties' && v.key !== 'materialen');
-const REGENPIJP_VELDEN = VELDEN.filter((v) => v.key.startsWith('regenpijp.*.') && v.key !== 'regenpijp.*.dak');
+const REGENPIJP_VELDEN = VELDEN.filter((v) => v.key.startsWith('regenpijp.*.'));
 const LEGE_PIJPEN = ['A', 'B', 'C', 'D'];
 const LEGE_DELEN = 3;
 
@@ -99,7 +99,7 @@ export function Bezoekformulier(props: { doc: Doc | null; standaardMaterialen: s
   const items = () => (d() ? kaartItems(d()!) : null);
   const pijpen = () => {
     const i = items();
-    return i && i.regenpijpen.length ? i.regenpijpen.map((r) => ({ label: r.label, dak: r.dak ? i.labels.get(r.dak)! : null })) : LEGE_PIJPEN.map((label) => ({ label, dak: null }));
+    return i && i.regenpijpen.length ? i.regenpijpen.map((r) => ({ label: r.label, dak: r.bronnen.length ? bronnenTekst(r, i.labels) : null })) : LEGE_PIJPEN.map((label) => ({ label, dak: null }));
   };
   const daken = () => {
     const i = items();
@@ -174,7 +174,10 @@ export function Bezoekformulier(props: { doc: Doc | null; standaardMaterialen: s
               {p.dak ? `, voert af van ${p.dak}` : ''}
             </h3>
             <Show when={!p.dak}>
-              <Vraag veld={VELDEN.find((v) => v.key === 'regenpijp.*.dak')!} label="Voert af van dakdeel" />
+              <div class="veld">
+                <div class="veld-label">Voert af van dakdeel(en)</div>
+                <Lijnen n={1} />
+              </div>
             </Show>
             <For each={REGENPIJP_VELDEN}>{(v) => <Vraag veld={v} />}</For>
           </div>

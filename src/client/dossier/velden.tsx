@@ -1,7 +1,6 @@
 // Autosaving inputs, all driven by the field definitions in shared/velden.ts.
 import { For, type JSX, Match, Show, Switch, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import { euro } from '../../shared/datum.ts';
-import { kaartItems } from '../../shared/kaart.ts';
 import type { Json } from '../../shared/types.ts';
 import { type Veld, lijst, materiaalRijen, materiaalTotaal, nieuwId, veld, veldVoor, waarde } from '../../shared/velden.ts';
 import { FotoSlot } from './fotos.tsx';
@@ -147,9 +146,6 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
           </For>
         </div>
       </Match>
-      <Match when={props.veld.type === 'select'}>
-        <DakKeuze k={props.k} uit={props.uit} />
-      </Match>
       <Match when={props.veld.type === 'date'}>
         <input type="date" class="form-control w-auto qa-invoer" disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
       </Match>
@@ -204,29 +200,6 @@ function DatumTijd(props: { waarde: string; uit: boolean; onZet: (v: string | nu
         <span class="small text-warning qa-tijd-ontbreekt">Vul ook een tijd in</span>
       </Show>
     </div>
-  );
-}
-
-function DakKeuze(props: { k: string; uit: boolean }) {
-  const s = useDossier();
-  const pijpId = untrack(() => props.k).split('.')[1];
-  const items = () => kaartItems(s.d);
-  const pijp = () => {
-    const p = items().regenpijpen.find((r) => r.id === pijpId);
-    if (!p) throw new Error(`Regenpijp ${pijpId} staat niet op de kaart`);
-    return p;
-  };
-  return (
-    <Show when={items().daken.length} fallback={<div class="text-danger small qa-geen-dak">Er is nog geen dak ingetekend op de kaart.</div>}>
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <select class="form-select w-auto qa-invoer" disabled={props.uit} value={pijp().dak ?? ''} onChange={(e) => s.zet(props.k, e.currentTarget.value)}>
-          <For each={items().daken}>{(d) => <option value={d.id}>{d.label}</option>}</For>
-        </select>
-        <Show when={pijp().dakAutomatisch}>
-          <span class="small text-muted">dichtstbijzijnde dak</span>
-        </Show>
-      </div>
-    </Show>
   );
 }
 

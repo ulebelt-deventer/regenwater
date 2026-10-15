@@ -191,12 +191,12 @@
       - Bezoek-afspraak: native date and time inputs (`type="date"`, `type="time"`), which give phones their own pickers. *Normally the klusser arranges it with the bewoner by phone, days before the bezoek.*
       - Link "Printbaar bezoekformulier (PDF)", for klussers who'd rather not use a phone on-site. The admin prints it and gives it to the klusser. It's prefilled with what's already known (adres, bewoner contact, afspraak, straatfoto, the kadasterkaart with its current tekeningen, dakdelen & regenpijpen so far) and has blank space for every Bezoek and Plan van Aanpak question. Someone (usually the admin) types it up into the app afterwards.
       - Its generic twin, "Leeg bezoekformulier (PDF)" (in the Beheer dropdown), has no dossier data at all: blank lines for adres, bewoner and datum, a blank sketch box instead of the kaart, and a few blank regenpijp blocks (A to D). Admins print a stack in advance so a vrijwilliger can grab one without anyone preparing a dossier-specific form. Both are rendered from the same form definitions in code as the Bezoek and Plan van Aanpak pages, so a new question appears on paper automatically.
-      - The compact summary (one line per dak with m², regenpijpen and waterberging; per tuin m² and photos; verhard; tuinsituatie; per regenpijp one line "van D1 · PVC · 80 mm · Regenton: ... · Afkoppelen: ..." with Ondergrond / Water naar / Via lines below; hoosbuien; wensen), and a "Start bezoek" / "Bewerken" button to the sub-page.
+      - The compact summary (one line per dak with m² and its regenpijpen, eg "24 m² · regenpijp A 62% · B 38%"; per tuin m² and photos; verhard; tuinsituatie; per regenpijp one line "van D1 (62%), D2 · 681 liter waterberging · PVC · 80 mm · Regenton: ... · Afkoppelen: ..." with Ondergrond / Water naar / Via lines below; hoosbuien; wensen), and a "Start bezoek" / "Bewerken" button to the sub-page.
     - Plattegrond intekenen
       - The same kadasterkaart image slot as in Inschrijving, with the same annotations; shown again here because the bezoeker now records what's actually found on-site. Same buttons to auto-load the luchtfoto or open the kadasterkaart; the image can be replaced (annotations are kept, with the warning described in Inschrijving).
       - Tap it to open full-screen. Besides Pijl and Tekst, the kaart has four semantic tools whose annotations feed the form below and the Plan van Aanpak:
         - **Dak** (polygon, numbered D1, D2...): adds a row to the Dak delen table.
-        - **Regenpijp** (point, lettered A, B, C...): adds a regenpijp section below, and is automatically linked to the nearest dakdeel (inside it, or else the closest edge). The link can be overridden in that regenpijp's section.
+        - **Regenpijp** (point, lettered A, B, C...): adds a regenpijp section below, and automatically drains every dakdeel within 1 m of it (on an unscaled kaart, or if none is that close: the nearest dakdeel). A dakdeel with several regenpijpen is split between them by nearest pijp; the verdeling can be overridden per dakdeel in the Dak table. Method and limits: [berekening.md](berekening.md).
         - **Tuin** (polygon, numbered T1, T2...): adds a row to the Tuindelen table.
         - **Steen** (red polygon, numbered S1, S2...): adds a row to the Steen table. Optional: no warning when none is drawn.
       - On a scaled kaart (auto-loaded luchtfoto), each dak/tuin/steen polygon shows its side lengths and its area in the center.
@@ -205,9 +205,12 @@
         - Two-finger pinch & drag zooms and pans; one finger draws or selects. That way you can zoom in to place corners accurately.
         - Selecting a dak/tuin/steen polygon shows draggable corner handles, so an outline the admin drew roughly can be corrected on-site without redrawing it.
         - With a polygon tool active but no corner placed yet, a tap more than 5px inside an existing polygon switches back to Kiezen and selects that polygon, so you can draw one and then tap it to adjust it.
+      - Adding, moving or deleting a dak or regenpijp resets the hand-set verdeling of every dakdeel it affects to automatic, with a melding ("Verdeling van D1 opnieuw berekend."); undo brings it back.
       - Deleting a dak, tuin, steen or regenpijp deletes its form data too, and the remaining items are renumbered/relettered everywhere in the form (each keeps its stable internal ID; only the shown label changes). Undo restores it including its data. The confirm prompt says so, and warns that free text mentioning items by letter or number (eg "pijp C") isn't updated automatically, so the user should check it.
     - "Dak" (table)
-      - 1 row per dakdeel: number (eg "D1"), m² (auto-calculated; a manual input if the kaart isn't to scale), # regenpijpen (from the links), waterberging per regenpijp (m² ÷ # regenpijpen × normafvoer). The waterberging cell shows its calculation in small gray text (eg "18 m² ÷ 2 × 20 mm = 180 liter"), here and in the PDF, so anyone can check it. A dakdeel with no regenpijp linked shows "-- (geen regenpijp)" in that cell, here and in the PDF, and the Controle text lists it. On phones each dakdeel row shows as a small card with a label before each value, so the table never scrolls sideways.
+      - 1 row per dakdeel: number (eg "D1"), m² (auto-calculated; a manual input if the kaart isn't to scale), Regenpijpen: a dropdown button showing the verdeling (eg "A 62% · B 38%", "(automatisch)" while not set by hand). It opens a list of all regenpijpen, each with a checkbox, a percent input (whole percents summing to 100; changing one scales the others), its distance to the dakdeel and a red "> 1 m weg" badge when far, plus "Terug naar automatisch". A dakdeel with no regenpijp, or whose hand-set verdeling names a deleted pijp, is listed in the Controle text.
+      - Below it a Regenpijpen table, 1 row per regenpijp: letter, Voert af van (eg "D1 (62%), D2"), and waterberging (Σ share × m² × normafvoer). The waterberging cell shows its calculation in small gray text (eg "62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter"), here and in the PDF, so anyone can check it. A regenpijp draining no dakdeel shows "geen dak" in red and is listed in the Controle text; waterberging shows "--" until every m² it needs is known.
+      - On phones each row of both tables shows as a small card with a label before each value, so they never scroll sideways.
       - Footnotes as on the sample: "\* bron: kadastrale kaart (PDOK)" and "\*\* per regenpijp gebaseerd op normafvoer 20 mm regenwater". The 20 mm is a constant in code (tentative, pending the team question).
       - If no dak is drawn on the kaart yet: red warning "Er is nog geen dak ingetekend op de kadasterkaart" with a link that scrolls back up to the kaart.
     - Tuin
@@ -218,7 +221,7 @@
       - Tuinsituatie & infiltratie (textarea, with optional photo upload slots)
         - *Hint: Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?*
     - For each regenpijp identified on the kaart: its own accordion (collapsible, with a line under the header, open by default). While you scroll through its fields its header sticks to the top of the screen (eg "Regenpijp C"); tapping the stuck header scrolls back to the top of that section over 250ms, then collapses it.
-      - Voert af van: dropdown of dakdelen, preset to the nearest one.
+      - Voert af van: the dakdelen it drains with their share (eg "D1 (62%), D2"), and a pencil that scrolls to the Dak table to change it.
       - Soort (radio options: PVC, Zink, Anders, namelijk... (write-in))
       - Diameter (radio options: 80mm, 100mm, Anders, namelijk... (write-in))
       - Regenton aanwezig? - radio options:
@@ -347,11 +350,11 @@
   - **Header block**: Locatie, Bewoner, Woningeigenaar, Datum schouw (afspraak date), Schouw door (the bezoeker), Auteur (the admin who created the dossier).
   - **1. Regenwatervolume**
     - Algemeen: woningtype, huur/koop & woningeigenaar, then the straatfoto and the kadasterkaart with its tekeningen side by side (half width each).
-    - Dakoppervlakte en waterberging: the "Dak" (dakdelen) table with its two footnotes.
+    - Dakoppervlakte en waterberging: the "Dak" (dakdelen) table and the per-regenpijp waterberging table, with the two footnotes.
   - **2. Infiltratie**: "Tuin" (tuindelen) table, verhard %, tuinsituatie text, wat gebeurt er bij hoosbuien, tuin photos.
   - **3. Bodemgegevens**: the bodemsituatie choice, with the boorlocatie and bron (BRO/DINOloket); boorprofiel image in the bijlage.
   - **4. Plan van aanpak**
-    - Regenpijpen: one compact row per pijp (letter, dakdeel, soort, diameter, regenton, afkoppelen, waar & hoe het water naartoe gaat).
+    - Regenpijpen: one compact row per pijp (letter, dakdelen with shares, soort, diameter, regenton, afkoppelen, waar & hoe het water naartoe gaat).
     - Wensen van de bewoner.
     - Voorstel Ulebelt: the Beoordeling sentence, Toelichting, fixed lead-in line, werkzaamheden bullets.
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.
@@ -520,7 +523,6 @@ Aandacht edge cases inside these: an afspraak in the future raises no flag, the 
 - boormonsterprofiel (DINOloket): It should be possible to automate the process for locating the nearest sample and grabbing its SVG. Troubleshoot with Claude why it couldn't do this.
 - Stale-edit warning: when you save a field that someone else changed since you opened the page, show their value and ask which to keep (until then the last save wins).
 - Named dakdelen (eg "Dakdeel linksachter", as in the sample Plan van Aanpak) instead of only D1, D2.
-- One regenpijp draining two dakdelen: check with the team whether that occurs, and if so let a regenpijp link to several dakdelen.
 - Open-source the code (pending the team question): a "Broncode op GitHub" link in the footer. Before the repo goes public, scrub it of sensitive content, git history included; everything in `tmp/reference/` counts as sensitive.
 - Integrations mentioned at the kickoff: Gebruikte materialen to voorraadbeheer and to invoicing (factuur to the client), and reports for the opdrachtgevers/funders beyond the CSV export.
 - *Idea to feel out with the team*: AI sanity-check that reviews all details in a record kloppen / make sense, and flag any issues before allowing handoff to the next step. So we catch any calculation errors before handing off to the bezoeker, and the bezoeker likewise can get a realtime flag on any possibly mis-entered data before they finish the on-site. (privacy-preserving, OpenRouter ZDR)

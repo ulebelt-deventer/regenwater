@@ -1,7 +1,7 @@
 // Read-only summaries of the sub-pages on the details page: every field, compact and text-only.
 import { For, Show } from 'solid-js';
 import { datum, euro } from '../../shared/datum.ts';
-import { getal, kaartFoto, kaartItems, waterberging } from '../../shared/kaart.ts';
+import { type Regenpijp, bronnenTekst, getal, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { lijst, materiaalRijen, materiaalTotaal, veldTekst, veldVoor } from '../../shared/velden.ts';
@@ -114,13 +114,15 @@ export function InschrijvingSamenvatting() {
   );
 }
 
-function RegenpijpRegel(props: { id: string; label: string; dak: string | null }) {
+function RegenpijpRegel(props: { pijp: Regenpijp }) {
   const s = useDossier();
-  const k = (veld: string) => `regenpijp.${props.id}.${veld}`;
+  const k = (veld: string) => `regenpijp.${props.pijp.id}.${veld}`;
   const items = () => kaartItems(s.d);
   const kort = () => {
+    const w = waterberging(props.pijp, items().daken);
     const delen = [
-      props.dak ? `van ${items().labels.get(props.dak)}` : null,
+      props.pijp.bronnen.length ? `van ${bronnenTekst(props.pijp, items().labels)}` : 'aan geen dak gekoppeld',
+      w && `${w.liter} liter waterberging`,
       veldTekst(s.d, k('soort')),
       veldTekst(s.d, k('diameter')),
       veldTekst(s.d, k('regenton')) && `Regenton: ${veldTekst(s.d, k('regenton'))}`,
@@ -130,7 +132,7 @@ function RegenpijpRegel(props: { id: string; label: string; dak: string | null }
   };
   const sub: [string, string][] = [['ondergrond', 'Ondergrond'], ['waar', 'Water naar'], ['hoe', 'Via']];
   return (
-    <Regel label={`Regenpijp ${props.label}`} class="qa-sv-regenpijp">
+    <Regel label={`Regenpijp ${props.pijp.label}`} class="qa-sv-regenpijp">
       <div>{kort() || <span class="text-muted">--</span>}</div>
       <For each={sub.filter(([v]) => zichtbaar(s.d, k(v)) && heeftWaarde(s.d, k(v)))}>
         {([v, label]) => <div><span class="text-muted">{label}:</span> <VeldWaarde k={k(v)} /></div>}
@@ -150,8 +152,7 @@ export function BezoekSamenvatting() {
             <Regel label={`Dak ${dak.label}`} class="qa-sv-dak">
               {[
                 dak.m2 === null ? null : `${getal(dak.m2)} m²`,
-                dak.regenpijpen.length ? `regenpijp ${dak.regenpijpen.map((id) => items().labels.get(id)).join(', ')}` : 'geen regenpijp',
-                waterberging(dak) && `${waterberging(dak)!.liter} liter waterberging per regenpijp`,
+                dak.verdeling.length ? `regenpijp ${verdelingTekst(dak, items().labels)}` : 'geen regenpijp',
               ].filter(Boolean).join(' · ')}
             </Regel>
           )}
@@ -177,7 +178,7 @@ export function BezoekSamenvatting() {
       </For>
       <VeldRegel k="verhard" label="Verhard" />
       <VeldRegel k="tuinsituatie" label="Tuinsituatie" />
-      <For each={items().regenpijpen}>{(r) => <RegenpijpRegel id={r.id} label={r.label} dak={r.dak} />}</For>
+      <For each={items().regenpijpen}>{(r) => <RegenpijpRegel pijp={r} />}</For>
       <VeldRegel k="hoosbuien" label="Bij hoosbuien" />
       <VeldRegel k="wensen" label="Wensen bewoner" />
     </>

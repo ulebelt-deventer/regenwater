@@ -6,7 +6,7 @@ import type { Dossier, Json } from './types.ts';
 export type Pagina = 'inschrijving' | 'details' | 'bezoek' | 'plan' | 'uitvoering';
 // Who may edit besides a beheerder. 'bezoeker'/'uitvoerder' means the klusser assigned to that role, until their hand-off.
 export type Bewerker = 'bezoeker' | 'uitvoerder';
-export type VeldType = 'text' | 'email' | 'tel' | 'textarea' | 'number' | 'radio' | 'checks' | 'select' | 'date' | 'datetime' | 'ids' | 'annotaties';
+export type VeldType = 'text' | 'email' | 'tel' | 'textarea' | 'number' | 'radio' | 'checks' | 'verdeling' | 'date' | 'datetime' | 'ids' | 'annotaties';
 
 export interface Veld {
   key: string; // `*` stands for an item id, eg `regenpijp.*.soort`
@@ -83,11 +83,12 @@ export const VELDEN: Veld[] = [
 
   // Bezoek
   { key: 'dak.*.m2', label: 'Dak m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
+  // `{ pijpId: pct }` set by hand; null follows the kaart (see kaartItems)
+  { key: 'dak.*.verdeling', label: 'Regenpijpen', type: 'verdeling', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'tuin.*.m2', label: 'Tuin m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'steen.*.m2', label: 'Steen m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'verhard', label: 'Verhard (%)', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, min: 0, max: 100, hint: 'Hoeveel van de hele tuin is verhard (terras, pad, tegels)?' },
   { key: 'tuinsituatie', label: 'Tuinsituatie & infiltratie', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'tuinsituatie', hint: 'Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?' },
-  { key: 'regenpijp.*.dak', label: 'Voert af van', type: 'select', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'regenpijp.*.soort', label: 'Soort', type: 'radio', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, opties: [['pvc', 'PVC'], ['zink', 'Zink'], ['anders', 'Anders, namelijk:']] },
   { key: 'regenpijp.*.diameter', label: 'Diameter', type: 'radio', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, opties: [['80', '80 mm'], ['100', '100 mm'], ['anders', 'Anders, namelijk:']] },
   { key: 'regenpijp.*.regenton', label: 'Regenton aanwezig?', type: 'radio', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['aanwezig', 'Is al aanwezig'], ['gewenst', 'Nog niet aanwezig, wel gewenst'], ['niet', 'Niet gewenst']] },
@@ -218,7 +219,7 @@ export function veldTekst(d: Dossier, key: string): string | null {
       return datum(w as string);
     case 'datetime':
       return datumTijd(w as string);
-    case 'select': // a regenpijp's dak: kaartItems knows the effective one, also when none was chosen
+    case 'verdeling': // kaartItems knows the effective one, also when none was set by hand
     case 'ids':
     case 'annotaties':
       throw new Error(`${key} heeft geen losse tekstwaarde`);
@@ -280,8 +281,10 @@ export function ontbrekend(d: Dossier, pagina: 'bezoek' | 'plan'): Ontbrekend[] 
     if (items.tuinen.length === 0) uit.push({ label: 'Tuin intekenen op de kaart', anker: 'veld-kaart' });
     for (const dak of items.daken) {
       if (dak.m2 === null) uit.push({ label: `${dak.label}: m²`, anker: `veld-dak.${dak.id}.m2` });
-      if (dak.regenpijpen.length === 0) uit.push({ label: `${dak.label}: geen regenpijp`, anker: 'veld-kaart' });
+      if (dak.verlopen) uit.push({ label: `${dak.label}: verdeling opnieuw controleren`, anker: `veld-dak.${dak.id}.verdeling` });
+      else if (dak.verdeling.length === 0) uit.push({ label: `${dak.label}: geen regenpijp`, anker: `veld-dak.${dak.id}.verdeling` });
     }
+    for (const r of items.regenpijpen) if (r.bronnen.length === 0) uit.push({ label: `Regenpijp ${r.label}: aan geen dak gekoppeld`, anker: `veld-regenpijp.${r.id}.bronnen` });
     for (const tuin of items.tuinen) if (tuin.m2 === null) uit.push({ label: `${tuin.label}: m²`, anker: `veld-tuin.${tuin.id}.m2` });
     for (const steen of items.stenen) if (steen.m2 === null) uit.push({ label: `${steen.label}: m²`, anker: `veld-steen.${steen.id}.m2` });
   }

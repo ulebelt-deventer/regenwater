@@ -38,6 +38,6 @@ describe('veldTekst', () => {
 
   it('throws for unknown fields and for fields without a single text value', () => {
     expect(() => veldTekst(d, 'bestaat_niet')).toThrow('Onbekend veld');
-    expect(() => veldTekst(dossier({ data: { 'regenpijp.a1.dak': 'd1' } }), 'regenpijp.a1.dak')).toThrow('geen losse tekstwaarde');
+    expect(() => veldTekst(dossier({ data: { 'dak.d1.verdeling': { a1: 100 } } }), 'dak.d1.verdeling')).toThrow('geen losse tekstwaarde');
   });
 });

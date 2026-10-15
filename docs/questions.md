@@ -32,7 +32,6 @@
 - **Twee tonnen op één pijp, of een ton zonder pijp?** Regentonnen: one "Regenton aanwezig/gewenst" choice per regenpijp. Does it happen that a bewoner wants two tonnen on one pijp, or a ton not on a pijp?
 - **Afkoppelen per regenpijp (ja/nee/twijfel): oké?** Afkoppelen: each regenpijp has an "Afkoppelen?" choice (ja, nee, twijfel), shown in the Plan van Aanpak, as in "Pijp A: regenton plus afkoppelen, pijp B: alleen afkoppelen, pijp C: niks". OK?
 - **Meerdere dakdelen en tuindelen tekenen: nodig?** Multiple roof and garden parts: the app lets you draw several dakdelen and tuindelen on the kaart and computes each m². Do you actually need that, and the tuin m² in the plan?
-- **Meerdere losse dakdelen op één regenpijp: komt dat voor?** Is it possible that multiple unconnected dakdelen connect to a single rain pipe? Will we actually need to draw in multiple dakdelen at all, or is it nearly always just 1?
 
 ### Bezoek: fields & photos
 
