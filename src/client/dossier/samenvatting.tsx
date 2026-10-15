@@ -176,7 +176,6 @@ export function BezoekSamenvatting() {
           </Regel>
         )}
       </For>
-      <VeldRegel k="verhard" label="Verhard" />
       <VeldRegel k="tuinsituatie" label="Tuinsituatie" />
       <For each={items().regenpijpen}>{(r) => <RegenpijpRegel pijp={r} />}</For>
       <VeldRegel k="hoosbuien" label="Bij hoosbuien" />

@@ -171,11 +171,10 @@ describe('autosave values', () => {
   });
 
   it('keeps numbers within their bounds', async () => {
-    expect((await zet(kees, 'verhard', 101, 400)).fout).toBe('Verhard (%) moet tussen 0 en 100 liggen.');
-    await zet(kees, 'verhard', -1, 400);
-    await zet(kees, 'verhard', '50', 400);
-    await zet(kees, 'verhard', 0);
-    await zet(kees, 'verhard', 100);
+    expect((await zet(kees, 'dak.ab12cd.m2', -1, 400)).fout).toBe('Dak m² moet tussen 0 en ∞ liggen.');
+    await zet(kees, 'dak.ab12cd.m2', '50', 400);
+    await zet(kees, 'dak.ab12cd.m2', 0);
+    await zet(kees, 'dak.ab12cd.m2', 37.5);
     expect((await zet(kees, 'materiaal.ab12cd.prijs', -5, 400)).fout).toBe('Prijs moet tussen 0 en ∞ liggen.');
   });
 

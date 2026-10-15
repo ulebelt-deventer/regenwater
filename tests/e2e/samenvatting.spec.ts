@@ -16,7 +16,6 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
     ],
     'dak.d1.m2': 24,
     'tuin.t1.m2': 30,
-    verhard: 40,
     tuinsituatie: 'Groot gazon achter',
     'regenpijp.r1.soort': 'pvc',
     'regenpijp.r1.diameter': '80',
@@ -57,7 +56,6 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
   const bezoek = page.locator('.qa-sectie-bezoek');
   await expect(bezoek.locator('.qa-sv-dak')).toHaveText(/Dak D1\s*24 m² · regenpijp A$/);
   await expect(bezoek.locator('.qa-sv-tuin')).toContainText('30 m²');
-  await expect(bezoek.locator('.qa-sv-verhard')).toContainText('40%');
   await expect(bezoek.locator('.qa-sv-tuinsituatie')).toContainText('Groot gazon achter');
   const pijp = bezoek.locator('.qa-sv-regenpijp');
   await expect(pijp).toContainText('van D1 · 480 liter waterberging · PVC · 80 mm · Regenton: Nog niet aanwezig, wel gewenst · Afkoppelen: Ja');

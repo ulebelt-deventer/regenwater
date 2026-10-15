@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   type DakDeel, afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, binnen, bronnenTekst, dichtstbijzijndeDak, dichtstbijzijndeVerdeling, getal, herverdeel, isAnnotatieLijst,
-  kaartItems, letter, oppervlakPx, procenten, verdelingTekst, verdelingVoor, verdelingWaarde, verdelingenTeWissen, waterberging, zijdeLengtes,
+  kaartItems, letter, oppervlakPx, procenten, verdelingTekst, verdelingVoor, verdelingWaarde, verdelingenTeWissen, vierkanteUitsnede, waterberging, zijdeLengtes,
 } from './kaart.ts';
 import { ontbrekend } from './velden.ts';
 import { dossier } from './testhulp.ts';
@@ -80,6 +80,18 @@ describe('geometry', () => {
 
   it('writes numbers the Dutch way with at most one decimal', () => {
     expect([getal(1234.56), getal(12), getal(0.04)]).toEqual(['1.234,6', '12', '0']);
+  });
+});
+
+describe('vierkanteUitsnede', () => {
+  it('centers a square 30% larger than the points, at least a tenth of the image wide', () => {
+    expect(vierkanteUitsnede([[100, 100], [200, 200]], 1000, 800)).toEqual({ x: 85, y: 85, zijde: 130 });
+    expect(vierkanteUitsnede([[500, 400]], 1000, 800)).toEqual({ x: 435, y: 335, zijde: 130 });
+  });
+
+  it('moves the square inside the image, and centers it on an image smaller than the square', () => {
+    expect(vierkanteUitsnede([[0, 750], [50, 800]], 1000, 800)).toEqual({ x: 0, y: 670, zijde: 130 });
+    expect(vierkanteUitsnede([[0, 0], [1000, 10]], 1000, 800)).toEqual({ x: -150, y: -250, zijde: 1300 });
   });
 });
 

@@ -1,8 +1,8 @@
 // Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen, stenen and regenpijpen, then what was found.
 import { A } from '@solidjs/router';
-import { For, Show, createSignal } from 'solid-js';
+import { For, Show } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
-import { type Aandeel, KOPPEL_M, bronnenTekst, getal, herverdeel, kaartItems, verdelingTekst, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
+import { type Aandeel, KOPPEL_M, annotatiesSvg, bronnenTekst, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, verdelingVoor, verdelingWaarde, vierkanteUitsnede, waterberging } from '../../shared/kaart.ts';
 import { ontbrekend, veld } from '../../shared/velden.ts';
 import { Dropdown, OnderdeelIcoon, bevestig, gaNaar } from '../ui.tsx';
 import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
@@ -11,34 +11,33 @@ import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
-const REGENPIJP_VELDEN = ['soort', 'diameter', 'regenton', 'ondergrond', 'afkoppelen', 'waar', 'hoe'];
-
-// Opens a collapsed regenpijp section before scrolling, since gaNaar can't scroll to a hidden field.
-function naarVeld(anker: string) {
-  const el = document.getElementById(anker);
-  if (!el) throw new Error(`Geen element met id ${anker}`);
-  const details = el.closest('details');
-  if (details) details.open = true;
-  gaNaar(anker);
-}
-
-// window.scrollTo's smooth behaviour has no fixed duration, so this eases over `ms` itself.
-function scrollNaar(y: number, ms: number, klaar: () => void) {
-  const van = window.scrollY;
-  const start = performance.now();
-  const stap = (nu: number) => {
-    const t = Math.min(1, (nu - start) / ms);
-    const e = t < 0.5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2;
-    // 'instant' overrides Bootstrap's `scroll-behavior: smooth` on :root, which would fight each frame.
-    window.scrollTo({ top: van + (y - van) * e, behavior: 'instant' });
-    if (t < 1) requestAnimationFrame(stap);
-    else klaar();
+// The kaart cropped to a regenpijp and the dakdelen it drains, so you can see at a glance which part of the roof that is.
+function BronnenUitsnede(props: { id: string }) {
+  const s = useDossier();
+  const annots = () => kaartAnnotaties(s.d);
+  const pijp = () => kaartItems(s.d).regenpijpen.find((r) => r.id === props.id)!;
+  const punten = () => {
+    const daken = new Set(pijp().bronnen.map((b) => b.dak));
+    return annots().filter((a) => a.id === props.id || daken.has(a.id)).flatMap((a) => a.p);
   };
-  requestAnimationFrame(stap);
+  return (
+    <Show when={pijp().bronnen.length ? kaartFoto(s.d) : null}>
+      {(foto) => {
+        const u = () => vierkanteUitsnede(punten(), foto().breedte, foto().hoogte);
+        return (
+          <svg class="border rounded flex-shrink-0 qa-bronnen-uitsnede" style={{ width: '3.6rem', height: '3.6rem' }} viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
+            <image href={`/api/fotos/${foto().id}`} width={foto().breedte} height={foto().hoogte} />
+            {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
+            <g innerHTML={annotatiesSvg(annots(), { schaal: u().zijde / 150, mPerPx: null, geselecteerd: props.id })} />
+          </svg>
+        );
+      }}
+    </Show>
+  );
 }
 
-// One regenpijp as its own accordion. Its header sticks to the top of the screen while you scroll through its fields; tapping it while stuck scrolls back to the start of the section first, then collapses it.
-function RegenpijpSectie(props: { id: string }) {
+// One regenpijp as a bordered block of cells that wrap: the short answers side by side, the long ones in wider columns.
+function RegenpijpBlok(props: { id: string }) {
   const s = useDossier();
   const items = () => kaartItems(s.d);
   const pijp = () => {
@@ -46,31 +45,39 @@ function RegenpijpSectie(props: { id: string }) {
     if (!p) throw new Error(`Regenpijp ${props.id} staat niet op de kaart`);
     return p;
   };
-  const [open, setOpen] = createSignal(true);
-  let item!: HTMLDetailsElement;
-  const tik = (e: MouseEvent) => {
-    const top = item.getBoundingClientRect().top;
-    if (top >= 0) return;
-    e.preventDefault();
-    scrollNaar(window.scrollY + top, 250, () => (item.open = false));
-  };
+  const k = (v: string) => `regenpijp.${props.id}.${v}`;
   return (
-    <div class="accordion mb-3">
-      <details ref={item} open class="accordion-item qa-regenpijp" onToggle={(e) => setOpen(e.currentTarget.open)}>
-        <summary class="accordion-button fw-semibold qa-regenpijp-kop" classList={{ collapsed: !open() }} onClick={tik}>Regenpijp {pijp().label}</summary>
-        <div class="accordion-body">
-          <div id={`veld-regenpijp.${props.id}.bronnen`} class="mb-3 qa-veld qa-veld-regenpijp-bronnen">
-            <div class="form-label fw-semibold mb-1">Voert af van</div>
-            <div class="d-flex align-items-center gap-2">
-              <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
-                <span class="qa-bronnen">{bronnenTekst(pijp(), items().labels)}</span>
-              </Show>
-              <button type="button" class="btn btn-sm btn-outline-secondary qa-bronnen-wijzig" aria-label="Wijzigen bij Dak" onClick={() => gaNaar('veld-daken')}><i class="bi bi-pencil" aria-hidden="true" /></button>
-            </div>
-          </div>
-          <For each={REGENPIJP_VELDEN}>{(v) => <VeldInvoer k={`regenpijp.${props.id}.${v}`} />}</For>
+    <div class="border rounded p-2 mb-2 qa-regenpijp qa-regenpijp-rij">
+      <div class="row g-3">
+        <div class="col-auto">
+          <div class="form-label fw-semibold mb-1">Pijp</div>
+          <div class="fs-5 fw-bold qa-regenpijp-kop">{pijp().label}</div>
         </div>
-      </details>
+        <div id={`veld-${k('bronnen')}`} class="col-auto d-flex align-items-start gap-2 qa-veld qa-veld-regenpijp-bronnen">
+          <div>
+            <div class="form-label fw-semibold mb-1">Voert af van</div>
+            <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
+              <span class="qa-bronnen">{bronnenTekst(pijp(), items().labels)}</span>
+            </Show>
+          </div>
+          <BronnenUitsnede id={props.id} />
+        </div>
+        <div class="col-auto">
+          <div class="form-label fw-semibold mb-1">Waterberging**</div>
+          <div class="qa-waterberging">
+            <Show when={waterberging(pijp(), items().daken)} fallback="--">
+              {(w) => (
+                <>
+                  {w().liter} liter
+                  <div class="small text-muted">{w().uitleg}</div>
+                </>
+              )}
+            </Show>
+          </div>
+        </div>
+        <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class="col-auto" />}</For>
+        <For each={['waar', 'hoe', 'ondergrond']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6 col-xl-4" fotoOnder />}</For>
+      </div>
     </div>
   );
 }
@@ -85,59 +92,88 @@ function VerdelingKeuze(props: { id: string }) {
   const bewaar = (v: Aandeel[]) => s.zet(k(), verdelingWaarde(dak(), v));
   const aandeel = (pijp: string) => dak().verdeling.find((a) => a.pijp === pijp);
   const afstand = (pijp: string) => dak().afstandM.get(pijp)!;
+  const ver = (pijp: string) => aandeel(pijp) !== undefined && afstand(pijp)! > KOPPEL_M;
   const wissel = (pijp: string, aan: boolean) =>
     bewaar(verdelingVoor(s.d, props.id, items().regenpijpen.map((r) => r.id).filter((id) => (id === pijp ? aan : aandeel(id) !== undefined))));
   return (
     <div id={`veld-${k()}`} class="qa-veld qa-veld-dak-verdeling">
       <Dropdown
         sluitBijKlik={false}
-        knopClass="btn btn-sm btn-outline-secondary text-start qa-verdeling-knop"
+        knopClass="btn btn-sm btn-light border text-start qa-verdeling-knop"
         knop={
-          <>
-            <span class="qa-verdeling-tekst">{dak().verdeling.length ? verdelingTekst(dak(), items().labels) : 'geen regenpijp'}</span>
-            <Show when={dak().automatisch}><span class="text-muted ms-1">(automatisch)</span></Show>
-          </>
+          <span class="qa-verdeling-tekst">
+            <Show when={dak().verdeling.length} fallback="geen regenpijp">
+              <For each={dak().verdeling}>
+                {(a, i) => (
+                  <>
+                    {i() > 0 && ' · '}
+                    <strong>{items().labels.get(a.pijp)}</strong>
+                    {dak().verdeling.length > 1 && ` ${a.pct}%`}
+                  </>
+                )}
+              </For>
+            </Show>
+          </span>
         }
       >
         <Show when={items().regenpijpen.length} fallback={<span class="dropdown-item-text text-muted">Nog geen regenpijp op de kaart</span>}>
-          <For each={items().regenpijpen}>
-            {(r) => (
-              <div class="dropdown-item-text d-flex align-items-center gap-2 text-nowrap qa-verdeling-pijp">
-                <input class="form-check-input mt-0 qa-verdeling-aan" type="checkbox" id={`in-${k()}-${r.id}`} disabled={uit()} checked={aandeel(r.id) !== undefined} onChange={(e) => wissel(r.id, e.currentTarget.checked)} />
-                <label class="form-check-label me-auto" for={`in-${k()}-${r.id}`}>Regenpijp {r.label}</label>
-                <Show when={aandeel(r.id)}>
-                  {(a) => (
-                    <div class="input-group input-group-sm w-auto">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        class="form-control qa-verdeling-pct"
-                        style={{ width: '4.5rem' }}
-                        disabled={uit() || dak().verdeling.length === 1}
-                        value={a().pct}
-                        onChange={(e) => {
-                          const n = e.currentTarget.valueAsNumber;
-                          if (Number.isFinite(n)) bewaar(herverdeel(dak().verdeling, r.id, n));
-                          else e.currentTarget.value = String(a().pct);
-                        }}
-                      />
-                      <span class="input-group-text">%</span>
-                    </div>
-                  )}
-                </Show>
-                <Show when={afstand(r.id) !== null}>
-                  <span class="small text-muted qa-verdeling-afstand">{getal(Math.round(afstand(r.id)! * 10) / 10)} m</span>
-                  <Show when={afstand(r.id)! > KOPPEL_M}><span class="badge text-bg-danger qa-verdeling-ver">&gt; {KOPPEL_M} m weg</span></Show>
-                </Show>
-              </div>
-            )}
-          </For>
+          {/* A table so the % inputs line up whatever the label widths. */}
+          <table class="table table-sm table-borderless align-middle text-nowrap mx-2 mb-0 w-auto">
+            <tbody>
+              <For each={items().regenpijpen}>
+                {(r) => (
+                  <tr class="qa-verdeling-pijp">
+                    <td>
+                      <div class="form-check mb-0">
+                        <input class="form-check-input qa-verdeling-aan" type="checkbox" id={`in-${k()}-${r.id}`} disabled={uit()} checked={aandeel(r.id) !== undefined} onChange={(e) => wissel(r.id, e.currentTarget.checked)} />
+                        <label class="form-check-label qa-verdeling-label" for={`in-${k()}-${r.id}`}>Regenpijp {r.label}</label>
+                        <Show when={!r.bronnen.length}><div class="small text-danger qa-verdeling-geen-dak">Heeft geen dakdeel</div></Show>
+                      </div>
+                    </td>
+                    <td>
+                      <Show when={aandeel(r.id)}>
+                        {(a) => (
+                          <div class="input-group input-group-sm w-auto">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="1"
+                              class="form-control qa-verdeling-pct"
+                              style={{ width: '4.5rem' }}
+                              disabled={uit() || dak().verdeling.length === 1}
+                              value={a().pct}
+                              onChange={(e) => {
+                                const n = e.currentTarget.valueAsNumber;
+                                if (Number.isFinite(n)) bewaar(herverdeel(dak().verdeling, r.id, n));
+                                else e.currentTarget.value = String(a().pct);
+                              }}
+                            />
+                            <span class="input-group-text">%</span>
+                          </div>
+                        )}
+                      </Show>
+                    </td>
+                    <td class="text-end">
+                      <Show when={afstand(r.id) !== null}>
+                        {/* Only a far pijp that still gets water from this dak is suspicious. */}
+                        <span class="small qa-verdeling-afstand" classList={{ 'text-muted': !ver(r.id), 'fw-bold text-danger qa-verdeling-ver': ver(r.id) }}>
+                          {getal(Math.round(afstand(r.id)! * 10) / 10)} m
+                        </span>
+                      </Show>
+                    </td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </Show>
+        <Show when={dak().automatisch}>
+          <div class="dropdown-item-text small text-muted fst-italic qa-verdeling-auto">Automatisch verdeeld: elk stuk dak gaat naar de dichtstbijzijnde regenpijp.</div>
         </Show>
         <Show when={!dak().automatisch && !uit()}>
           <div class="dropdown-divider" />
-          <button type="button" class="dropdown-item qa-verdeling-automatisch" onClick={() => s.zet(k(), null)}>Terug naar automatisch</button>
+          <button type="button" class="dropdown-item qa-verdeling-automatisch" onClick={() => s.zet(k(), null)}><i class="bi bi-arrow-repeat me-1" aria-hidden="true" />Terug naar automatisch</button>
         </Show>
       </Dropdown>
       <Show when={dak().verlopen}>
@@ -198,41 +234,18 @@ export function Bezoek() {
                 </For>
               </tbody>
             </table>
-            <Show when={items().regenpijpen.length}>
-              <table class="table table-sm align-middle mt-3 mb-1 tabel-kaarten qa-regenpijpen-tabel">
-                <thead>
-                  <tr>
-                    <th>Regenpijp</th>
-                    <th>Voert af van</th>
-                    <th>Waterberging**</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <For each={items().regenpijpen}>
-                    {(r) => (
-                      <tr class="qa-regenpijp-rij">
-                        <td class="fw-semibold">{r.label}</td>
-                        <td class="qa-bronnen" data-label="Voert af van">{bronnenTekst(r, items().labels) || <span class="text-danger">geen dak</span>}</td>
-                        <td class="qa-waterberging" data-label="Waterberging**">
-                          <Show when={waterberging(r, items().daken)} fallback="--">
-                            {(w) => (
-                              <>
-                                {w().liter} liter
-                                <div class="small text-muted">{w().uitleg}</div>
-                              </>
-                            )}
-                          </Show>
-                        </td>
-                      </tr>
-                    )}
-                  </For>
-                </tbody>
-              </table>
-            </Show>
             <div class="small text-muted">* bron: kadastrale kaart (PDOK)</div>
-            <div class="small text-muted">** per regenpijp gebaseerd op normafvoer {NORMAFVOER_MM} mm regenwater</div>
           </Show>
         </div>
+
+        <Show when={items().regenpijpen.length}>
+          {/* By id, so typing in a field doesn't recreate the block and lose focus. */}
+          <div id="veld-regenpijpen" class="mb-3 qa-regenpijpen">
+            <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</div>
+            <For each={items().regenpijpen.map((r) => r.id)}>{(id) => <RegenpijpBlok id={id} />}</For>
+            <div class="small text-muted">** per regenpijp gebaseerd op normafvoer {NORMAFVOER_MM} mm regenwater</div>
+          </div>
+        </Show>
 
         <div id="veld-tuinen" class="mb-3 qa-tuinen">
           <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="tuin" class="me-1" />Tuin</div>
@@ -275,11 +288,7 @@ export function Bezoek() {
           </div>
         </Show>
 
-        <VeldInvoer k="verhard" />
         <VeldInvoer k="tuinsituatie" />
-
-        <For each={items().regenpijpen.map((r) => r.id)}>{(id) => <RegenpijpSectie id={id} />}</For>
-
         <VeldInvoer k="hoosbuien" />
         <VeldInvoer k="wensen" />
 
@@ -315,7 +324,7 @@ export function Controle(props: { s: DossierStaat; pagina: 'bezoek' | 'plan' }) 
           <For each={mist()}>
             {(m) => (
               <li>
-                <button type="button" class="btn btn-link p-0 text-start align-baseline qa-ontbrekend-link" onClick={() => naarVeld(m.anker)}>{m.label}</button>
+                <button type="button" class="btn btn-link p-0 text-start align-baseline qa-ontbrekend-link" onClick={() => gaNaar(m.anker)}>{m.label}</button>
               </li>
             )}
           </For>

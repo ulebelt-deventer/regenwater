@@ -220,7 +220,12 @@ test('een regenpijp bijzetten zet een met de hand verdeeld dak terug op automati
   await sluitTekenaar(page);
   const [dak, a, b] = (await kaart(page, id)).map((x) => x.id);
   const knop = page.locator('.qa-verdeling-knop');
-  await expect(knop).toHaveText(/^A \d+% · B \d+%\(automatisch\)$/);
+  await expect(knop).toHaveText(/^A \d+% · B \d+%$/);
+  const uitsnede = page.locator('.qa-regenpijp').first().locator('.qa-bronnen-uitsnede');
+  const [, , b1, h1] = (await uitsnede.getAttribute('viewBox'))!.split(' ').map(Number);
+  expect(b1).toBe(h1);
+  expect(b1).toBeLessThan(400);
+  await expect(uitsnede.locator('polygon')).toHaveCount(1);
   await knop.click();
   await page.locator('.qa-verdeling-pct').first().fill('70');
   await page.locator('.qa-verdeling-pct').first().blur();
@@ -306,7 +311,7 @@ test('een lege regenpijp verwijderen vraagt niets, en de volgende schuiven een l
   await tik(page, 0.7, 0.5);
   await sluitTekenaar(page);
   const pijpen = page.locator('.qa-regenpijp');
-  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['Regenpijp A', 'Regenpijp B', 'Regenpijp C']);
+  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['A', 'B', 'C']);
   await pijpen.nth(2).locator('.qa-veld-regenpijp-waar .qa-invoer').fill('Wadi achterin');
   await opslagKlaar(page);
 
@@ -316,7 +321,7 @@ test('een lege regenpijp verwijderen vraagt niets, en de volgende schuiven een l
   await expect(page.locator('.qa-bevestig')).toHaveCount(0);
   await sluitTekenaar(page);
 
-  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['Regenpijp A', 'Regenpijp B']);
+  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['A', 'B']);
   await expect(pijpen.nth(1).locator('.qa-veld-regenpijp-waar .qa-invoer')).toHaveValue('Wadi achterin');
   expect(await kaart(page, id)).toHaveLength(2);
 });

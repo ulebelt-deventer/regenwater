@@ -194,7 +194,6 @@ export async function afspraak(page: Page, dag: string, tijd = '10:00'): Promise
 export async function bezoek(page: Page, id: number, wensen = 'Regenton bij de achtergevel.'): Promise<void> {
   await page.goto(`/dossiers/${id}/bezoek`);
   await vul(page, 'wensen', wensen);
-  await vul(page, 'verhard', '40');
   await opslagKlaar(page);
   await page.locator('.qa-bezoek-afronden').click();
   await ja(page);

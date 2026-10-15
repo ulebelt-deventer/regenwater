@@ -10,7 +10,7 @@ describe('veldTekst', () => {
       woningtype: 'anders',
       woningtype_anders: 'Woonboot',
       'regenpijp.a1.hoe': ['holie_molie', 'ondergronds'],
-      verhard: 37.5,
+      'tuin.t1.m2': 37.5,
       wensen: '  Een regenton\nbij de schuur  ',
       boorlocatie: '',
     },
@@ -22,8 +22,8 @@ describe('veldTekst', () => {
     expect(veldTekst(d, 'regenpijp.a1.hoe')).toBe('Holie Molie, Ondergronds');
   });
 
-  it('formats numbers Dutch-style with a % for verhard, and trims text but keeps its line breaks', () => {
-    expect(veldTekst(d, 'verhard')).toBe('37,5%');
+  it('formats numbers Dutch-style, and trims text but keeps its line breaks', () => {
+    expect(veldTekst(d, 'tuin.t1.m2')).toBe('37,5');
     expect(veldTekst(d, 'wensen')).toBe('Een regenton\nbij de schuur');
   });
 

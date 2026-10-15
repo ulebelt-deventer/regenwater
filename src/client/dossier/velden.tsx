@@ -19,7 +19,8 @@ function Hint(props: { veld: Veld }) {
   );
 }
 
-export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string }) {
+// `fotoOnder` stacks the photo slot under the input instead of beside it, for narrow columns.
+export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
   const def = veldVoor(k);
@@ -42,8 +43,8 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
         <Show when={fotoSlot} fallback={inhoud}>
           {(slot) => (
             <div class="row g-2">
-              <div class="col-12 col-md-8">{inhoud}</div>
-              <div class="col-12 col-md-4">
+              <div class={props.fotoOnder ? 'col-12' : 'col-12 col-md-8'}>{inhoud}</div>
+              <div class={props.fotoOnder ? 'col-12' : 'col-12 col-md-4'}>
                 <FotoSlot k={slot()} />
               </div>
             </div>

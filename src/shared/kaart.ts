@@ -329,6 +329,16 @@ export function bronnenTekst(pijp: Regenpijp, labels: Map<string, string>): stri
   return pijp.bronnen.map((b) => (b.pct === 100 ? labels.get(b.dak)! : `${labels.get(b.dak)!} (${b.pct}%)`)).join(', ');
 }
 
+// A square around `punten` with a margin, moved inside the image where it fits: a pijp's thumbnail of its dakdelen.
+export function vierkanteUitsnede(punten: Pt[], breedte: number, hoogte: number): { x: number; y: number; zijde: number } {
+  const xs = punten.map((q) => q[0]);
+  const ys = punten.map((q) => q[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const zijde = Math.max(x1 - x0, y1 - y0, Math.max(breedte, hoogte) / 10) * 1.3;
+  const binnen = (midden: number, totaal: number) => (zijde >= totaal ? (totaal - zijde) / 2 : Math.max(0, Math.min(totaal - zijde, midden - zijde / 2)));
+  return { x: binnen((x0 + x1) / 2, breedte), y: binnen((y0 + y1) / 2, hoogte), zijde };
+}
+
 export function getal(n: number): string {
   return n.toLocaleString('nl-NL', { maximumFractionDigits: 1 });
 }

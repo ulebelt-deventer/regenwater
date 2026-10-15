@@ -191,12 +191,12 @@
       - Bezoek-afspraak: native date and time inputs (`type="date"`, `type="time"`), which give phones their own pickers. *Normally the klusser arranges it with the bewoner by phone, days before the bezoek.*
       - Link "Printbaar bezoekformulier (PDF)", for klussers who'd rather not use a phone on-site. The admin prints it and gives it to the klusser. It's prefilled with what's already known (adres, bewoner contact, afspraak, straatfoto, the kadasterkaart with its current tekeningen, dakdelen & regenpijpen so far) and has blank space for every Bezoek and Plan van Aanpak question. Someone (usually the admin) types it up into the app afterwards.
       - Its generic twin, "Leeg bezoekformulier (PDF)" (in the Beheer dropdown), has no dossier data at all: blank lines for adres, bewoner and datum, a blank sketch box instead of the kaart, and a few blank regenpijp blocks (A to D). Admins print a stack in advance so a vrijwilliger can grab one without anyone preparing a dossier-specific form. Both are rendered from the same form definitions in code as the Bezoek and Plan van Aanpak pages, so a new question appears on paper automatically.
-      - The compact summary (one line per dak with m² and its regenpijpen, eg "24 m² · regenpijp A 62% · B 38%"; per tuin m² and photos; verhard; tuinsituatie; per regenpijp one line "van D1 (62%), D2 · 681 liter waterberging · PVC · 80 mm · Regenton: ... · Afkoppelen: ..." with Ondergrond / Water naar / Via lines below; hoosbuien; wensen), and a "Start bezoek" / "Bewerken" button to the sub-page.
+      - The compact summary (one line per dak with m² and its regenpijpen, eg "24 m² · regenpijp A 62% · B 38%"; per tuin m² and photos; tuinsituatie; per regenpijp one line "van D1 (62%), D2 · 681 liter waterberging · PVC · 80 mm · Regenton: ... · Afkoppelen: ..." with Ondergrond / Water naar / Via lines below; hoosbuien; wensen), and a "Start bezoek" / "Bewerken" button to the sub-page.
     - Plattegrond intekenen
       - The same kadasterkaart image slot as in Inschrijving, with the same annotations; shown again here because the bezoeker now records what's actually found on-site. Same buttons to auto-load the luchtfoto or open the kadasterkaart; the image can be replaced (annotations are kept, with the warning described in Inschrijving).
       - Tap it to open full-screen. Besides Pijl and Tekst, the kaart has four semantic tools whose annotations feed the form below and the Plan van Aanpak:
         - **Dak** (polygon, numbered D1, D2...): adds a row to the Dak delen table.
-        - **Regenpijp** (point, lettered A, B, C...): adds a regenpijp section below, and automatically drains every dakdeel within 1 m of it (on an unscaled kaart, or if none is that close: the nearest dakdeel). A dakdeel with several regenpijpen is split between them by nearest pijp; the verdeling can be overridden per dakdeel in the Dak table. Method and limits: [berekening.md](berekening.md).
+        - **Regenpijp** (point, lettered A, B, C...): adds a regenpijp block below, and automatically drains every dakdeel within 1 m of it (on an unscaled kaart, or if none is that close: the nearest dakdeel). A dakdeel with several regenpijpen is split between them by nearest pijp; the verdeling can be overridden per dakdeel in the Dak table. Method and limits: [berekening.md](berekening.md).
         - **Tuin** (polygon, numbered T1, T2...): adds a row to the Tuindelen table.
         - **Steen** (red polygon, numbered S1, S2...): adds a row to the Steen table. Optional: no warning when none is drawn.
       - On a scaled kaart (auto-loaded luchtfoto), each dak/tuin/steen polygon shows its side lengths and its area in the center.
@@ -208,35 +208,32 @@
       - Adding, moving or deleting a dak or regenpijp resets the hand-set verdeling of every dakdeel it affects to automatic, with a melding ("Verdeling van D1 opnieuw berekend."); undo brings it back.
       - Deleting a dak, tuin, steen or regenpijp deletes its form data too, and the remaining items are renumbered/relettered everywhere in the form (each keeps its stable internal ID; only the shown label changes). Undo restores it including its data. The confirm prompt says so, and warns that free text mentioning items by letter or number (eg "pijp C") isn't updated automatically, so the user should check it.
     - "Dak" (table)
-      - 1 row per dakdeel: number (eg "D1"), m² (auto-calculated; a manual input if the kaart isn't to scale), Regenpijpen: a dropdown button showing the verdeling (eg "A 62% · B 38%", "(automatisch)" while not set by hand). It opens a list of all regenpijpen, each with a checkbox, a percent input (whole percents summing to 100; changing one scales the others), its distance to the dakdeel and a red "> 1 m weg" badge when far, plus "Terug naar automatisch". A dakdeel with no regenpijp, or whose hand-set verdeling names a deleted pijp, is listed in the Controle text.
-      - Below it a Regenpijpen table, 1 row per regenpijp: letter, Voert af van (eg "D1 (62%), D2"), and waterberging (Σ share × m² × normafvoer). The waterberging cell shows its calculation in small gray text (eg "62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter"), here and in the PDF, so anyone can check it. A regenpijp draining no dakdeel shows "geen dak" in red and is listed in the Controle text; waterberging shows "--" until every m² it needs is known.
-      - On phones each row of both tables shows as a small card with a label before each value, so they never scroll sideways.
-      - Footnotes as on the sample: "\* bron: kadastrale kaart (PDOK)" and "\*\* per regenpijp gebaseerd op normafvoer 20 mm regenwater". The 20 mm is a constant in code (tentative, pending the team question).
+      - 1 row per dakdeel: number (eg "D1"), m² (auto-calculated; a manual input if the kaart isn't to scale), Regenpijpen: a dropdown button showing the verdeling with the letters in bold (eg "**A** 62% · **B** 38%"). It opens a list of all regenpijpen in aligned columns, each with a checkbox, a percent input (whole percents summing to 100; changing one scales the others) and its distance to the dakdeel (muted; bold red when the pijp is ticked yet more than 1 m away). A regenpijp that drains no dakdeel at all has a red "Heeft geen dakdeel" under its name. A gray italic note at the bottom says when the verdeling is automatic; once set by hand, "Terug naar automatisch" (with a ↻ icon) takes its place. A dakdeel with no regenpijp, or whose hand-set verdeling names a deleted pijp, is listed in the Controle text.
+      - On phones each row shows as a small card with a label before each value, so it never scrolls sideways.
+      - Footnote as on the sample: "\* bron: kadastrale kaart (PDOK)".
       - If no dak is drawn on the kaart yet: red warning "Er is nog geen dak ingetekend op de kadasterkaart" with a link that scrolls back up to the kaart.
-    - Tuin
-      - "Tuin" table: 1 row per tuindeel, with number (eg "T1") and m² (auto-calculated, or manual input as above). In a 3rd column, photos can be uploaded and annotated, same as the other image slots, to capture the current situation of the garden.
-      - If no tuin is drawn on the kaart yet: red warning "Er is nog geen tuin ingetekend op de kadasterkaart" with a link that scrolls back up to the kaart.
-      - "Steen" table, only shown once a steen is drawn: 1 row per steen, like the Tuin table: number (eg "S1"), m², and a photo slot.
-      - Verhard (number input, 0-100 %): how much of the whole tuin is paved (terras, pad, tegels).
-      - Tuinsituatie & infiltratie (textarea, with optional photo upload slots)
-        - *Hint: Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?*
-    - For each regenpijp identified on the kaart: its own accordion (collapsible, with a line under the header, open by default). While you scroll through its fields its header sticks to the top of the screen (eg "Regenpijp C"); tapping the stuck header scrolls back to the top of that section over 250ms, then collapses it.
-      - Voert af van: the dakdelen it drains with their share (eg "D1 (62%), D2"), and a pencil that scrolls to the Dak table to change it.
-      - Soort (radio options: PVC, Zink, Anders, namelijk... (write-in))
-      - Diameter (radio options: 80mm, 100mm, Anders, namelijk... (write-in))
-      - Regenton aanwezig? - radio options:
-        - Is al aanwezig
-        - Nog niet aanwezig, wel gewenst
-        - Niet gewenst
-      - *Indien gewenst:*
-        - Hoe is de ondergrond bij de pijp? (textarea, with optional photo upload slots)
+    - Regenpijpen, shown once a regenpijp is drawn: one bordered block per regenpijp, whose labelled cells wrap onto several lines on narrow screens (no shared header row):
+      - Pijp: its letter.
+      - Voert af van: the dakdelen it drains with their share (eg "D1 (62%), D2"), and beside it a small square thumbnail of the kaart cropped to this pijp and its dakdelen. A regenpijp draining no dakdeel shows "Aan geen dak gekoppeld" in red and is listed in the Controle text. The verdeling itself is changed in the Dak table.
+      - Waterberging\*\*: Σ share × m² × normafvoer, with its calculation in small gray text (eg "62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter"), here and in the PDF, so anyone can check it; "--" until every m² it needs is known.
+      - Soort (dropdown: PVC, Zink, Anders... (write-in))
+      - Diameter (dropdown: 80 mm, 100 mm, Anders... (write-in))
+      - Regenton aanwezig? (dropdown: Is al aanwezig / Nog niet aanwezig, wel gewenst / Niet gewenst)
       - Afkoppelen? - radio options: Ja, Nee, Twijfel. *Ja = this pijp no longer drains into the riool.*
-      - Waar gaat het water naartoe? (textarea, with optional photo upload slots)
-      - Hoe komt het water daarnaartoe? - checkboxes (several can combine, eg a Holie Molie onto an ondergrondse buis), with optional photo upload slots.
+      - Waar moet het water naartoe? (textarea, photo slot below it). Both this and the next question are about the planned situation, not the current one.
+      - Hoe moet het water daarnaartoe komen? - checkboxes (several can combine, eg a Holie Molie onto an ondergrondse buis), photo slot below them.
         - Holie Molie
         - Drainageslang bovengronds
         - Ondergronds
         - Anders, namelijk: (write-in)
+      - *Only when the regenton is gewenst:* Hoe is de ondergrond bij de pijp? (textarea, photo slot below it)
+      - Footnote: "\*\* per regenpijp gebaseerd op normafvoer 20 mm regenwater". The 20 mm is a constant in code (tentative, pending the team question).
+    - Tuin
+      - "Tuin" table: 1 row per tuindeel, with number (eg "T1") and m² (auto-calculated, or manual input as above). In a 3rd column, photos can be uploaded and annotated, same as the other image slots, to capture the current situation of the garden.
+      - If no tuin is drawn on the kaart yet: red warning "Er is nog geen tuin ingetekend op de kadasterkaart" with a link that scrolls back up to the kaart.
+      - "Steen" table, only shown once a steen is drawn: 1 row per steen, like the Tuin table: number (eg "S1"), m², and a photo slot.
+      - Tuinsituatie & infiltratie (textarea, with optional photo upload slots)
+        - *Hint: Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?*
     - Wat gebeurt er bij hoosbuien? (textarea, with optional photo upload slots)
       - *Hint: Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst?*
     - Wat wenst de bewoner?
@@ -351,10 +348,10 @@
   - **1. Regenwatervolume**
     - Algemeen: woningtype, huur/koop & woningeigenaar, then the straatfoto and the kadasterkaart with its tekeningen side by side (half width each).
     - Dakoppervlakte en waterberging: the "Dak" (dakdelen) table and the per-regenpijp waterberging table, with the two footnotes.
-  - **2. Infiltratie**: "Tuin" (tuindelen) table, verhard %, tuinsituatie text, wat gebeurt er bij hoosbuien, tuin photos.
+  - **2. Infiltratie**: "Tuin" (tuindelen) and "Steen" tables, tuinsituatie text, wat gebeurt er bij hoosbuien, tuin photos.
   - **3. Bodemgegevens**: the bodemsituatie choice, with the boorlocatie and bron (BRO/DINOloket); boorprofiel image in the bijlage.
   - **4. Plan van aanpak**
-    - Regenpijpen: one compact row per pijp (letter, dakdelen with shares, soort, diameter, regenton, afkoppelen, waar & hoe het water naartoe gaat).
+    - Regenpijpen: one compact row per pijp (letter, dakdelen with shares, soort, diameter, regenton, afkoppelen, waar & hoe het water naartoe moet).
     - Wensen van de bewoner.
     - Voorstel Ulebelt: the Beoordeling sentence, Toelichting, fixed lead-in line, werkzaamheden bullets.
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.

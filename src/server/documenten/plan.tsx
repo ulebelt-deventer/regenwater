@@ -172,17 +172,11 @@ function Infiltratie(props: { doc: Doc }): JSX.Element {
   const d = () => props.doc.d;
   const tuinen = () => kaartItems(d()).tuinen;
   const stenen = () => kaartItems(d()).stenen;
-  const verhard = () => (typeof d().data.verhard === 'number' ? `${getal(d().data.verhard as number)}%` : null);
   return (
     <>
       <h2>2. Infiltratie</h2>
       <VlakTabel doc={props.doc} soort="tuin" titel="Tuin" vlakken={tuinen()} />
       <VlakTabel doc={props.doc} soort="steen" titel="Steen" vlakken={stenen()} />
-      <Show when={verhard() || props.doc.concept}>
-        <p>
-          <strong>Verhard:</strong> <Of doc={props.doc} v={verhard()} />
-        </p>
-      </Show>
       <h3>Tuinsituatie</h3>
       <Alinea doc={props.doc} key="tuinsituatie" />
       <Fotos doc={props.doc} slot="tuinsituatie" />

@@ -164,8 +164,9 @@ export function Vragen() {
 export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean; kiezer?: boolean }) {
   const [open, setOpen] = createSignal(false);
   let el!: HTMLDivElement;
+  // composedPath, not el.contains(e.target): a click that removes its own target (eg a button hidden by the change it makes) is no longer inside el by the time this runs.
   const buiten = (e: MouseEvent) => {
-    if (!el.contains(e.target as Node)) setOpen(false);
+    if (!e.composedPath().includes(el)) setOpen(false);
   };
   const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
   onMount(() => {

@@ -84,13 +84,6 @@ $container-max-widths: (lg: 1200px);
 .chip.active { background: $ub-groen; border-color: $ub-groen; color: #fff; }
 
 .sectie { scroll-margin-top: 1rem; }
-// Bootstrap rounds .accordion-header > .accordion-button, but a <summary> must be the <details>' direct child.
-details.accordion-item > summary.accordion-button {
-  position: sticky; top: 0; z-index: 2; list-style: none; cursor: pointer;
-  border-radius: var(--bs-accordion-inner-border-radius) var(--bs-accordion-inner-border-radius) 0 0;
-  &.collapsed { border-radius: var(--bs-accordion-inner-border-radius); }
-  &::-webkit-details-marker { display: none; }
-}
 .sectie h2 { font-size: $h5-font-size; }
 .flash { animation: flash 1.6s ease-out; }
 @keyframes flash { from { background: #fff3c4; } to { background: transparent; } }
