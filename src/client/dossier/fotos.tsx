@@ -11,7 +11,7 @@ import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
 
 // `heel`: the whole image at its own aspect ratio, wider than a cropped thumbnail (the kaart).
-export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean }) {
+export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean; vierkant?: boolean }) {
   const s = useDossier();
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
   const svg = () => annotatiesSvg(annots(), { schaal: Math.max(props.foto.breedte, props.foto.hoogte) / 450, mPerPx: null });
@@ -19,7 +19,7 @@ export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boole
     <button
       type="button"
       class="thumb p-0 border rounded overflow-hidden qa-foto"
-      classList={{ 'thumb-klein': props.klein, 'thumb-heel': props.heel }}
+      classList={{ 'thumb-klein': props.klein, 'thumb-heel': props.heel, 'thumb-vierkant': props.vierkant }}
       style={props.heel ? { 'aspect-ratio': `${props.foto.breedte} / ${props.foto.hoogte}` } : undefined}
       onClick={() => props.onClick()}
       aria-label="Foto bekijken"
@@ -172,10 +172,11 @@ export function FotoSlot(props: { k: string; label?: string }) {
       </Show>
       {/* The buttons sit right of the photos, and wrap below them only when there's no room. */}
       <div class="d-flex flex-wrap align-items-start gap-2">
-        <For each={fotos()}>{(f) => <FotoDuim foto={f} heel={k === 'kaart'} onClick={() => setOpen(f.id)} />}</For>
+        {/* Multi-photo slots get small squares so several fit side by side. */}
+        <For each={fotos()}>{(f) => <FotoDuim foto={f} heel={k === 'kaart'} vierkant={!slot.enkel} onClick={() => setOpen(f.id)} />}</For>
         <For each={wachtend()}>
           {(w) => (
-            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht">
+            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht" classList={{ 'thumb-vierkant': !slot.enkel }}>
               <img src={w.url} alt="" class="w-100 h-100 object-fit-cover" />
             </div>
           )}

@@ -58,7 +58,7 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
   await expect(bezoek.locator('.qa-sv-tuin')).toContainText('30 m²');
   await expect(bezoek.locator('.qa-sv-tuinsituatie')).toContainText('Groot gazon achter');
   const pijp = bezoek.locator('.qa-sv-regenpijp');
-  await expect(pijp).toContainText('van D1 · 480 liter waterberging · PVC · 80 mm · Regenton: Nog niet aanwezig, wel gewenst · Afkoppelen: Ja');
+  await expect(pijp).toContainText('van D1 · 480 liter waterberging · PVC · 80 mm · Regenton: Niet aanwezig, wel gewenst · Afkoppelen: Ja');
   await expect(pijp).toContainText('Ondergrond: Tegels');
   await expect(pijp).toContainText('Water naar: De border in');
   await expect(pijp).toContainText('Via: Holie Molie');

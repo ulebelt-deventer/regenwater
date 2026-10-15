@@ -19,7 +19,7 @@ async function tweeRegenpijpen(page: Page): Promise<number> {
   return id;
 }
 
-test('elke regenpijp is een omkaderd blok met Pijp, Voert af van en Waterberging, keuzelijsten voor Soort, Diameter en Regenton, en de foto’s onder Waar en Hoe', async ({ page }) => {
+test('elke regenpijp is een omkaderd blok met Pijp, Voert af van en Waterberging, keuzelijsten voor Soort, Diameter, Regenton en Afkoppelen, een Waar van 2 regels, en de foto’s onder Waar en Hoe', async ({ page }) => {
   const id = await tweeRegenpijpen(page);
   const blokken = page.locator('.qa-regenpijpen .qa-regenpijp');
   await expect(blokken.locator('.qa-regenpijp-kop')).toHaveText(['A', 'B']);
@@ -33,19 +33,56 @@ test('elke regenpijp is een omkaderd blok met Pijp, Voert af van en Waterberging
   await expect(a.locator('.qa-veld-regenpijp-diameter .qa-anders')).toBeFocused();
   await a.locator('.qa-veld-regenpijp-regenton select.qa-invoer').selectOption('gewenst');
   await expect(a.locator('.qa-veld-regenpijp-ondergrond .qa-invoer')).toBeVisible();
-  await expect(a.locator('.qa-veld-regenpijp-afkoppelen .qa-optie-ja')).toBeVisible();
+  await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('twijfel');
+  await expect(a.locator('.qa-veld-regenpijp-afkoppelen .form-text')).toHaveCount(0);
+  await expect(a.locator('.qa-veld-regenpijp-waar textarea')).toHaveAttribute('rows', '2');
 
   for (const v of ['waar', 'hoe']) {
     const veld = a.locator(`.qa-veld-regenpijp-${v}`);
     await expect(veld.locator('.form-label').first()).toHaveText(v === 'waar' ? 'Waar moet het water naartoe?' : 'Hoe moet het water daarnaartoe komen?');
-    const invoer = v === 'waar' ? veld.locator('.qa-invoer') : veld.locator('.qa-optie-anders');
-    expect((await vak(veld.locator('.qa-fotoslot'))).top).toBeGreaterThanOrEqual((await vak(invoer)).bottom);
+    expect((await vak(veld.locator('.qa-fotoslot'))).top).toBeGreaterThanOrEqual((await vak(veld.locator('.qa-invoer'))).bottom);
   }
 
   await opslagKlaar(page);
   const res = await page.request.get(`/api/dossiers/${id}`);
   const data = ((await res.json()) as { dossier: { data: Record<string, unknown> } }).dossier.data;
-  expect([data['regenpijp.r1.soort'], data['regenpijp.r1.diameter'], data['regenpijp.r1.regenton']]).toEqual(['zink', 'anders', 'gewenst']);
+  expect([data['regenpijp.r1.soort'], data['regenpijp.r1.diameter'], data['regenpijp.r1.regenton'], data['regenpijp.r1.afkoppelen']]).toEqual(['zink', 'anders', 'gewenst', 'twijfel']);
+});
+
+test('Hoe moet het water komen is een keuzemenu met vinkjes; Anders maakt plaats voor een invulveld met de focus, en dat leeg verlaten zet het vinkje terug', async ({ page }) => {
+  const id = await tweeRegenpijpen(page);
+  const veld = page.locator('.qa-regenpijp').first().locator('.qa-veld-regenpijp-hoe');
+  const knop = veld.locator('.qa-invoer');
+  await expect(knop).toHaveText('- kies -');
+  await knop.click();
+  await veld.locator('.qa-optie-holie_molie').check();
+  await veld.locator('.qa-optie-ondergronds').check();
+  await expect(knop).toHaveText('Holie Molie, Ondergronds');
+
+  // click, not check: ticking it swaps the checkbox for the write-in, so check() can't confirm it ticked.
+  await veld.locator('.qa-optie-anders').click();
+  const anders = veld.locator('.qa-anders');
+  await expect(anders).toBeFocused();
+  await expect(veld.locator('.qa-optie-anders')).toHaveCount(0);
+  await anders.fill('Grindkoffer');
+  await expect(knop).toHaveText('Holie Molie, Ondergronds, Grindkoffer');
+  await opslagKlaar(page);
+  const res = await page.request.get(`/api/dossiers/${id}`);
+  const data = ((await res.json()) as { dossier: { data: Record<string, unknown> } }).dossier.data;
+  expect([data['regenpijp.r1.hoe'], data['regenpijp.r1.hoe_anders']]).toEqual([['holie_molie', 'ondergronds', 'anders'], 'Grindkoffer']);
+
+  await anders.fill('');
+  await anders.blur();
+  await expect(veld.locator('.qa-anders')).toHaveCount(0);
+  await expect(veld.locator('.qa-optie-anders')).not.toBeChecked();
+  await expect(knop).toHaveText('Holie Molie, Ondergronds');
+});
+
+test('de Dak-tabel is maar zo breed als zijn inhoud, niet de hele breedte', async ({ page }) => {
+  await tweeRegenpijpen(page);
+  const tabel = page.locator('.qa-daken-tabel');
+  const [tabelBreedte, ouderBreedte] = await tabel.evaluate((el) => [el.getBoundingClientRect().width, el.parentElement!.clientWidth]);
+  expect(tabelBreedte).toBeLessThan(ouderBreedte / 2);
 });
 
 test('op een telefoon is elk dakdeel een kaartje met labels en passen de regenpijpblokken zonder zijwaarts scrollen', async ({ page }) => {

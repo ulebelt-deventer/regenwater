@@ -3,6 +3,7 @@ import { For, type JSX, Match, Show, Switch, createEffect, createMemo, createSig
 import { euro } from '../../shared/datum.ts';
 import type { Json } from '../../shared/types.ts';
 import { type Veld, lijst, materiaalRijen, materiaalTotaal, nieuwId, veld, veldVoor, waarde } from '../../shared/velden.ts';
+import { Dropdown } from '../ui.tsx';
 import { FotoSlot } from './fotos.tsx';
 import { useDossier } from './staat.ts';
 
@@ -66,21 +67,32 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
   const kiesAnders = (k: string) => {
     if (k === 'anders') andersFocus = true;
   };
-  const anders = (gekozen: () => boolean) => (
+  // `inMenu`: the write-in takes the Anders checkbox's place, so leaving it empty unticks Anders to bring the checkbox back.
+  const anders = (gekozen: () => boolean, inMenu = false) => (
     <Show when={props.veld.anders && gekozen()}>
       <input
         ref={(el) => {
           if (andersFocus) queueMicrotask(() => el.focus());
           andersFocus = false;
         }}
-        class="form-control mt-1 mt-sm-0 qa-anders"
+        class={`form-control qa-anders ${inMenu ? 'form-control-sm' : 'mt-1 mt-sm-0'}`}
         placeholder="Namelijk..."
         disabled={props.uit}
         value={tekst(waarde(s.d, andersKey))}
         onInput={(e) => s.zet(andersKey, e.currentTarget.value === '' ? null : e.currentTarget.value)}
+        onBlur={(e) => inMenu && e.currentTarget.value === '' && wissel('anders', false)}
       />
     </Show>
   );
+  const gekozen = () => (Array.isArray(w()) ? (w() as string[]) : []);
+  const wissel = (k: string, aan: boolean) => {
+    const rest = gekozen().filter((x) => x !== k);
+    if (aan) kiesAnders(k);
+    const nieuw = aan ? [...rest, k] : rest;
+    zet(nieuw.length ? nieuw : null);
+  };
+  const gekozenTekst = () =>
+    props.opties!.filter(([k]) => gekozen().includes(k)).map(([k, label]) => (k === 'anders' ? tekst(waarde(s.d, andersKey)) || 'Anders' : label)).join(', ');
   // The Anders option's row also holds its write-in; on phones it drops to its own line.
   const optieRij = (k: string) => (k === 'anders' && props.veld.anders ? 'form-check d-sm-flex align-items-center gap-2' : 'form-check');
   const optieId = (o: string) => `in-${props.k}-${o}`;
@@ -91,7 +103,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
         <input type={props.veld.type} class="form-control qa-invoer" disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
       </Match>
       <Match when={props.veld.type === 'textarea'}>
-        <textarea class="form-control qa-invoer" rows="3" disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
+        <textarea class="form-control qa-invoer" rows={props.veld.rijen ?? 3} disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
       </Match>
       <Match when={props.veld.type === 'number'}>
         <GetalInvoer waarde={w()} min={props.veld.min} max={props.veld.max} uit={props.uit} onZet={zet} />
@@ -119,31 +131,37 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
           </For>
         </div>
       </Match>
+      <Match when={props.veld.type === 'checks' && props.veld.lijst}>
+        <Dropdown sluitBijKlik={false} knopClass="btn btn-light border text-start mw-100 text-wrap qa-invoer" knop={<span class="qa-keuzes-tekst">{gekozenTekst() || '- kies -'}</span>}>
+          <For each={props.opties}>
+            {([k, label]) => (
+              <div class="px-3 py-1 text-nowrap qa-keuze">
+                <Show
+                  when={k === 'anders' && props.veld.anders && gekozen().includes('anders')}
+                  fallback={
+                    <div class="form-check mb-0">
+                      <input class={`form-check-input qa-optie-${k}`} type="checkbox" id={optieId(k)} disabled={props.uit} checked={gekozen().includes(k)} onChange={(e) => wissel(k, e.currentTarget.checked)} />
+                      <label class="form-check-label" for={optieId(k)}>{label.replace(/, namelijk:$/, '...')}</label>
+                    </div>
+                  }
+                >
+                  {anders(() => true, true)}
+                </Show>
+              </div>
+            )}
+          </For>
+        </Dropdown>
+      </Match>
       <Match when={props.veld.type === 'checks'}>
         <div class="big-touch">
           <For each={props.opties}>
-            {([k, label]) => {
-              const lijstNu = () => (Array.isArray(w()) ? (w() as string[]) : []);
-              return (
-                <div class={optieRij(k)}>
-                  <input
-                    class={`form-check-input qa-optie-${k}`}
-                    type="checkbox"
-                    id={optieId(k)}
-                    disabled={props.uit}
-                    checked={lijstNu().includes(k)}
-                    onChange={(e) => {
-                      const rest = lijstNu().filter((x) => x !== k);
-                      if (e.currentTarget.checked) kiesAnders(k);
-                      const nieuw = e.currentTarget.checked ? [...rest, k] : rest;
-                      zet(nieuw.length ? nieuw : null);
-                    }}
-                  />
-                  <label class="form-check-label" classList={{ 'text-nowrap': k === 'anders' }} for={optieId(k)}>{label}</label>
-                  {k === 'anders' && anders(() => lijstNu().includes('anders'))}
-                </div>
-              );
-            }}
+            {([k, label]) => (
+              <div class={optieRij(k)}>
+                <input class={`form-check-input qa-optie-${k}`} type="checkbox" id={optieId(k)} disabled={props.uit} checked={gekozen().includes(k)} onChange={(e) => wissel(k, e.currentTarget.checked)} />
+                <label class="form-check-label" classList={{ 'text-nowrap': k === 'anders' }} for={optieId(k)}>{label}</label>
+                {k === 'anders' && anders(() => gekozen().includes('anders'))}
+              </div>
+            )}
           </For>
         </div>
       </Match>

@@ -1,7 +1,7 @@
 // Photo slots in a real browser: drag and drop, the replace question, conversion failures and the fetched boorprofiel. The server side is in app.test.ts and fotos.test.ts.
 import { type Locator, type Page, expect, test } from '@playwright/test';
 import sharp from 'sharp';
-import { ja, nieuwDossier, opslagKlaar, start, veld, vul } from './hulp.ts';
+import { ja, nieuwDossier, opslagKlaar, start, veld, vul, zet } from './hulp.ts';
 
 const PNG = (await sharp({ create: { width: 400, height: 300, channels: 3, background: '#88d356' } }).png().toBuffer()).toString('base64');
 const PDF = Buffer.from('%PDF-1.4\n%nep\n').toString('base64');
@@ -90,6 +90,24 @@ test('een bestand zonder afbeelding erin, ook met een afbeeldingtype, geeft deze
   await expect(slot.locator('.qa-foto')).toHaveCount(0);
 });
 
+test('in een vak voor meerdere foto’s zijn de foto’s kleine vierkantjes naast elkaar, de eerste recht onder het label', async ({ page }) => {
+  const id = await nieuwBezoekDossier(page);
+  await zet(page, id, { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }] });
+  await page.reload();
+  const slot = page.locator('.qa-fotoslot-regenpijp-waar');
+  await sleep(page, slot, [png('een.png'), png('twee.png')]);
+  const fotos = slot.locator('.qa-foto');
+  await expect(fotos).toHaveCount(2);
+  const [een, twee] = await Promise.all([0, 1].map((i) => fotos.nth(i).evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect)));
+  const label = await veld(page, 'regenpijp-waar').locator('.form-label').evaluate((el) => el.getBoundingClientRect().left);
+  expect(een.width).toBeCloseTo(7.7 * 16, 0);
+  expect(een.height).toBeCloseTo(een.width, 0);
+  expect(twee.top).toBe(een.top);
+  expect(twee.left).toBeGreaterThan(een.right);
+  expect(een.left).toBe(label);
+  await opslagKlaar(page);
+});
+
 test('een tweede foto op een vak met één foto vraagt vervangen of toevoegen', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-tuinsituatie');
@@ -155,16 +173,13 @@ test('een vak met een foto toont de toevoegknoppen in een menu: + voor meer foto
   await opslagKlaar(page);
 });
 
-test('de kaart staat er heel en anderhalf keer zo breed als een gewone duimnagel', async ({ page }) => {
+test('de kaart staat er heel en 16,5rem breed', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const kaart = page.locator('.qa-fotoslot-kaart');
-  const tuin = page.locator('.qa-fotoslot-tuinsituatie');
   await sleep(page, kaart, [png('kaart.png')]);
-  await sleep(page, tuin, [png('tuin.png')]);
   await expect(kaart.locator('.qa-foto')).toHaveCount(1);
-  await expect(tuin.locator('.qa-foto')).toHaveCount(1);
-  const [k, t] = [(await kaart.locator('.qa-foto').boundingBox())!, (await tuin.locator('.qa-foto').boundingBox())!];
-  expect(k.width / t.width).toBeCloseTo(1.5, 1);
+  const k = (await kaart.locator('.qa-foto').boundingBox())!;
+  expect(k.width).toBeCloseTo(16.5 * 16, 0);
   expect(k.width / k.height).toBeCloseTo(400 / 300, 1);
   await expect(kaart.locator('.qa-foto svg')).toHaveAttribute('preserveAspectRatio', 'xMidYMid meet');
   await opslagKlaar(page);
@@ -186,10 +201,11 @@ test('op een vak voor één foto, zoals de straatfoto, vervangt een nieuwe foto 
   await expect(slot.locator('.qa-foto image')).not.toHaveAttribute('href', eerste!);
 });
 
-test('de knoppen staan rechts naast de foto, en de duimnagel is 3:2 met een rand', async ({ page }) => {
-  await nieuwBezoekDossier(page);
-  const slot = page.locator('.qa-fotoslot-tuinsituatie');
-  await sleep(page, slot, [png('tuin.png')]);
+test('op een vak voor één foto staan de knoppen rechts naast de foto, en de duimnagel is 3:2 met een rand', async ({ page }) => {
+  await start(page);
+  await nieuwDossier(page, { huurKoop: 'koop' });
+  const slot = page.locator('.qa-fotoslot-straatfoto');
+  await sleep(page, slot, [png('straat.png')]);
   const duim = slot.locator('.qa-foto');
   await expect(duim).toHaveCount(1);
   const [d, k] = [(await duim.boundingBox())!, (await slot.locator('.qa-foto-knoppen').boundingBox())!];

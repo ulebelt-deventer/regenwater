@@ -95,14 +95,16 @@ $container-max-widths: (lg: 1200px);
 .meldingen { position: fixed; top: .75rem; left: 50%; transform: translateX(-50%); z-index: 1090; width: min(32rem, calc(100% - 1.5rem)); }
 
 // Photo slots
-.foto-slot { border: 2px dashed transparent; border-radius: .5rem; padding: .25rem; }
-.foto-slot.sleep { border-color: $ub-groen; background: #eef7f1; }
+// An outline, not border + padding, so the first photo lines up with the label above it.
+.foto-slot { outline: 2px dashed transparent; outline-offset: .25rem; border-radius: .5rem; }
+.foto-slot.sleep { outline-color: $ub-groen; background: #eef7f1; }
 // Stays beside the photos in a narrow column by stacking its buttons, rather than wrapping below them.
 .foto-knoppen { flex: 1 1 8rem; }
 // 3:2, the photo cropped to fit; a `heel` thumbnail sets its own aspect-ratio inline.
 .thumb { width: 11rem; aspect-ratio: 3 / 2; background: #eee; cursor: pointer; display: block; }
 .thumb.wacht { opacity: .5; }
 .thumb.thumb-klein { width: 7rem; }
+.thumb.thumb-vierkant { width: 7.7rem; aspect-ratio: 1; }
 .thumb.thumb-heel { width: 16.5rem; }
 
 // Full-screen photo viewer and drawing editor

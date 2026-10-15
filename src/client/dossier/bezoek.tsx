@@ -211,7 +211,7 @@ export function Bezoek() {
               <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
             </Show>
             {/* No table-responsive wrapper: its overflow would clip the Regenpijpen dropdown. Rows go by id so they, and an open dropdown, survive a change to the dak. */}
-            <table class="table table-sm align-middle mb-1 tabel-kaarten qa-daken-tabel">
+            <table class="table table-sm align-middle w-auto mb-1 tabel-kaarten qa-daken-tabel">
               <thead>
                 <tr>
                   <th>Dakdeel</th>

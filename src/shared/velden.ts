@@ -15,7 +15,8 @@ export interface Veld {
   pagina: Pagina;
   bewerkers: Bewerker[];
   opties?: [string, string][];
-  lijst?: boolean; // a radio shown as a dropdown, for long option lists
+  lijst?: boolean; // radio or checks shown as a dropdown, to save room
+  rijen?: number; // a textarea's height, default 3
   anders?: boolean; // the last option is "Anders, namelijk:" with a write-in stored under `${key}_anders`
   inPlan?: boolean;
   inOplever?: boolean;
@@ -90,11 +91,11 @@ export const VELDEN: Veld[] = [
   { key: 'tuinsituatie', label: 'Tuinsituatie & infiltratie', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'tuinsituatie', hint: 'Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?' },
   { key: 'regenpijp.*.soort', label: 'Soort', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, opties: [['pvc', 'PVC'], ['zink', 'Zink'], ['anders', 'Anders, namelijk:']] },
   { key: 'regenpijp.*.diameter', label: 'Diameter', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, opties: [['80', '80 mm'], ['100', '100 mm'], ['anders', 'Anders, namelijk:']] },
-  { key: 'regenpijp.*.regenton', label: 'Regenton aanwezig?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['aanwezig', 'Is al aanwezig'], ['gewenst', 'Nog niet aanwezig, wel gewenst'], ['niet', 'Niet gewenst']] },
+  { key: 'regenpijp.*.regenton', label: 'Regenton aanwezig?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['aanwezig', 'Is al aanwezig'], ['gewenst', 'Niet aanwezig, wel gewenst'], ['niet', 'Niet gewenst']] },
   { key: 'regenpijp.*.ondergrond', label: 'Hoe is de ondergrond bij de pijp?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.ondergrond', zichtbaar: (d, id) => regenpijpWaarde(d, id, 'regenton') === 'gewenst' },
-  { key: 'regenpijp.*.afkoppelen', label: 'Afkoppelen?', type: 'radio', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['ja', 'Ja'], ['nee', 'Nee'], ['twijfel', 'Twijfel']], hint: 'Ja = deze pijp loopt niet meer op het riool af.' },
-  { key: 'regenpijp.*.waar', label: 'Waar moet het water naartoe?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.waar' },
-  { key: 'regenpijp.*.hoe', label: 'Hoe moet het water daarnaartoe komen?', type: 'checks', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, fotos: 'regenpijp.*.hoe', opties: [['holie_molie', 'Holie Molie'], ['drainageslang', 'Drainageslang bovengronds'], ['ondergronds', 'Ondergronds'], ['anders', 'Anders, namelijk:']] },
+  { key: 'regenpijp.*.afkoppelen', label: 'Afkoppelen?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['ja', 'Ja'], ['nee', 'Nee'], ['twijfel', 'Twijfel']] },
+  { key: 'regenpijp.*.waar', label: 'Waar moet het water naartoe?', type: 'textarea', rijen: 2, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.waar' },
+  { key: 'regenpijp.*.hoe', label: 'Hoe moet het water daarnaartoe komen?', type: 'checks', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, fotos: 'regenpijp.*.hoe', opties: [['holie_molie', 'Holie Molie'], ['drainageslang', 'Drainageslang bovengronds'], ['ondergronds', 'Ondergronds'], ['anders', 'Anders, namelijk:']] },
   { key: 'hoosbuien', label: 'Wat gebeurt er bij hoosbuien?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'hoosbuien', hint: 'Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst?' },
   { key: 'wensen', label: 'Wat wenst de bewoner?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, hint: 'Wat wil de bewoner bereiken? Regenton(nen) plaatsen? Regenpijp afkoppelen? Water de tuin in laten lopen? Wat wil de bewoner zelf doen?' },
 
