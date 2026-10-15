@@ -120,6 +120,47 @@ test('de knop Klaar verschijnt pas bij drie punten en sluit de tuin', async ({ p
   await expect(page.locator('.qa-tuin-rij')).toContainText('T1');
 });
 
+test('een terras krijgt pas na het tekenen een eigen tabel met fotovak', async ({ page }) => {
+  const id = await openKaart(page);
+  await expect(page.locator('.qa-terrassen')).toHaveCount(0);
+  await gereedschap(page, 'terras');
+  for (const [x, y] of VIERKANT) await tik(page, x, y);
+  await page.locator('.qa-klaar').click();
+  await sluitTekenaar(page);
+
+  expect((await kaart(page, id)).map((a) => [a.type, a.p.length])).toEqual([['terras', 4]]);
+  const rij = page.locator('.qa-terras-rij');
+  await expect(rij).toHaveCount(1);
+  await expect(rij).toContainText('TR1');
+  await rij.locator('.qa-fotoslot-terras .qa-foto-invoer').setInputFiles({ name: 'terras.png', mimeType: 'image/png', buffer: PNG });
+  await expect(rij.locator('.qa-foto')).toHaveCount(1);
+  await opslagKlaar(page);
+  expect((await serverDossier(page, id)).fotos.map((f) => f.slot)).toEqual(['kaart', `terras.${(await kaart(page, id))[0].id}`]);
+});
+
+test('met een vlakgereedschap kiest een eerste tik binnen een bestaand vlak dat vlak', async ({ page }) => {
+  const id = await openKaart(page);
+  await gereedschap(page, 'dak');
+  for (const [x, y] of VIERKANT) await tik(page, x, y);
+  await page.locator('.qa-klaar').click();
+  await tekenaarOpgeslagen(page);
+
+  await gereedschap(page, 'tuin');
+  await tik(page, 0.5, 0.5);
+  await expect(page.locator('.qa-gereedschap-kies')).toHaveClass(/active/);
+  await expect(page.locator('.qa-verwijder')).toBeVisible();
+  await expect(page.locator('.qa-klaar')).toHaveCount(0);
+
+  // Once a corner is placed, a tap inside the dak is just the next corner.
+  await gereedschap(page, 'tuin');
+  await tik(page, 0.2, 0.2);
+  await tik(page, 0.5, 0.5);
+  await tik(page, 0.2, 0.5);
+  await page.locator('.qa-klaar').click();
+  await sluitTekenaar(page);
+  expect((await kaart(page, id)).map((a) => [a.type, a.p.length])).toEqual([['dak', 4], ['tuin', 3]]);
+});
+
 test('Escape gooit een half getekend dak weg zonder iets op te slaan', async ({ page }) => {
   const id = await openKaart(page);
   await gereedschap(page, 'dak');

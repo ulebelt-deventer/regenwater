@@ -1,4 +1,4 @@
-// Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen and regenpijpen, then what was found.
+// Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen, terrassen and regenpijpen, then what was found.
 import { A } from '@solidjs/router';
 import { For, Show, createSignal } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
@@ -67,7 +67,7 @@ export function Bezoek() {
       Er is nog geen dak ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
     </div>
   );
-  const m2Cel = (id: string, soort: 'dak' | 'tuin', m2: number | null, berekend: boolean) => (
+  const m2Cel = (id: string, soort: 'dak' | 'tuin' | 'terras', m2: number | null, berekend: boolean) => (
     <Show when={berekend} fallback={<VeldInvoer k={`${soort}.${id}.m2`} kaal />}>
       {m2 === null ? '--' : `${getal(m2)} m²`}
     </Show>
@@ -149,6 +149,23 @@ export function Bezoek() {
             </For>
           </Show>
         </div>
+
+        <Show when={items().terrassen.length}>
+          <div id="veld-terrassen" class="mb-3 qa-terrassen">
+            <div class="form-label fw-semibold mb-1">Terras</div>
+            <For each={items().terrassen}>
+              {(terras) => (
+                <div class="row g-2 align-items-start border-bottom py-2 qa-terras-rij">
+                  <div class="col-3 col-md-2 fw-semibold">{terras.label}</div>
+                  <div class="col-9 col-md-3">{m2Cel(terras.id, 'terras', terras.m2, terras.m2Berekend)}</div>
+                  <div class="col-12 col-md-7">
+                    <FotoSlot k={`terras.${terras.id}`} />
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
 
         <VeldInvoer k="verhard" />
         <VeldInvoer k="tuinsituatie" />

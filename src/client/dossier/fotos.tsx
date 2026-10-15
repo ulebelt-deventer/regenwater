@@ -5,7 +5,7 @@ import { annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Foto } from '../../shared/types.ts';
 import { fotoSlotVoor } from '../../shared/velden.ts';
 import { fotoInWachtrij, naarJpeg, wachtendeFotos } from '../opslag.ts';
-import { bevestig, melding } from '../ui.tsx';
+import { bevestig, melding, probeer } from '../ui.tsx';
 import { Luchtfoto } from './luchtfoto.tsx';
 import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
@@ -96,6 +96,25 @@ export function FotoSlot(props: { k: string; label?: string }) {
       if (blob) await fotoInWachtrij({ dossierId: s.id, slot: k, vervang: i === 0 ? vervang : null, naam: bestanden[i].name, blob });
     }
   };
+  const plak = async () => {
+    if (!navigator.clipboard?.read) return melding('danger', 'Plakken van een afbeelding werkt niet in deze browser. Gebruik Uploaden.');
+    let items: ClipboardItems;
+    try {
+      items = await navigator.clipboard.read();
+    } catch (e) {
+      // Chrome refuses an empty or text-only clipboard with a DataError; a denied permission is a NotAllowedError.
+      if (e instanceof DOMException && e.name === 'NotAllowedError') return melding('danger', 'De browser gaf geen toegang tot het klembord. Sta plakken toe en probeer het opnieuw.');
+      if (e instanceof DOMException && e.name === 'DataError') return melding('danger', 'Er staat geen afbeelding op het klembord. Kopieer eerst een afbeelding.');
+      throw e;
+    }
+    const bestanden: File[] = [];
+    for (const item of items) {
+      const type = item.types.find((t) => t.startsWith('image/'));
+      if (type) bestanden.push(new File([await item.getType(type)], `geplakt.${type.slice('image/'.length)}`, { type }));
+    }
+    if (!bestanden.length) return melding('danger', 'Er staat geen afbeelding op het klembord. Kopieer eerst een afbeelding.');
+    await voegToe(bestanden);
+  };
   const uitInvoer = (e: Event & { currentTarget: HTMLInputElement }) => {
     const bestanden = [...e.currentTarget.files!];
     e.currentTarget.value = '';
@@ -140,8 +159,9 @@ export function FotoSlot(props: { k: string; label?: string }) {
         <Show when={!uit()}>
           <div class="foto-knoppen qa-foto-knoppen">
             <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}>📷 Foto maken</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}>Bestand kiezen</button>
+              <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-1" aria-hidden="true" />Foto</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-1" aria-hidden="true" />Uploaden</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-1" aria-hidden="true" />Plakken</button>
             </div>
             <div class="small text-muted mt-1 d-none d-md-block">Of sleep een foto hierheen.</div>
             <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
@@ -170,7 +190,7 @@ export function KaartVeld() {
           {(a) => <a href={kadastraleKaartUrl(a().rd)} target="_blank" rel="noopener" class="small qa-kadastrale-kaart">Kadastrale kaart</a>}
         </Show>
       </div>
-      <div class="form-text mt-0 mb-1">Teken de daken, tuinen en regenpijpen in. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
+      <div class="form-text mt-0 mb-1">Teken de daken, tuinen, terrassen en regenpijpen in. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
       <Show when={s.kaartVervangen()}>
         <div class="small text-warning mb-1 qa-kaart-vervangen">Je hebt de kaart vervangen, dus de tekeningen kloppen mogelijk niet meer. Verplaats of pas ze aan waar nodig.</div>
       </Show>

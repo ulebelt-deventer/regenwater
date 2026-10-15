@@ -1,5 +1,5 @@
 import { NORMAFVOER_MM } from './constants.ts';
-import type { Annotatie, Dossier, Foto, Json } from './types.ts';
+import type { Annotatie, AnnotatieType, Dossier, Foto, Json } from './types.ts';
 
 type Pt = [number, number];
 
@@ -15,12 +15,13 @@ export function letter(i: number): string {
 
 // Labels follow array order, so deleting an item renumbers the rest without touching stored IDs.
 export function annotatieLabels(annots: Annotatie[]): Map<string, string> {
-  const tel = { pijl: 0, dak: 0, tuin: 0, regenpijp: 0, tekst: 0 };
+  const tel = { pijl: 0, dak: 0, tuin: 0, terras: 0, regenpijp: 0, tekst: 0 };
   const labels = new Map<string, string>();
   for (const a of annots) {
     const i = tel[a.type]++;
     if (a.type === 'dak') labels.set(a.id, `D${i + 1}`);
     else if (a.type === 'tuin') labels.set(a.id, `T${i + 1}`);
+    else if (a.type === 'terras') labels.set(a.id, `TR${i + 1}`);
     else if (a.type === 'regenpijp') labels.set(a.id, letter(i));
   }
   return labels;
@@ -60,11 +61,14 @@ export function afstandTotLijn(pt: Pt, a: Pt, b: Pt): number {
   return Math.hypot(pt[0] - (a[0] + t * dx), pt[1] - (a[1] + t * dy));
 }
 
-export function afstandTotPolygoon(pt: Pt, poly: Pt[]): number {
-  if (binnen(pt, poly)) return 0;
+export function afstandTotRand(pt: Pt, poly: Pt[]): number {
   let min = Infinity;
   for (let i = 0; i < poly.length; i++) min = Math.min(min, afstandTotLijn(pt, poly[i], poly[(i + 1) % poly.length]));
   return min;
+}
+
+export function afstandTotPolygoon(pt: Pt, poly: Pt[]): number {
+  return binnen(pt, poly) ? 0 : afstandTotRand(pt, poly);
 }
 
 export function dichtstbijzijndeDak(pt: Pt, daken: Annotatie[]): string | null {
@@ -79,6 +83,10 @@ export function dichtstbijzijndeDak(pt: Pt, daken: Annotatie[]): string | null {
   }
   return best;
 }
+
+// Polygon annotations: drawn corner by corner, filled, and measured on a scaled kaart.
+export const VLAK_TYPES = ['dak', 'tuin', 'terras'] as const;
+export const isVlak = (t: AnnotatieType): t is (typeof VLAK_TYPES)[number] => (VLAK_TYPES as readonly string[]).includes(t);
 
 export function kaartAnnotaties(d: Dossier): Annotatie[] {
   const v = d.data.kaart_annotaties;
@@ -97,7 +105,8 @@ export interface DakDeel {
   m2Berekend: boolean;
   regenpijpen: string[];
 }
-export interface TuinDeel {
+// A tuindeel or a terras: a measured area with photos.
+export interface Vlak {
   id: string;
   label: string;
   m2: number | null;
@@ -117,7 +126,8 @@ function handmatigM2(d: Dossier, key: string): number | null {
 
 export interface KaartItems {
   daken: DakDeel[];
-  tuinen: TuinDeel[];
+  tuinen: Vlak[];
+  terrassen: Vlak[];
   regenpijpen: Regenpijp[];
   labels: Map<string, string>;
   opSchaal: boolean;
@@ -150,10 +160,9 @@ export function kaartItems(d: Dossier): KaartItems {
     m2Berekend: schaal !== null,
     regenpijpen: regenpijpen.filter((r) => r.dak === a.id).map((r) => r.id),
   }));
-  const tuinen = annots
-    .filter((a) => a.type === 'tuin')
-    .map((a) => ({ id: a.id, label: labels.get(a.id)!, m2: m2(a, `tuin.${a.id}.m2`), m2Berekend: schaal !== null }));
-  return { daken, tuinen, regenpijpen, labels, opSchaal: schaal !== null };
+  const vlakken = (type: 'tuin' | 'terras') =>
+    annots.filter((a) => a.type === type).map((a) => ({ id: a.id, label: labels.get(a.id)!, m2: m2(a, `${type}.${a.id}.m2`), m2Berekend: schaal !== null }));
+  return { daken, tuinen: vlakken('tuin'), terrassen: vlakken('terras'), regenpijpen, labels, opSchaal: schaal !== null };
 }
 
 export function waterberging(dak: DakDeel): { liter: number; uitleg: string } | null {
@@ -178,7 +187,7 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-const KLEUR = { pijl: '#ff713e', tekst: '#ffffff', dak: '#86afe2', tuin: '#88d356', regenpijp: '#00643c' };
+export const KLEUR = { pijl: '#ff713e', tekst: '#ffffff', dak: '#86afe2', tuin: '#88d356', terras: '#e5383b', regenpijp: '#00643c' };
 // A Tekst annotation's font size in units of `schaal`; the editor's hit test uses it too.
 export const TEKST_PX = 14 * 1.21;
 
@@ -193,7 +202,7 @@ export function annotatiesSvg(annots: Annotatie[], opts: { schaal: number; mPerP
     const sel = a.id === opts.geselecteerd;
     const breed = (sel ? 5 : 3) * u;
     const label = labels.get(a.id);
-    if (a.type === 'dak' || a.type === 'tuin') {
+    if (isVlak(a.type)) {
       const pts = a.p.map((q) => q.join(',')).join(' ');
       const kleur = KLEUR[a.type];
       out.push(`<polygon points="${pts}" fill="${kleur}" fill-opacity="0.25" stroke="${kleur}" stroke-width="${breed}" stroke-linejoin="round"/>`);
@@ -238,7 +247,7 @@ export function isAnnotatieLijst(v: Json): boolean {
     const o = a as Record<string, Json>;
     return (
       typeof o.id === 'string' &&
-      ['pijl', 'tekst', 'dak', 'tuin', 'regenpijp'].includes(o.type as string) &&
+      ['pijl', 'tekst', 'dak', 'tuin', 'terras', 'regenpijp'].includes(o.type as string) &&
       Array.isArray(o.p) &&
       o.p.every((q) => Array.isArray(q) && q.length === 2 && q.every((n) => typeof n === 'number' && Number.isFinite(n))) &&
       (o.tekst === undefined || typeof o.tekst === 'string')

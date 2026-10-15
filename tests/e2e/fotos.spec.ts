@@ -42,6 +42,24 @@ test('een gesleepte PDF geeft een rode melding met de bestandsnaam en wordt niet
   await expect(slot.locator('.qa-foto')).toHaveCount(0);
 });
 
+test('Plakken zet een afbeelding van het klembord in het vak, en meldt het als er geen afbeelding op staat', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await nieuwBezoekDossier(page);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+
+  await page.evaluate(() => navigator.clipboard.writeText('alleen tekst'));
+  await slot.locator('.qa-foto-plakken').click();
+  await expect(page.locator('.qa-melding-danger')).toContainText('Er staat geen afbeelding op het klembord. Kopieer eerst een afbeelding.');
+
+  await page.evaluate(async (b64) => {
+    const blob = new Blob([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], { type: 'image/png' });
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  }, PNG);
+  await slot.locator('.qa-foto-plakken').click();
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await opslagKlaar(page);
+});
+
 test('een PDF en een foto tegelijk: de foto komt erbij, de PDF geeft een melding', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-tuinsituatie');

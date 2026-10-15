@@ -71,7 +71,7 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
           {(k) => (
             <figure class="qa-pdf-kaart">
               <FotoMetTekening doc={props.doc} foto={k()} annots={kaartAnnotaties(d())} mPerPx={k().m_per_px} />
-              <figcaption>Kadastrale kaart met dakdelen (D), tuindelen (T) en regenpijpen (A, B, ...)</figcaption>
+              <figcaption>Kadastrale kaart met dakdelen (D), tuindelen (T), terrassen (TR) en regenpijpen (A, B, ...)</figcaption>
             </figure>
           )}
         </Show>
@@ -118,20 +118,21 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
 function Infiltratie(props: { doc: Doc }): JSX.Element {
   const d = () => props.doc.d;
   const tuinen = () => kaartItems(d()).tuinen;
+  const terrassen = () => kaartItems(d()).terrassen;
   const verhard = () => (typeof d().data.verhard === 'number' ? `${getal(d().data.verhard as number)}%` : null);
   return (
     <>
       <h2>2. Infiltratie</h2>
-      <Show when={tuinen().length > 0}>
+      <Show when={tuinen().length + terrassen().length > 0}>
         <table class="tabel">
           <thead>
             <tr>
-              <th>Tuin</th>
+              <th>Tuin / terras</th>
               <th class="getal">Oppervlakte</th>
             </tr>
           </thead>
           <tbody>
-            <For each={tuinen()}>
+            <For each={[...tuinen(), ...terrassen()]}>
               {(t) => (
                 <tr>
                   <td>{t.label}</td>
@@ -155,6 +156,9 @@ function Infiltratie(props: { doc: Doc }): JSX.Element {
       <Fotos doc={props.doc} slot="hoosbuien" />
       <For each={tuinen().filter((t) => fotosIn(d(), `tuin.${t.id}`).length > 0)}>
         {(t) => <Fotos doc={props.doc} slot={`tuin.${t.id}`} onderschrift={`Tuin ${t.label}`} />}
+      </For>
+      <For each={terrassen().filter((t) => fotosIn(d(), `terras.${t.id}`).length > 0)}>
+        {(t) => <Fotos doc={props.doc} slot={`terras.${t.id}`} onderschrift={`Terras ${t.label}`} />}
       </For>
     </>
   );

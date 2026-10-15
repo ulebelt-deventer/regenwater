@@ -34,6 +34,11 @@ describe('labels', () => {
     const a: Annotatie[] = [{ id: 'p1', type: 'pijl', p: [] }, { id: 'r1', type: 'regenpijp', p: [] }, { id: 'x1', type: 'tekst', p: [], tekst: 'hier' }, { id: 'r2', type: 'regenpijp', p: [] }];
     expect([...annotatieLabels(a)]).toEqual([['r1', 'A'], ['r2', 'B']]);
   });
+
+  it('numbers terrassen TR1, TR2 apart from tuinen', () => {
+    const a: Annotatie[] = [{ id: 'x1', type: 'terras', p: [] }, { id: 't1', type: 'tuin', p: [] }, { id: 'x2', type: 'terras', p: [] }];
+    expect([...annotatieLabels(a)]).toEqual([['x1', 'TR1'], ['t1', 'T1'], ['x2', 'TR2']]);
+  });
 });
 
 describe('geometry', () => {
@@ -106,7 +111,7 @@ describe('dichtstbijzijndeDak', () => {
 describe('isAnnotatieLijst', () => {
   it('accepts an empty list and every annotation type', () => {
     expect(isAnnotatieLijst([])).toBe(true);
-    expect(isAnnotatieLijst(['pijl', 'tekst', 'dak', 'tuin', 'regenpijp'].map((type, i) => ({ id: `a${i}`, type, p: [[1, 2]], ...(type === 'tekst' ? { tekst: 'x' } : {}) })))).toBe(true);
+    expect(isAnnotatieLijst(['pijl', 'tekst', 'dak', 'tuin', 'terras', 'regenpijp'].map((type, i) => ({ id: `a${i}`, type, p: [[1, 2]], ...(type === 'tekst' ? { tekst: 'x' } : {}) })))).toBe(true);
   });
 
   it('refuses anything that would break drawing or the PDFs', () => {
@@ -159,6 +164,12 @@ describe('kaartItems', () => {
     const d = dossier({ fotos: [kaart(null)], data: { kaart_annotaties: [{ id: 'd1', type: 'dak', p: vierkant(0, 0, 60) }], 'dak.d1.m2': 18 } });
     expect(kaartItems(d).daken[0]).toMatchObject({ m2: 18, m2Berekend: false });
   });
+
+  it('measures terrassen on a scaled kaart and takes the manual m² on an unscaled one', () => {
+    const anns = [{ id: 'x1', type: 'terras', p: vierkant(0, 0, 30) }];
+    expect(kaartItems(dossier({ fotos: [kaart(0.1)], data: { kaart_annotaties: anns } })).terrassen).toEqual([{ id: 'x1', label: 'TR1', m2: 9, m2Berekend: true }]);
+    expect(kaartItems(dossier({ fotos: [kaart(null)], data: { kaart_annotaties: anns, 'terras.x1.m2': 12 } })).terrassen[0]).toMatchObject({ m2: 12, m2Berekend: false });
+  });
 });
 
 describe('waterberging', () => {
@@ -177,6 +188,14 @@ describe('annotatiesSvg', () => {
     expect(svg).toContain('>D1</text>');
     expect(svg).toContain('>36 m²</text>');
     expect(svg).toContain('>6 m</text>');
+  });
+
+  it('draws a terras as a red polygon with its label, area and sides', () => {
+    const svg = annotatiesSvg([{ id: 'x1', type: 'terras', p: vierkant(0, 0, 30) }], { schaal: 1, mPerPx: 0.1 });
+    expect(svg).toContain('<polygon points="0,0 30,0 30,30 0,30" fill="#e5383b"');
+    expect(svg).toContain('>TR1</text>');
+    expect(svg).toContain('>9 m²</text>');
+    expect(svg).toContain('>3 m</text>');
   });
 
   it('draws a pijl without a label, its line ending inside the head so the round cap stays behind the tip', () => {
@@ -206,6 +225,13 @@ describe('ontbrekend (Controle)', () => {
     expect(labels).toContain('D1: m²');
     expect(labels).toContain('Regenpijp A: Hoe is de ondergrond bij de pijp?');
     expect(labels).not.toContain('Regenpijp A: Regenton aanwezig?');
+  });
+
+  it('never asks for a terras, but asks for the m² of a drawn one on an unscaled kaart', () => {
+    const d = dossier({ fotos: [kaart(null)], data: { kaart_annotaties: [{ id: 't1', type: 'tuin', p: vierkant(0, 0, 10) }] } });
+    expect(ontbrekend(d, 'bezoek').map((o) => o.label).filter((l) => l.includes('TR') || /terras/i.test(l))).toEqual([]);
+    d.data.kaart_annotaties = [{ id: 'x1', type: 'terras', p: vierkant(0, 0, 10) }];
+    expect(ontbrekend(d, 'bezoek')).toContainEqual({ label: 'TR1: m²', anker: 'veld-terras.x1.m2' });
   });
 
   it('asks for the write-in when Anders is chosen', () => {

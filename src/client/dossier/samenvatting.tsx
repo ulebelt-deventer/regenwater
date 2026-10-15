@@ -167,6 +167,14 @@ export function BezoekSamenvatting() {
           )}
         </For>
       </Show>
+      <For each={items().terrassen}>
+        {(terras) => (
+          <Regel label={`Terras ${terras.label}`} class="qa-sv-terras">
+            {terras.m2 === null ? <span class="text-muted">-- m²</span> : `${getal(terras.m2)} m²`}
+            <FotoDuimen slot={`terras.${terras.id}`} />
+          </Regel>
+        )}
+      </For>
       <VeldRegel k="verhard" label="Verhard" />
       <VeldRegel k="tuinsituatie" label="Tuinsituatie" />
       <For each={items().regenpijpen}>{(r) => <RegenpijpRegel id={r.id} label={r.label} dak={r.dak} />}</For>

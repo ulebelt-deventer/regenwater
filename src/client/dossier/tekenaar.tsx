@@ -1,6 +1,6 @@
 // Full-screen photo viewer and drawing tool. Zoom and pan move the SVG viewBox, so image coordinates never change.
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
-import { TEKST_PX, afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
+import { KLEUR, TEKST_PX, afstandTotLijn, afstandTotPolygoon, afstandTotRand, annotatieLabels, annotatiesSvg, binnen, isVlak, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
 import { del } from '../api.ts';
@@ -13,6 +13,8 @@ type Gereedschap = AnnotatieType | null;
 const TIK_PX = 6;
 const RAAK_PX = 14;
 const HANDVAT_PX = 9;
+// A first tap this far inside an existing vlak selects it instead of starting a new one.
+const KIES_VLAK_PX = 5;
 const DUBBELTIK_MS = 350;
 
 const HINT: Record<string, string> = {
@@ -21,12 +23,13 @@ const HINT: Record<string, string> = {
   tekst: 'Tik waar de tekst moet komen.',
   dak: 'Tik de hoeken van het dak aan. Tik op het eerste punt of op Klaar om te sluiten.',
   tuin: 'Tik de hoeken van de tuin aan. Tik op het eerste punt of op Klaar om te sluiten.',
+  terras: 'Tik de hoeken van het terras aan. Tik op het eerste punt of op Klaar om te sluiten.',
   regenpijp: 'Tik waar de regenpijp staat.',
   bekijk: 'Knijp of scroll om te zoomen; sleep om te schuiven.',
 };
 
-const NAAM: Record<AnnotatieType, string> = { pijl: 'Pijl', tekst: 'Tekst', dak: 'Dak', tuin: 'Tuin', regenpijp: 'Regenpijp' };
-const MET_GEGEVENS = new Set<AnnotatieType>(['dak', 'tuin', 'regenpijp']);
+const NAAM: Record<AnnotatieType, string> = { pijl: 'Pijl', tekst: 'Tekst', dak: 'Dak', tuin: 'Tuin', terras: 'Terras', regenpijp: 'Regenpijp' };
+const MET_GEGEVENS = new Set<AnnotatieType>(['dak', 'tuin', 'terras', 'regenpijp']);
 
 const kloon = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
 
@@ -151,7 +154,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
   const treffers = (p: Pt): string[] => {
     const tol = RAAK_PX / px();
     const omgekeerd = [...annots()].reverse();
-    const vlak = (a: Annotatie) => a.type === 'dak' || a.type === 'tuin';
+    const vlak = (a: Annotatie) => isVlak(a.type);
     return [...omgekeerd.filter((a) => !vlak(a)), ...omgekeerd.filter(vlak)].filter((a) => raakt(a, p, tol)).map((a) => a.id);
   };
   const handvatOp = (p: Pt): number | null => {
@@ -299,8 +302,15 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
       wijzig([...opgeslagen(), { id, type: 'regenpijp', p: [p] }]);
       return;
     }
-    if (g === 'dak' || g === 'tuin') {
+    if (isVlak(g)) {
       const w = inWording();
+      if (!w.length) {
+        const raak = [...opgeslagen()].reverse().find((a) => isVlak(a.type) && binnen(p, a.p) && afstandTotRand(p, a.p) * px() > KIES_VLAK_PX);
+        if (raak) {
+          setGereedschap(null);
+          return setGekozen(raak.id);
+        }
+      }
       if (w.length >= 3 && Math.hypot(p[0] - w[0][0], p[1] - w[0][1]) * px() < RAAK_PX) return sluitVlak();
       setInWording([...w, p]);
     }
@@ -308,13 +318,13 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
   const sluitVlak = () => {
     const w = inWording();
     const g = gereedschap();
-    if (w.length < 3 || (g !== 'dak' && g !== 'tuin')) return;
+    if (w.length < 3 || g === null || !isVlak(g)) return;
     const id = nieuwId();
     wijzig([...opgeslagen(), { id, type: g, p: w }]);
     setInWording([]);
   };
 
-  // ---- Deleting: a dak, tuin or regenpijp takes its filled-in fields along (and undo brings them back) ----
+  // ---- Deleting: a dak, tuin, terras or regenpijp takes its filled-in fields along (and undo brings them back) ----
   const gegevensVan = (a: Annotatie): Record<string, Json> => {
     const voor = `${a.type}.${a.id}.`;
     return Object.fromEntries(Object.entries(s.d.data).filter(([k]) => k.startsWith(voor)).map(([k, v]) => [k, kloon(v)]));
@@ -370,7 +380,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     }
   }
 
-  const gereedschappen = (): AnnotatieType[] => (isKaart ? ['dak', 'tuin', 'regenpijp', 'pijl', 'tekst'] : ['pijl', 'tekst']);
+  const gereedschappen = (): AnnotatieType[] => (isKaart ? ['dak', 'tuin', 'terras', 'regenpijp', 'pijl', 'tekst'] : ['pijl', 'tekst']);
   const geselecteerd = () => annots().find((x) => x.id === gekozen());
   const hint = () => (uit() ? HINT.bekijk : HINT[gereedschap() ?? 'kies']);
   const svg = () => annotatiesSvg(annots(), { schaal: u(), mPerPx: foto().m_per_px, geselecteerd: gekozen() });
@@ -421,7 +431,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
             )}
           </Show>
           <Show when={inWording().length}>
-            <polyline points={inWording().map((q) => q.join(',')).join(' ')} fill="none" stroke={gereedschap() === 'tuin' ? '#88d356' : '#86afe2'} stroke-width={3 * u()} stroke-dasharray={`${8 * u()} ${5 * u()}`} />
+            <polyline points={inWording().map((q) => q.join(',')).join(' ')} fill="none" stroke={KLEUR[gereedschap() ?? 'dak']} stroke-width={3 * u()} stroke-dasharray={`${8 * u()} ${5 * u()}`} />
             <For each={inWording()}>{(q, i) => <circle cx={q[0]} cy={q[1]} r={(i() === 0 ? HANDVAT_PX * 1.4 : HANDVAT_PX) / px()} fill={i() === 0 ? '#ffd84d' : '#fff'} stroke="#1a1a1a" stroke-width={2 / px()} />}</For>
           </Show>
         </svg>
