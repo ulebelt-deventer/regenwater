@@ -20,7 +20,7 @@ function Hint(props: { veld: Veld }) {
   );
 }
 
-// The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder`. `breed` stretches a dropdown or number input to its column.
+// The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder` or 2+ photos, so those lie side by side. `breed` stretches a dropdown or number input to its column.
 export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
@@ -38,14 +38,17 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
           <Hint veld={v} />
         </Show>
         <Show when={fotoSlot} fallback={invoer}>
-          {(slot) => (
-            <div class="row g-2">
-              <div class={props.fotoOnder ? 'col-12' : 'col-12 col-md-8'}>{invoer}</div>
-              <div class={props.fotoOnder ? 'col-12' : 'col-12 col-md-4'}>
-                <FotoSlot k={slot()} />
+          {(slot) => {
+            const onder = () => props.fotoOnder || s.d.fotos.filter((f) => f.slot === slot()).length > 1;
+            return (
+              <div class="row g-2">
+                <div class={onder() ? 'col-12' : 'col-12 col-md-8'}>{invoer}</div>
+                <div class={onder() ? 'col-12' : 'col-12 col-md-4'}>
+                  <FotoSlot k={slot()} />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          }}
         </Show>
       </div>
     </Show>

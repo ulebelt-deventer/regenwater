@@ -48,6 +48,9 @@ export function FotoDuimen(props: { slot: string }) {
   );
 }
 
+// Phones and tablets: a finger as the main pointer. Only they get the Camera option; on a desktop it would just open the file picker.
+const aanraakscherm = matchMedia('(pointer: coarse)').matches;
+
 export function FotoSlot(props: { k: string; label?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // fixed for the life of the slot
@@ -156,7 +159,9 @@ export function FotoSlot(props: { k: string; label?: string }) {
   // The add menu, in the empty slot's button and in the + on the last photo. It sits inside the slot, so a drop on it lands in the slot.
   const Opties = () => (
     <>
-      <button type="button" class="dropdown-item qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-2" aria-hidden="true" />Foto</button>
+      <Show when={aanraakscherm}>
+        <button type="button" class="dropdown-item qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-2" aria-hidden="true" />Camera</button>
+      </Show>
       <button type="button" class="dropdown-item qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-2" aria-hidden="true" />Uploaden</button>
       <button type="button" class="dropdown-item qa-foto-plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-2" aria-hidden="true" />Plakken</button>
       <div class="dropdown-item-text small text-muted d-none d-md-block">Of hierheen slepen.</div>
@@ -192,7 +197,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
               <FotoDuim foto={f} heel={k === 'kaart'} klein={k !== 'kaart'} onClick={() => setOpen(f.id)} />
               {/* A full single-photo slot gets no +; a photo dropped or pasted on it asks to replace the old one. */}
               <Show when={!uit() && !slot.enkel && i() === fotos().length - 1}>
-                <Dropdown class="foto-plus" knop={<i class="bi bi-plus-lg" aria-hidden="true" />} knopClass="btn btn-sm btn-light border shadow-sm zonder-caret qa-foto-toevoegen" label="Foto toevoegen">
+                <Dropdown class="foto-plus" knop={<i class="bi bi-plus-lg" aria-hidden="true" />} knopClass="btn btn-sm btn-light border border-secondary shadow-sm zonder-caret qa-foto-toevoegen" label="Foto toevoegen">
                   <Opties />
                 </Dropdown>
               </Show>

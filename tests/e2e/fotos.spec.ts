@@ -120,7 +120,7 @@ test('op een telefoon zijn de foto’s in elk vak voor meerdere foto’s 7rem br
   await opslagKlaar(page);
 });
 
-test('met twee foto’s in een vak staat alleen op de laatste foto een +, die 5px buiten zijn rechteronderhoek uitsteekt', async ({ page }) => {
+test('met twee foto’s in een vak staat alleen op de laatste foto een +, die 5px buiten zijn rechteronderhoek uitsteekt, met dezelfde randkleur als de knop van een leeg vak', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const id = await nieuwBezoekDossier(page);
   await zet(page, id, { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }] });
@@ -137,6 +137,10 @@ test('met twee foto’s in een vak staat alleen op de laatste foto een +, die 5p
   expect(p.width).toBeGreaterThan(10);
   expect(p.width).toBeLessThan(laatste.width / 2);
   for (const uitsteek of [p.right - laatste.right, p.bottom - laatste.bottom]) expect(uitsteek).toBeCloseTo(5, 0);
+  const rand = (l: Locator) => l.evaluate((el) => getComputedStyle(el).borderBottomColor);
+  const leeg = page.locator('.qa-fotoslot-regenpijp-hoe .qa-foto-toevoegen');
+  await expect(leeg).toBeVisible();
+  expect(await rand(plus)).toBe(await rand(leeg));
   await opslagKlaar(page);
 });
 
@@ -181,7 +185,7 @@ test('de vraag toevoegen of vervangen sluiten met het kruisje of Annuleren voegt
   await expect(slot.locator('.qa-foto image')).toHaveAttribute('href', eerste!);
 });
 
-test('een leeg vak heeft één knop + afbeelding, die een pop-up opent met Foto, Uploaden, Plakken en slepen; daarna voegt de + op de foto er meer toe', async ({ page }) => {
+test('een leeg vak heeft één knop + afbeelding, die een pop-up opent met Uploaden, Plakken en slepen maar zonder Camera op een computer; daarna voegt de + op de foto er meer toe', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-tuinsituatie');
@@ -193,7 +197,8 @@ test('een leeg vak heeft één knop + afbeelding, die een pop-up opent met Foto,
   await knop.click();
   const menu = slot.locator('.dropdown-menu');
   await expect(menu).toBeVisible();
-  for (const optie of ['.qa-foto-maken', '.qa-foto-kiezen', '.qa-foto-plakken']) await expect(menu.locator(optie)).toBeVisible();
+  for (const optie of ['.qa-foto-kiezen', '.qa-foto-plakken']) await expect(menu.locator(optie)).toBeVisible();
+  await expect(menu.locator('.qa-foto-maken')).toHaveCount(0);
   await expect(menu).toContainText('Of hierheen slepen.');
   const [kiezer] = await Promise.all([page.waitForEvent('filechooser'), menu.locator('.qa-foto-kiezen').click()]);
   await kiezer.setFiles({ name: 'een.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') });
@@ -205,6 +210,17 @@ test('een leeg vak heeft één knop + afbeelding, die een pop-up opent met Foto,
   await page.locator('.qa-bevestig .qa-toevoegen').click();
   await expect(slot.locator('.qa-foto')).toHaveCount(2);
   await opslagKlaar(page);
+});
+
+test.describe('op een aanraakscherm', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 800 } });
+  test('heeft de pop-up van een leeg vak een optie Camera', async ({ page }) => {
+    await nieuwBezoekDossier(page);
+    const slot = page.locator('.qa-fotoslot-tuinsituatie');
+    await slot.locator('.qa-foto-toevoegen').click();
+    await expect(slot.locator('.dropdown-menu .qa-foto-maken')).toBeVisible();
+    await expect(slot.locator('.dropdown-menu .qa-foto-maken')).toHaveText('Camera');
+  });
 });
 
 test('een foto gesleept op de geopende pop-up van een vak komt in dat vak', async ({ page }) => {

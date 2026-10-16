@@ -42,7 +42,7 @@ test('de kaartuitsnede van een regenpijp steekt ~11px buiten de linkerbovenhoek 
     for (const uitsteek of [b.left - u.left, b.top - u.top]) expect(uitsteek).toBeCloseTo(11, 0);
     expect(await tekstLinks(kop)).toBeGreaterThan(u.right);
     expect(label.left).toBeCloseTo(binnenLinks, 0);
-    expect(label.top).toBeGreaterThan(u.bottom);
+    expect(label.top).toBeGreaterThanOrEqual(u.bottom - 0.5);
     // The row's vertical gutter stays: Waar starts a row of its own, .5rem under the last short cell.
     expect(waar.top - afkoppelen.bottom).toBeCloseTo(8, 0);
   }
@@ -97,40 +97,44 @@ test('de berekening onder Waterberging is 80% van de gewone tekstgrootte', async
   expect(uitleg).toBeCloseTo(gewoon * 0.8, 1);
 });
 
-test('Tuin- en Steenrijen hebben lijnen erboven en eronder; op een telefoon staat één foto rechts in de rij, twee of meer op een eigen regel', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 800 });
-  await start(page);
-  const id = await nieuwDossier(page, { huurKoop: 'koop' });
-  await zet(page, id, {
-    kaart_annotaties: [
-      { id: 't1', type: 'tuin', p: [[0, 0], [10, 0], [10, 10]] },
-      { id: 's1', type: 'steen', p: [[20, 0], [30, 0], [30, 10]] },
-    ],
-  });
-  await page.goto(`/dossiers/${id}/bezoek`);
-  for (const soort of ['tuin', 'steen']) {
-    const rij = page.locator(`.qa-${soort}-rij`);
-    await expect(rij).toBeVisible();
-    for (const [el, kant] of [[rij.locator('..'), 'borderTopWidth'], [rij, 'borderBottomWidth']] as const) expect(await el.evaluate((e, k) => getComputedStyle(e)[k], kant)).toBe('1px');
-    const slot = rij.locator('.qa-fotoslot');
-    const invoer = rij.locator('.qa-invoer');
-    await rij.locator('input.qa-foto-invoer').setInputFiles({ name: 'een.png', mimeType: 'image/png', buffer: await kaartPng() });
-    await expect(slot.locator('.qa-foto')).toHaveCount(1);
-    const [i1, s1] = await Promise.all([invoer, slot].map(rechthoek));
-    expect(s1.width).toBeGreaterThan(0);
-    expect(s1.left).toBeGreaterThan(i1.right);
-    expect(s1.top).toBeLessThan(i1.bottom);
+test('Tuin- en Steenrijen hebben lijnen erboven en eronder en smalle kolommen; op elke breedte staat één foto rechts in de rij, twee of meer op een eigen regel', async ({ page }) => {
+  for (const breedte of [320, 1280]) {
+    await page.setViewportSize({ width: breedte, height: 800 });
+    await start(page);
+    const id = await nieuwDossier(page, { huurKoop: 'koop' });
+    await zet(page, id, {
+      kaart_annotaties: [
+        { id: 't1', type: 'tuin', p: [[0, 0], [10, 0], [10, 10]] },
+        { id: 's1', type: 'steen', p: [[20, 0], [30, 0], [30, 10]] },
+      ],
+    });
+    await page.goto(`/dossiers/${id}/bezoek`);
+    for (const soort of ['tuin', 'steen']) {
+      const rij = page.locator(`.qa-${soort}-rij`);
+      await expect(rij).toBeVisible();
+      for (const [el, kant] of [[rij.locator('..'), 'borderTopWidth'], [rij, 'borderBottomWidth']] as const) expect(await el.evaluate((e, k) => getComputedStyle(e)[k], kant)).toBe('1px');
+      const slot = rij.locator('.qa-fotoslot');
+      const invoer = rij.locator('.qa-invoer');
+      await rij.locator('input.qa-foto-invoer').setInputFiles({ name: 'een.png', mimeType: 'image/png', buffer: await kaartPng() });
+      await expect(slot.locator('.qa-foto')).toHaveCount(1);
+      const [r, i1, s1] = await Promise.all([rij, invoer, slot].map(rechthoek));
+      expect(s1.width).toBeGreaterThan(0);
+      expect(s1.left).toBeGreaterThan(i1.right);
+      expect(s1.top).toBeLessThan(i1.bottom);
+      // Narrow columns: label (2rem), m² (7rem) and two 1rem gaps put the photo 11rem from the row's left edge, at any width.
+      expect(s1.left - r.left).toBeCloseTo(11 * 16, 0);
 
-    await rij.locator('.qa-foto-toevoegen').click();
-    const [kiezer] = await Promise.all([page.waitForEvent('filechooser'), rij.locator('.qa-foto-kiezen').click()]);
-    await kiezer.setFiles({ name: 'twee.png', mimeType: 'image/png', buffer: await kaartPng() });
-    await page.locator('.qa-bevestig .qa-toevoegen').click();
-    await expect(slot.locator('.qa-foto')).toHaveCount(2);
-    const [i2, f1, f2] = await Promise.all([invoer, slot.locator('.qa-foto').nth(0), slot.locator('.qa-foto').nth(1)].map(rechthoek));
-    expect(f1.top).toBeGreaterThanOrEqual(i2.bottom);
-    expect(f2.top).toBe(f1.top);
+      await rij.locator('.qa-foto-toevoegen').click();
+      const [kiezer] = await Promise.all([page.waitForEvent('filechooser'), rij.locator('.qa-foto-kiezen').click()]);
+      await kiezer.setFiles({ name: 'twee.png', mimeType: 'image/png', buffer: await kaartPng() });
+      await page.locator('.qa-bevestig .qa-toevoegen').click();
+      await expect(slot.locator('.qa-foto')).toHaveCount(2);
+      const [i2, f1, f2] = await Promise.all([invoer, slot.locator('.qa-foto').nth(0), slot.locator('.qa-foto').nth(1)].map(rechthoek));
+      expect(f1.top).toBeGreaterThanOrEqual(i2.bottom);
+      expect(f2.top).toBe(f1.top);
+    }
+    await opslagKlaar(page);
   }
-  await opslagKlaar(page);
 });
 
 test('Dak en Regenpijpen zijn h3-koppen', async ({ page }) => {
@@ -156,6 +160,27 @@ test('Voert af van houdt elk dakdeel bij zijn percentage: elk staat ongebroken o
   await expect(bronnen.locator('.qa-bronnen')).toHaveText('D1 (40%), D2');
   await expect(bronnen.locator('.qa-bron')).toHaveText(['D1 (40%)', 'D2']);
   for (const bron of await bronnen.locator('.qa-bron').all()) expect(await bron.evaluate((el) => getComputedStyle(el).whiteSpace)).toBe('nowrap');
+});
+
+test('met twee of meer foto’s staat het fotovak van Waar ook vanaf md onder de invoer, die dan de hele cel vult', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await tweeRegenpijpen(page);
+  const veld = page.locator('.qa-regenpijp').first().locator('.qa-veld-regenpijp-waar');
+  const invoer = veld.locator('.qa-invoer').first();
+  const slot = veld.locator('.qa-fotoslot');
+  await veld.locator('input.qa-foto-invoer').setInputFiles({ name: 'een.png', mimeType: 'image/png', buffer: await kaartPng() });
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  const [i1, s1] = await Promise.all([invoer, slot].map(rechthoek));
+  expect(s1.left).toBeGreaterThanOrEqual(i1.right);
+  expect(s1.top).toBeLessThan(i1.bottom);
+  await veld.locator('input.qa-foto-invoer').setInputFiles({ name: 'twee.png', mimeType: 'image/png', buffer: await kaartPng() });
+  await page.locator('.qa-bevestig .qa-toevoegen').click();
+  await expect(slot.locator('.qa-foto')).toHaveCount(2);
+  const [label, i2, s2] = await Promise.all([veld.locator('.form-label'), invoer, slot].map(rechthoek));
+  expect(i2.width).toBeGreaterThan(0);
+  expect(i2.width).toBeCloseTo(label.width, 0);
+  expect(s2.top).toBeGreaterThanOrEqual(i2.bottom);
+  await opslagKlaar(page);
 });
 
 test('Waar en Hoe zijn vanaf md elk een halve rij met hun foto’s rechts naast de invoer, en op een telefoon met de foto’s eronder', async ({ page }) => {

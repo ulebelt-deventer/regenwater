@@ -57,7 +57,7 @@ function RegenpijpBlok(props: { id: string }) {
   return (
     <div class="border rounded shadow-sm p-2 mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij">
       <BronnenUitsnede id={props.id} />
-      <div class="fs-5 mb-2 regenpijp-kop qa-regenpijp-kop">Regenpijp {pijp().label}</div>
+      <div class="fs-5 regenpijp-kop qa-regenpijp-kop">Regenpijp {pijp().label}</div>
       <div class="row gx-3 gy-2">
         <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
           <div class="form-label fw-semibold mb-1">Voert af van</div>
@@ -212,14 +212,14 @@ export function Bezoek() {
       {m2 === null ? '--' : `${getal(m2)} m²`}
     </Show>
   );
-  // A tuin or steen row. On phones one photo stays at the right of the row; two or more get a line of their own, side by side.
+  // A tuin or steen row in fixed-width columns, so the rows line up. One photo stays at the right of the row; two or more get a line of their own, side by side.
   const deelRij = (soort: 'tuin' | 'steen', deel: { id: string; label: string; m2: number | null; m2Berekend: boolean }) => {
     const veelFotos = () => s.d.fotos.filter((f) => f.slot === `${soort}.${deel.id}`).length > 1;
     return (
-      <div class={`row g-2 align-items-start border-bottom py-2 qa-${soort}-rij`}>
-        <div class="col-2 fw-semibold">{deel.label}</div>
-        <div class="col col-md-3">{m2Cel(deel.id, soort, deel.m2, deel.m2Berekend, true)}</div>
-        <div class={veelFotos() ? 'col-12 col-md-7' : 'col-auto col-md-7'}>
+      <div class={`d-flex flex-wrap align-items-start column-gap-3 row-gap-2 border-bottom py-2 qa-${soort}-rij`}>
+        <div class="fw-semibold" style={{ width: '2rem' }}>{deel.label}</div>
+        <div style={{ width: '7rem' }}>{m2Cel(deel.id, soort, deel.m2, deel.m2Berekend, true)}</div>
+        <div class={veelFotos() ? 'w-100' : ''}>
           <FotoSlot k={`${soort}.${deel.id}`} />
         </div>
       </div>

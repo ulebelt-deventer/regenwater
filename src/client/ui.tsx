@@ -267,7 +267,8 @@ export function gaNaar(id: string): void {
   el.classList.add('flash');
 }
 
-// Scrolls an element's top to 1rem below the top of the screen in `ms`; scrollIntoView's smooth scroll has no settable speed.
+// Scrolls an element's top to 1rem below the top of the screen at a constant speed over `ms`; scrollIntoView's smooth scroll has no settable speed.
+// Each step is 'instant': Bootstrap's `scroll-behavior: smooth` would otherwise animate every step and lag behind.
 export function scrollNaar(id: string, ms: number): void {
   const el = document.getElementById(id);
   if (!el) throw new Error(`Geen element met id ${id}`);
@@ -276,7 +277,7 @@ export function scrollNaar(id: string, ms: number): void {
   const begin = performance.now();
   const stap = (nu: number) => {
     const t = Math.min(1, (nu - begin) / ms);
-    window.scrollTo(0, van + afstand * (t < 0.5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2)); // ease in-out
+    window.scrollTo({ top: van + afstand * t, behavior: 'instant' });
     if (t < 1) requestAnimationFrame(stap);
   };
   requestAnimationFrame(stap);
