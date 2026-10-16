@@ -11,7 +11,7 @@ import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
 
 // `heel`: the whole image at its own aspect ratio, wider than a cropped thumbnail (the kaart).
-export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean; vierkant?: boolean }) {
+export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean }) {
   const s = useDossier();
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
   const svg = () => annotatiesSvg(annots(), { schaal: Math.max(props.foto.breedte, props.foto.hoogte) / 450, mPerPx: null });
@@ -19,7 +19,7 @@ export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boole
     <button
       type="button"
       class="thumb p-0 border rounded overflow-hidden qa-foto"
-      classList={{ 'thumb-klein': props.klein, 'thumb-heel': props.heel, 'thumb-vierkant': props.vierkant }}
+      classList={{ 'thumb-klein': props.klein, 'thumb-heel': props.heel }}
       style={props.heel ? { 'aspect-ratio': `${props.foto.breedte} / ${props.foto.hoogte}` } : undefined}
       onClick={() => props.onClick()}
       aria-label="Foto bekijken"
@@ -77,6 +77,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
 
   const voegToe = async (alle: File[]) => {
     if (uit()) return;
+    if (slot.enkel && fotos().length) return melding('danger', 'Hier past één foto. Verwijder eerst de foto die er staat: tik erop en kies Foto verwijderen.');
     // A file typed as something else (eg a PDF) is refused before the replace question; HEIC often has no type at all, so that is tried.
     const bestanden = alle.filter((b) => !b.type || b.type.startsWith('image/'));
     for (const b of alle) if (!bestanden.includes(b)) weiger(b.name);
@@ -92,10 +93,8 @@ export function FotoSlot(props: { k: string; label?: string }) {
     const huidig = fotos();
     let vervang: string | null = null;
     let blobs: (Blob | null)[];
-    if (slot.enkel) {
-      vervang = huidig.length ? huidig[huidig.length - 1].id : null;
-      blobs = [await zetOm(bestanden[0])];
-    } else if (huidig.length === 1 && bestanden.length === 1) {
+    if (slot.enkel) blobs = [await zetOm(bestanden[0])];
+    else if (huidig.length === 1 && bestanden.length === 1) {
       const [blob, keuze] = await Promise.all([
         zetOm(bestanden[0]),
         kies('Foto toevoegen of vervangen?', 'Er staat al een foto. Wil je die vervangen of deze foto erbij zetten?', [
@@ -107,7 +106,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
       if (keuze === 1) vervang = huidig[0].id;
       blobs = [blob];
     } else blobs = await Promise.all(bestanden.map(zetOm));
-    if (k === 'kaart' && vervang && kaartAnnotaties(s.d).length) s.setKaartVervangen(true);
+    if (k === 'kaart' && kaartAnnotaties(s.d).length) s.setKaartVervangen(true);
     for (const [i, blob] of blobs.entries()) {
       if (blob) await fotoInWachtrij({ dossierId: s.id, slot: k, vervang: i === 0 ? vervang : null, naam: bestanden[i].name, blob });
     }
@@ -147,6 +146,15 @@ export function FotoSlot(props: { k: string; label?: string }) {
     e.currentTarget.value = '';
     void voegToe(bestanden);
   };
+  // The add menu, in the empty slot's button and in the + on the last photo. It sits inside the slot, so a drop on it lands in the slot.
+  const Opties = () => (
+    <>
+      <button type="button" class="dropdown-item qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-2" aria-hidden="true" />Foto</button>
+      <button type="button" class="dropdown-item qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-2" aria-hidden="true" />Uploaden</button>
+      <button type="button" class="dropdown-item qa-foto-plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-2" aria-hidden="true" />Plakken</button>
+      <div class="dropdown-item-text small text-muted d-none d-md-block">Of hierheen slepen.</div>
+    </>
+  );
 
   return (
     <div
@@ -158,7 +166,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
       onDragOver={(e) => {
         if (uit()) return;
         e.preventDefault();
-        setSleep(true);
+        setSleep(!(slot.enkel && fotos().length));
       }}
       onDragLeave={() => setSleep(false)}
       onDrop={(e) => {
@@ -170,13 +178,23 @@ export function FotoSlot(props: { k: string; label?: string }) {
       <Show when={props.label}>
         <div class="small fw-semibold mb-1">{props.label}</div>
       </Show>
-      {/* The buttons sit right of the photos, and wrap below them only when there's no room. */}
       <div class="d-flex flex-wrap align-items-start gap-2">
-        {/* Multi-photo slots get small thumbnails so several fit side by side. */}
-        <For each={fotos()}>{(f) => <FotoDuim foto={f} heel={k === 'kaart'} klein={!slot.enkel && slot.liggend} vierkant={!slot.enkel && !slot.liggend} onClick={() => setOpen(f.id)} />}</For>
+        <For each={fotos()}>
+          {(f, i) => (
+            <div class="position-relative">
+              <FotoDuim foto={f} heel={k === 'kaart'} klein={k !== 'kaart'} onClick={() => setOpen(f.id)} />
+              {/* A single-photo slot takes a new photo only once the old one is deleted, so it gets no +. */}
+              <Show when={!uit() && !slot.enkel && i() === fotos().length - 1}>
+                <Dropdown class="position-absolute bottom-0 end-0 m-1" knop={<i class="bi bi-plus-lg" aria-hidden="true" />} knopClass="btn btn-sm btn-light border shadow-sm zonder-caret qa-foto-toevoegen" label="Foto toevoegen">
+                  <Opties />
+                </Dropdown>
+              </Show>
+            </div>
+          )}
+        </For>
         <For each={wachtend()}>
           {(w) => (
-            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht" classList={{ 'thumb-klein': !slot.enkel && slot.liggend, 'thumb-vierkant': !slot.enkel && !slot.liggend }}>
+            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht" classList={{ 'thumb-klein': k !== 'kaart' }}>
               <img src={w.url} alt="" class="w-100 h-100 object-fit-cover" />
             </div>
           )}
@@ -187,39 +205,25 @@ export function FotoSlot(props: { k: string; label?: string }) {
             Uploaden...
           </div>
         </Show>
-        <Show when={!uit()}>
-          {/* The folded menu needs no 8rem basis: it fits beside the photos wherever the small button does. */}
-          <div class="qa-foto-knoppen" classList={{ 'foto-knoppen': !fotos().length }}>
-            {/* Once the slot has a photo, the add options fold into a menu so they don't crowd the thumbnails. */}
-            <Show
-              when={fotos().length}
-              fallback={
-                <>
-                  <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-primary qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-1" aria-hidden="true" />Foto</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-1" aria-hidden="true" />Uploaden</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-plakken" aria-label="Plakken" title="Plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-sm-1" aria-hidden="true" /><span class="d-none d-sm-inline">Plakken</span></button>
-                  </div>
-                  <div class="small text-muted mt-1 d-none d-md-block">Of hierheen slepen.</div>
-                </>
-              }
-            >
-              <Dropdown
-                knop={<i class={`bi bi-${slot.enkel ? 'arrow-left-right' : 'plus-lg'}`} aria-hidden="true" />}
-                knopClass="btn btn-sm btn-outline-secondary qa-foto-menu"
-                label={slot.enkel ? 'Foto vervangen' : 'Foto toevoegen'}
-              >
-                <button type="button" class="dropdown-item qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-2" aria-hidden="true" />Foto</button>
-                <button type="button" class="dropdown-item qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-2" aria-hidden="true" />Uploaden</button>
-                <button type="button" class="dropdown-item qa-foto-plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-2" aria-hidden="true" />Plakken</button>
-                <div class="dropdown-item-text small text-muted d-none d-md-block">Of hierheen slepen.</div>
-              </Dropdown>
-            </Show>
-            <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
-            <input ref={kiezer} type="file" accept="image/*" multiple={!slot.enkel} class="d-none qa-foto-invoer" onChange={uitInvoer} />
-          </div>
+        <Show when={!uit() && !fotos().length}>
+          <Dropdown
+            knop={
+              <>
+                <i class="bi bi-plus-lg me-1" aria-hidden="true" />
+                <i class="bi bi-image" aria-hidden="true" />
+              </>
+            }
+            knopClass="btn btn-sm btn-outline-secondary zonder-caret qa-foto-toevoegen"
+            label="Foto toevoegen"
+          >
+            <Opties />
+          </Dropdown>
         </Show>
       </div>
+      <Show when={!uit()}>
+        <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
+        <input ref={kiezer} type="file" accept="image/*" multiple={!slot.enkel} class="d-none qa-foto-invoer" onChange={uitInvoer} />
+      </Show>
       <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} />}</Show>
     </div>
   );

@@ -71,7 +71,7 @@ function Kop() {
   return (
     <>
       <div class="d-flex align-items-start gap-2 mb-2">
-        <h1 class="h3 mb-0 flex-grow-1 qa-dossier-titel">{adresRegel(s.d)}</h1>
+        <h1 class="mb-0 flex-grow-1 qa-dossier-titel">{adresRegel(s.d)}</h1>
         <Show when={s.beheerder()}>
           <Dropdown knop="" label="Acties" knopClass="btn btn-outline-primary btn-sm qa-dossier-menu" rechts>
             <Show when={s.d.gesloten_at}>

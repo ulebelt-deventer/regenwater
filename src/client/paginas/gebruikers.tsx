@@ -29,7 +29,7 @@ function Lijst() {
   return (
     <>
       <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <h1 class="h3 mb-0 me-auto">Gebruikers</h1>
+        <h1 class="mb-0 me-auto">Gebruikers</h1>
         <button type="button" class="btn btn-primary qa-nieuwe-gebruiker" onClick={() => setNieuw(true)}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuwe<span class="d-none d-sm-inline"> gebruiker</span></button>
       </div>
       <div class="form-check mb-3">
@@ -154,7 +154,7 @@ function Pagina() {
             <>
               <Kruimels terug={{ href: '/gebruikers', label: 'Gebruikers' }} huidig={g().naam} />
               <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                <h1 class="h3 mb-0 qa-gebruiker-naam">{g().naam}</h1>
+                <h1 class="mb-0 qa-gebruiker-naam">{g().naam}</h1>
                 <RolBadge rol={g().rol} />
                 <Show when={g().archived_at}>
                   <span class="badge text-bg-secondary qa-gearchiveerd">Gearchiveerd</span>
@@ -173,7 +173,7 @@ function Pagina() {
               </div>
 
               <section class="card card-body mb-3 qa-gegevens">
-                <h2 class="h5">Gegevens</h2>
+                <h2>Gegevens</h2>
                 <table class="table table-sm table-borderless w-auto mb-0">
                   <tbody>
                     <tr><th class="pe-4">Naam</th><td>{g().naam}</td></tr>
@@ -187,7 +187,7 @@ function Pagina() {
               </section>
 
               <section class="card card-body mb-3 qa-gebruiker-dossiers">
-                <h2 class="h5">Dossiers</h2>
+                <h2>Dossiers</h2>
                 <Show when={d().dossiers.length} fallback={<div class="text-muted">Geen dossiers als bezoeker of uitvoerder.</div>}>
                   <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0 tabel-kaarten">

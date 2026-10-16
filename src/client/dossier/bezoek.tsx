@@ -11,7 +11,7 @@ import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
-// The kaart cropped to a regenpijp, so you can see at a glance where it is. It floats over the block's top-left corner, sticking ~5px out past its border (padding .5rem + 1px border + 5px).
+// The kaart cropped to a regenpijp, so you can see at a glance where it is; .regenpijp-uitsnede places it over the block's corner.
 function BronnenUitsnede(props: { id: string }) {
   const s = useDossier();
   const annots = () => kaartAnnotaties(s.d);
@@ -21,11 +21,11 @@ function BronnenUitsnede(props: { id: string }) {
     return annots().filter((a) => a.id === props.id || daken.has(a.id)).flatMap((a) => a.p);
   };
   return (
-    <Show when={pijp().bronnen.length ? kaartFoto(s.d) : null}>
+    <Show when={kaartFoto(s.d)}>
       {(foto) => {
         const u = () => regenpijpUitsnede(annots().find((a) => a.id === props.id)!.p[0], punten(), foto());
         return (
-          <svg class="d-block float-start border rounded bg-body me-2 qa-bronnen-uitsnede" style={{ width: '3.6rem', height: '3.6rem', margin: 'calc(-.5rem - 6px) 0 0 calc(-.5rem - 6px)' }} viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
+          <svg class="d-block border rounded bg-body regenpijp-uitsnede qa-bronnen-uitsnede" viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
             <image href={`/api/fotos/${foto().id}`} width={foto().breedte} height={foto().hoogte} />
             {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
             <g innerHTML={annotatiesSvg(annots(), { schaal: u().zijde / 150, mPerPx: null, geselecteerd: props.id })} />
@@ -42,7 +42,7 @@ const KORT = 'col-6 col-md-4 col-lg-2';
 const LANG_LABEL = ['regenton', 'hoe'];
 const BERGING_UITLEG = `per regenpijp gebaseerd op normafvoer ${NORMAFVOER_MM} mm regenwater`;
 
-// One regenpijp as a bordered block: a heading row (with the kaart thumbnail floated beside it), then a grid whose columns line up from block to block.
+// One regenpijp as a bordered block: the kaart thumbnail on its corner, a heading row, then a grid whose columns line up from block to block.
 function RegenpijpBlok(props: { id: string }) {
   const s = useDossier();
   const items = () => kaartItems(s.d);
@@ -53,12 +53,9 @@ function RegenpijpBlok(props: { id: string }) {
   };
   const k = (v: string) => `regenpijp.${props.id}.${v}`;
   return (
-    <div class="border rounded p-2 mb-2 qa-regenpijp qa-regenpijp-rij">
-      {/* clearfix: the grid below starts under the floated thumbnail, not squeezed beside it. */}
-      <div class="clearfix mb-2">
-        <BronnenUitsnede id={props.id} />
-        <span class="fs-5 fw-bold qa-regenpijp-kop">Regenpijp {pijp().label}</span>
-      </div>
+    <div class="border rounded p-2 mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij">
+      <BronnenUitsnede id={props.id} />
+      <div class="fs-5 mb-2 regenpijp-kop qa-regenpijp-kop">Regenpijp {pijp().label}</div>
       <div class="row g-3">
         <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
           <div class="form-label fw-semibold mb-1">Voert af van</div>
@@ -218,11 +215,11 @@ export function Bezoek() {
     <>
       <TerugLink />
       <section class="mb-3 qa-bezoek">
-        <h2 class="h5">Bezoek</h2>
+        <h2>Bezoek</h2>
         <KaartVeld />
 
         <div id="veld-daken" class="mb-3 qa-daken">
-          <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="dak" class="me-1" />Dak</div>
+          <h3><OnderdeelIcoon soort="dak" class="me-1" />Dak</h3>
           <Show when={items().daken.length} fallback={geenDak()}>
             <Show when={!items().opSchaal}>
               <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
@@ -258,7 +255,7 @@ export function Bezoek() {
         <Show when={items().regenpijpen.length}>
           {/* By id, so typing in a field doesn't recreate the block and lose focus. */}
           <div id="veld-regenpijpen" class="mb-3 qa-regenpijpen">
-            <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</div>
+            <h3><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</h3>
             <For each={items().regenpijpen.map((r) => r.id)}>{(id) => <RegenpijpBlok id={id} />}</For>
             <div class="small text-muted">** {BERGING_UITLEG}</div>
           </div>

@@ -89,7 +89,7 @@ export function Dossiers() {
   return (
     <>
       <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <h1 class="h3 mb-0 me-auto qa-titel">{beheerder() ? 'Alle dossiers' : 'Mijn dossiers'}</h1>
+        <h1 class="mb-0 me-auto qa-titel">{beheerder() ? 'Alle dossiers' : 'Mijn dossiers'}</h1>
         <Show when={beheerder()}>
           <button type="button" class="btn btn-primary qa-nieuw-dossier" onClick={() => void nieuw()}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuw<span class="d-none d-sm-inline"> dossier</span></button>
           <Dropdown knop="" label="Meer" knopClass="btn btn-outline-primary qa-dossiers-menu" rechts>

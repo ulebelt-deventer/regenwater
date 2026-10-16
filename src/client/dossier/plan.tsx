@@ -20,11 +20,11 @@ export function Plan() {
       <TerugLink />
       <section class="mb-3 qa-plan">
         <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
-          <h2 class="h5 mb-0">Plan van Aanpak</h2>
+          <h2 class="mb-0">Plan van Aanpak</h2>
           <a href={`/docs/dossiers/${s.id}/concept-plan`} target="_blank" class="small qa-concept-plan">Bekijk concept-Plan</a>
         </div>
 
-        <h3 class="h6 text-muted mt-2">Voorstel Ulebelt</h3>
+        <h3 class="text-muted mt-2">Voorstel Ulebelt</h3>
         <VeldInvoer k="beoordeling" />
         <VeldInvoer k="beoordeling_toelichting" />
         <Show when={toelichtingNodig()}>
@@ -32,7 +32,7 @@ export function Plan() {
         </Show>
         <VoorstelLijst />
 
-        <h3 class="h6 text-muted mt-2">Afspraken</h3>
+        <h3 class="text-muted mt-2">Afspraken</h3>
         <VeldInvoer k="bewoner_doet" />
         <VeldInvoer k="bewoner_doet_details" />
         <VeldInvoer k="ulebelt_doet" opties={ulebeltOpties()} />

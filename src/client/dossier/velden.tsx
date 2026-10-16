@@ -20,7 +20,7 @@ function Hint(props: { veld: Veld }) {
   );
 }
 
-// `fotoOnder` stacks the photo slot under the input instead of beside it, and `breed` stretches a dropdown to its column; both for grid columns.
+// The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder`. `breed` stretches a dropdown to its column.
 export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
@@ -29,22 +29,18 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
   const { veld: v, id } = def;
   const zichtbaar = () => !v.zichtbaar || v.zichtbaar(s.d, id);
   const fotoSlot = v.fotos === undefined ? null : id === null ? v.fotos : v.fotos.replace('*', id);
-  const inhoud = (
-    <>
-      <Show when={!props.kaal}>
-        <div class={`form-label fw-semibold mb-1 ${props.labelClass ?? ''}`}>{props.label ?? v.label}</div>
-        <Hint veld={v} />
-      </Show>
-      <Invoer k={props.k} veld={v} opties={props.opties ?? v.opties} uit={!s.mag(v.bewerkers)} breed={props.breed} />
-    </>
-  );
+  const invoer = <Invoer k={props.k} veld={v} opties={props.opties ?? v.opties} uit={!s.mag(v.bewerkers)} breed={props.breed} />;
   return (
     <Show when={zichtbaar()}>
       <div id={`veld-${props.k}`} class={`qa-veld qa-veld-${qaNaam(v.key)} ${props.class ?? (props.kaal ? '' : 'mb-3')}`}>
-        <Show when={fotoSlot} fallback={inhoud}>
+        <Show when={!props.kaal}>
+          <div class={`form-label fw-semibold mb-1 ${props.labelClass ?? ''}`}>{props.label ?? v.label}</div>
+          <Hint veld={v} />
+        </Show>
+        <Show when={fotoSlot} fallback={invoer}>
           {(slot) => (
             <div class="row g-2">
-              <div class={props.fotoOnder ? 'col-12' : 'col-12 col-md-8'}>{inhoud}</div>
+              <div class={props.fotoOnder ? 'col-12' : 'col-12 col-md-8'}>{invoer}</div>
               <div class={props.fotoOnder ? 'col-12' : 'col-12 col-md-4'}>
                 <FotoSlot k={slot()} />
               </div>

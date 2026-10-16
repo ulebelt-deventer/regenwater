@@ -107,7 +107,7 @@ function MaterialenInhoud() {
 
   return (
     <>
-      <h1 class="h3">Materialen</h1>
+      <h1>Materialen</h1>
       <p class="text-muted">De standaardlijst waarmee de Materialen-tabel van elk nieuw dossier begint. Wijzigingen gelden niet voor bestaande dossiers.</p>
       <Show when={data()} fallback={<Laden />}>
         <div class="table-responsive">
@@ -193,7 +193,7 @@ function SjablonenInhoud() {
   const [data] = createResource(() => get<SjablonenData>('/api/sjablonen'));
   return (
     <>
-      <h1 class="h3">E-mailsjablonen</h1>
+      <h1>E-mailsjablonen</h1>
       <p class="text-muted">Tags tussen accolades, zoals <code>{'{bewoner}'}</code>, worden bij het versturen ingevuld. Per sjabloon staat welke tags je kunt gebruiken; tags met een * zijn verplicht.</p>
       <Show when={data()} fallback={<Laden />}>
         {(d) => (
@@ -259,7 +259,7 @@ function SjabloonBewerken(props: { sjabloon: Sjabloon; uitleg: Record<string, st
   return (
     <section class={`qa-sjabloon-bewerken qa-sjabloon-${s.key}`}>
       <Kruimels terug={{ href: '/beheer/sjablonen', label: 'E-mailsjablonen' }} huidig={s.naam} />
-      <h1 class="h3">{s.naam}</h1>
+      <h1>{s.naam}</h1>
       <div class="small text-muted mb-2">{s.ontvanger === null ? 'Wordt gekopieerd, niet gemaild.' : `Aan: ${s.ontvanger}`}</div>
       <div class="small mb-2 qa-tags">
         <For each={s.tags}>
@@ -324,7 +324,7 @@ function FeedbackInhoud() {
 
   return (
     <>
-      <h1 class="h3">Feedback</h1>
+      <h1>Feedback</h1>
       <div class="form-check mb-3">
         <input id="toon-afgehandeld" type="checkbox" class="form-check-input qa-toon-afgehandeld" checked={alle()} onChange={(e) => setAlle(e.currentTarget.checked)} />
         <label for="toon-afgehandeld" class="form-check-label">Toon afgehandelde feedback</label>

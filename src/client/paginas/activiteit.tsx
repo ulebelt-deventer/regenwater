@@ -73,7 +73,7 @@ function Inhoud() {
 
   return (
     <>
-      <h1 class="h3 mb-3">Alle activiteit</h1>
+      <h1 class="mb-3">Alle activiteit</h1>
       <Show when={laatste()} fallback={<Laden />}>
         <div class="row g-2 mb-3 qa-filters">
           <div class="col-12 col-md-4">

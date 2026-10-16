@@ -42,7 +42,7 @@ export function Inschrijving() {
     <>
       <TerugLink />
       <section class="mb-3 qa-inschrijving">
-        <h2 class="h5">Inschrijving</h2>
+        <h2>Inschrijving</h2>
         <AdresVeld />
         <VeldInvoer k="bewoner_naam" />
         <VeldInvoer k="bewoner_email" />

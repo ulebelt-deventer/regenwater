@@ -22,23 +22,62 @@ async function tweeRegenpijpen(page: Page): Promise<number> {
 
 const rechthoek = (l: Locator) => l.evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect);
 
-test('de kaartuitsnede van een regenpijp steekt ~5px buiten de linkerbovenhoek van zijn blok uit, met de kop ernaast', async ({ page }) => {
+// Where an element's text starts, past any padding.
+const tekstLinks = (l: Locator) => l.evaluate((el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().left; });
+const kaartPng = async () => sharp({ create: { width: 400, height: 300, channels: 3, background: '#e8e8e8' } }).png().toBuffer();
+
+test('de kaartuitsnede van een regenpijp steekt ~11px buiten de linkerbovenhoek van zijn blok uit, de niet-vette kop begint rechts ervan, en de velden beginnen links in het blok, eronder', async ({ page }) => {
   await tweeRegenpijpen(page);
-  const png = await sharp({ create: { width: 400, height: 300, channels: 3, background: '#e8e8e8' } }).png().toBuffer();
-  await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: png });
+  await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: await kaartPng() });
   const blok = page.locator('.qa-regenpijp').first();
   const uitsnede = blok.locator('.qa-bronnen-uitsnede');
   await expect(uitsnede).toBeVisible();
-  for (const breedte of [390, 1280]) {
+  const kop = blok.locator('.qa-regenpijp-kop');
+  expect(Number(await kop.evaluate((el) => getComputedStyle(el).fontWeight))).toBeLessThan(600);
+  for (const breedte of [320, 390, 800, 1280]) {
     await page.setViewportSize({ width: breedte, height: 800 });
-    const [b, u, kop] = await Promise.all([blok, uitsnede, blok.locator('.qa-regenpijp-kop')].map(rechthoek));
-    expect(u.width).toBeGreaterThan(20);
-    for (const uitsteek of [b.left - u.left, b.top - u.top]) {
-      expect(uitsteek).toBeGreaterThanOrEqual(3);
-      expect(uitsteek).toBeLessThanOrEqual(7);
-    }
-    expect(kop.left).toBeGreaterThan(u.right);
+    const [b, u, label, afkoppelen, waar] = await Promise.all([blok, uitsnede, blok.locator('.qa-veld-regenpijp-bronnen .form-label'), blok.locator('.qa-veld-regenpijp-afkoppelen'), blok.locator('.qa-veld-regenpijp-waar')].map(rechthoek));
+    const binnenLinks = b.left + (await blok.evaluate((el) => { const c = getComputedStyle(el); return parseFloat(c.borderLeftWidth) + parseFloat(c.paddingLeft); }));
+    expect(u.width).toBeGreaterThan(40);
+    for (const uitsteek of [b.left - u.left, b.top - u.top]) expect(uitsteek).toBeCloseTo(11, 0);
+    expect(await tekstLinks(kop)).toBeGreaterThan(u.right);
+    expect(label.left).toBeCloseTo(binnenLinks, 0);
+    expect(label.top).toBeGreaterThan(u.bottom);
+    // The row's vertical gutter stays: Waar starts a row of its own, 1rem under the last short cell.
+    expect(waar.top - afkoppelen.bottom).toBeCloseTo(16, 0);
   }
+});
+
+test('de kaartuitsnede staat er ook bij een regenpijp die van geen dakdeel afvoert, en ontbreekt alleen zonder kaart', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await zet(page, id, { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[200, 150]] }] });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const blok = page.locator('.qa-regenpijp');
+  await expect(blok.locator('.qa-geen-bron')).toBeVisible();
+  await expect(blok.locator('.qa-bronnen-uitsnede')).toHaveCount(0);
+  const kop = blok.locator('.qa-regenpijp-kop');
+  expect((await tekstLinks(kop)) - (await rechthoek(blok)).left).toBeLessThan(12);
+
+  await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: await kaartPng() });
+  await expect(blok.locator('.qa-bronnen-uitsnede')).toBeVisible();
+  const u = await rechthoek(blok.locator('.qa-bronnen-uitsnede'));
+  expect(u.width).toBeGreaterThan(40);
+  expect(await tekstLinks(kop)).toBeGreaterThan(u.right);
+  await opslagKlaar(page);
+});
+
+test('tussen de regenpijpblokken zit 14px, en de voetnoot staat 8px onder het laatste blok', async ({ page }) => {
+  await tweeRegenpijpen(page);
+  const [a, b, voetnoot] = await Promise.all([page.locator('.qa-regenpijp').nth(0), page.locator('.qa-regenpijp').nth(1), page.locator('.qa-regenpijpen > .small.text-muted')].map(rechthoek));
+  expect(b.top - a.bottom).toBeCloseTo(14, 0);
+  expect(voetnoot.top - b.bottom).toBeCloseTo(8, 0);
+});
+
+test('Dak en Regenpijpen zijn h3-koppen', async ({ page }) => {
+  await tweeRegenpijpen(page);
+  await expect(page.locator('.qa-daken > h3')).toHaveText('Dak');
+  await expect(page.locator('.qa-regenpijpen > h3')).toHaveText('Regenpijpen');
 });
 
 test('Voert af van houdt elk dakdeel bij zijn percentage: elk staat ongebroken op één regel', async ({ page }) => {

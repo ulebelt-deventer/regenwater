@@ -47,7 +47,7 @@ function Inhoud() {
           </Match>
           <Match when={antwoord.state === 'ready'}>
             <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
-              <h2 class="h5 mb-0">Alle activiteit</h2>
+              <h2 class="mb-0">Alle activiteit</h2>
               <span class="small text-muted qa-aantal">{items().length} {items().length === 1 ? 'gebeurtenis' : 'gebeurtenissen'}</span>
               <Show when={items()[0]}>
                 {(laatste) => (

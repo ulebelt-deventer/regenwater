@@ -17,7 +17,7 @@ export function Statussen() {
   titel('Uitleg: statussen');
   return (
     <>
-      <h1 class="h3">Uitleg: statussen</h1>
+      <h1>Uitleg: statussen</h1>
       <p>De status van een dossier stel je nooit met de hand in: de app leidt hem af uit de gegevens. De eerste stap waarvan de regel klopt, is de huidige stap. De kleur laat zien bij wie de bal ligt.</p>
       <div class="table-responsive">
         <table class="table align-middle tabel-kaarten qa-statussen">
@@ -44,7 +44,7 @@ export function Statussen() {
           </tbody>
         </table>
       </div>
-      <h2 class="h5 mt-4">Gesloten</h2>
+      <h2 class="mt-4">Gesloten</h2>
       <p>Sluiten staat los van deze stappen. Een gesloten dossier bewaart wanneer, door wie en waarom het is gesloten ({SLUIT_REDENEN.join(', ')}) en toont <StatusLabel label="Gesloten" ligtBij={null} /> in plaats van een stap. Heropenen haalt dat weg; de stap wordt dan opnieuw afgeleid uit de gegevens.</p>
       <p class="mb-0">Elke stap wordt vastgelegd met een tijdstip en wie het deed, zodat de aandacht-regels weten hoe lang iets al stilligt.</p>
     </>
@@ -55,11 +55,11 @@ export function AandachtUitleg() {
   titel('Uitleg: aandacht');
   return (
     <AlleenBeheerder>
-      <h1 class="h3">Uitleg: aandacht</h1>
+      <h1>Uitleg: aandacht</h1>
       <p>Een dossier heeft aandacht nodig als er minstens één bevinding is van een van de drie soorten hieronder. Elke bevinding is een regel in de rode balk bovenaan het dossier, met een link naar wat je moet aanpassen, en het dossier krijgt het rode label “aandacht” in lijsten en tellingen. De app berekent dit bij elke pagina opnieuw uit de gegevens. De tellingen op het Overzicht en de wekelijkse mail gaan over open dossiers; het dossier zelf en het Aandacht-filter in de lijst tonen ook gesloten dossiers.</p>
 
       <section class="card card-body mb-3 qa-klopt-niet-regels">
-        <h2 class="h5">Klopt niet</h2>
+        <h2>Klopt niet</h2>
         <p>Staat bovenaan de balk, onder de kop “{KLOPT_NIET_KOP}” Geldt voor open en gesloten dossiers en kan niet worden uitgesteld.</p>
         <div class="table-responsive">
           <table class="table table-sm mb-0 tabel-kaarten">
@@ -84,12 +84,12 @@ export function AandachtUitleg() {
       </section>
 
       <section class="card card-body mb-3 qa-plan-gewijzigd-regels">
-        <h2 class="h5">Plan gewijzigd</h2>
+        <h2>Plan gewijzigd</h2>
         <p class="mb-0">Voor open dossiers: het Plan van Aanpak is gewijzigd nadat het naar de bewoner, de woningcorporatie of de uitvoerder is gestuurd, en na de laatste “Opnieuw versturen niet nodig”. Eén regel per ontvanger: <span class="fst-italic">“Plan gewijzigd op {'{datum}'}, na versturen naar {'{ontvanger}'}. Opnieuw sturen?”</span> Verdwijnt door opnieuw te versturen of door “Opnieuw versturen niet nodig”; kan niet worden uitgesteld.</p>
       </section>
 
       <section class="card card-body mb-3 qa-ligt-stil-regels">
-        <h2 class="h5">Ligt stil</h2>
+        <h2>Ligt stil</h2>
         <p>Alleen voor open dossiers en alleen voor de huidige stap. De klok start wanneer de stap begon: bij de vorige stap, bij het aanmaken voor de inschrijving, en bij de eerste subsidiemail voor het toewijzen van een bezoeker. De twee geplande stappen tellen vanaf hun geplande datum.</p>
         <div class="table-responsive">
           <table class="table table-sm tabel-kaarten">
@@ -141,11 +141,11 @@ export function RechtenUitleg() {
   titel('Uitleg: rechten');
   return (
     <AlleenBeheerder>
-      <h1 class="h3">Uitleg: rechten</h1>
+      <h1>Uitleg: rechten</h1>
       <p>Wat iemand mag zien en wijzigen hangt af van twee dingen: of die beheerder of klusser is, en bij een klusser welke rol die op het dossier heeft en hoe ver het dossier is. De server controleert dit bij elk verzoek; de app zet velden die je niet mag wijzigen grijs.</p>
 
       <section class="card card-body mb-3 qa-rechten-beheerder">
-        <h2 class="h5">Beheerders</h2>
+        <h2>Beheerders</h2>
         <p>Beheerders zien alle dossiers en mogen alles wijzigen. Alleen beheerders kunnen dossiers aanmaken, het adres en de inschrijving invullen, bezoekers en uitvoerders toewijzen, e-mails versturen, een stap terugdraaien, aandacht uitstellen, dossiers sluiten, heropenen en verwijderen, en de activiteit van een dossier bekijken.</p>
         <p class="mb-2">Ook een beheerder wordt soms tegengehouden:</p>
         <ul class="mb-0">
@@ -158,7 +158,7 @@ export function RechtenUitleg() {
       </section>
 
       <section class="card card-body mb-3 qa-rechten-klusser">
-        <h2 class="h5">Klussers</h2>
+        <h2>Klussers</h2>
         <p>Een klusser ziet alleen de dossiers waaraan die is toegewezen, als bezoeker of als uitvoerder. Op die dossiers ziet de klusser alle gegevens van de woning, ook als er niets meer te wijzigen valt. Wat een klusser niet ziet: de activiteit van het dossier, de rode aandacht-balk (wel een herinnering bij de eigen stappen), het e-mailadres en telefoonnummer van andere gebruikers, en het opleverrapport als die niet de uitvoerder is.</p>
         <p>Wat een klusser mag wijzigen hangt af van de rol op dat dossier:</p>
         <ul>
@@ -191,7 +191,7 @@ export function RechtenUitleg() {
       </section>
 
       <section class="card card-body mb-3 qa-rechten-beheer">
-        <h2 class="h5">Het Beheer-menu</h2>
+        <h2>Het Beheer-menu</h2>
         <p class="mb-0">Alles onder Beheer is alleen voor beheerders: gebruikers, materialen, e-mailsjablonen, feedback, het lege bezoekformulier, alle activiteit en deze uitlegpagina’s. Klussers zien het menu niet, en de server weigert deze gegevens aan hen. Een beheerder kan met “Inloggen als” de app bekijken zoals een klusser hem ziet, met precies diens rechten.</p>
       </section>
     </AlleenBeheerder>
@@ -226,7 +226,7 @@ export function Installeren() {
   const stappen = (kop: string, qa: string, items: (string | JSX.Element)[]) => (
     <section class="col-md-6">
       <div class={`card card-body h-100 ${qa}`}>
-        <h2 class="h5">{kop}</h2>
+        <h2>{kop}</h2>
         <ol class="mb-0">
           <For each={items}>{(s) => <li>{s}</li>}</For>
         </ol>
@@ -249,7 +249,7 @@ export function Installeren() {
 
   return (
     <>
-      <h1 class="h3">App op je telefoon zetten</h1>
+      <h1>App op je telefoon zetten</h1>
       {/* PLACEHOLDER: remove once the screenshots are in. */}
       <div class="alert alert-danger qa-screenshots-ontbreken">Let op: de schermafbeeldingen bij deze stappen zijn nog niet gemaakt. Werk samen met de ontwikkelaar om schermafbeeldingen van het installeren op een iPhone te maken.</div>
       <Show
@@ -274,26 +274,26 @@ export function Privacy() {
   titel('Privacy');
   return (
     <>
-      <h1 class="h3 qa-privacy-titel">Privacy</h1>
+      <h1 class="qa-privacy-titel">Privacy</h1>
       <section class="card card-body mb-3">
-        <h2 class="h5">Wie</h2>
+        <h2>Wie</h2>
         <p class="mb-0">
           De Ulebelt, Duikerstraat 15 Maatmansweg 3, 7425 NC Deventer, is verantwoordelijk voor de gegevens in deze app. Contact: <a href={`mailto:${ULEBELT_CONTACT_EMAIL}`}>{ULEBELT_CONTACT_EMAIL}</a>.
         </p>
       </section>
       <section class="card card-body mb-3">
-        <h2 class="h5">Waarvoor</h2>
+        <h2>Waarvoor</h2>
         <p class="mb-0">Ulebelt helpt bewoners hun regenpijpen af te koppelen van het riool. In deze app houden vrijwilligers en beheerders per woning een dossier bij: van de aanvraag via het bezoek en het Plan van Aanpak tot de uitvoering.</p>
       </section>
       <section class="card card-body mb-3">
-        <h2 class="h5">Grondslag</h2>
+        <h2>Grondslag</h2>
         <ul class="mb-0">
           <li>Gegevens van bewoners gebruiken we om de afkoppeling uit te voeren waarvoor ze zich hebben aangemeld (uitvoering van een overeenkomst, art. 6 lid 1 sub b AVG).</li>
           <li>Gegevens van vrijwilligers en beheerders gebruiken we om het werk te organiseren en te kunnen laten zien wie wat heeft gedaan (gerechtvaardigd belang, art. 6 lid 1 sub f AVG).</li>
         </ul>
       </section>
       <section class="card card-body mb-3">
-        <h2 class="h5">Welke gegevens</h2>
+        <h2>Welke gegevens</h2>
         <ul class="mb-0">
           <li>Over de bewoner: naam, e-mailadres, telefoonnummer, adres en of de woning huur of koop is.</li>
           <li>Over de woning en de tuin: foto’s, een schets op de kadastrale kaart, metingen en wat er is afgesproken en uitgevoerd.</li>
@@ -301,11 +301,11 @@ export function Privacy() {
         </ul>
       </section>
       <section class="card card-body mb-3">
-        <h2 class="h5">Wie het ziet</h2>
+        <h2>Wie het ziet</h2>
         <p class="mb-0">Beheerders zien alle dossiers. Een vrijwilliger ziet alleen de dossiers waaraan die is toegewezen. De technisch beheerder van de app kan bij alle gegevens, maar gebruikt dat alleen voor onderhoud en het oplossen van storingen. Het Plan van Aanpak en het opleverrapport gaan naar de bewoner en, bij een huurwoning, naar de woningcorporatie.</p>
       </section>
       <section class="card card-body mb-3">
-        <h2 class="h5">Waar het staat</h2>
+        <h2>Waar het staat</h2>
         <ul class="mb-0">
           <li>De app en de gegevens staan op een server van Netcup in Duitsland.</li>
           <li>Back-ups staan bij een opslagdienst in de EU.</li>
@@ -314,7 +314,7 @@ export function Privacy() {
         </ul>
       </section>
       <section class="card card-body mb-3">
-        <h2 class="h5">Bewaren en je rechten</h2>
+        <h2>Bewaren en je rechten</h2>
         <p>
           We bewaren een dossier tot vijf jaar nadat het is afgesloten, zodat we vragen over het uitgevoerde werk kunnen beantwoorden. Gegevens van een gebruiker van de app bewaren we tot vijf jaar nadat diens account is gearchiveerd. Daarna verwijderen we de persoonsgegevens.
         </p>

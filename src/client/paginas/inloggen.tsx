@@ -54,7 +54,7 @@ export function Inloggen() {
 
   return (
     <div class="mx-auto py-4" style={{ 'max-width': '26rem' }}>
-      <h1 class="h3 mb-3">Inloggen</h1>
+      <h1 class="mb-3">Inloggen</h1>
       <Show when={fout()}>
         <div class="alert alert-danger qa-login-fout">{fout()}</div>
       </Show>
@@ -117,7 +117,7 @@ export function InloggenLink() {
   };
   return (
     <div class="d-flex flex-column align-items-center justify-content-center py-5 gap-3 text-center">
-      <h1 class="h3 mb-0">Welkom!</h1>
+      <h1 class="mb-0">Welkom!</h1>
       <p class="mb-0 qa-link-uitleg">Je bent bijna ingelogd. Tik op de knop hieronder om het inloggen af te ronden.</p>
       <Show when={fout()}>
         <div class="alert alert-danger qa-login-fout">

@@ -31,7 +31,7 @@ function OverzichtInhoud() {
   const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[] }>('/api/overzicht'));
   return (
     <>
-      <h1 class="h3 mb-3">Overzicht</h1>
+      <h1 class="mb-3">Overzicht</h1>
       <Show when={data()} fallback={<Laden />}>
         {(d) => (
           <>
@@ -50,7 +50,7 @@ function OverzichtInhoud() {
                 </For>
               </tbody>
             </table>
-            <h2 class="h5">Gebruikers</h2>
+            <h2>Gebruikers</h2>
             <div class="table-responsive">
               <table class="table table-hover qa-gebruikers">
                 <thead>
