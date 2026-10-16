@@ -1,6 +1,6 @@
 // Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen, stenen and regenpijpen, then what was found.
 import { A } from '@solidjs/router';
-import { For, Show } from 'solid-js';
+import { For, Show, createSignal } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
 import { type Aandeel, KOPPEL_M, annotatiesSvg, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
 import { ontbrekend, veld } from '../../shared/velden.ts';
@@ -11,7 +11,7 @@ import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
-// The kaart cropped to a regenpijp, so you can see at a glance where it is; .regenpijp-uitsnede places it over the block's corner. Tapping it scrolls up to the kaart.
+// The kaart cropped to a regenpijp, so you can see at a glance where it is; .regenpijp-uitsnede places it over the block's corner. Tapping it scrolls up to the kaart without toggling the block's summary it sits in.
 function BronnenUitsnede(props: { id: string }) {
   const s = useDossier();
   const annots = () => kaartAnnotaties(s.d);
@@ -25,7 +25,7 @@ function BronnenUitsnede(props: { id: string }) {
       {(foto) => {
         const u = () => regenpijpUitsnede(annots().find((a) => a.id === props.id)!.p[0], punten(), foto());
         return (
-          <button type="button" class="p-0 border rounded overflow-hidden bg-body regenpijp-uitsnede qa-bronnen-uitsnede" aria-label="Naar de kaart" onClick={() => scrollNaar('veld-kaart', 250)}>
+          <button type="button" class="p-0 border rounded overflow-hidden bg-body regenpijp-uitsnede qa-bronnen-uitsnede" aria-label="Naar de kaart" onClick={(e) => { e.preventDefault(); scrollNaar('veld-kaart', 250); }}>
             <svg class="d-block w-100 h-100" viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
               <image href={`/api/fotos/${foto().id}`} width={foto().breedte} height={foto().hoogte} />
               {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
@@ -44,7 +44,7 @@ const KORT = 'col-6 col-md-4 col-lg-2';
 const LABEL_CLASS: Record<string, string> = { regenton: 'label-klein label-afgekapt', hoe: 'label-afgekapt' };
 const BERGING_UITLEG = `per regenpijp gebaseerd op normafvoer ${NORMAFVOER_MM} mm regenwater`;
 
-// One regenpijp as a bordered block: the kaart thumbnail on its corner, a heading row, then a grid whose columns line up from block to block.
+// One regenpijp as a bordered, collapsible block (open by default): the kaart thumbnail on its corner, a heading that toggles it, then a grid whose columns line up from block to block.
 function RegenpijpBlok(props: { id: string }) {
   const s = useDossier();
   const items = () => kaartItems(s.d);
@@ -54,46 +54,53 @@ function RegenpijpBlok(props: { id: string }) {
     return p;
   };
   const k = (v: string) => `regenpijp.${props.id}.${v}`;
+  const [open, setOpen] = createSignal(true);
   return (
-    <div class="border rounded shadow-sm p-2 mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij">
-      <BronnenUitsnede id={props.id} />
-      <div class="fs-5 regenpijp-kop qa-regenpijp-kop">Regenpijp {pijp().label}</div>
-      <div class="row gx-3 gy-2">
-        <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
-          <div class="form-label fw-semibold mb-1">Voert af van</div>
-          <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
-            <span class="qa-bronnen">
-              <For each={pijp().bronnen}>
-                {(b, i) => (
-                  <>
-                    {i() > 0 && ', '}
-                    <span class="text-nowrap qa-bron">{bronLabel(b, items().labels)}</span>
-                  </>
-                )}
-              </For>
-            </span>
-          </Show>
-        </div>
-        <div class={KORT}>
-          <div class="form-label fw-semibold mb-1">
-            Waterberging<span class="cursor-help qa-waterberging-uitleg" title={BERGING_UITLEG}>**</span>
-          </div>
-          <div class="qa-waterberging">
-            <Show when={waterberging(pijp(), items().daken)} fallback="--">
-              {(w) => (
-                <>
-                  {w().liter} liter
-                  <div class="text-muted" style={{ 'font-size': '.8em' }}>{w().uitleg}</div>
-                </>
-              )}
+    <details open class="border rounded shadow-sm mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij" onToggle={(e) => setOpen(e.currentTarget.open)}>
+      {/* The thumbnail sits in the summary because a closed details shows nothing else. */}
+      <summary class="d-flex align-items-center fs-5 py-2 pe-2 regenpijp-kop qa-regenpijp-kop" classList={{ 'border-bottom': open() }}>
+        <BronnenUitsnede id={props.id} />
+        <span class="flex-grow-1 qa-regenpijp-titel">Regenpijp {pijp().label}</span>
+        <i class="bi fs-6 text-muted" classList={{ 'bi-chevron-up': open(), 'bi-chevron-down': !open() }} aria-hidden="true" />
+      </summary>
+      <div class="p-2">
+        <div class="row gx-3 gy-2">
+          <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
+            <div class="form-label fw-semibold mb-1">Voert af van</div>
+            <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
+              <span class="qa-bronnen">
+                <For each={pijp().bronnen}>
+                  {(b, i) => (
+                    <>
+                      {i() > 0 && ', '}
+                      <span class="text-nowrap qa-bron">{bronLabel(b, items().labels)}</span>
+                    </>
+                  )}
+                </For>
+              </span>
             </Show>
           </div>
+          <div class={KORT}>
+            <div class="form-label fw-semibold mb-1">
+              Waterberging<span class="cursor-help qa-waterberging-uitleg" title={BERGING_UITLEG}>**</span>
+            </div>
+            <div class="qa-waterberging">
+              <Show when={waterberging(pijp(), items().daken)} fallback="--">
+                {(w) => (
+                  <>
+                    {w().liter} liter
+                    <div class="text-muted" style={{ 'font-size': '.8em' }}>{w().uitleg}</div>
+                  </>
+                )}
+              </Show>
+            </div>
+          </div>
+          <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
+          <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
+          <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
         </div>
-        <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
-        <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
-        <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -155,7 +162,7 @@ function VerdelingKeuze(props: { id: string }) {
                               min="0"
                               max="100"
                               step="1"
-                              class="form-control qa-verdeling-pct"
+                              class="form-control px-1 qa-verdeling-pct"
                               style={{ width: '2.7rem' }}
                               disabled={uit() || dak().verdeling.length === 1}
                               value={a().pct}
@@ -212,15 +219,17 @@ export function Bezoek() {
       {m2 === null ? '--' : `${getal(m2)} m²`}
     </Show>
   );
-  // A tuin or steen row in fixed-width columns, so the rows line up. One photo stays at the right of the row; two or more get a line of their own, side by side.
+  // A tuin or steen row in fixed-width columns (widths include the 1rem gutter), so the rows line up. The photos fill the rest of the row; on phones two or more get a line of their own.
   const deelRij = (soort: 'tuin' | 'steen', deel: { id: string; label: string; m2: number | null; m2Berekend: boolean }) => {
     const veelFotos = () => s.d.fotos.filter((f) => f.slot === `${soort}.${deel.id}`).length > 1;
     return (
-      <div class={`d-flex flex-wrap align-items-start column-gap-3 row-gap-2 border-bottom py-2 qa-${soort}-rij`}>
-        <div class="fw-semibold" style={{ width: '2rem' }}>{deel.label}</div>
-        <div style={{ width: '7rem' }}>{m2Cel(deel.id, soort, deel.m2, deel.m2Berekend, true)}</div>
-        <div class={veelFotos() ? 'w-100' : ''}>
-          <FotoSlot k={`${soort}.${deel.id}`} />
+      <div class={`border-bottom py-2 qa-${soort}-rij`}>
+        <div class="row gx-3 gy-2 align-items-start">
+          <div class="col-auto fw-semibold" style={{ width: '3rem' }}>{deel.label}</div>
+          <div class="col-auto" style={{ width: '8rem' }}>{m2Cel(deel.id, soort, deel.m2, deel.m2Berekend, true)}</div>
+          <div class={veelFotos() ? 'col-12 col-sm' : 'col'}>
+            <FotoSlot k={`${soort}.${deel.id}`} />
+          </div>
         </div>
       </div>
     );
@@ -233,8 +242,8 @@ export function Bezoek() {
         <h2>Bezoek</h2>
         <KaartVeld />
 
-        <div id="veld-daken" class="mb-3 qa-daken">
-          <h3><OnderdeelIcoon soort="dak" class="me-1" />Dak</h3>
+        <div id="veld-daken" class="mb-3 pt-3 qa-daken">
+          <h3 class="mb-3"><OnderdeelIcoon soort="dak" class="me-1" />Dak</h3>
           <Show when={items().daken.length} fallback={geenDak()}>
             <Show when={!items().opSchaal}>
               <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
@@ -269,8 +278,8 @@ export function Bezoek() {
 
         <Show when={items().regenpijpen.length}>
           {/* By id, so typing in a field doesn't recreate the block and lose focus. */}
-          <div id="veld-regenpijpen" class="mb-3 qa-regenpijpen">
-            <h3><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</h3>
+          <div id="veld-regenpijpen" class="mb-3 pt-3 qa-regenpijpen">
+            <h3 class="mb-3"><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</h3>
             <For each={items().regenpijpen.map((r) => r.id)}>{(id) => <RegenpijpBlok id={id} />}</For>
             <div class="small text-muted">** {BERGING_UITLEG}</div>
           </div>

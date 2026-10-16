@@ -257,10 +257,12 @@ export function Opgeslagen(props: { status: 'opgeslagen' | 'bezig' | 'mislukt'; 
   );
 }
 
-// Scrolls to an element by id and briefly highlights it.
+// Scrolls to an element by id and briefly highlights it, first opening a collapsed details (eg a regenpijp block) around it.
 export function gaNaar(id: string): void {
   const el = document.getElementById(id);
   if (!el) throw new Error(`Geen element met id ${id}`);
+  const details = el.closest('details');
+  if (details) details.open = true;
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   el.classList.remove('flash');
   void el.offsetWidth;
