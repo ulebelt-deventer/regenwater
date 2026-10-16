@@ -33,8 +33,10 @@ $container-max-widths: (lg: 1200px);
 .text-groen { color: $ub-groen; }
 .cursor-pointer { cursor: pointer; }
 .cursor-help { cursor: help; }
-// 90% text in the line box of normal text, cut off on one line.
-.label-klein { font-size: 90%; line-height: $line-height-base * $font-size-base; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+// 90% text in the line box of normal text.
+.label-klein { font-size: 90%; line-height: $line-height-base * $font-size-base; }
+// One line, cut off by fading out over its last 10px rather than an ellipsis, which would hide letters. Text that fits but reaches those 10px fades too.
+.label-afgekapt { white-space: nowrap; overflow: hidden; mask-image: linear-gradient(to right, #000 calc(100% - 10px), transparent); }
 .pre-wrap { white-space: pre-wrap; }
 .font-serif { font-family: Georgia, 'Times New Roman', serif; }
 // The label column of a read-only Regel: narrower on phones so the value keeps room.
@@ -112,6 +114,8 @@ $container-max-widths: (lg: 1200px);
 .thumb.wacht { opacity: .5; }
 .thumb.thumb-klein { width: 7rem; }
 .thumb.thumb-heel { width: 16.5rem; }
+// The + on the last photo, sticking out past its bottom-right corner.
+.foto-plus { position: absolute; bottom: -5px; right: -5px; }
 
 // Full-screen photo viewer and drawing editor
 .annot { position: fixed; inset: 0; background: $ub-zwart; z-index: 1050; display: flex; flex-direction: column; }

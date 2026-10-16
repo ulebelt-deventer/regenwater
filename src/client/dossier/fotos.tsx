@@ -5,7 +5,7 @@ import { annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Foto } from '../../shared/types.ts';
 import { fotoSlotVoor } from '../../shared/velden.ts';
 import { fotoInWachtrij, naarJpeg, wachtendeFotos } from '../opslag.ts';
-import { Dropdown, kies, melding, probeer } from '../ui.tsx';
+import { Dropdown, bevestig, kies, melding, probeer } from '../ui.tsx';
 import { Luchtfoto } from './luchtfoto.tsx';
 import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
@@ -77,7 +77,6 @@ export function FotoSlot(props: { k: string; label?: string }) {
 
   const voegToe = async (alle: File[]) => {
     if (uit()) return;
-    if (slot.enkel && fotos().length) return melding('danger', 'Hier past één foto. Verwijder eerst de foto die er staat: tik erop en kies Foto verwijderen.');
     // A file typed as something else (eg a PDF) is refused before the replace question; HEIC often has no type at all, so that is tried.
     const bestanden = alle.filter((b) => !b.type || b.type.startsWith('image/'));
     for (const b of alle) if (!bestanden.includes(b)) weiger(b.name);
@@ -93,7 +92,15 @@ export function FotoSlot(props: { k: string; label?: string }) {
     const huidig = fotos();
     let vervang: string | null = null;
     let blobs: (Blob | null)[];
-    if (slot.enkel) blobs = [await zetOm(bestanden[0])];
+    if (slot.enkel && huidig.length) {
+      const [blob, ja] = await Promise.all([
+        zetOm(bestanden[0]),
+        bevestig('Bestaande foto vervangen?', 'Hier past maar één foto. Wil je de foto die er staat vervangen door de nieuwe?', { ja: 'Vervangen' }),
+      ]);
+      if (!ja) return;
+      vervang = huidig[0].id;
+      blobs = [blob];
+    } else if (slot.enkel) blobs = [await zetOm(bestanden[0])];
     else if (huidig.length === 1 && bestanden.length === 1) {
       const [blob, keuze] = await Promise.all([
         zetOm(bestanden[0]),
@@ -166,7 +173,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
       onDragOver={(e) => {
         if (uit()) return;
         e.preventDefault();
-        setSleep(!(slot.enkel && fotos().length));
+        setSleep(true);
       }}
       onDragLeave={() => setSleep(false)}
       onDrop={(e) => {
@@ -183,9 +190,9 @@ export function FotoSlot(props: { k: string; label?: string }) {
           {(f, i) => (
             <div class="position-relative">
               <FotoDuim foto={f} heel={k === 'kaart'} klein={k !== 'kaart'} onClick={() => setOpen(f.id)} />
-              {/* A single-photo slot takes a new photo only once the old one is deleted, so it gets no +. */}
+              {/* A full single-photo slot gets no +; a photo dropped or pasted on it asks to replace the old one. */}
               <Show when={!uit() && !slot.enkel && i() === fotos().length - 1}>
-                <Dropdown class="position-absolute bottom-0 end-0 m-1" knop={<i class="bi bi-plus-lg" aria-hidden="true" />} knopClass="btn btn-sm btn-light border shadow-sm zonder-caret qa-foto-toevoegen" label="Foto toevoegen">
+                <Dropdown class="foto-plus" knop={<i class="bi bi-plus-lg" aria-hidden="true" />} knopClass="btn btn-sm btn-light border shadow-sm zonder-caret qa-foto-toevoegen" label="Foto toevoegen">
                   <Opties />
                 </Dropdown>
               </Show>

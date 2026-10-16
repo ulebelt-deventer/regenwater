@@ -43,9 +43,23 @@ test('de kaartuitsnede van een regenpijp steekt ~11px buiten de linkerbovenhoek 
     expect(await tekstLinks(kop)).toBeGreaterThan(u.right);
     expect(label.left).toBeCloseTo(binnenLinks, 0);
     expect(label.top).toBeGreaterThan(u.bottom);
-    // The row's vertical gutter stays: Waar starts a row of its own, 1rem under the last short cell.
-    expect(waar.top - afkoppelen.bottom).toBeCloseTo(16, 0);
+    // The row's vertical gutter stays: Waar starts a row of its own, .5rem under the last short cell.
+    expect(waar.top - afkoppelen.bottom).toBeCloseTo(8, 0);
   }
+});
+
+test('tikken op de kaartuitsnede van een regenpijp scrolt omhoog naar de kaart', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await tweeRegenpijpen(page);
+  await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: await kaartPng() });
+  const uitsnede = page.locator('.qa-regenpijp').last().locator('.qa-bronnen-uitsnede');
+  await expect(uitsnede).toBeVisible();
+  await uitsnede.scrollIntoViewIfNeeded();
+  const kaartTop = () => page.locator('#veld-kaart').evaluate((el) => el.getBoundingClientRect().top);
+  expect(await kaartTop()).toBeLessThan(0);
+  await uitsnede.click();
+  await expect.poll(kaartTop, { timeout: 2000 }).toBeCloseTo(16, 0);
+  await opslagKlaar(page);
 });
 
 test('de kaartuitsnede staat er ook bij een regenpijp die van geen dakdeel afvoert, en ontbreekt alleen zonder kaart', async ({ page }) => {
@@ -67,11 +81,56 @@ test('de kaartuitsnede staat er ook bij een regenpijp die van geen dakdeel afvoe
   await opslagKlaar(page);
 });
 
-test('tussen de regenpijpblokken zit 14px, en de voetnoot staat 8px onder het laatste blok', async ({ page }) => {
+test('de regenpijpblokken hebben een schaduw en 14px ertussen, en de voetnoot staat 8px onder het laatste blok', async ({ page }) => {
   await tweeRegenpijpen(page);
   const [a, b, voetnoot] = await Promise.all([page.locator('.qa-regenpijp').nth(0), page.locator('.qa-regenpijp').nth(1), page.locator('.qa-regenpijpen > .small.text-muted')].map(rechthoek));
   expect(b.top - a.bottom).toBeCloseTo(14, 0);
   expect(voetnoot.top - b.bottom).toBeCloseTo(8, 0);
+  expect(await page.locator('.qa-regenpijp').first().evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
+});
+
+test('de berekening onder Waterberging is 80% van de gewone tekstgrootte', async ({ page }) => {
+  await tweeRegenpijpen(page);
+  const berging = page.locator('.qa-waterberging').first();
+  await expect(berging).toContainText('liter');
+  const [gewoon, uitleg] = await Promise.all([berging, berging.locator('.text-muted')].map((l) => l.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))));
+  expect(uitleg).toBeCloseTo(gewoon * 0.8, 1);
+});
+
+test('Tuin- en Steenrijen hebben lijnen erboven en eronder; op een telefoon staat één foto rechts in de rij, twee of meer op een eigen regel', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await zet(page, id, {
+    kaart_annotaties: [
+      { id: 't1', type: 'tuin', p: [[0, 0], [10, 0], [10, 10]] },
+      { id: 's1', type: 'steen', p: [[20, 0], [30, 0], [30, 10]] },
+    ],
+  });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  for (const soort of ['tuin', 'steen']) {
+    const rij = page.locator(`.qa-${soort}-rij`);
+    await expect(rij).toBeVisible();
+    for (const [el, kant] of [[rij.locator('..'), 'borderTopWidth'], [rij, 'borderBottomWidth']] as const) expect(await el.evaluate((e, k) => getComputedStyle(e)[k], kant)).toBe('1px');
+    const slot = rij.locator('.qa-fotoslot');
+    const invoer = rij.locator('.qa-invoer');
+    await rij.locator('input.qa-foto-invoer').setInputFiles({ name: 'een.png', mimeType: 'image/png', buffer: await kaartPng() });
+    await expect(slot.locator('.qa-foto')).toHaveCount(1);
+    const [i1, s1] = await Promise.all([invoer, slot].map(rechthoek));
+    expect(s1.width).toBeGreaterThan(0);
+    expect(s1.left).toBeGreaterThan(i1.right);
+    expect(s1.top).toBeLessThan(i1.bottom);
+
+    await rij.locator('.qa-foto-toevoegen').click();
+    const [kiezer] = await Promise.all([page.waitForEvent('filechooser'), rij.locator('.qa-foto-kiezen').click()]);
+    await kiezer.setFiles({ name: 'twee.png', mimeType: 'image/png', buffer: await kaartPng() });
+    await page.locator('.qa-bevestig .qa-toevoegen').click();
+    await expect(slot.locator('.qa-foto')).toHaveCount(2);
+    const [i2, f1, f2] = await Promise.all([invoer, slot.locator('.qa-foto').nth(0), slot.locator('.qa-foto').nth(1)].map(rechthoek));
+    expect(f1.top).toBeGreaterThanOrEqual(i2.bottom);
+    expect(f2.top).toBe(f1.top);
+  }
+  await opslagKlaar(page);
 });
 
 test('Dak en Regenpijpen zijn h3-koppen', async ({ page }) => {
@@ -207,16 +266,17 @@ test('de cellen van de regenpijpblokken staan in kolommen die van blok tot blok 
   }
 });
 
-test('de lange labels Regenton aanwezig? en Hoe moet het water komen? zijn 90% zo groot, op één regel afgekapt, en even hoog als de andere labels', async ({ page }) => {
+test('de lange labels Regenton aanwezig? (90% groot) en Hoe moet het water komen? (gewoon groot) zijn op één regel afgekapt met een vervaging in plaats van puntjes, en even hoog als de andere labels', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await tweeRegenpijpen(page);
   const label = (v: string) => page.locator('.qa-regenpijp').first().locator(`.qa-veld-regenpijp-${v} .form-label`);
-  const stijl = (v: string) => label(v).evaluate((el) => { const c = getComputedStyle(el); return { grootte: parseFloat(c.fontSize), wit: c.whiteSpace, overloop: c.overflow, hoogte: el.getBoundingClientRect().height }; });
+  const stijl = (v: string) => label(v).evaluate((el) => { const c = getComputedStyle(el); return { grootte: parseFloat(c.fontSize), wit: c.whiteSpace, overloop: c.overflow, puntjes: c.textOverflow, masker: c.maskImage, hoogte: el.getBoundingClientRect().height }; });
   const gewoon = await stijl('soort');
-  for (const v of ['regenton', 'hoe']) {
+  for (const [v, factor] of [['regenton', 0.9], ['hoe', 1]] as const) {
     const s = await stijl(v);
-    expect(s.grootte).toBeCloseTo(gewoon.grootte * 0.9, 1);
-    expect([s.wit, s.overloop]).toEqual(['nowrap', 'hidden']);
+    expect(s.grootte).toBeCloseTo(gewoon.grootte * factor, 1);
+    expect([s.wit, s.overloop, s.puntjes]).toEqual(['nowrap', 'hidden', 'clip']);
+    expect(s.masker).toContain('linear-gradient');
     expect(s.hoogte).toBe(gewoon.hoogte);
   }
 });

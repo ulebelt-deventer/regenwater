@@ -4,14 +4,14 @@ import { For, Show } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
 import { type Aandeel, KOPPEL_M, annotatiesSvg, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
 import { ontbrekend, veld } from '../../shared/velden.ts';
-import { Dropdown, OnderdeelIcoon, bevestig, gaNaar } from '../ui.tsx';
+import { Dropdown, OnderdeelIcoon, bevestig, gaNaar, scrollNaar } from '../ui.tsx';
 import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
-// The kaart cropped to a regenpijp, so you can see at a glance where it is; .regenpijp-uitsnede places it over the block's corner.
+// The kaart cropped to a regenpijp, so you can see at a glance where it is; .regenpijp-uitsnede places it over the block's corner. Tapping it scrolls up to the kaart.
 function BronnenUitsnede(props: { id: string }) {
   const s = useDossier();
   const annots = () => kaartAnnotaties(s.d);
@@ -25,11 +25,13 @@ function BronnenUitsnede(props: { id: string }) {
       {(foto) => {
         const u = () => regenpijpUitsnede(annots().find((a) => a.id === props.id)!.p[0], punten(), foto());
         return (
-          <svg class="d-block border rounded bg-body regenpijp-uitsnede qa-bronnen-uitsnede" viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
-            <image href={`/api/fotos/${foto().id}`} width={foto().breedte} height={foto().hoogte} />
-            {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
-            <g innerHTML={annotatiesSvg(annots(), { schaal: u().zijde / 150, mPerPx: null, geselecteerd: props.id })} />
-          </svg>
+          <button type="button" class="p-0 border rounded overflow-hidden bg-body regenpijp-uitsnede qa-bronnen-uitsnede" aria-label="Naar de kaart" onClick={() => scrollNaar('veld-kaart', 250)}>
+            <svg class="d-block w-100 h-100" viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
+              <image href={`/api/fotos/${foto().id}`} width={foto().breedte} height={foto().hoogte} />
+              {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
+              <g innerHTML={annotatiesSvg(annots(), { schaal: u().zijde / 150, mPerPx: null, geselecteerd: props.id })} />
+            </svg>
+          </button>
         );
       }}
     </Show>
@@ -38,8 +40,8 @@ function BronnenUitsnede(props: { id: string }) {
 
 // Six short cells fill one lg row; below them Waar and Hoe take half a row each (photos beside them from md), then Ondergrond.
 const KORT = 'col-6 col-md-4 col-lg-2';
-// Labels too long for their cell: smaller and cut off on one line, so the inputs below stay level with their neighbours'.
-const LANG_LABEL = ['regenton', 'hoe'];
+// Labels too long for their cell are cut off on one line, so the inputs below stay level with their neighbours'.
+const LABEL_CLASS: Record<string, string> = { regenton: 'label-klein label-afgekapt', hoe: 'label-afgekapt' };
 const BERGING_UITLEG = `per regenpijp gebaseerd op normafvoer ${NORMAFVOER_MM} mm regenwater`;
 
 // One regenpijp as a bordered block: the kaart thumbnail on its corner, a heading row, then a grid whose columns line up from block to block.
@@ -53,10 +55,10 @@ function RegenpijpBlok(props: { id: string }) {
   };
   const k = (v: string) => `regenpijp.${props.id}.${v}`;
   return (
-    <div class="border rounded p-2 mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij">
+    <div class="border rounded shadow-sm p-2 mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij">
       <BronnenUitsnede id={props.id} />
       <div class="fs-5 mb-2 regenpijp-kop qa-regenpijp-kop">Regenpijp {pijp().label}</div>
-      <div class="row g-3">
+      <div class="row gx-3 gy-2">
         <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
           <div class="form-label fw-semibold mb-1">Voert af van</div>
           <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
@@ -81,14 +83,14 @@ function RegenpijpBlok(props: { id: string }) {
               {(w) => (
                 <>
                   {w().liter} liter
-                  <div class="small text-muted">{w().uitleg}</div>
+                  <div class="text-muted" style={{ 'font-size': '.8em' }}>{w().uitleg}</div>
                 </>
               )}
             </Show>
           </div>
         </div>
-        <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LANG_LABEL.includes(v) ? 'label-klein' : ''} />}</For>
-        <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LANG_LABEL.includes(v) ? 'label-klein' : ''} />}</For>
+        <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
+        <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
         <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
       </div>
     </div>
@@ -205,11 +207,24 @@ export function Bezoek() {
       Er is nog geen dak ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
     </div>
   );
-  const m2Cel = (id: string, soort: 'dak' | 'tuin' | 'steen', m2: number | null, berekend: boolean) => (
-    <Show when={berekend} fallback={<VeldInvoer k={`${soort}.${id}.m2`} kaal />}>
+  const m2Cel = (id: string, soort: 'dak' | 'tuin' | 'steen', m2: number | null, berekend: boolean, breed = false) => (
+    <Show when={berekend} fallback={<VeldInvoer k={`${soort}.${id}.m2`} kaal breed={breed} />}>
       {m2 === null ? '--' : `${getal(m2)} m²`}
     </Show>
   );
+  // A tuin or steen row. On phones one photo stays at the right of the row; two or more get a line of their own, side by side.
+  const deelRij = (soort: 'tuin' | 'steen', deel: { id: string; label: string; m2: number | null; m2Berekend: boolean }) => {
+    const veelFotos = () => s.d.fotos.filter((f) => f.slot === `${soort}.${deel.id}`).length > 1;
+    return (
+      <div class={`row g-2 align-items-start border-bottom py-2 qa-${soort}-rij`}>
+        <div class="col-2 fw-semibold">{deel.label}</div>
+        <div class="col col-md-3">{m2Cel(deel.id, soort, deel.m2, deel.m2Berekend, true)}</div>
+        <div class={veelFotos() ? 'col-12 col-md-7' : 'col-auto col-md-7'}>
+          <FotoSlot k={`${soort}.${deel.id}`} />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -271,34 +286,18 @@ export function Bezoek() {
               </div>
             }
           >
-            <For each={items().tuinen}>
-              {(tuin) => (
-                <div class="row g-2 align-items-start border-bottom py-2 qa-tuin-rij">
-                  <div class="col-3 col-md-2 fw-semibold">{tuin.label}</div>
-                  <div class="col-9 col-md-3">{m2Cel(tuin.id, 'tuin', tuin.m2, tuin.m2Berekend)}</div>
-                  <div class="col-12 col-md-7">
-                    <FotoSlot k={`tuin.${tuin.id}`} />
-                  </div>
-                </div>
-              )}
-            </For>
+            <div class="border-top">
+              <For each={items().tuinen}>{(tuin) => deelRij('tuin', tuin)}</For>
+            </div>
           </Show>
         </div>
 
         <Show when={items().stenen.length}>
           <div id="veld-stenen" class="mb-3 qa-stenen">
             <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="steen" class="me-1" />Steen</div>
-            <For each={items().stenen}>
-              {(steen) => (
-                <div class="row g-2 align-items-start border-bottom py-2 qa-steen-rij">
-                  <div class="col-3 col-md-2 fw-semibold">{steen.label}</div>
-                  <div class="col-9 col-md-3">{m2Cel(steen.id, 'steen', steen.m2, steen.m2Berekend)}</div>
-                  <div class="col-12 col-md-7">
-                    <FotoSlot k={`steen.${steen.id}`} />
-                  </div>
-                </div>
-              )}
-            </For>
+            <div class="border-top">
+              <For each={items().stenen}>{(steen) => deelRij('steen', steen)}</For>
+            </div>
           </div>
         </Show>
 

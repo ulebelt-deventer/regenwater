@@ -222,7 +222,7 @@ test('een regenpijp bijzetten zet een met de hand verdeeld dak terug op automati
   const knop = page.locator('.qa-verdeling-knop');
   await expect(knop).toHaveText(/^A \d+% · B \d+%$/);
   const uitsnede = page.locator('.qa-regenpijp').first().locator('.qa-bronnen-uitsnede');
-  const [, , b1, h1] = (await uitsnede.getAttribute('viewBox'))!.split(' ').map(Number);
+  const [, , b1, h1] = (await uitsnede.locator('svg').getAttribute('viewBox'))!.split(' ').map(Number);
   expect(b1).toBe(h1);
   expect(b1).toBeLessThan(400);
   await expect(uitsnede.locator('polygon')).toHaveCount(1);

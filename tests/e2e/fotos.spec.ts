@@ -120,7 +120,7 @@ test('op een telefoon zijn de foto’s in elk vak voor meerdere foto’s 7rem br
   await opslagKlaar(page);
 });
 
-test('met twee foto’s in een vak staat alleen op de laatste foto een +, over zijn rechteronderhoek', async ({ page }) => {
+test('met twee foto’s in een vak staat alleen op de laatste foto een +, die 5px buiten zijn rechteronderhoek uitsteekt', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const id = await nieuwBezoekDossier(page);
   await zet(page, id, { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }] });
@@ -136,10 +136,7 @@ test('met twee foto’s in een vak staat alleen op de laatste foto een +, over z
   const [laatste, p] = await Promise.all([slot.locator('.qa-foto').nth(1), plus].map((l) => l.evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect)));
   expect(p.width).toBeGreaterThan(10);
   expect(p.width).toBeLessThan(laatste.width / 2);
-  for (const rand of [laatste.right - p.right, laatste.bottom - p.bottom]) {
-    expect(rand).toBeGreaterThanOrEqual(0);
-    expect(rand).toBeLessThan(10);
-  }
+  for (const uitsteek of [p.right - laatste.right, p.bottom - laatste.bottom]) expect(uitsteek).toBeCloseTo(5, 0);
   await opslagKlaar(page);
 });
 
@@ -234,7 +231,7 @@ test('de kaart staat er heel en 16,5rem breed', async ({ page }) => {
   await opslagKlaar(page);
 });
 
-test('een vak voor één foto, zoals de straatfoto, heeft met een foto geen +, weigert een nieuwe tot de oude verwijderd is, en krijgt dan zijn knop terug', async ({ page }) => {
+test('een vak voor één foto, zoals de straatfoto, heeft met een foto geen +, vraagt bij een gesleepte foto of die de oude vervangt, en krijgt na verwijderen zijn knop terug', async ({ page }) => {
   await start(page);
   await nieuwDossier(page, { huurKoop: 'koop' });
   const slot = page.locator('.qa-fotoslot-straatfoto');
@@ -245,11 +242,17 @@ test('een vak voor één foto, zoals de straatfoto, heeft met een foto geen +, w
   const eerste = await slot.locator('.qa-foto image').getAttribute('href');
 
   await sleep(page, slot, [png('twee.png')]);
-  await expect(page.locator('.qa-melding-danger')).toContainText('Verwijder eerst de foto die er staat');
+  await expect(page.locator('.qa-bevestig')).toContainText('Hier past maar één foto');
+  await page.locator('.qa-bevestig .qa-nee').click();
   await opslagKlaar(page);
-  await expect(page.locator('.qa-bevestig')).toHaveCount(0);
   await expect(slot.locator('.qa-foto')).toHaveCount(1);
   await expect(slot.locator('.qa-foto image')).toHaveAttribute('href', eerste!);
+
+  await sleep(page, slot, [png('twee.png')]);
+  await ja(page);
+  await opslagKlaar(page);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  await expect(slot.locator('.qa-foto image')).not.toHaveAttribute('href', eerste!);
 
   await slot.locator('.qa-foto').click();
   await page.locator('.qa-foto-verwijderen').click();
@@ -299,7 +302,7 @@ test('meerdere foto’s tegelijk op een vak met één foto worden zonder vraag t
   await expect(page.locator('.qa-bevestig')).toHaveCount(0);
 });
 
-test('een nieuwe kaart na het verwijderen van de oude houdt de tekeningen en waarschuwt dat ze misschien niet meer kloppen', async ({ page }) => {
+test('een vervangen kaart houdt de tekeningen en waarschuwt dat ze misschien niet meer kloppen', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-kaart');
   await sleep(page, slot, [png('kaart1.png')]);
@@ -307,12 +310,9 @@ test('een nieuwe kaart na het verwijderen van de oude houdt de tekeningen en waa
   await expect(page.locator('.qa-kaart-vervangen')).toHaveCount(0);
   await tekenRegenpijp(page);
 
-  await slot.locator('.qa-foto').click();
-  await page.locator('.qa-foto-verwijderen').click();
-  await ja(page);
-  await expect(slot.locator('.qa-foto')).toHaveCount(0);
-  await expect(page.locator('.qa-kaart-vervangen')).toHaveCount(0);
   await sleep(page, slot, [png('kaart2.png')]);
+  await expect(page.locator('.qa-kaart-vervangen')).toHaveCount(0);
+  await ja(page);
   await expect(page.locator('.qa-kaart-vervangen')).toBeVisible();
   await opslagKlaar(page);
   await expect(slot.locator('.qa-foto')).toHaveCount(1);

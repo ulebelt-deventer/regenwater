@@ -267,6 +267,21 @@ export function gaNaar(id: string): void {
   el.classList.add('flash');
 }
 
+// Scrolls an element's top to 1rem below the top of the screen in `ms`; scrollIntoView's smooth scroll has no settable speed.
+export function scrollNaar(id: string, ms: number): void {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`Geen element met id ${id}`);
+  const van = window.scrollY;
+  const afstand = el.getBoundingClientRect().top - 16;
+  const begin = performance.now();
+  const stap = (nu: number) => {
+    const t = Math.min(1, (nu - begin) / ms);
+    window.scrollTo(0, van + afstand * (t < 0.5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2)); // ease in-out
+    if (t < 1) requestAnimationFrame(stap);
+  };
+  requestAnimationFrame(stap);
+}
+
 export function titel(t: string): void {
   document.title = `${t} | Ulebelt Regenwater`;
 }

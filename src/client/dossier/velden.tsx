@@ -20,7 +20,7 @@ function Hint(props: { veld: Veld }) {
   );
 }
 
-// The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder`. `breed` stretches a dropdown to its column.
+// The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder`. `breed` stretches a dropdown or number input to its column.
 export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
@@ -102,7 +102,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
         <textarea class="form-control qa-invoer" rows={props.veld.rijen ?? 3} disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
       </Match>
       <Match when={props.veld.type === 'number'}>
-        <GetalInvoer waarde={w()} min={props.veld.min} max={props.veld.max} uit={props.uit} onZet={zet} />
+        <GetalInvoer waarde={w()} min={props.veld.min} max={props.veld.max} uit={props.uit} onZet={zet} class={props.breed ? '' : undefined} />
       </Match>
       <Match when={props.veld.type === 'radio' && props.veld.lijst}>
         {/* Per-option `selected`: a select's `value` is lost when its options re-render. */}
