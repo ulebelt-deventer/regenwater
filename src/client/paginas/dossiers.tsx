@@ -45,7 +45,7 @@ interface Lijst {
 
 export function OpdrachtBadge(props: { opdracht: NonNullable<LijstRij['opdracht']> }) {
   return (
-    <span class={`badge ${props.opdracht.aanZet ? 'text-bg-primary' : 'border border-secondary text-secondary'} qa-opdracht`} classList={{ 'qa-opdracht-aan-zet': props.opdracht.aanZet }}>
+    <span class="badge qa-opdracht" classList={{ 'text-bg-primary qa-opdracht-aan-zet': props.opdracht.aanZet, 'border border-secondary text-secondary': !props.opdracht.aanZet }}>
       {!props.opdracht.aanZet && props.opdracht.klaar ? '✓ ' : ''}
       {props.opdracht.rol}
     </span>

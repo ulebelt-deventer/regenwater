@@ -324,9 +324,14 @@ export function verdelingTekst(dak: DakDeel, labels: Map<string, string>): strin
   return dak.verdeling.map((a) => (a.pct === 100 ? labels.get(a.pijp)! : `${labels.get(a.pijp)!} ${a.pct}%`)).join(' · ');
 }
 
+// "D1 (62%)", or just "D2" when this pijp takes all of it.
+export function bronLabel(bron: Regenpijp['bronnen'][number], labels: Map<string, string>): string {
+  return bron.pct === 100 ? labels.get(bron.dak)! : `${labels.get(bron.dak)!} (${bron.pct}%)`;
+}
+
 // "D1 (62%), D2": how much of each dakdeel this pijp takes.
 export function bronnenTekst(pijp: Regenpijp, labels: Map<string, string>): string {
-  return pijp.bronnen.map((b) => (b.pct === 100 ? labels.get(b.dak)! : `${labels.get(b.dak)!} (${b.pct}%)`)).join(', ');
+  return pijp.bronnen.map((b) => bronLabel(b, labels)).join(', ');
 }
 
 // A square around `punten` with a margin, moved inside the image where it fits: a pijp's thumbnail of its dakdelen.

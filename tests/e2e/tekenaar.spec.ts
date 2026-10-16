@@ -311,7 +311,7 @@ test('een lege regenpijp verwijderen vraagt niets, en de volgende schuiven een l
   await tik(page, 0.7, 0.5);
   await sluitTekenaar(page);
   const pijpen = page.locator('.qa-regenpijp');
-  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['A', 'B', 'C']);
+  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['Regenpijp A', 'Regenpijp B', 'Regenpijp C']);
   await pijpen.nth(2).locator('.qa-veld-regenpijp-waar .qa-invoer').fill('Wadi achterin');
   await opslagKlaar(page);
 
@@ -321,7 +321,7 @@ test('een lege regenpijp verwijderen vraagt niets, en de volgende schuiven een l
   await expect(page.locator('.qa-bevestig')).toHaveCount(0);
   await sluitTekenaar(page);
 
-  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['A', 'B']);
+  await expect(pijpen.locator('.qa-regenpijp-kop')).toHaveText(['Regenpijp A', 'Regenpijp B']);
   await expect(pijpen.nth(1).locator('.qa-veld-regenpijp-waar .qa-invoer')).toHaveValue('Wadi achterin');
   expect(await kaart(page, id)).toHaveLength(2);
 });

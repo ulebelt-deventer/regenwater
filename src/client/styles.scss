@@ -137,13 +137,15 @@ $container-max-widths: (lg: 1200px);
 // nested in a cell (eg in a dropdown) stays a table.
 @include media-breakpoint-down(md) {
   .tabel-kaarten > thead { display: none; }
-  .tabel-kaarten, .tabel-kaarten > tbody, .tabel-kaarten > tbody > tr > td { display: block; }
-  .tabel-kaarten > tbody > tr { display: flex; flex-wrap: wrap; align-items: center; column-gap: .5rem; border: 1px solid $ub-rand; border-radius: $border-radius; padding: .5rem .75rem; margin-bottom: .5rem; }
+  .tabel-kaarten, .tabel-kaarten > tbody, .tabel-kaarten > tbody > tr, .tabel-kaarten > tbody > tr > td { display: block; }
+  .tabel-kaarten > tbody > tr { border: 1px solid $ub-rand; border-radius: $border-radius; padding: .5rem .75rem; margin-bottom: .5rem; }
   .tabel-kaarten > :not(caption) > * > * { border: 0; padding: 0; text-align: start !important; white-space: normal !important; }
-  // Cells stack full-width; a .kaart-titel and the .kaart-hoek after it share the top line, the latter at the right.
-  .tabel-kaarten > tbody > tr > td { flex: 1 1 100%; }
-  .tabel-kaarten > tbody > tr > td.kaart-titel { flex: 1 1 0; }
-  .tabel-kaarten > tbody > tr > td.kaart-hoek { flex: 0 0 auto; }
+  // A row with a .kaart-hoek: it shares the top line with the .kaart-titel before it, at the right; other cells stack full-width.
+  .tabel-kaarten > tbody > tr:has(> .kaart-hoek) { display: flex; flex-wrap: wrap; align-items: center; column-gap: .5rem;
+    > td { flex: 1 1 100%; }
+    > td.kaart-titel { flex: 1 1 0; }
+    > td.kaart-hoek { flex: 0 0 auto; }
+  }
   .tabel-kaarten > tbody > tr > td[data-label]::before { content: attr(data-label) ': '; color: var(--bs-secondary-color); }
 }
 .modal.d-block { background: rgba(26, 26, 26, .55); overflow-y: auto; }

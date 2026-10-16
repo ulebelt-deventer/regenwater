@@ -2,7 +2,7 @@
 import { A } from '@solidjs/router';
 import { For, Show } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
-import { type Aandeel, KOPPEL_M, annotatiesSvg, bronnenTekst, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
+import { type Aandeel, KOPPEL_M, annotatiesSvg, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
 import { ontbrekend, veld } from '../../shared/velden.ts';
 import { Dropdown, OnderdeelIcoon, bevestig, gaNaar } from '../ui.tsx';
 import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
@@ -11,7 +11,7 @@ import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
-// The kaart cropped to a regenpijp, so you can see at a glance where it is.
+// The kaart cropped to a regenpijp, so you can see at a glance where it is. It floats over the block's top-left corner, sticking ~5px out past its border (padding .5rem + 1px border + 5px).
 function BronnenUitsnede(props: { id: string }) {
   const s = useDossier();
   const annots = () => kaartAnnotaties(s.d);
@@ -25,7 +25,7 @@ function BronnenUitsnede(props: { id: string }) {
       {(foto) => {
         const u = () => regenpijpUitsnede(annots().find((a) => a.id === props.id)!.p[0], punten(), foto());
         return (
-          <svg class="border rounded flex-shrink-0 qa-bronnen-uitsnede" style={{ width: '3.6rem', height: '3.6rem' }} viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
+          <svg class="d-block float-start border rounded bg-body me-2 qa-bronnen-uitsnede" style={{ width: '3.6rem', height: '3.6rem', margin: 'calc(-.5rem - 6px) 0 0 calc(-.5rem - 6px)' }} viewBox={`${u().x} ${u().y} ${u().zijde} ${u().zijde}`}>
             <image href={`/api/fotos/${foto().id}`} width={foto().breedte} height={foto().hoogte} />
             {/* eslint-disable-next-line solid/no-innerhtml -- annotatiesSvg escapes all text */}
             <g innerHTML={annotatiesSvg(annots(), { schaal: u().zijde / 150, mPerPx: null, geselecteerd: props.id })} />
@@ -36,13 +36,13 @@ function BronnenUitsnede(props: { id: string }) {
   );
 }
 
-// Six short cells fill one lg row; the three long ones below them span two short cells each.
+// Six short cells fill one lg row; below them Waar and Hoe take half a row each (photos beside them from md), then Ondergrond.
 const KORT = 'col-6 col-md-4 col-lg-2';
 // Labels too long for their cell: smaller and cut off on one line, so the inputs below stay level with their neighbours'.
 const LANG_LABEL = ['regenton', 'hoe'];
 const BERGING_UITLEG = `per regenpijp gebaseerd op normafvoer ${NORMAFVOER_MM} mm regenwater`;
 
-// One regenpijp as a bordered block: its letter in a fixed gutter (on phones a row above), then a grid whose columns line up from block to block.
+// One regenpijp as a bordered block: a heading row (with the kaart thumbnail floated beside it), then a grid whose columns line up from block to block.
 function RegenpijpBlok(props: { id: string }) {
   const s = useDossier();
   const items = () => kaartItems(s.d);
@@ -53,17 +53,27 @@ function RegenpijpBlok(props: { id: string }) {
   };
   const k = (v: string) => `regenpijp.${props.id}.${v}`;
   return (
-    <div class="border rounded p-2 mb-2 d-sm-flex gap-2 qa-regenpijp qa-regenpijp-rij">
-      <div class="fs-5 fw-bold text-sm-center flex-shrink-0 mb-1 mb-sm-0 qa-regenpijp-kop" style={{ width: '1.5rem' }}>{pijp().label}</div>
-      <div class="row g-3 flex-grow-1 min-w-0">
-        <div id={`veld-${k('bronnen')}`} class={`${KORT} d-flex align-items-start gap-2 qa-veld qa-veld-regenpijp-bronnen`}>
-          <div>
-            <div class="form-label fw-semibold mb-1">Voert af van</div>
-            <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
-              <span class="qa-bronnen">{bronnenTekst(pijp(), items().labels)}</span>
-            </Show>
-          </div>
-          <BronnenUitsnede id={props.id} />
+    <div class="border rounded p-2 mb-2 qa-regenpijp qa-regenpijp-rij">
+      {/* clearfix: the grid below starts under the floated thumbnail, not squeezed beside it. */}
+      <div class="clearfix mb-2">
+        <BronnenUitsnede id={props.id} />
+        <span class="fs-5 fw-bold qa-regenpijp-kop">Regenpijp {pijp().label}</span>
+      </div>
+      <div class="row g-3">
+        <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
+          <div class="form-label fw-semibold mb-1">Voert af van</div>
+          <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
+            <span class="qa-bronnen">
+              <For each={pijp().bronnen}>
+                {(b, i) => (
+                  <>
+                    {i() > 0 && ', '}
+                    <span class="text-nowrap qa-bron">{bronLabel(b, items().labels)}</span>
+                  </>
+                )}
+              </For>
+            </span>
+          </Show>
         </div>
         <div class={KORT}>
           <div class="form-label fw-semibold mb-1">
@@ -81,7 +91,8 @@ function RegenpijpBlok(props: { id: string }) {
           </div>
         </div>
         <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LANG_LABEL.includes(v) ? 'label-klein' : ''} />}</For>
-        <For each={['waar', 'hoe', 'ondergrond']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-4" fotoOnder breed labelClass={LANG_LABEL.includes(v) ? 'label-klein' : ''} />}</For>
+        <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LANG_LABEL.includes(v) ? 'label-klein' : ''} />}</For>
+        <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
       </div>
     </div>
   );
@@ -101,8 +112,9 @@ function VerdelingKeuze(props: { id: string }) {
   const wissel = (pijp: string, aan: boolean) =>
     bewaar(verdelingVoor(s.d, props.id, items().regenpijpen.map((r) => r.id).filter((id) => (id === pijp ? aan : aandeel(id) !== undefined))));
   return (
-    <div id={`veld-${k()}`} class="qa-veld qa-veld-dak-verdeling">
+    <div id={`veld-${k()}`} class="qa-veld qa-veld-dak-verdeling ms-auto">
       <Dropdown
+        rechts
         sluitBijKlik={false}
         knopClass="btn btn-sm btn-light border text-start qa-verdeling-knop"
         knop={
@@ -221,7 +233,7 @@ export function Bezoek() {
                 <tr>
                   <th>Dakdeel</th>
                   <th style={{ width: '9rem' }}>m²*</th>
-                  <th>Regenpijpen</th>
+                  <th class="text-end">Regenpijpen</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,7 +244,7 @@ export function Bezoek() {
                       <tr class="qa-dak-rij">
                         <td class="fw-semibold kaart-titel">{dak().label}</td>
                         <td class="d-flex d-md-table-cell align-items-center gap-2 kaart-hoek">{m2Cel(id, 'dak', dak().m2, dak().m2Berekend)}</td>
-                        <td class="d-flex d-md-table-cell flex-wrap align-items-center gap-1" data-label="Regenpijpen"><VerdelingKeuze id={id} /></td>
+                        <td class="d-flex d-md-table-cell flex-wrap align-items-center gap-1 text-md-end" data-label="Regenpijpen"><VerdelingKeuze id={id} /></td>
                       </tr>
                     );
                   }}

@@ -192,7 +192,8 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?:
         {props.knop}
       </button>
       {/* Bootstrap positions the menu (incl. -end alignment) only when data-bs-popper is set; "static" is its no-Popper mode. */}
-      <div ref={menu} class={`dropdown-menu ${props.rechts || omklappen() ? 'dropdown-menu-end' : ''} shadow`} data-bs-popper="static" classList={{ show: open() }} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
+      {/* A reactive `class` would overwrite whatever `classList` set, so every conditional class goes in `classList`. */}
+      <div ref={menu} class="dropdown-menu shadow" data-bs-popper="static" classList={{ 'dropdown-menu-end': props.rechts || omklappen(), show: open() }} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
         {props.children}
       </div>
     </div>

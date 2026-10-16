@@ -90,7 +90,8 @@ test('een bestand zonder afbeelding erin, ook met een afbeeldingtype, geeft deze
   await expect(slot.locator('.qa-foto')).toHaveCount(0);
 });
 
-test('in een vak voor meerdere foto’s zijn de foto’s kleine vierkantjes naast elkaar, de eerste recht onder het label; bij Waar zijn ze 3:2', async ({ page }) => {
+test('op een telefoon zijn de foto’s in een vak voor meerdere foto’s kleine vierkantjes naast elkaar, de eerste recht onder het label; bij Waar zijn ze 3:2', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
   const id = await nieuwBezoekDossier(page);
   await zet(page, id, { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }] });
   await page.reload();
