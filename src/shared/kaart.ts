@@ -320,6 +320,10 @@ export function waterberging(pijp: Regenpijp, daken: DakDeel[]): { liter: number
 }
 
 // "A 62% · B 38%", or just "A" for a single pijp.
+// A dakdeel split over 2+ regenpijpen by the automatic method gets a † footnote with this explanation.
+export const AUTO_VERDELING_UITLEG = 'elk stuk dak gaat naar de dichtstbijzijnde regenpijp (Voronoi-verdeling)';
+export const autoGesplitst = (dak: DakDeel): boolean => dak.automatisch && dak.verdeling.length > 1;
+
 export function verdelingTekst(dak: DakDeel, labels: Map<string, string>): string {
   return dak.verdeling.map((a) => (a.pct === 100 ? labels.get(a.pijp)! : `${labels.get(a.pijp)!} ${a.pct}%`)).join(' · ');
 }

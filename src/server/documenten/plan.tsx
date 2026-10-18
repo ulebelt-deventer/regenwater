@@ -1,7 +1,7 @@
 import { For, type JSX, Show } from 'solid-js';
 import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
-import { type Vlak, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
+import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { str } from '../../shared/status.ts';
 import { BEOORDELINGEN, lijst, materiaalRijen, optieLabel, veld } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, eigenaar, fotosIn, heeft, naamVan } from './onderdelen.tsx';
@@ -99,7 +99,7 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
                 <tr>
                   <td>{dak.label}</td>
                   <td class="getal">{dak.m2 === null ? <Leeg doc={props.doc} /> : `${getal(dak.m2)} m²`}</td>
-                  <td>{dak.verdeling.length ? verdelingTekst(dak, items().labels) : '--'}</td>
+                  <td>{dak.verdeling.length ? verdelingTekst(dak, items().labels) : '--'}{autoGesplitst(dak) && '†'}</td>
                 </tr>
               )}
             </For>
@@ -134,6 +134,9 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
           </table>
         </Show>
         <p class="voetnoot">* bron: kadastrale kaart (PDOK)</p>
+        <Show when={items().daken.some(autoGesplitst)}>
+          <p class="voetnoot qa-pdf-voetnoot-verdeling">† automatisch verdeeld: {AUTO_VERDELING_UITLEG}</p>
+        </Show>
         <p class="voetnoot">** per regenpijp gebaseerd op normafvoer 20 mm regenwater</p>
       </Show>
     </>

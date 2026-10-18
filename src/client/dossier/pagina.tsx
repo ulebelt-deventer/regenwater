@@ -7,7 +7,7 @@ import { PLAN_BEWONER_SJABLONEN, adresRegel, laatsteVerzending, str } from '../.
 import type { SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
 import { ApiFout, get } from '../api.ts';
-import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, titel } from '../ui.tsx';
+import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, tip, titel } from '../ui.tsx';
 import { MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerwijderModal, VerzendRegel, actie, verstuurdSinds, zetMijlpaal } from './acties.tsx';
 import { type Antwoord, DossierCtx, haalDossier, maakStaat, useDossier } from './staat.ts';
 import { BezoekSamenvatting, InschrijvingSamenvatting, PlanSamenvatting, UitvoeringSamenvatting } from './samenvatting.tsx';
@@ -112,7 +112,7 @@ function Kop() {
               <button type="button" class="btn btn-inline btn-link link-danger text-start align-top qa-bevinding" onClick={() => naarAnker(b.anker)}>{b.tekst}</button>
             </li>
           );
-          const uitleg = () => <A href="/uitleg/aandacht" class="link-danger qa-aandacht-uitleg" title="Waarom zie ik dit?" aria-label="Waarom zie ik dit?"><i class="bi bi-question-circle" aria-hidden="true" /></A>;
+          const uitleg = () => <A href="/uitleg/aandacht" class="link-danger qa-aandacht-uitleg" ref={tip('Waarom zie ik dit?')} aria-label="Waarom zie ik dit?"><i class="bi bi-question-circle" aria-hidden="true" /></A>;
           return (
             <>
               <Show when={a().nodig}>
@@ -278,7 +278,7 @@ export function Details() {
       <Sectie id="sectie-status" titel="Status">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
           <span class="text-muted">Volgende stap</span>
-          <A href="/uitleg/statussen" class="small qa-uitleg-statussen" title="Hoe wordt de status bepaald?">?</A>
+          <A href="/uitleg/statussen" class="small qa-uitleg-statussen" aria-label="Hoe wordt de status bepaald?" ref={tip('Hoe wordt de status bepaald?')}>?</A>
           <StatusLabel label={s.status().label} ligtBij={s.status().ligtBij} />
           <Show when={toonActie()}>
             <Show

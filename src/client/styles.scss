@@ -105,6 +105,8 @@ $container-max-widths: (lg: 1200px);
 .regenpijp-uitsnede { position: absolute; top: -12px; left: -12px; width: 3.6rem; height: 3.6rem; }
 .regenpijp-kop { padding-left: .5rem; list-style: none; cursor: pointer; }
 .regenpijp-kop::-webkit-details-marker { display: none; }
+// Rounded to fit inside the block's 1px border.
+.regenpijp-kop-open { background: tint-color($ub-blauw, 80%); border-radius: calc(var(--bs-border-radius) - 1px) calc(var(--bs-border-radius) - 1px) 0 0; }
 .regenpijp-kop:has(> .regenpijp-uitsnede) { padding-left: calc(3.6rem - 12px + .5rem); min-height: calc(3.6rem - 12px + 4px); }
 
 // Photo slots

@@ -2,9 +2,9 @@
 import { A } from '@solidjs/router';
 import { For, Show, createSignal } from 'solid-js';
 import { NORMAFVOER_MM } from '../../shared/constants.ts';
-import { type Aandeel, KOPPEL_M, annotatiesSvg, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
+import { AUTO_VERDELING_UITLEG, type Aandeel, KOPPEL_M, annotatiesSvg, autoGesplitst, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
 import { ontbrekend, veld } from '../../shared/velden.ts';
-import { Dropdown, OnderdeelIcoon, bevestig, gaNaar, scrollNaar } from '../ui.tsx';
+import { Dropdown, OnderdeelIcoon, bevestig, gaNaar, scrollNaar, tip } from '../ui.tsx';
 import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { TerugLink } from './pagina.tsx';
@@ -54,50 +54,75 @@ function RegenpijpBlok(props: { id: string }) {
     return p;
   };
   const k = (v: string) => `regenpijp.${props.id}.${v}`;
+  // The state the block is in or sliding towards. A closed details hides its content at once, so closing keeps it open until the slide ends.
   const [open, setOpen] = createSignal(true);
+  let blok!: HTMLDetailsElement;
+  let inhoud!: HTMLDivElement;
+  let schuif: Animation | null = null;
+  // A click the thumbnail already handled (defaultPrevented) leaves the block as it is.
+  const wissel = (e: MouseEvent) => {
+    if (e.defaultPrevented) return;
+    e.preventDefault();
+    // A closed details keeps its content's last size.
+    const van = blok.open ? inhoud.offsetHeight : 0;
+    schuif?.cancel();
+    setOpen(!open());
+    blok.open = true;
+    const naar = open() ? inhoud.scrollHeight : 0;
+    inhoud.style.overflow = 'hidden';
+    schuif = inhoud.animate([{ height: `${van}px` }, { height: `${naar}px` }], { duration: 200, easing: 'linear' });
+    schuif.onfinish = () => {
+      schuif = null;
+      inhoud.style.overflow = '';
+      blok.open = open();
+    };
+  };
+  // onToggle catches an outside open (gaNaar); during a slide the toggle is the slide's own.
   return (
-    <details open class="border rounded shadow-sm mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij" onToggle={(e) => setOpen(e.currentTarget.open)}>
+    <details ref={blok} open class="border rounded shadow-sm mb-2 regenpijp-blok qa-regenpijp qa-regenpijp-rij" onToggle={(e) => schuif === null && setOpen(e.currentTarget.open)}>
       {/* The thumbnail sits in the summary because a closed details shows nothing else. */}
-      <summary class="d-flex align-items-center fs-5 py-2 pe-2 regenpijp-kop qa-regenpijp-kop" classList={{ 'border-bottom': open() }}>
+      <summary class="d-flex align-items-center fs-5 py-2 pe-2 regenpijp-kop qa-regenpijp-kop" classList={{ 'border-bottom regenpijp-kop-open': open() }} onClick={wissel}>
         <BronnenUitsnede id={props.id} />
         <span class="flex-grow-1 qa-regenpijp-titel">Regenpijp {pijp().label}</span>
-        <i class="bi fs-6 text-muted" classList={{ 'bi-chevron-up': open(), 'bi-chevron-down': !open() }} aria-hidden="true" />
+        <i class="bi fs-6 text-muted me-1 qa-regenpijp-caret" classList={{ 'bi-caret-up': open(), 'bi-caret-down': !open() }} aria-hidden="true" />
       </summary>
-      <div class="p-2">
-        <div class="row gx-3 gy-2">
-          <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
-            <div class="form-label fw-semibold mb-1">Voert af van</div>
-            <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
-              <span class="qa-bronnen">
-                <For each={pijp().bronnen}>
-                  {(b, i) => (
-                    <>
-                      {i() > 0 && ', '}
-                      <span class="text-nowrap qa-bron">{bronLabel(b, items().labels)}</span>
-                    </>
-                  )}
-                </For>
-              </span>
-            </Show>
-          </div>
-          <div class={KORT}>
-            <div class="form-label fw-semibold mb-1">
-              Waterberging<span class="cursor-help qa-waterberging-uitleg" title={BERGING_UITLEG}>**</span>
-            </div>
-            <div class="qa-waterberging">
-              <Show when={waterberging(pijp(), items().daken)} fallback="--">
-                {(w) => (
-                  <>
-                    {w().liter} liter
-                    <div class="text-muted" style={{ 'font-size': '.8em' }}>{w().uitleg}</div>
-                  </>
-                )}
+      <div ref={inhoud} class="qa-regenpijp-inhoud">
+        <div class="p-2">
+          <div class="row gx-3 gy-2">
+            <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
+              <div class="form-label fw-semibold mb-1">Voert af van</div>
+              <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
+                <span class="qa-bronnen">
+                  <For each={pijp().bronnen}>
+                    {(b, i) => (
+                      <>
+                        {i() > 0 && ', '}
+                        <span class="text-nowrap qa-bron">{bronLabel(b, items().labels)}</span>
+                      </>
+                    )}
+                  </For>
+                </span>
               </Show>
             </div>
+            <div class={KORT}>
+              <div class="form-label fw-semibold mb-1">
+                Waterberging<span class="cursor-help qa-waterberging-uitleg" ref={tip(BERGING_UITLEG)}>**</span>
+              </div>
+              <div class="qa-waterberging">
+                <Show when={waterberging(pijp(), items().daken)} fallback="--">
+                  {(w) => (
+                    <>
+                      {w().liter} liter
+                      <div class="text-muted" style={{ 'font-size': '.8em' }}>{w().uitleg}</div>
+                    </>
+                  )}
+                </Show>
+              </div>
+            </div>
+            <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
+            <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
+            <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
           </div>
-          <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
-          <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
-          <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
         </div>
       </div>
     </details>
@@ -118,7 +143,7 @@ function VerdelingKeuze(props: { id: string }) {
   const wissel = (pijp: string, aan: boolean) =>
     bewaar(verdelingVoor(s.d, props.id, items().regenpijpen.map((r) => r.id).filter((id) => (id === pijp ? aan : aandeel(id) !== undefined))));
   return (
-    <div id={`veld-${k()}`} class="qa-veld qa-veld-dak-verdeling ms-auto">
+    <div id={`veld-${k()}`} class="d-flex flex-wrap align-items-center justify-content-end column-gap-1 ms-auto qa-veld qa-veld-dak-verdeling">
       <Dropdown
         rechts
         sluitBijKlik={false}
@@ -192,15 +217,18 @@ function VerdelingKeuze(props: { id: string }) {
           </table>
         </Show>
         <Show when={dak().automatisch}>
-          <div class="dropdown-item-text small text-muted fst-italic qa-verdeling-auto">Automatisch verdeeld: elk stuk dak gaat naar de dichtstbijzijnde regenpijp.</div>
+          <div class="dropdown-item-text small text-muted fst-italic qa-verdeling-auto">Automatisch verdeeld: {AUTO_VERDELING_UITLEG}.</div>
         </Show>
         <Show when={!dak().automatisch && !uit()}>
           <div class="dropdown-divider" />
           <button type="button" class="dropdown-item qa-verdeling-automatisch" onClick={() => s.zet(k(), null)}><i class="bi bi-arrow-repeat me-1" aria-hidden="true" />Terug naar automatisch</button>
         </Show>
       </Dropdown>
+      <Show when={autoGesplitst(dak())}>
+        <span class="cursor-help qa-verdeling-voetnoot-teken" ref={tip(`Automatisch verdeeld: ${AUTO_VERDELING_UITLEG}`)}>†</span>
+      </Show>
       <Show when={dak().verlopen}>
-        <div class="small text-warning qa-verdeling-verlopen">Een regenpijp is weg: controleer de verdeling.</div>
+        <div class="w-100 small text-warning qa-verdeling-verlopen">Een regenpijp is weg: controleer de verdeling.</div>
       </Show>
     </div>
   );
@@ -273,6 +301,9 @@ export function Bezoek() {
               </tbody>
             </table>
             <div class="small text-muted">* bron: kadastrale kaart (PDOK)</div>
+            <Show when={items().daken.some(autoGesplitst)}>
+              <div class="small text-muted qa-verdeling-voetnoot">† automatisch verdeeld: {AUTO_VERDELING_UITLEG}</div>
+            </Show>
           </Show>
         </div>
 

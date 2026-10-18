@@ -4,7 +4,7 @@ import { ICOON, KLEUR, TEKST_PX, afstandTotLijn, afstandTotPolygoon, afstandTotR
 import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
 import { del } from '../api.ts';
-import { Modal, OnderdeelIcoon, bevestig, melding, probeer } from '../ui.tsx';
+import { Modal, OnderdeelIcoon, bevestig, melding, probeer, tip } from '../ui.tsx';
 import { useDossier } from './staat.ts';
 
 type Pt = [number, number];
@@ -426,10 +426,11 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     <div class="annot qa-tekenaar">
       <div class="tools">
         <Show when={!uit()}>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-gereedschap-kies" classList={{ active: gereedschap() === null }} aria-label="Kiezen" title="Kiezen" onClick={() => kies(null)}><i class="bi bi-hand-index" aria-hidden="true" /></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-gereedschap-kies" classList={{ active: gereedschap() === null }} aria-label="Kiezen" ref={tip('Kiezen')} onClick={() => kies(null)}><i class="bi bi-hand-index" aria-hidden="true" /></button>
           <For each={gereedschappen()}>
             {(g) => (
-              <button type="button" class={`btn btn-sm btn-outline-secondary qa-gereedschap-${g}`} classList={{ active: gereedschap() === g }} aria-label={NAAM[g]} title={NAAM[g]} onClick={() => kies(g)}>
+              // A tool with an ICOON shows its name; only the icon-only ones need it as a tooltip.
+              <button type="button" class={`btn btn-sm btn-outline-secondary qa-gereedschap-${g}`} classList={{ active: gereedschap() === g }} aria-label={NAAM[g]} ref={g in ICOON ? undefined : tip(NAAM[g])} onClick={() => kies(g)}>
                 <Switch fallback={NAAM[g]}>
                   <Match when={g in ICOON && (g as keyof typeof ICOON)}>
                     {(soort) => (
@@ -451,9 +452,9 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
           </Show>
           <span class="vr mx-1" />
           <Show when={gekozen()}>
-            <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" aria-label="Verwijderen" title="Verwijderen" onClick={() => void verwijder()}><i class="bi bi-eraser" aria-hidden="true" /></button>
+            <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" aria-label="Verwijderen" ref={tip('Verwijderen')} onClick={() => void verwijder()}><i class="bi bi-eraser" aria-hidden="true" /></button>
           </Show>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" aria-label="Ongedaan maken" title="Ongedaan maken" disabled={!geschiedenis().length} onClick={ongedaan}><i class="bi bi-arrow-counterclockwise" aria-hidden="true" /></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" aria-label="Ongedaan maken" ref={tip('Ongedaan maken')} disabled={!geschiedenis().length} onClick={ongedaan}><i class="bi bi-arrow-counterclockwise" aria-hidden="true" /></button>
           <button type="button" class="btn btn-sm btn-outline-danger qa-foto-verwijderen" onClick={() => void fotoVerwijderen()}><i class="bi bi-trash3 me-1" aria-hidden="true" />Foto<span class="d-none d-sm-inline"> verwijderen</span></button>
         </Show>
         <button type="button" class="btn btn-sm btn-success ms-auto qa-tekenaar-sluiten" aria-label="Sluiten" onClick={() => props.onSluit()}>✕</button>

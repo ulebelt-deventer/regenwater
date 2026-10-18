@@ -6,7 +6,7 @@ import { datum } from '../../shared/datum.ts';
 import { SUBSIDIE_SJABLONEN, inschrijvingOntbreekt, laatsteVerzending, str, straatNummer } from '../../shared/status.ts';
 import type { Dossier, RioolDetectie } from '../../shared/types.ts';
 import { get, post } from '../api.ts';
-import { Modal, bevestig, melding, probeer } from '../ui.tsx';
+import { Modal, bevestig, melding, probeer, tip } from '../ui.tsx';
 import { MailKnop, MijlpaalRegel, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { SluitKnop, TerugLink } from './pagina.tsx';
@@ -204,7 +204,7 @@ function AdresVeld() {
           <div class="mb-1">
             <span class="qa-adres-gekozen">{straatNummer(a())}, {a().postcode} {a().plaats}</span>
             <Show when={!uit()}>
-              <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline qa-adres-wijzigen" title="Ander adres zoeken" aria-label="Ander adres zoeken" onClick={() => setZoeken(!zoeken())}>
+              <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline qa-adres-wijzigen" aria-label="Ander adres zoeken" ref={tip('Ander adres zoeken')} onClick={() => setZoeken(!zoeken())}>
                 <i class="bi bi-pencil" aria-hidden="true" />
               </button>
             </Show>

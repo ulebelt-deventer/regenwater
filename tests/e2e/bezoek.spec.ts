@@ -1,7 +1,7 @@
 // The Bezoek sub-page: the Dak table with each dakdeel's verdeling over the regenpijpen, then one block per regenpijp.
 import { type Locator, type Page, expect, test } from '@playwright/test';
 import sharp from 'sharp';
-import { nieuwDossier, opslagKlaar, start, zet } from './hulp.ts';
+import { nieuwDossier, opslagKlaar, planTekst, start, zet } from './hulp.ts';
 
 const vak = (l: Locator) => l.evaluate((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, midden: r.top + r.height / 2 }; });
 
@@ -65,24 +65,71 @@ test('tikken op de kaartuitsnede van een regenpijp scrolt omhoog naar de kaart e
   await opslagKlaar(page);
 });
 
-test('een regenpijpblok is open; tikken op de kop klapt het dicht tot alleen de kop met kaartuitsnede, en weer open; open heeft de kop een lijn eronder', async ({ page }) => {
+test('een regenpijpblok is open; tikken op de kop klapt het dicht tot alleen de kop met kaartuitsnede, en weer open; open is de kop lichtblauw met een lijn eronder en een caret-up, dicht wit met een caret-down', async ({ page }) => {
   await tweeRegenpijpen(page);
   await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: await kaartPng() });
   const blok = page.locator('.qa-regenpijp').first();
   const kop = blok.locator('.qa-regenpijp-kop');
+  const caret = kop.locator('.qa-regenpijp-caret');
   const soort = blok.locator('.qa-veld-regenpijp-soort');
-  const lijn = () => kop.evaluate((el) => getComputedStyle(el).borderBottomWidth);
+  const stijl = () => kop.evaluate((el) => { const s = getComputedStyle(el); return { lijn: s.borderBottomWidth, achtergrond: s.backgroundColor }; });
+  const isLichtblauw = (kleur: string) => {
+    const [r, , b] = kleur.match(/\d+/g)!.map(Number);
+    return kleur.startsWith('rgb(') && b > r && b > 230 && r > 200;
+  };
   await expect(soort).toBeVisible();
-  expect(await lijn()).toBe('1px');
+  let s = await stijl();
+  expect(s.lijn).toBe('1px');
+  expect(isLichtblauw(s.achtergrond)).toBe(true);
+  await expect(caret).toHaveClass(/\bbi-caret-up\b/);
   await blok.locator('.qa-regenpijp-titel').click();
   await expect(soort).toBeHidden();
+  await expect(blok).not.toHaveAttribute('open');
   await expect(blok.locator('.qa-bronnen-uitsnede')).toBeVisible();
-  // The toggle event that updates the line fires after the click.
-  await expect.poll(lijn).toBe('0px');
+  s = await stijl();
+  expect(s.lijn).toBe('0px');
+  // Transparent over the white page.
+  expect(s.achtergrond).toBe('rgba(0, 0, 0, 0)');
+  await expect(caret).toHaveClass(/\bbi-caret-down\b/);
   await blok.locator('.qa-regenpijp-titel').click();
   await expect(soort).toBeVisible();
-  await expect.poll(lijn).toBe('1px');
+  await expect(blok).toHaveAttribute('open', '');
+  s = await stijl();
+  expect(s.lijn).toBe('1px');
+  expect(isLichtblauw(s.achtergrond)).toBe(true);
+  await expect(caret).toHaveClass(/\bbi-caret-up\b/);
   await opslagKlaar(page);
+});
+
+test('dicht- en openklappen van een regenpijpblok schuift de inhoud in 200 ms lineair dicht en open', async ({ page }) => {
+  await tweeRegenpijpen(page);
+  const blok = page.locator('.qa-regenpijp').first();
+  const inhoud = blok.locator('.qa-regenpijp-inhoud');
+  await expect(inhoud).toBeVisible();
+  const volle = (await rechthoek(inhoud)).height;
+  expect(volle).toBeGreaterThan(100);
+  // Read the running slide right after the click, in the same task.
+  const schuif = (klikOp: Locator) =>
+    klikOp.evaluate((el: HTMLElement) => {
+      el.click();
+      const details = el.closest('details')!;
+      const a = details.querySelector('.qa-regenpijp-inhoud')!.getAnimations()[0];
+      const t = a.effect!.getTiming();
+      return { duur: t.duration, easing: t.easing, hoogtes: (a.effect as KeyframeEffect).getKeyframes().map((k) => parseFloat(String(k.height))), open: details.open };
+    });
+  const titel = blok.locator('.qa-regenpijp-titel');
+  const dicht = await schuif(titel);
+  // Still open while it slides shut.
+  expect(dicht).toMatchObject({ duur: 200, easing: 'linear', open: true });
+  expect(dicht.hoogtes[0]).toBeCloseTo(volle, 0);
+  expect(dicht.hoogtes[1]).toBe(0);
+  await expect(blok).not.toHaveAttribute('open');
+  const open = await schuif(titel);
+  expect(open).toMatchObject({ duur: 200, easing: 'linear' });
+  expect(open.hoogtes[0]).toBe(0);
+  expect(open.hoogtes[1]).toBeCloseTo(volle, 0);
+  await expect(blok.locator('.qa-veld-regenpijp-soort')).toBeVisible();
+  await expect.poll(async () => (await rechthoek(inhoud)).height).toBeCloseTo(volle, 0);
 });
 
 test('een link naar een ontbrekend veld in een dichtgeklapt regenpijpblok klapt het open en scrolt ernaartoe', async ({ page }) => {
@@ -350,11 +397,75 @@ test('de lange labels Regenton aanwezig? (90% groot) en Hoe moet het water komen
   }
 });
 
-test('de ** bij Waterberging toont de uitleg als tooltip, en de voetnoot staat er nog onder', async ({ page }) => {
+test('de ** bij Waterberging toont de uitleg als eigen tooltip boven zich bij muis-hover en bij een tik, en de voetnoot staat er nog onder', async ({ page }) => {
   await tweeRegenpijpen(page);
   const uitleg = 'per regenpijp gebaseerd op normafvoer 20 mm regenwater';
-  await expect(page.locator('.qa-waterberging-uitleg').first()).toHaveAttribute('title', uitleg);
+  const sterren = page.locator('.qa-waterberging-uitleg').first();
+  const tooltip = page.locator('.qa-tip');
+  // No browser tooltips anywhere on the page.
+  await expect(page.locator('[title]')).toHaveCount(0);
+  await sterren.hover();
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveText(uitleg);
+  // The arrow's tip touches the top of the ** and points at its middle.
+  const [t, pijl, s] = await Promise.all([tooltip, tooltip.locator('.tooltip-arrow'), sterren].map(rechthoek));
+  expect(t.width).toBeGreaterThan(50);
+  expect(pijl.width).toBeGreaterThan(5);
+  expect(t.bottom).toBeLessThan(s.top);
+  expect(pijl.bottom).toBeCloseTo(s.top, 0);
+  expect(pijl.left + pijl.width / 2).toBeCloseTo(s.left + s.width / 2, 0);
+  await page.mouse.move(0, 0);
+  await expect(tooltip).toHaveCount(0);
+  // A tap shows it and the next tap hides it; lifting the finger doesn't.
+  await sterren.dispatchEvent('pointerup', { pointerType: 'touch' });
+  await sterren.dispatchEvent('pointerleave', { pointerType: 'touch' });
+  await expect(tooltip).toBeVisible();
+  await sterren.dispatchEvent('pointerup', { pointerType: 'touch' });
+  await expect(tooltip).toHaveCount(0);
   await expect(page.locator('.qa-regenpijpen')).toContainText(`** ${uitleg}`);
+});
+
+test('op 320px blijft de tooltip van de † aan de rechterrand binnen beeld, met de pijl op de †', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await tweeRegenpijpen(page);
+  const teken = page.locator('.qa-verdeling-voetnoot-teken');
+  await expect(teken).toBeVisible();
+  await teken.hover();
+  const tooltip = page.locator('.qa-tip');
+  await expect(tooltip).toBeVisible();
+  const [t, pijl, d] = await Promise.all([tooltip, tooltip.locator('.tooltip-arrow'), teken].map(rechthoek));
+  expect(t.width).toBeGreaterThan(50);
+  expect(t.left).toBeGreaterThanOrEqual(0);
+  expect(t.right).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
+  expect(pijl.left + pijl.width / 2).toBeCloseTo(d.left + d.width / 2, 0);
+});
+
+test('de icoonknoppen van de tekenaar en de ?-link bij de status tonen een eigen tooltip bij muis-hover, niet die van de browser; Dak, Tuin, Steen en Regenpijp geen', async ({ page }) => {
+  const id = await tweeRegenpijpen(page);
+  await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: await kaartPng() });
+  await page.locator('.qa-fotoslot-kaart .qa-foto').first().click();
+  const kiezen = page.locator('.qa-gereedschap-kies');
+  await expect(kiezen).toBeVisible();
+  await expect(page.locator('[title]')).toHaveCount(0);
+  await kiezen.hover();
+  await expect(page.locator('.qa-tip')).toHaveText('Kiezen');
+  await expect(page.locator('.qa-tip')).toBeVisible();
+  await page.locator('.qa-gereedschap-pijl').hover();
+  await expect(page.locator('.qa-tip')).toHaveText('Pijl');
+  // Tools that show their name have no tooltip.
+  for (const g of ['dak', 'tuin', 'steen', 'regenpijp']) {
+    await page.locator(`.qa-gereedschap-${g}`).hover();
+    await expect(page.locator(`.qa-gereedschap-${g}`)).toContainText(/\w/);
+    await expect(page.locator('.qa-tip')).toHaveCount(0);
+  }
+
+  await page.goto(`/dossiers/${id}`);
+  const vraag = page.locator('.qa-uitleg-statussen');
+  await expect(vraag).toBeVisible();
+  await expect(page.locator('[title]')).toHaveCount(0);
+  await vraag.hover();
+  await expect(page.locator('.qa-tip')).toHaveText('Hoe wordt de status bepaald?');
+  await expect(page.locator('.qa-tip')).toBeVisible();
 });
 
 test('de Bezoek- en Plan-pagina staan niet in een omkaderd vak met binnenmarge', async ({ page }) => {
@@ -385,13 +496,16 @@ test('op een telefoon staat de m² van een dakdeel rechtsboven in zijn kaartje e
 });
 
 for (const breedte of [320, 390, 800, 1280]) {
-  test(`op ${breedte}px staat de verdelingsknop rechts in zijn cel en opent het menu zichtbaar en binnen beeld, rechts uitgelijnd met de knop`, async ({ page }) => {
+  test(`op ${breedte}px staat de verdelingsknop met zijn † rechts in zijn cel en opent het menu zichtbaar en binnen beeld, rechts uitgelijnd met de knop`, async ({ page }) => {
     await page.setViewportSize({ width: breedte, height: 800 });
     await tweeRegenpijpen(page);
     const rij = page.locator('.qa-dak-rij').first();
+    await expect(rij.locator('.qa-verdeling-voetnoot-teken')).toBeVisible();
     const cel = await rij.locator('td[data-label="Regenpijpen"]').evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect);
     const knop = await rij.locator('.qa-verdeling-knop').evaluate((el) => el.getBoundingClientRect().toJSON() as DOMRect);
-    expect(cel.right - knop.right).toBeLessThan(8);
+    const teken = await rechthoek(rij.locator('.qa-verdeling-voetnoot-teken'));
+    expect(cel.right - teken.right).toBeLessThan(8);
+    expect(teken.left - knop.right).toBeLessThan(8);
 
     await rij.locator('.qa-verdeling-knop').click();
     // A hidden menu measures 0×0 at the origin, which would pass the bounds checks below.
@@ -534,6 +648,53 @@ test('een dakdeel over twee regenpijpen verdelen past de andere regenpijp en de 
   await expect(knop).toHaveText('A');
   await expect(d1.locator('.qa-verdeling-auto')).toBeVisible();
   await expect(liters.nth(1)).toContainText('200 liter');
+});
+
+test('een automatisch over 2+ regenpijpen verdeeld dakdeel krijgt in de Dak-tabel en in het Plan een † met voetnoot; met één regenpijp of met de hand verdeeld niet', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await zet(page, id, {
+    kaart_annotaties: [
+      { id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] },
+      { id: 'd2', type: 'dak', p: [[100, 0], [110, 0], [110, 10], [100, 10]] },
+      { id: 'r1', type: 'regenpijp', p: [[0, 5]] },
+      { id: 'r2', type: 'regenpijp', p: [[10, 5]] },
+      { id: 'r3', type: 'regenpijp', p: [[105, 5]] },
+    ],
+    'dak.d1.m2': 40,
+    'dak.d2.m2': 10,
+  });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const d1 = page.locator('#veld-dak\\.d1\\.verdeling');
+  const voetnoot = page.locator('.qa-verdeling-voetnoot');
+  await expect(d1.locator('.qa-verdeling-knop')).toHaveText('A 50% · B 50%');
+  const teken = d1.locator('.qa-verdeling-voetnoot-teken');
+  await expect(teken).toBeVisible();
+  await expect(teken).toHaveText('†');
+  // Right after the dropdown, on the same line.
+  const [knop, t] = await Promise.all([d1.locator('.qa-verdeling-knop'), teken].map(rechthoek));
+  expect(t.left).toBeGreaterThanOrEqual(knop.right);
+  expect(t.top).toBeLessThan(knop.bottom);
+  await expect(page.locator('#veld-dak\\.d2\\.verdeling .qa-verdeling-voetnoot-teken')).toHaveCount(0);
+  await expect(voetnoot).toBeVisible();
+  await expect(voetnoot).toHaveText('† automatisch verdeeld: elk stuk dak gaat naar de dichtstbijzijnde regenpijp (Voronoi-verdeling)');
+  let plan = await planTekst(page, id);
+  expect(plan).toContain('A 50% · B 50%†');
+  expect(plan).toContain('† automatisch verdeeld: elk stuk dak gaat naar de dichtstbijzijnde regenpijp (Voronoi-verdeling)');
+
+  await zet(page, id, { 'dak.d1.verdeling': { r1: 70, r2: 30 } });
+  await page.reload();
+  await expect(d1.locator('.qa-verdeling-knop')).toHaveText('A 70% · B 30%');
+  await expect(teken).toHaveCount(0);
+  await expect(voetnoot).toHaveCount(0);
+  plan = await planTekst(page, id);
+  expect(plan).toContain('A 70% · B 30%');
+  expect(plan).not.toContain('†');
+});
+
+test('de hint bij hoosbuien eindigt met een tip over hoogteverschillen', async ({ page }) => {
+  await tweeRegenpijpen(page);
+  await expect(page.locator('.qa-veld-hoosbuien .form-text')).toHaveText(/Let goed op bij hoogteverschillen!$/);
 });
 
 test('een regenpijp die van geen enkel dakdeel afvoert krijgt in de verdeling een rode notitie', async ({ page }) => {

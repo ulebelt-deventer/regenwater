@@ -200,6 +200,63 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?:
   );
 }
 
+// ---- Tooltip ----
+
+// A tooltip in Bootstrap's markup, placed by hand (no Popper): `ref={tip('...')}`. Shows on mouse hover and keyboard focus; a tap
+// toggles it on an element that does nothing else, so touch screens get it too. It sits above the element, below it when there's no room, and stays on screen.
+export function tip(tekst: string): (el: HTMLElement) => void {
+  return (el) => {
+    let bel: HTMLDivElement | null = null;
+    const toon = () => {
+      if (bel) return;
+      bel = document.createElement('div');
+      bel.className = 'tooltip show qa-tip';
+      bel.setAttribute('role', 'tooltip');
+      const pijl = bel.appendChild(document.createElement('div'));
+      pijl.className = 'tooltip-arrow';
+      pijl.style.position = 'absolute';
+      bel.appendChild(document.createElement('div')).className = 'tooltip-inner';
+      bel.lastElementChild!.textContent = tekst;
+      // Fixed (and the arrow absolute) before measuring: as a block in the body it would measure the full page width.
+      Object.assign(bel.style, { position: 'fixed', left: '0', top: '0' });
+      document.body.appendChild(bel);
+      const r = el.getBoundingClientRect();
+      const b = bel.getBoundingClientRect();
+      // The arrow hangs outside the box, between it and the element.
+      const pijlHoogte = parseFloat(getComputedStyle(bel).getPropertyValue('--bs-tooltip-arrow-height')) * parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const boven = r.top - b.height - pijlHoogte >= 0;
+      bel.classList.add(boven ? 'bs-tooltip-top' : 'bs-tooltip-bottom');
+      const links = Math.max(4, Math.min(r.left + r.width / 2 - b.width / 2, document.documentElement.clientWidth - b.width - 4));
+      Object.assign(bel.style, { left: `${links}px`, top: `${boven ? r.top - b.height - pijlHoogte : r.bottom + pijlHoogte}px` });
+      pijl.style.left = `${r.left + r.width / 2 - links - pijl.offsetWidth / 2}px`;
+    };
+    const verberg = () => {
+      bel?.remove();
+      bel = null;
+    };
+    // A touch also "leaves" when the finger lifts, and focuses a tapped button; only a mouse and the keyboard count for those.
+    const binnen = (e: PointerEvent) => e.pointerType === 'mouse' && toon();
+    const weg = (e: PointerEvent) => e.pointerType === 'mouse' && verberg();
+    const tik = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' && !el.matches('a, button')) (bel ? verberg : toon)();
+    };
+    const focus = () => el.matches(':focus-visible') && toon();
+    const buiten = (e: Event) => !el.contains(e.target as Node) && verberg();
+    el.addEventListener('pointerenter', binnen);
+    el.addEventListener('pointerleave', weg);
+    el.addEventListener('pointerup', tik);
+    el.addEventListener('focus', focus);
+    el.addEventListener('blur', verberg);
+    document.addEventListener('pointerdown', buiten);
+    window.addEventListener('scroll', verberg, true);
+    onCleanup(() => {
+      verberg();
+      document.removeEventListener('pointerdown', buiten);
+      window.removeEventListener('scroll', verberg, true);
+    });
+  };
+}
+
 // ---- Breadcrumb ----
 
 export function Kruimels(props: { terug: { href: string; label: string }; huidig: string }) {
