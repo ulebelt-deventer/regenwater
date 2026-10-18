@@ -102,11 +102,15 @@ export async function vul(page: Page, naam: string, waarde: string): Promise<voi
   await veld(page, naam).locator('.qa-invoer').fill(waarde);
 }
 
-// Radio buttons, or the dropdown of a field with a long option list.
+// Radio buttons, the select of a field with a long option list, or the Dropdown menu of one with long option labels.
 export async function kies(page: Page, naam: string, optie: string): Promise<void> {
   const lijst = veld(page, naam).locator('select.qa-invoer');
+  const menu = veld(page, naam).locator('button.qa-invoer');
   if (await lijst.count()) await lijst.selectOption(optie);
-  else await veld(page, naam).locator(`.qa-optie-${optie}`).check();
+  else if (await menu.count()) {
+    await menu.click();
+    await veld(page, naam).locator(`.qa-optie-${optie}`).click();
+  } else await veld(page, naam).locator(`.qa-optie-${optie}`).check();
 }
 
 // Sends the open mail pop-up as it is, or marks it as sent by hand; waits until it closes.

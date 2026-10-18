@@ -85,7 +85,7 @@
       - **Volgende stap**, when it isn't their turn, is plain muted text naming the step and who it's with (eg "Wordt uitgevoerd door Henk", "Wacht op Ieder1"), not the colored status label, so nothing suggests they need to act.
     - On narrow screens, the same card layout as admins, with the Opdracht badge before the address.
 - Dossier details page
-  - *The page has one section per phase, in process order. The rule for what goes where: a form that someone sits down to fill in, with many fields, gets its own sub-page; a single field or a button stays inline on the details page, next to the summary the "Volgende stap" points to. That gives four sub-pages, each filled by one person in one moment: **Inschrijving** (admin, at the desk), **Bezoek** (bezoeker, on-site), **Plan van Aanpak** (bezoeker afterwards, then admin during review) and **Uitvoering** (uitvoerder). On the details page each of these shows as a compact, text-only summary of every field the sub-page has, as a definition list: from tablet width a label column as wide as its longest label, then the value; on phones each label small above its value, except an empty field, which keeps its "--" on the label's line. Values are option labels, Anders write-ins, textareas with their line breaks, photos as small thumbnails that open the same annotator as on the sub-page (autosaved, editable by whoever may edit that field), empty fields as "--", fields the sub-page hides hidden here too. The button to the sub-page always sits in the section's top right corner, so sub-pages are always found in the same place: a filled "Invullen" ("Start bezoek" for Bezoek) while the step is open, then a small pencil "Bewerken" once its milestone is set, or an eye "Bekijken" for someone who can't edit. Each sub-page has the address as title, the same banners, and a "← Terug naar dossier" link; its form sits straight on the page, not in a bordered card, so phones don't lose width to a second margin.*
+  - *The page has one section per phase, in process order. The rule for what goes where: a form that someone sits down to fill in, with many fields, gets its own sub-page; a single field or a button stays inline on the details page, next to the summary the "Volgende stap" points to. That gives four sub-pages, each filled by one person in one moment: **Inschrijving** (admin, at the desk), **Bezoek** (bezoeker, on-site), **Plan van Aanpak** (bezoeker afterwards, then admin during review) and **Uitvoering** (uitvoerder). On the details page each of these shows as a compact, text-only summary of every field the sub-page has, as a definition list: from tablet width a label column as wide as its longest label, then the value; on phones each label small above its value, except an empty field, which keeps its "--" on the label's line. Values are option labels, Anders write-ins, textareas with their line breaks, photos as small thumbnails that open the same annotator as on the sub-page (autosaved, editable by whoever may edit that field), empty fields as "--", fields the sub-page hides hidden here too. The button to the sub-page always sits in the section's top right corner, so sub-pages are always found in the same place: a filled "Invullen" ("Start bezoek" for Bezoek) while the step is open, then a small pencil "Bewerken" once its milestone is set, or an eye "Bekijken" for someone who can't edit. Each sub-page has the address as title, the same banners, and a "← Terug naar dossier" link at the top and again at the bottom, so nobody is stranded at the end of a long form; its form sits straight on the page, not in a bordered card, so phones don't lose width to a second margin.*
   - *Permissions: admins view and edit everything. Klussers view all sections of their assigned dossiers. As bezoeker they edit the afspraak, the Bezoek and Plan van Aanpak sub-pages, and Notities, until they tap "Klaar voor controle"; as uitvoerder, the uitvoering date, the Uitvoering sub-page, and Notities, until they tap "Werk opgeleverd". After that they only view, and ask an admin for any change. Inschrijving is read-only for klussers; assigning, sending, approving and closing are admin-only. A closed dossier is read-only for everyone, admins included: only viewing, PDFs, Alle activiteit, sending the opleverrapport (again) to the corporatie or bewoner, heropenen and verwijderen. Reopen it to change anything else.*
   - *All changes on this page and subpage forms, incl photo uploads and annotations, will autosave as soon as you make them.*
     - A floating status indicator in the bottom right corner indicates that all changes will autosave, and shows the latest time saved (eg "Opgeslagen om 19:04")
@@ -167,7 +167,7 @@
       - Also to right of label, a link that opens the doorlaatbaarheid per grondsoort reference table (see the PDF Bijlage) in a pop-up.
       - Single image slot, same functioning as above.
       - Boorlocatie (text, eg "Voorbeeldplein, Deventer"): where the boring was taken, printed with the boorprofiel in the PDF.
-    - Bodemsituatie (radio), filled in from the boorprofiel so it's known before the bezoek:
+    - Bodemsituatie (radio, as a Dropdown menu since the labels are long), filled in from the boorprofiel so it's known before the bezoek:
       - Zand, fijn tot midden, goed doorlaatbaar
       - Zand, grof, zeer goed doorlaatbaar
       - Lemig of siltig zand, matig doorlaatbaar
@@ -191,7 +191,7 @@
       - Bezoek-afspraak: native date and time inputs (`type="date"`, `type="time"`), which give phones their own pickers. *Normally the klusser arranges it with the bewoner by phone, days before the bezoek.*
       - Link "Printbaar bezoekformulier (PDF)", for klussers who'd rather not use a phone on-site. The admin prints it and gives it to the klusser. It's prefilled with what's already known (adres, bewoner contact, afspraak, straatfoto, the kadasterkaart with its current tekeningen, dakdelen & regenpijpen so far) and has blank space for every Bezoek and Plan van Aanpak question. Someone (usually the admin) types it up into the app afterwards.
       - Its generic twin, "Leeg bezoekformulier (PDF)" (in the Beheer dropdown), has no dossier data at all: blank lines for adres, bewoner and datum, a blank sketch box instead of the kaart, and a few blank regenpijp blocks (A to D). Admins print a stack in advance so a vrijwilliger can grab one without anyone preparing a dossier-specific form. Both are rendered from the same form definitions in code as the Bezoek and Plan van Aanpak pages, so a new question appears on paper automatically.
-      - The compact summary (one line per dak with m² and its regenpijpen, eg "24 m² · regenpijp A 62% · B 38%"; per tuin m² and photos; tuinsituatie; per regenpijp one line "van D1 (62%), D2 · 681 liter waterberging · PVC · 80 mm · Regenton: ... · Afkoppelen: ..." with Ondergrond / Water naar / Via lines below; hoosbuien; wensen), and a "Start bezoek" / "Bewerken" button to the sub-page.
+      - The compact summary (one line per dak with m² and its regenpijpen, eg "24 m² · regenpijp A 62% · B 38%"; per tuin m² and photos; tuinsituatie; per regenpijp one line "van D1 (62%), D2 · 681 liter waterberging · PVC · 80 mm · Regenton: ... · Afkoppelen: ..." with Ondergrond / Water naar / Via lines below; hoosbuien; wensen; what the bewoner and De Ulebelt do with their details), and a "Start bezoek" / "Bewerken" button to the sub-page.
     - Plattegrond intekenen
       - The same kadasterkaart image slot as in Inschrijving, with the same annotations; shown again here because the bezoeker now records what's actually found on-site. Same buttons to auto-load the luchtfoto or open the kadasterkaart; the image can be replaced (annotations are kept, with the warning described in Inschrijving).
       - Tap it to open full-screen. Besides Vrij tekenen, Pijl and Tekst, the kaart has four semantic tools whose annotations feed the form below and the Plan van Aanpak:
@@ -238,12 +238,24 @@
       - *Hint: Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst? Let goed op bij hoogteverschillen!*
     - Wat wenst de bewoner?
       - Free textarea, with gray hint text above it: *Wat wil de bewoner bereiken? Regenton(nen) plaatsen? Regenpijp afkoppelen? Water de tuin in laten lopen? Wat wil de bewoner zelf doen?*
+    - Afspraken (section), agreed with the bewoner on-site:
+      - Wat gaat de bewoner doen? - checkboxes and then optional textarea for more info:
+        - Tuin opruimen op plek regenton
+        - Steen van 60x60 regelen voor onder regenton
+        - Overleggen met de buren (bij gedeelde regenpijp)
+        - Verdere details: <textarea>
+      - Wat gaat De Ulebelt doen? - checkboxes and then optional textarea for more info:
+        - Plan van Aanpak schrijven
+        - Toestemming aan woningcorporatie vragen {only show this if huurwoning}
+        - De Klussendienst vragen om afspraak met bewoner te maken
+        - Materialen regelen
+        - Verdere details: <textarea>
     - Controle
       - Brief auto text indicating to the klusser if any Bezoek field is missing & still needs filling in (link to scroll up to it if so), or if it's all saved and looks complete.
       - Big green button: "Bezoek afronden"
-    - At the bottom: link to the Plan van Aanpak sub-page, so the bezoeker can jot down the voorstel and afspraken while still with the bewoner.
+    - At the bottom: the "← Terug naar dossier" link, and a link to the Plan van Aanpak sub-page, so the bezoeker can jot down the voorstel while still with the bewoner.
   - **Plan van Aanpak** (sub-page, bezoeker after the bezoek, then admin during review: what we'll do)
-    - On the details page, inline: the compact summary (beoordeling and toelichting, voorstel, what the bewoner and De Ulebelt do with their details, materials with an Aantal as "2 × naam à € x" plus the total, werkzaamheden), a "Bewerken" button to the sub-page, and the "Bekijk concept-Plan" link.
+    - On the details page, inline: the compact summary (beoordeling and toelichting, voorstel, materials with an Aantal as "2 × naam à € x" plus the total, werkzaamheden), a "Bewerken" button to the sub-page, and the "Bekijk concept-Plan" link.
     - Link "Bekijk concept-Plan": the Plan van Aanpak as it would look right now, so the bezoeker can check their wording in context. Shown as html, not a literal PDF, because that's faster to render & easier to read on a phone screen. Empty fields are marked there with a `text-warning` "nog niet ingevuld" placeholder; the real PDF just leaves them out.
     - Voorstel Ulebelt
       - Beoordeling (radio); each option produces a standard opening sentence in the PDF:
@@ -260,18 +272,6 @@
         - Vanaf einde terras ca. 3m geperforeerde buis verbinden aan blinde buis
         - Uit laten monden op gazon
         - Wadi begraven
-    - Afspraken (section)
-      - Wat gaat de bewoner doen? - checkboxes and then optional textarea for more info:
-        - Tuin opruimen op plek regenton
-        - Steen van 60x60 regelen voor onder regenton
-        - Overleggen met de buren (bij gedeelde regenpijp)
-        - Verdere details: <textarea>
-      - Wat gaat De Ulebelt doen? - checkboxes and then optional textarea for more info:
-        - Plan van Aanpak schrijven
-        - Toestemming aan woningcorporatie vragen {only show this if huurwoning}
-        - De Klussendienst vragen om afspraak met bewoner te maken
-        - Materialen regelen
-        - Verdere details: <textarea>
     - Materialen die nodig zijn (table), with the hint "Vul het aantal in bij wat nodig is; laat de rest leeg."
       - Columns: Materiaal, Prijs, Aantal (number input; blank means not needed), Subtotaal. The unit, if any, is part of the Materiaal text (eg "Drainagebuis blind HWA 50 mm, per meter"). On small screens Subtotaal is hidden.
       - The dossier's materials are plain text rows (materiaal, prijs, aantal) belonging to the dossier, not links to the default list: when the dossier is created, the table is prefilled with a copy of the default list (managed on the Materialen page), and from then on every row's Materiaal and Prijs can be edited, and rows deleted, to match what's actually needed on site. Later changes to the default list don't touch existing dossiers.

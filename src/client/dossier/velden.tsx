@@ -92,6 +92,12 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
   };
   const gekozenTekst = () =>
     props.opties!.filter(([k]) => gekozen().includes(k)).map(([k, label]) => (k === 'anders' ? tekst(waarde(s.d, andersKey)) || 'Anders' : label)).join(', ');
+  const gekozenLabel = () => {
+    if (w() === null) return null;
+    const o = props.opties!.find(([k]) => k === w());
+    if (!o) throw new Error(`Onbekende optie ${String(w())} voor ${props.k}`);
+    return o[1].replace(/, namelijk:$/, '');
+  };
   // The Anders option's row also holds its write-in; on phones it drops to its own line.
   const optieRij = (k: string) => (k === 'anders' && props.veld.anders ? 'form-check d-sm-flex align-items-center gap-2' : 'form-check');
   const optieId = (o: string) => `in-${props.k}-${o}`;
@@ -106,6 +112,19 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
       </Match>
       <Match when={props.veld.type === 'number'}>
         <GetalInvoer waarde={w()} min={props.veld.min} max={props.veld.max} uit={props.uit} onZet={zet} class={props.breed ? '' : undefined} />
+      </Match>
+      <Match when={props.veld.type === 'radio' && props.veld.menu}>
+        <div class="d-sm-flex align-items-center gap-2">
+          <Dropdown class="dropdown-lang" knopClass={`btn btn-light border text-start mw-100 text-wrap qa-invoer ${props.breed ? 'w-100 d-flex justify-content-between align-items-center gap-2' : ''}`} knop={<span class="qa-keuze-tekst">{gekozenLabel() || '- kies -'}</span>}>
+            <button type="button" class="dropdown-item text-muted qa-optie-leeg" disabled={props.uit} onClick={() => zet(null)}>- kies -</button>
+            <For each={props.opties}>
+              {([k, label]) => (
+                <button type="button" class={`dropdown-item qa-optie-${k}`} classList={{ active: w() === k }} disabled={props.uit} onClick={() => { kiesAnders(k); zet(k); }}>{label.replace(/, namelijk:$/, '...')}</button>
+              )}
+            </For>
+          </Dropdown>
+          {anders(() => w() === 'anders')}
+        </div>
       </Match>
       <Match when={props.veld.type === 'radio' && props.veld.lijst}>
         {/* Per-option `selected`: a select's `value` is lost when its options re-render. */}

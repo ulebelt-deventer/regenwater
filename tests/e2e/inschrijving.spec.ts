@@ -36,18 +36,39 @@ test('de link Kadastrale kaart opent de PDOK-viewer op het adres', async ({ page
   await expect(page.locator('.qa-kadastrale-kaart')).toHaveAttribute('href', /^https:\/\/app\.pdok\.nl\/viewer\/#x=207966&y=474195&.*kadastralekaart/);
 });
 
+test('bodemsituatie is een menu dat de keuze op de knop toont en op een telefoon binnen het scherm blijft', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  const knop = veld(page, 'bodemsituatie').locator('button.qa-invoer');
+  await expect(knop).toHaveText('- kies -');
+  await kies(page, 'bodemsituatie', 'klei');
+  await expect(knop).toHaveText('Klei, slecht doorlaatbaar');
+  await expect(veld(page, 'bodemsituatie').locator('.dropdown-menu')).toBeHidden();
+  await page.goto(`/dossiers/${id}/inschrijving`);
+  await expect(knop).toHaveText('Klei, slecht doorlaatbaar');
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  await knop.click();
+  const menu = veld(page, 'bodemsituatie').locator('.dropdown-menu');
+  await expect(menu).toBeVisible();
+  const b = (await menu.boundingBox())!;
+  expect(b.x).toBeGreaterThanOrEqual(0);
+  expect(b.x + b.width).toBeLessThanOrEqual(375);
+});
+
 test('kies je Anders, dan krijgt het namelijk-veld de focus; het staat op dezelfde regel, behalve op een telefoon', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await kies(page, 'bodemsituatie', 'anders');
   const namelijk = veld(page, 'bodemsituatie').locator('.qa-anders');
   await expect(namelijk).toBeFocused();
-  const radio = veld(page, 'bodemsituatie').locator('.qa-optie-anders');
-  const midden = async (l: typeof radio) => { const b = (await l.boundingBox())!; return b.y + b.height / 2; };
-  expect(Math.abs((await midden(radio)) - (await midden(namelijk)))).toBeLessThan(4);
+  const knop = veld(page, 'bodemsituatie').locator('button.qa-invoer');
+  await expect(knop).toHaveText('Anders');
+  const midden = async (l: typeof knop) => { const b = (await l.boundingBox())!; return b.y + b.height / 2; };
+  expect(Math.abs((await midden(knop)) - (await midden(namelijk)))).toBeLessThan(4);
 
   await page.setViewportSize({ width: 375, height: 800 });
-  expect((await namelijk.boundingBox())!.y).toBeGreaterThan((await radio.boundingBox())!.y + (await radio.boundingBox())!.height);
+  expect((await namelijk.boundingBox())!.y).toBeGreaterThan((await knop.boundingBox())!.y + (await knop.boundingBox())!.height);
 
   await namelijk.fill('Grind');
   await page.goto(`/dossiers/${id}/inschrijving`);

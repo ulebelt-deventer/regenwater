@@ -52,9 +52,9 @@ export function useGaNaarAnker() {
   };
 }
 
-export function TerugLink() {
+export function TerugLink(props: { class?: string }) {
   const s = useDossier();
-  return <A href={`/dossiers/${s.id}`} class="d-inline-block mb-3 qa-terug">← Terug naar dossier</A>;
+  return <A href={`/dossiers/${s.id}`} class={`d-inline-block qa-terug ${props.class ?? 'mb-3'}`}>← Terug naar dossier</A>;
 }
 
 function Kop() {

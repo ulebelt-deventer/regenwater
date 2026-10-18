@@ -16,6 +16,7 @@ export interface Veld {
   bewerkers: Bewerker[];
   opties?: [string, string][];
   lijst?: boolean; // radio or checks shown as a dropdown, to save room
+  menu?: boolean; // a radio shown as a Dropdown menu rather than a select, for long option labels
   rijen?: number; // a textarea's height, default 3
   anders?: boolean; // the last option is "Anders, namelijk:" with a write-in stored under `${key}_anders`
   inPlan?: boolean;
@@ -63,7 +64,7 @@ export const VELDEN: Veld[] = [
   { key: 'rioolstelsel', label: 'Rioolstelsel', type: 'radio', pagina: 'inschrijving', bewerkers: [], opties: [['gemengd', 'Gemengd'], ['gescheiden', 'Gescheiden']] },
   { key: 'boorlocatie', label: 'Boorlocatie', type: 'text', pagina: 'inschrijving', bewerkers: [], inPlan: true, hint: 'Waar de boring is gedaan, bijvoorbeeld "Voorbeeldplein, Deventer".' },
   {
-    key: 'bodemsituatie', label: 'Bodemsituatie', type: 'radio', pagina: 'inschrijving', bewerkers: [], inPlan: true, anders: true,
+    key: 'bodemsituatie', label: 'Bodemsituatie', type: 'radio', menu: true, pagina: 'inschrijving', bewerkers: [], inPlan: true, anders: true,
     opties: [
       ['zand_fijn', 'Zand, fijn tot midden, goed doorlaatbaar'],
       ['zand_grof', 'Zand, grof, zeer goed doorlaatbaar'],
@@ -98,16 +99,16 @@ export const VELDEN: Veld[] = [
   { key: 'regenpijp.*.hoe', label: 'Hoe moet het water daarnaartoe komen?', type: 'checks', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, fotos: 'regenpijp.*.hoe', opties: [['holie_molie', 'Holie Molie'], ['drainageslang', 'Drainageslang bovengronds'], ['ondergronds', 'Ondergronds'], ['anders', 'Anders, namelijk:']] },
   { key: 'hoosbuien', label: 'Wat gebeurt er bij hoosbuien?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'hoosbuien', hint: 'Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst? Let goed op bij hoogteverschillen!' },
   { key: 'wensen', label: 'Wat wenst de bewoner?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, hint: 'Wat wil de bewoner bereiken? Regenton(nen) plaatsen? Regenpijp afkoppelen? Water de tuin in laten lopen? Wat wil de bewoner zelf doen?' },
+  { key: 'bewoner_doet', label: 'Wat gaat de bewoner doen?', type: 'checks', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, opties: [['opruimen', 'Tuin opruimen op plek regenton'], ['steen', 'Steen van 60x60 regelen voor onder regenton'], ['buren', 'Overleggen met de buren (bij gedeelde regenpijp)']] },
+  { key: 'bewoner_doet_details', label: 'Verdere details', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
+  { key: 'ulebelt_doet', label: 'Wat gaat De Ulebelt doen?', type: 'checks', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, opties: [['plan', 'Plan van Aanpak schrijven'], ['toestemming', 'Toestemming aan woningcorporatie vragen'], ['klussendienst', 'De Klussendienst vragen om afspraak met bewoner te maken'], ['materialen', 'Materialen regelen']] },
+  { key: 'ulebelt_doet_details', label: 'Verdere details', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
 
   // Plan van Aanpak
   { key: 'beoordeling', label: 'Beoordeling', type: 'radio', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: BEOORDELINGEN.map(([k, l]): [string, string] => [k, l]) },
   { key: 'beoordeling_toelichting', label: 'Toelichting', type: 'textarea', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'voorstel', label: 'Voorgestelde werkzaamheden', type: 'ids', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, controle: true },
   { key: 'voorstel.*.tekst', label: 'Werkzaamheid', type: 'text', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
-  { key: 'bewoner_doet', label: 'Wat gaat de bewoner doen?', type: 'checks', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, opties: [['opruimen', 'Tuin opruimen op plek regenton'], ['steen', 'Steen van 60x60 regelen voor onder regenton'], ['buren', 'Overleggen met de buren (bij gedeelde regenpijp)']] },
-  { key: 'bewoner_doet_details', label: 'Verdere details', type: 'textarea', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
-  { key: 'ulebelt_doet', label: 'Wat gaat De Ulebelt doen?', type: 'checks', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, opties: [['plan', 'Plan van Aanpak schrijven'], ['toestemming', 'Toestemming aan woningcorporatie vragen'], ['klussendienst', 'De Klussendienst vragen om afspraak met bewoner te maken'], ['materialen', 'Materialen regelen']] },
-  { key: 'ulebelt_doet_details', label: 'Verdere details', type: 'textarea', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'materialen', label: 'Materialen die nodig zijn', type: 'ids', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'materiaal.*.naam', label: 'Materiaal', type: 'text', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'materiaal.*.prijs', label: 'Prijs', type: 'number', pagina: 'plan', bewerkers: ['bezoeker'], min: 0 },

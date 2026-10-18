@@ -719,3 +719,22 @@ test('een regenpijp die van geen enkel dakdeel afvoert krijgt in de verdeling ee
   await pijpen.nth(1).locator('.qa-verdeling-aan').check();
   await expect(pijpen.nth(1).locator('.qa-verdeling-geen-dak')).toHaveCount(0);
 });
+
+test('de afspraken staan op de Bezoek-pagina onder de wensen, niet bij het Plan van Aanpak; toestemming vragen alleen bij een huurwoning', async ({ page }) => {
+  await start(page);
+  const koop = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${koop}/bezoek`);
+  const afspraken = page.locator('.qa-afspraken');
+  for (const k of ['bewoner_doet', 'bewoner_doet_details', 'ulebelt_doet', 'ulebelt_doet_details']) await expect(afspraken.locator(`.qa-veld-${k}`)).toBeVisible();
+  expect((await rechthoek(afspraken)).top).toBeGreaterThan((await rechthoek(page.locator('.qa-veld-wensen'))).bottom - 0.5);
+  await expect(afspraken.locator('.qa-veld-ulebelt_doet .qa-optie-materialen')).toBeVisible();
+  await expect(afspraken.locator('.qa-optie-toestemming')).toHaveCount(0);
+
+  await page.goto(`/dossiers/${koop}/plan`);
+  await expect(page.locator('.qa-plan .qa-veld-beoordeling')).toBeVisible();
+  await expect(page.locator('.qa-veld-bewoner_doet')).toHaveCount(0);
+
+  const huur = await nieuwDossier(page, { huurKoop: 'huur' });
+  await page.goto(`/dossiers/${huur}/bezoek`);
+  await expect(page.locator('.qa-afspraken .qa-optie-toestemming')).toBeVisible();
+});

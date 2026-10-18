@@ -1,6 +1,5 @@
 // Plan van Aanpak sub-page (bezoeker after the bezoek, then admin during review): what we'll do.
 import { Show } from 'solid-js';
-import { veld } from '../../shared/velden.ts';
 import { MijlpaalRegel } from './acties.tsx';
 import { Controle, afronden } from './bezoek.tsx';
 import { TerugLink } from './pagina.tsx';
@@ -9,7 +8,6 @@ import { MateriaalTabel, VeldInvoer, VoorstelLijst } from './velden.tsx';
 
 export function Plan() {
   const s = useDossier();
-  const ulebeltOpties = () => veld('ulebelt_doet').opties!.filter(([k]) => k !== 'toestemming' || s.d.huur_koop === 'huur');
   const toelichtingNodig = () => {
     const b = s.d.data.beoordeling;
     return typeof b === 'string' && b !== 'uitvoerbaar' && !s.d.data.beoordeling_toelichting;
@@ -32,12 +30,6 @@ export function Plan() {
         </Show>
         <VoorstelLijst />
 
-        <h3 class="text-muted mt-2">Afspraken</h3>
-        <VeldInvoer k="bewoner_doet" />
-        <VeldInvoer k="bewoner_doet_details" />
-        <VeldInvoer k="ulebelt_doet" opties={ulebeltOpties()} />
-        <VeldInvoer k="ulebelt_doet_details" />
-
         <MateriaalTabel lijst="materialen" />
         <VeldInvoer k="werkzaamheden" />
 
@@ -52,6 +44,9 @@ export function Plan() {
             Klaar voor controle
           </button>
         </Show>
+        <div class="mt-3">
+          <TerugLink class="" />
+        </div>
       </section>
     </>
   );

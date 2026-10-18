@@ -180,6 +180,10 @@ export function BezoekSamenvatting() {
       <For each={items().regenpijpen}>{(r) => <RegenpijpRegel pijp={r} />}</For>
       <VeldRegel k="hoosbuien" label="Bij hoosbuien" />
       <VeldRegel k="wensen" label="Wensen bewoner" />
+      <VeldRegel k="bewoner_doet" label="Bewoner doet" />
+      <VeldRegel k="bewoner_doet_details" label="Details bewoner" />
+      <VeldRegel k="ulebelt_doet" label="De Ulebelt doet" />
+      <VeldRegel k="ulebelt_doet_details" label="Details De Ulebelt" />
     </>
   );
 }
@@ -196,10 +200,6 @@ export function PlanSamenvatting() {
           <For each={voorstel()}>{(t) => <li>{t}</li>}</For>
         </ul>
       </Regel>
-      <VeldRegel k="bewoner_doet" label="Bewoner doet" />
-      <VeldRegel k="bewoner_doet_details" label="Details bewoner" />
-      <VeldRegel k="ulebelt_doet" label="De Ulebelt doet" />
-      <VeldRegel k="ulebelt_doet_details" label="Details De Ulebelt" />
       <MateriaalRegel lijst="materialen" label="Materialen" soort="geschat" />
       <VeldRegel k="werkzaamheden" />
     </>

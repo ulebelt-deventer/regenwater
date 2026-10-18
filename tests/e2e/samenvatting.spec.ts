@@ -64,14 +64,14 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
   await expect(pijp).toContainText('Via: Holie Molie');
   await expect(bezoek.locator('.qa-sv-hoosbuien')).toContainText('Plas op het terras');
   await expect(bezoek.locator('.qa-sv-wensen')).toContainText('Regenton bij de schuur');
+  await expect(bezoek.locator('.qa-sv-bewoner_doet')).toContainText('Tuin opruimen op plek regenton');
+  await expect(bezoek.locator('.qa-sv-bewoner_doet_details')).toContainText('Voor 1 mei');
+  await expect(bezoek.locator('.qa-sv-ulebelt_doet')).toContainText('Materialen regelen');
+  await expect(bezoek.locator('.qa-sv-ulebelt_doet_details')).toContainText('--');
 
   const plan = page.locator('.qa-sectie-plan');
   await expect(plan.locator('.qa-sv-beoordeling')).toContainText('Wensen uitvoerbaar');
   await expect(plan.locator('.qa-sv-beoordeling_toelichting')).toContainText('Prima te doen');
-  await expect(plan.locator('.qa-sv-bewoner_doet')).toContainText('Tuin opruimen op plek regenton');
-  await expect(plan.locator('.qa-sv-bewoner_doet_details')).toContainText('Voor 1 mei');
-  await expect(plan.locator('.qa-sv-ulebelt_doet')).toContainText('Materialen regelen');
-  await expect(plan.locator('.qa-sv-ulebelt_doet_details')).toContainText('--');
   const materialen = plan.locator('.qa-sv-materialen');
   await expect(materialen).toContainText('2 × Regenton 210 liter à € 45,00');
   await expect(materialen).toContainText('Totaal € 90,00 (geschat)');
@@ -195,4 +195,22 @@ test('Notities is tekst tot je op Bewerken tikt; dan krijgt het tekstvak de focu
   await opslagKlaar(page);
   await page.reload();
   await expect(page.locator('.qa-notities')).toContainText('Sleutel ligt bij de buren');
+});
+
+test('elke stap-pagina heeft onderaan ook een link terug naar het dossier', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  for (const stap of ['inschrijving', 'bezoek', 'plan', 'uitvoering']) {
+    await page.goto(`/dossiers/${id}/${stap}`);
+    const links = page.locator('.qa-terug');
+    await expect(links).toHaveCount(2);
+    const onder = links.last();
+    await expect(onder).toBeVisible();
+    // Below the step's own completion button, at the end of the page.
+    const knop = page.locator('.qa-inschrijving-klaar, .qa-bezoek-afronden, .qa-klaar-voor-controle, .qa-werk-opgeleverd');
+    await expect(knop).toBeVisible();
+    expect((await onder.boundingBox())!.y).toBeGreaterThan((await knop.boundingBox())!.y);
+    await onder.click();
+    await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
+  }
 });

@@ -118,6 +118,9 @@ export function Inschrijving() {
             <button type="button" class="btn btn-primary mt-2 qa-inschrijving-klaar" disabled={uit()} onClick={() => void afronden()}><i class="bi bi-check-lg me-1" aria-hidden="true" />Inschrijving is compleet</button>
           </Show>
         </div>
+        <div class="mt-3">
+          <TerugLink class="" />
+        </div>
       </section>
     </>
   );
