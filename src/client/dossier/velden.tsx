@@ -115,7 +115,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
       </Match>
       <Match when={props.veld.type === 'radio' && props.veld.menu}>
         <div class="d-sm-flex align-items-center gap-2">
-          <Dropdown class="dropdown-lang" knopClass={`btn btn-light border text-start mw-100 text-wrap qa-invoer ${props.breed ? 'w-100 d-flex justify-content-between align-items-center gap-2' : ''}`} knop={<span class="qa-keuze-tekst">{gekozenLabel() || '- kies -'}</span>}>
+          <Dropdown class={`dropdown-lang ${props.breed ? 'flex-grow-1' : ''}`} knopClass={`btn btn-light border text-start mw-100 text-wrap qa-invoer ${props.breed ? 'w-100 d-flex justify-content-between align-items-center gap-2' : ''}`} knop={<span class="qa-keuze-tekst">{gekozenLabel() || '- kies -'}</span>}>
             <button type="button" class="dropdown-item text-muted qa-optie-leeg" disabled={props.uit} onClick={() => zet(null)}>- kies -</button>
             <For each={props.opties}>
               {([k, label]) => (

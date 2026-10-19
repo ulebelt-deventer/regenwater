@@ -247,11 +247,12 @@ export function VerzendRegel(props: { sjablonen: string[]; ontvanger?: Ontvanger
 }
 
 // A button that opens the send pop-up for one template.
-export function MailKnop(props: { sjabloon: string; label: string; class?: string; uit?: boolean }) {
+// `link`: a plain link without the envelope, for a mail that was already sent, so it doesn't read as a to-do.
+export function MailKnop(props: { sjabloon: string; label: string; class?: string; uit?: boolean; link?: boolean }) {
   const [open, setOpen] = createSignal(false);
   return (
     <>
-      <button type="button" class={`btn ${props.class ?? 'btn-outline-primary'} qa-mail-${props.sjabloon}`} disabled={props.uit} onClick={() => setOpen(true)}>📧 {props.label}</button>
+      <button type="button" class={`btn ${props.link ? 'btn-link btn-sm p-0 align-baseline' : (props.class ?? 'btn-outline-primary')} qa-mail-${props.sjabloon}`} disabled={props.uit} onClick={() => setOpen(true)}>{props.link ? '' : '📧 '}{props.label}</button>
       <Show when={open()}>
         <MailModal sjabloon={props.sjabloon} onSluit={() => setOpen(false)} />
       </Show>

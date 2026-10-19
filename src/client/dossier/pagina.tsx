@@ -175,6 +175,26 @@ function Sectie(props: { id: string; titel: string; actie?: JSX.Element; childre
   );
 }
 
+// A later step's section before it opens: grayed out, so you can see what is still to come.
+function DichteSectie(props: { id: string; titel: string; reden: string }) {
+  return (
+    <section class={`card card-body shadow-sm mb-3 bg-body-secondary text-body-secondary qa-dicht qa-dicht-${props.id}`}>
+      <h2 class="mb-1">{props.titel}</h2>
+      <div class="qa-dicht-reden">{props.reden}</div>
+    </section>
+  );
+}
+
+// Why the later sections aren't open: a closed dossier's reden, a gescheiden riool, or simply earlier steps to finish.
+function dichtReden(reden: SluitReden | null, gescheiden: boolean): string {
+  if (reden === 'Niet subsidiabel' || (reden === null && gescheiden)) return 'Niet van toepassing: dit adres is niet subsidiabel.';
+  if (reden === 'Bewoner doet het zelf') return 'Niet van toepassing: de bewoner doet het werk zelf.';
+  if (reden === 'Plan afgewezen') return 'Niet van toepassing: de woningcorporatie heeft het plan afgewezen.';
+  if (reden === 'Bewoner afgehaakt') return 'Niet van toepassing: de bewoner is afgehaakt.';
+  if (reden !== null) return 'Niet van toepassing: het dossier is gesloten.';
+  return 'Nog niet beschikbaar. Rond eerst de eerdere stappen af.';
+}
+
 // A red link or button that opens the close pop-up with a preset reden.
 export function SluitKnop(props: { reden: SluitReden; label: string; class: string }) {
   const [open, setOpen] = createSignal(false);
@@ -272,6 +292,7 @@ export function Details() {
 
   const naUitvoerder = () => s.d.corporatie_akkoord_at || s.d.klussendienst_gekozen_at || s.d.uitvoerder_id !== null || s.d.werk_opgeleverd_at || s.status().stap.nr >= 9;
   const opgeleverd = () => s.d.werk_opgeleverd_at !== null;
+  const dicht = () => dichtReden(s.d.gesloten_reden, str(s.d, 'rioolstelsel') === 'gescheiden');
 
   return (
     <>
@@ -408,7 +429,18 @@ export function Details() {
         </Sectie>
       </Show>
 
-      <Show when={naUitvoerder()}>
+      <Show
+        when={naUitvoerder()}
+        fallback={
+          <>
+            <DichteSectie id="sectie-uitvoerder" titel="Uitvoerder" reden={dicht()} />
+            <DichteSectie id="sectie-uitvoering" titel="Uitvoering" reden={dicht()} />
+            <Show when={s.beheerder()}>
+              <DichteSectie id="sectie-oplevering" titel="Oplevering" reden={dicht()} />
+            </Show>
+          </>
+        }
+      >
         <Sectie id="sectie-uitvoerder" titel="Uitvoerder">
           <Show when={s.beheerder() && open()} fallback={<div class="qa-uitvoerder-naam">{naam(s.d.uitvoerder_id) ?? <span class="text-muted">Nog niemand</span>}</div>}>
             <div class="d-flex flex-wrap align-items-center gap-2">

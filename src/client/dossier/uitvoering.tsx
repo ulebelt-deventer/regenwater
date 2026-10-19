@@ -36,7 +36,7 @@ export function Uitvoering() {
         <Show when={!s.d.werk_opgeleverd_at && s.mag(['uitvoerder'])}>
           <button type="button" class="btn btn-success btn-lg qa-werk-opgeleverd" onClick={() => void opleveren()}>Werk opgeleverd</button>
         </Show>
-        <div class="mt-3">
+        <div class="mt-3 text-center">
           <TerugLink class="" />
         </div>
       </section>

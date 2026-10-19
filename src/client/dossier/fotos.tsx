@@ -11,7 +11,8 @@ import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
 
 // `heel`: the whole image at its own aspect ratio, wider than a cropped thumbnail (single-photo slots like the kaart).
-export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean }) {
+// `vierkant`: cropped square, as wide as its container.
+export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean; vierkant?: boolean }) {
   const s = useDossier();
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
   const svg = () => annotatiesSvg(annots(), { schaal: Math.max(props.foto.breedte, props.foto.hoogte) / 450, mPerPx: null });
@@ -19,7 +20,7 @@ export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boole
     <button
       type="button"
       class="thumb p-0 border rounded overflow-hidden qa-foto"
-      classList={{ 'thumb-klein': props.klein, 'thumb-heel': props.heel }}
+      classList={{ 'thumb-klein': props.klein, 'thumb-heel': props.heel, 'thumb-vierkant': props.vierkant }}
       style={props.heel ? { 'aspect-ratio': `${props.foto.breedte} / ${props.foto.hoogte}` } : undefined}
       onClick={() => props.onClick()}
       aria-label="Foto bekijken"
@@ -33,15 +34,15 @@ export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boole
   );
 }
 
-// A slot's photos as small thumbnails for the details page summaries; tapping one opens the drawing tool.
-export function FotoDuimen(props: { slot: string }) {
+// A slot's photos as thumbnails for the details page summaries, small or `vierkant`; tapping one opens the drawing tool.
+export function FotoDuimen(props: { slot: string; vierkant?: boolean }) {
   const s = useDossier();
   const [open, setOpen] = createSignal<string | null>(null);
   const fotos = () => s.d.fotos.filter((f) => f.slot === props.slot);
   return (
     <Show when={fotos().length}>
       <div class={`d-flex flex-wrap gap-1 my-1 qa-duimen qa-duimen-${props.slot.replace(/\./g, '-')}`}>
-        <For each={fotos()}>{(f) => <FotoDuim foto={f} klein onClick={() => setOpen(f.id)} />}</For>
+        <For each={fotos()}>{(f) => <FotoDuim foto={f} klein={!props.vierkant} vierkant={props.vierkant} onClick={() => setOpen(f.id)} />}</For>
       </div>
       <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} />}</Show>
     </Show>
@@ -237,7 +238,8 @@ export function FotoSlot(props: { k: string; label?: string }) {
 }
 
 // The kaart: an uploaded plattegrond or a luchtfoto framed on the address, which the bezoeker draws on.
-export function KaartVeld() {
+// `alvast`: on the Inschrijving, where the admin may draw ahead of the bezoeker.
+export function KaartVeld(props: { alvast?: boolean }) {
   const s = useDossier();
   const [lucht, setLucht] = createSignal(false);
   const magBewerken = () => s.mag(fotoSlotVoor('kaart')!.slot.bewerkers);
@@ -252,7 +254,9 @@ export function KaartVeld() {
           {(a) => <a href={kadastraleKaartUrl(a().rd)} target="_blank" rel="noopener" class="small qa-kadastrale-kaart">Kadastrale kaart</a>}
         </Show>
       </div>
-      <div class="form-text mt-0 mb-1">Teken de daken, tuinen, stenen vlakken en regenpijpen in. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
+      <div class="form-text mt-0 mb-1">
+        {props.alvast ? 'Teken hier alvast de daken, tuinen, stenen vlakken en regenpijpen in, of laat dat aan de bezoeker ter plekke over.' : 'Teken de daken, tuinen, stenen vlakken en regenpijpen in.'} Met een luchtfoto rekent de app de oppervlakken zelf uit.
+      </div>
       <Show when={s.kaartVervangen()}>
         <div class="small text-warning mb-1 qa-kaart-vervangen">Je hebt de kaart vervangen, dus de tekeningen kloppen mogelijk niet meer. Verplaats of pas ze aan waar nodig.</div>
       </Show>

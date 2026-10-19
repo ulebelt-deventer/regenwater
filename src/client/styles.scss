@@ -118,6 +118,7 @@ $container-max-widths: (lg: 1200px);
 .thumb.wacht { opacity: .5; }
 .thumb.thumb-klein { width: 7rem; }
 .thumb.thumb-heel { width: 16.5rem; }
+.thumb.thumb-vierkant { width: 100%; aspect-ratio: 1; }
 // The + on the last photo, sticking out past its bottom-right corner.
 .foto-plus { position: absolute; bottom: -5px; right: -5px; }
 

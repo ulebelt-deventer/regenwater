@@ -51,8 +51,8 @@ export function Inschrijving() {
         </div>
         <div class="row">
           <VeldInvoer k="huur_koop" class="col-12 col-md-4 mb-3" />
-          <VeldInvoer k="woningeigenaar" class="col-12 col-md-4 mb-3" />
-          <VeldInvoer k="woningtype" class="col-12 col-md-4 mb-3" />
+          <VeldInvoer k="woningeigenaar" class="col-12 col-md-4 mb-3" breed />
+          <VeldInvoer k="woningtype" class="col-12 col-md-4 mb-3" breed />
         </div>
 
         <div class="row">
@@ -62,7 +62,7 @@ export function Inschrijving() {
               <Show when={s.d.adres}>
                 {(a) => (
                   <Show when={RIOOLKAARTEN[a().gemeente]} fallback={<span class="small text-danger qa-geen-rioolkaart">Voor {a().gemeente} is nog geen rioolkaart bekend. Vraag de ontwikkelaar om {a().gemeente} toe te voegen.</span>}>
-                    {(url) => <a href={url()} target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary qa-rioolkaart">Rioolkaart</a>}
+                    {(url) => <a href={url()} target="_blank" rel="noopener" class="small qa-rioolkaart">Rioolkaart</a>}
                   </Show>
                 )}
               </Show>
@@ -77,7 +77,11 @@ export function Inschrijving() {
               {(v) => <div class="text-groen fst-italic mb-1 qa-subsidie-verstuurd">✅ {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)} ({VARIANT[v().sjabloon]})</div>}
             </Show>
             <Show when={sjabloon()} fallback={<div class="small text-muted">Kies eerst huur/koop en het rioolstelsel.</div>}>
-              {(sj) => <MailKnop sjabloon={sj()} label={`Mail bewoner: ${VARIANT[sj()]}`} uit={uit()} />}
+              {(sj) => (
+                <Show when={verstuurd()} fallback={<MailKnop sjabloon={sj()} label={`Mail bewoner: ${VARIANT[sj()]}`} uit={uit()} />}>
+                  <MailKnop sjabloon={sj()} label={`Opnieuw mailen: ${VARIANT[sj()]}`} uit={uit()} link />
+                </Show>
+              )}
             </Show>
           </div>
         </div>
@@ -93,17 +97,20 @@ export function Inschrijving() {
             </div>
           }
         >
-          <div id="veld-straatfoto" class="mb-3 qa-veld-straatfoto">
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-              <div class="form-label fw-semibold mb-0">Straatfoto</div>
-              <Show when={s.d.adres}>
-                {(a) => <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${a().ll[1]},${a().ll[0]}`} target="_blank" rel="noopener" class="small qa-streetview">Open Street View</a>}
-              </Show>
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <KaartVeld alvast />
             </div>
-            <FotoSlot k="straatfoto" />
+            <div id="veld-straatfoto" class="col-12 col-md-6 mb-3 qa-veld-straatfoto">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <div class="form-label fw-semibold mb-0">Straatfoto</div>
+                <Show when={s.d.adres}>
+                  {(a) => <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${a().ll[1]},${a().ll[0]}`} target="_blank" rel="noopener" class="small qa-streetview">Open Street View</a>}
+                </Show>
+              </div>
+              <FotoSlot k="straatfoto" />
+            </div>
           </div>
-
-          <KaartVeld />
 
           <div class="row">
             <Boorprofiel />
@@ -127,7 +134,7 @@ export function Inschrijving() {
             <button type="button" class="btn btn-primary mt-2 qa-inschrijving-klaar" disabled={uit()} onClick={() => void afronden()}><i class="bi bi-check-lg me-1" aria-hidden="true" />Inschrijving is compleet</button>
           </Show>
         </div>
-        <div class="mt-3">
+        <div class="mt-3 text-center">
           <TerugLink class="" />
         </div>
       </section>
@@ -297,7 +304,7 @@ function Bodemsituatie() {
         <div class="form-label fw-semibold mb-0">Bodemsituatie</div>
         <button type="button" class="btn btn-link btn-sm p-0 qa-doorlaatbaarheid" onClick={() => setTabel(true)}>Referentietabel</button>
       </div>
-      <VeldInvoer k="bodemsituatie" kaal class="" />
+      <VeldInvoer k="bodemsituatie" kaal class="" breed />
       <Show when={tabel()}>
         <Modal titel="Doorlaatbaarheid per grondsoort" onSluit={() => setTabel(false)} class="qa-doorlaatbaarheid-modal">
           <table class="table table-sm mb-0">

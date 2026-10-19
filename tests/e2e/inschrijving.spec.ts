@@ -92,6 +92,7 @@ test('vanaf tabletbreedte delen de velden rijen; op een telefoon staat alles ond
   await rij(['.qa-veld-bewoner_naam', '.qa-veld-bewoner_email', '.qa-veld-bewoner_telefoon'], 3);
   await rij(['.qa-veld-huur_koop', '.qa-veld-woningeigenaar', '.qa-veld-woningtype'], 3);
   await rij(['#veld-rioolstelsel-kop', '.qa-subsidiemail'], 2);
+  await rij(['.qa-veld-kaart', '.qa-veld-straatfoto'], 2);
   await rij(['.qa-veld-boorprofiel', '.qa-veld-boorlocatie'], 2);
   const locatie = await vak('.qa-veld-boorlocatie');
   expect((await vak('#veld-bodemsituatie-kop')).y).toBeGreaterThan(locatie.y + locatie.height - 2);
@@ -99,8 +100,39 @@ test('vanaf tabletbreedte delen de velden rijen; op een telefoon staat alles ond
   await page.setViewportSize({ width: 375, height: 800 });
   const naam = await vak('.qa-veld-bewoner_naam');
   expect((await vak('.qa-veld-bewoner_email')).y).toBeGreaterThan(naam.y + naam.height - 2);
+  const kaart = await vak('.qa-veld-kaart');
+  expect((await vak('.qa-veld-straatfoto')).y).toBeGreaterThan(kaart.y + kaart.height - 2);
   const boor = await vak('.qa-veld-boorprofiel');
   expect((await vak('.qa-veld-boorlocatie')).y).toBeGreaterThan(boor.y + boor.height - 2);
+});
+
+test('woningeigenaar, woningtype en bodemsituatie vullen hun kolom', async ({ page }) => {
+  await start(page);
+  await nieuwDossier(page, { huurKoop: 'huur' });
+  for (const [naam, invoer] of [['woningeigenaar', 'select'], ['woningtype', 'select'], ['bodemsituatie', 'button.qa-invoer']]) {
+    const v = veld(page, naam);
+    await expect(v.locator(invoer)).toBeVisible();
+    const kolom = await v.evaluate((e) => { const c = getComputedStyle(e); return e.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight); });
+    expect(Math.abs((await v.locator(invoer).boundingBox())!.width - kolom)).toBeLessThan(2);
+  }
+});
+
+test('de plattegrond staat vóór de straatfoto, en zijn hint zegt dat je hier alvast kunt tekenen of het aan de bezoeker laat', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  expect((await page.locator('.qa-veld-kaart').boundingBox())!.x).toBeLessThan((await page.locator('.qa-veld-straatfoto').boundingBox())!.x);
+  await expect(page.locator('.qa-veld-kaart')).toContainText('of laat dat aan de bezoeker ter plekke over');
+  await page.goto(`/dossiers/${id}/bezoek`);
+  await expect(page.locator('.qa-veld-kaart')).toContainText('Teken de daken');
+  await expect(page.locator('.qa-veld-kaart')).not.toContainText('bezoeker ter plekke');
+});
+
+test('Rioolkaart naast het label is een gewone link, geen knop', async ({ page }) => {
+  await start(page);
+  await nieuwDossier(page, { huurKoop: 'koop' });
+  const link = page.locator('#veld-rioolstelsel-kop .qa-rioolkaart');
+  await expect(link).toHaveAttribute('href', /^https:\/\/deventer\.maps\.arcgis\.com\//);
+  await expect(link).not.toHaveClass(/btn/);
 });
 
 test('boorlocatie is een tekstvak van twee regels', async ({ page }) => {

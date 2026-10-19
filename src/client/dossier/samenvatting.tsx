@@ -1,7 +1,7 @@
 // Read-only summaries of the sub-pages on the details page: every field, compact and text-only.
 import { For, Show } from 'solid-js';
 import { datum, euro } from '../../shared/datum.ts';
-import { type Regenpijp, bronnenTekst, getal, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
+import { type Regenpijp, bronnenTekst, getal, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { lijst, materiaalRijen, materiaalTotaal, veldTekst, veldVoor } from '../../shared/velden.ts';
@@ -79,7 +79,6 @@ function MateriaalRegel(props: { lijst: 'materialen' | 'gebruikt'; label: string
 
 export function InschrijvingSamenvatting() {
   const s = useDossier();
-  const kaart = () => kaartFoto(s.d);
   const gescheiden = () => str(s.d, 'rioolstelsel') === 'gescheiden';
   return (
     <>
@@ -101,12 +100,19 @@ export function InschrijvingSamenvatting() {
         </Show>
       </Regel>
       <Show when={!gescheiden()} fallback={<div class="text-muted qa-sv-niet-subsidiabel">Straatfoto, kaart, boorprofiel en bodemsituatie zijn niet nodig: het riool is gescheiden.</div>}>
-        <FotoRegel slot="straatfoto" label="Straatfoto" />
-        <Regel label="Kaart" leeg={!kaart()} class="qa-sv-kaart">
-          {kaart() !== null && kaart()!.m_per_px !== null ? 'Luchtfoto, op schaal' : 'Screenshot, niet op schaal'}
-          <FotoDuimen slot="kaart" />
-        </Regel>
-        <FotoRegel slot="boorprofiel" label="Boorprofiel" />
+        {/* Large reference photos: a row of their own, spanning the label and value columns. */}
+        <div class="row g-3 mb-2 qa-sv-fotos">
+          <For each={[['kaart', 'Kaart'], ['straatfoto', 'Straatfoto'], ['boorprofiel', 'Boorprofiel']]}>
+            {([slot, label]) => (
+              <div class={`col-12 col-md-4 qa-sv-${slot}`}>
+                <div class="text-muted mb-1">{label}</div>
+                <Show when={aantalFotos(s.d, slot)} fallback={<span class="text-muted">--</span>}>
+                  <FotoDuimen slot={slot} vierkant />
+                </Show>
+              </div>
+            )}
+          </For>
+        </div>
         <VeldRegel k="boorlocatie" />
         <VeldRegel k="bodemsituatie" />
       </Show>

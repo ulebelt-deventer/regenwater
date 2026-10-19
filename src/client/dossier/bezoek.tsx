@@ -359,9 +359,11 @@ export function Bezoek() {
         <Show when={!s.d.bezoek_afgerond_at && s.mag(['bezoeker'])}>
           <button type="button" class="btn btn-success btn-lg qa-bezoek-afronden" onClick={() => void afronden(s, 'bezoek', 'bezoek_afgerond')}>Bezoek afronden</button>
         </Show>
-        <div class="d-flex flex-wrap justify-content-between gap-3 mt-3">
-          <TerugLink class="" />
+        <div class="mt-3 text-end">
           <A href={`/dossiers/${s.id}/plan`} class="qa-naar-plan">Verder met het Plan van Aanpak →</A>
+        </div>
+        <div class="mt-3 text-center">
+          <TerugLink class="" />
         </div>
       </section>
     </>

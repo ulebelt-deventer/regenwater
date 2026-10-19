@@ -44,7 +44,7 @@ export function Plan() {
             Klaar voor controle
           </button>
         </Show>
-        <div class="mt-3">
+        <div class="mt-3 text-center">
           <TerugLink class="" />
         </div>
       </section>

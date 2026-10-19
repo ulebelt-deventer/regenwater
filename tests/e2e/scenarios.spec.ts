@@ -210,6 +210,7 @@ test('koop, bewoner doet het zelf: gesloten na het plan', async ({ page }) => {
   await status(page, 'Gesloten: Bewoner doet het zelf');
   await expect(page.locator('.qa-gesloten')).toContainText('Gaat zelf aan de slag');
   await expect(page.locator('.qa-sectie-uitvoerder')).toHaveCount(0);
+  await expect(page.locator('.qa-dicht-sectie-uitvoerder')).toContainText('de bewoner doet het werk zelf');
   await geenAandacht(page);
   expect(id).toBeGreaterThan(0);
 });
@@ -228,6 +229,7 @@ test('niet subsidiabel: gescheiden riool, subsidiemail en gesloten bij de inschr
   await expect(page.locator('.qa-gesloten')).toContainText('Niet subsidiabel');
   await naarDossier(page, id);
   await status(page, 'Gesloten: Niet subsidiabel');
+  await expect(page.locator('.qa-dicht-sectie-uitvoering')).toContainText('dit adres is niet subsidiabel');
   await geenAandacht(page);
 });
 

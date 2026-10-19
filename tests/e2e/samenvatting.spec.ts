@@ -1,6 +1,9 @@
 // The details page summarises every sub-page field as text, and a done step's Bewerken sits in its section's top right corner.
 import { expect, test } from '@playwright/test';
+import sharp from 'sharp';
 import { nieuwDossier, opslagKlaar, post, start, subsidieMail, veld, wijsToe, zet } from './hulp.ts';
+
+const PNG = await sharp({ create: { width: 400, height: 300, channels: 3, background: '#88d356' } }).png().toBuffer();
 
 test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, plan en uitvoering', async ({ page }) => {
   await start(page);
@@ -207,6 +210,56 @@ test('elke sectie op de dossierpagina heeft een kleine schaduw', async ({ page }
   for (const schaduw of await secties.evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow))) expect(schaduw).not.toBe('none');
 });
 
+test('kaart, straatfoto en boorprofiel staan in die volgorde als grote vierkante foto’s naast elkaar, op een telefoon onder elkaar', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  for (const slot of ['kaart', 'straatfoto', 'boorprofiel']) {
+    await page.locator(`.qa-fotoslot-${slot} .qa-foto-invoer`).setInputFiles({ name: `${slot}.png`, mimeType: 'image/png', buffer: PNG });
+    await expect(page.locator(`.qa-fotoslot-${slot} .qa-foto`)).toBeVisible();
+  }
+  await opslagKlaar(page);
+  await page.goto(`/dossiers/${id}`);
+  const vakken = page.locator('.qa-sv-fotos > *');
+  await expect(vakken).toHaveCount(3);
+  expect(await vakken.evaluateAll((els) => els.map((e) => e.className.match(/qa-sv-(\w+)/)![1]))).toEqual(['kaart', 'straatfoto', 'boorprofiel']);
+  await expect(page.locator('.qa-sv-kaart')).not.toContainText('schaal');
+  const fotos = page.locator('.qa-sv-fotos .qa-foto');
+  await expect(fotos).toHaveCount(3);
+  const boxen = async () => Promise.all([0, 1, 2].map(async (i) => (await fotos.nth(i).boundingBox())!));
+  const breed = await boxen();
+  for (const b of breed) {
+    expect(b.width).toBeGreaterThan(250);
+    expect(Math.abs(b.width - b.height)).toBeLessThan(2);
+    expect(Math.abs(b.y - breed[0].y)).toBeLessThan(2);
+  }
+  expect(breed[1].x).toBeGreaterThan(breed[0].x + breed[0].width);
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  const smal = await boxen();
+  expect(smal[1].y).toBeGreaterThan(smal[0].y + smal[0].height);
+  expect(Math.abs(smal[0].width - smal[0].height)).toBeLessThan(2);
+});
+
+test('nog niet geopende stappen staan grijs onderaan, met waarom ze nog niet beschikbaar zijn', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}`);
+  const dicht = page.locator('.qa-dicht');
+  await expect(dicht).toHaveCount(3);
+  for (const [i, titel] of ['Uitvoerder', 'Uitvoering', 'Oplevering'].entries()) {
+    await expect(dicht.nth(i).locator('h2')).toHaveText(titel);
+    await expect(dicht.nth(i).locator('.qa-dicht-reden')).toHaveText('Nog niet beschikbaar. Rond eerst de eerdere stappen af.');
+  }
+  await expect(page.locator('.qa-sectie-uitvoering')).toHaveCount(0);
+  const kleur = (sel: string) => page.locator(sel).first().evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(await kleur('.qa-dicht')).not.toBe(await kleur('.qa-sectie-plan'));
+  expect((await dicht.last().boundingBox())!.y).toBeGreaterThan((await page.locator('.qa-sectie-plan').boundingBox())!.y);
+
+  await zet(page, id, { rioolstelsel: 'gescheiden' });
+  await page.reload();
+  await expect(dicht.first().locator('.qa-dicht-reden')).toHaveText('Niet van toepassing: dit adres is niet subsidiabel.');
+});
+
 test('elke stap-pagina heeft onderaan ook een link terug naar het dossier', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
@@ -216,6 +269,8 @@ test('elke stap-pagina heeft onderaan ook een link terug naar het dossier', asyn
     await expect(links).toHaveCount(2);
     const onder = links.last();
     await expect(onder).toBeVisible();
+    const b = (await onder.boundingBox())!;
+    expect(Math.abs(b.x + b.width / 2 - (page.viewportSize()!.width) / 2)).toBeLessThan(20);
     // Below the step's own completion button, at the end of the page.
     const knop = page.locator('.qa-inschrijving-klaar, .qa-bezoek-afronden, .qa-klaar-voor-controle, .qa-werk-opgeleverd');
     await expect(knop).toBeVisible();
