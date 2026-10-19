@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { NIEUWS } from '../shared/nieuws.ts';
 import { digestTekst } from './digest.ts';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier as maakDossier, testApp } from './testapp.ts';
 
@@ -255,6 +256,13 @@ describe('beheer', () => {
 
   it('keeps the materials page for admins only', async () => {
     expect((await klusser.json('GET', '/api/materialen', undefined, 403)).fout).toBe('Alleen voor beheerders');
+  });
+
+  it('records the newest Wat is er nieuw datum an admin has seen, for admins only', async () => {
+    expect((await beheerder.json('GET', '/api/auth/me')).ik.nieuws_gezien).toBeNull();
+    await beheerder.json('POST', '/api/nieuws/gezien');
+    expect((await beheerder.json('GET', '/api/auth/me')).ik.nieuws_gezien).toBe(NIEUWS[0].datum);
+    expect((await klusser.json('POST', '/api/nieuws/gezien', undefined, 403)).fout).toBe('Alleen voor beheerders');
   });
 
   it('saves a template with an unknown tag and returns the problem as a warning', async () => {

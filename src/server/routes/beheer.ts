@@ -1,5 +1,6 @@
 import type { Hono } from 'hono';
 import { MELDINGEN_EMAIL, ONTWIKKELAAR_EMAIL } from '../../shared/constants.ts';
+import { NIEUWS } from '../../shared/nieuws.ts';
 import { SJABLONEN, TAG_UITLEG, controleerTags } from '../../shared/sjablonen.ts';
 import type { Adres } from '../../shared/types.ts';
 import { audit, type AuditRij } from '../audit.ts';
@@ -139,6 +140,12 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
       .prepare('UPDATE feedback SET afgehandeld_at = ?, afgehandeld_by = ? WHERE id = ?')
       .run(afgehandeld ? ctx.klok.iso() : null, afgehandeld ? c.get('actor').id : null, id);
     if (r.changes === 0) fout(404, 'Feedback niet gevonden');
+    return c.json({ ok: true });
+  });
+
+  app.post('/api/nieuws/gezien', (c) => {
+    alleenBeheerder(c);
+    ctx.db.prepare('UPDATE gebruikers SET nieuws_gezien = ? WHERE id = ?').run(NIEUWS[0].datum, c.get('ik').id);
     return c.json({ ok: true });
   });
 

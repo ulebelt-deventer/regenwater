@@ -13,6 +13,7 @@ export interface Gebruiker {
   created_at: string;
   archived_at: string | null;
   last_active_at: string | null;
+  nieuws_gezien: string | null;
 }
 
 export interface Adres {

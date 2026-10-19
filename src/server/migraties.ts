@@ -191,4 +191,6 @@ export const MIGRATIES: string[] = [
     )
   )), '$.ulebelt_doet_details') WHERE json_type(data, '$.ulebelt_doet') IS NOT NULL OR json_type(data, '$.ulebelt_doet_details') IS NOT NULL;
   `,
+  // The newest NIEUWS datum this beheerder has seen on "Wat is er nieuw".
+  `ALTER TABLE gebruikers ADD COLUMN nieuws_gezien TEXT;`,
 ];

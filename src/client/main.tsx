@@ -18,6 +18,7 @@ import { Feedback, Materialen, SjabloonPagina, Sjablonen } from './paginas/behee
 import { Dossiers } from './paginas/dossiers.tsx';
 import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
 import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
+import { Nieuws } from './paginas/nieuws.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
 import { AandachtUitleg, Installeren, Privacy, RechtenUitleg, Statussen } from './paginas/uitleg.tsx';
 
@@ -51,6 +52,7 @@ render(
       <Route path="/beheer/sjablonen/:key" component={SjabloonPagina} />
       <Route path="/beheer/feedback" component={Feedback} />
       <Route path="/beheer/activiteit" component={Activiteit} />
+      <Route path="/beheer/nieuw" component={Nieuws} />
       <Route path="/uitleg/statussen" component={Statussen} />
       <Route path="/uitleg/aandacht" component={AandachtUitleg} />
       <Route path="/uitleg/rechten" component={RechtenUitleg} />

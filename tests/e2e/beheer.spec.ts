@@ -1,7 +1,9 @@
 // Admin pages: lists that filter on a checkbox must load on first open (box unchecked), and the navbar menus stay on screen.
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { BEHEERDER, KLUSSER, nieuwDossier, post, start, zet } from './hulp.ts';
+import { datum } from '../../src/shared/datum.ts';
+import { NIEUWS } from '../../src/shared/nieuws.ts';
+import { BEHEERDER, KLUSSER, login, nieuwDossier, post, start, zet } from './hulp.ts';
 
 test('het accountmenu rechtsboven valt niet buiten de pagina', async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 800 });
@@ -169,4 +171,31 @@ test('Uitleg: rechten staat in het Beheer-menu en toont per onderdeel wat bezoek
   await expect(page.locator('.qa-rechten-uitvoering td').nth(2)).toHaveText('Alles');
   await expect(page.locator('.qa-rechten-details td').nth(1)).toHaveText('Notities, Bezoek-afspraak');
   await expect(page.locator('.qa-rechten-details td').nth(2)).toHaveText('Notities, Uitvoering gepland op');
+});
+
+test('Wat is er nieuw toont een rode stip tot de beheerder de pagina opent, met de nieuwste datum bovenaan', async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  await expect(page.locator('.qa-nav-beheer .qa-nieuw-stip')).toBeVisible();
+  await page.locator('.qa-nav-beheer').click();
+  await expect(page.locator('.qa-nav-nieuws .qa-nieuw-stip')).toBeVisible();
+  await page.locator('.qa-nav-nieuws').click();
+
+  await expect(page).toHaveURL(/\/beheer\/nieuw$/);
+  await expect(page.locator('.qa-nieuws-datum').first().locator('h2')).toHaveText(datum(NIEUWS[0].datum));
+  await expect(page.locator('.qa-nieuws-datum').first().locator('li').first()).toHaveText(NIEUWS[0].groepen[0].punten[0]);
+  await expect(page.locator('.qa-nav-beheer')).toBeVisible();
+  await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
+  await page.goto('/');
+  await expect(page.locator('.qa-nav-beheer')).toBeVisible();
+  await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
+});
+
+test('Wat is er nieuw is alleen voor beheerders', async ({ page }) => {
+  await start(page);
+  await login(page, KLUSSER.email);
+  await page.goto('/beheer/nieuw');
+  await expect(page.locator('.qa-alleen-beheerder')).toBeVisible();
+  await expect(page.locator('.qa-nav-account')).toBeVisible();
+  await expect(page.locator('.qa-nav-beheer')).toHaveCount(0);
 });

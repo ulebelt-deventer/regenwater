@@ -81,5 +81,5 @@ export function naInschrijving(huur_koop: 'huur' | 'koop', over: Partial<Dossier
 }
 
 export function gebruiker(id: number, over: Partial<Gebruiker> = {}): Gebruiker {
-  return { id, naam: `Gebruiker ${id}`, email: `g${id}@example.org`, telefoon: null, rol: 'klusser', created_at: '2026-01-01T00:00:00.000Z', archived_at: null, last_active_at: null, ...over };
+  return { id, naam: `Gebruiker ${id}`, email: `g${id}@example.org`, telefoon: null, rol: 'klusser', created_at: '2026-01-01T00:00:00.000Z', archived_at: null, last_active_at: null, nieuws_gezien: null, ...over };
 }

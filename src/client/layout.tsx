@@ -1,5 +1,6 @@
 import { A, type RouteSectionProps, useLocation, useNavigate } from '@solidjs/router';
 import { type JSX, Show, createResource, createSignal } from 'solid-js';
+import { nieuwsOngezien } from '../shared/nieuws.ts';
 import { isOpenbaar, post } from './api.ts';
 import { opgeslagenOm, opslagStatus } from './opslag.ts';
 import { laadOmgeving, laadSessie, omgeving, sessie } from './sessie.ts';
@@ -23,6 +24,15 @@ function Merk() {
         <span class="d-none d-md-inline ms-1">Regenwater</span>
       </span>
     </>
+  );
+}
+
+// Shown on the Beheer menu and its "Wat is er nieuw" item until the beheerder opens that page.
+function NieuwStip() {
+  return (
+    <span class="d-inline-block p-1 bg-danger rounded-circle ms-1 align-middle qa-nieuw-stip">
+      <span class="visually-hidden">Nieuw</span>
+    </span>
   );
 }
 
@@ -71,7 +81,7 @@ function Navbar() {
         </div>
         <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
         <Show when={beheerder()}>
-          <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
+          <Dropdown knop={<>Beheer<Show when={nieuwsOngezien(s().ik.nieuws_gezien)}><NieuwStip /></Show></>} knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
             <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>
             <A class="dropdown-item" href="/beheer/materialen"><i class="bi bi-hammer me-2" aria-hidden="true" />Materialen</A>
             <A class="dropdown-item" href="/beheer/sjablonen"><i class="bi bi-envelope me-2" aria-hidden="true" />E-mailsjablonen</A>
@@ -82,6 +92,11 @@ function Navbar() {
             <A class="dropdown-item" href="/uitleg/statussen"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: statussen</A>
             <A class="dropdown-item" href="/uitleg/aandacht"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: aandacht</A>
             <A class="dropdown-item" href="/uitleg/rechten"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: rechten</A>
+            <div class="dropdown-divider" />
+            <A class="dropdown-item qa-nav-nieuws" href="/beheer/nieuw">
+              <i class="bi bi-stars me-2" aria-hidden="true" />Wat is er nieuw
+              <Show when={nieuwsOngezien(s().ik.nieuws_gezien)}><NieuwStip /></Show>
+            </A>
           </Dropdown>
         </Show>
         <Dropdown
