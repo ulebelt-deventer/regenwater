@@ -44,20 +44,21 @@ export const FOTO_MAX_PX = 1200;
 export const LUCHTFOTO_MAX_PX = 2400;
 export const BORING_MAX_KM = 1.5; // the nearest-boring search gives up beyond this
 
-export const DOORLAATBAARHEID: [string, string][] = [
-  ['Klei', 'Slecht'],
-  ['Zavel (zand en klei)', 'Slecht'],
-  ['Veen', 'Slecht'],
-  ['Zandig leem', 'Matig'],
-  ['Sterk zandig veen', 'Zeer slecht'],
-  ['Leem/ Löss', 'Zeer slecht'],
-  ['Lichte zavel', 'Matig'],
-  ['(Zeer) grof zand', 'Zeer goed'],
-  ['(Duin)zand', 'Zeer goed'],
-  ['Middelfijn (duin)zand', 'Goed'],
-  ['Zeer fijn (duin)zand', 'Matig'],
-  ['Fijn en grof grind', 'Zeer goed'],
-  ['Schelpen', 'Zeer goed'],
+// [bodemsituatie key, grondsoort, doorlaatbaarheid]: the reference table and also the bodemsituatie options.
+export const DOORLAATBAARHEID: [string, string, string][] = [
+  ['klei', 'Klei', 'Slecht'],
+  ['zavel', 'Zavel (zand en klei)', 'Slecht'],
+  ['veen', 'Veen', 'Slecht'],
+  ['zandig_leem', 'Zandig leem', 'Matig'],
+  ['sterk_zandig_veen', 'Sterk zandig veen', 'Zeer slecht'],
+  ['leem', 'Leem/ Löss', 'Zeer slecht'],
+  ['lichte_zavel', 'Lichte zavel', 'Matig'],
+  ['grof_zand', '(Zeer) grof zand', 'Zeer goed'],
+  ['duinzand', '(Duin)zand', 'Zeer goed'],
+  ['middelfijn_zand', 'Middelfijn (duin)zand', 'Goed'],
+  ['zeer_fijn_zand', 'Zeer fijn (duin)zand', 'Matig'],
+  ['grind', 'Fijn en grof grind', 'Zeer goed'],
+  ['schelpen', 'Schelpen', 'Zeer goed'],
 ];
 
 export const STANDAARD_MATERIALEN: [string, number][] = [

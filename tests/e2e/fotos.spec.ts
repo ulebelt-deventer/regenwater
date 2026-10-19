@@ -224,15 +224,19 @@ test('een foto gesleept op de geopende pop-up van een vak komt in dat vak', asyn
   await opslagKlaar(page);
 });
 
-test('de kaart staat er heel en 16,5rem breed', async ({ page }) => {
-  await nieuwBezoekDossier(page);
-  const kaart = page.locator('.qa-fotoslot-kaart');
-  await sleep(page, kaart, [png('kaart.png')]);
-  await expect(kaart.locator('.qa-foto')).toHaveCount(1);
-  const k = (await kaart.locator('.qa-foto').boundingBox())!;
-  expect(k.width).toBeCloseTo(16.5 * 16, 0);
-  expect(k.width / k.height).toBeCloseTo(400 / 300, 1);
-  await expect(kaart.locator('.qa-foto svg')).toHaveAttribute('preserveAspectRatio', 'xMidYMid meet');
+test('straatfoto, kaart en boorprofiel staan er heel en 16,5rem breed', async ({ page }) => {
+  await start(page);
+  await nieuwDossier(page, { huurKoop: 'koop' });
+  for (const naam of ['straatfoto', 'kaart', 'boorprofiel']) {
+    const slot = page.locator(`.qa-fotoslot-${naam}`);
+    await sleep(page, slot, [png(`${naam}.png`)]);
+    const foto = slot.locator('.qa-foto');
+    await expect(foto).toBeVisible();
+    const k = (await foto.boundingBox())!;
+    expect(k.width).toBeCloseTo(16.5 * 16, 0);
+    expect(k.width / k.height).toBeCloseTo(400 / 300, 1);
+    await expect(foto.locator('svg')).toHaveAttribute('preserveAspectRatio', 'xMidYMid meet');
+  }
   await opslagKlaar(page);
 });
 
@@ -269,16 +273,13 @@ test('een vak voor één foto, zoals de straatfoto, heeft met een foto geen +, v
   await opslagKlaar(page);
 });
 
-test('op een vak voor één foto is de duimnagel 7rem breed, 3:2, met een rand', async ({ page }) => {
+test('op een vak voor één foto heeft de duimnagel een rand met afgeronde hoeken', async ({ page }) => {
   await start(page);
   await nieuwDossier(page, { huurKoop: 'koop' });
   const slot = page.locator('.qa-fotoslot-straatfoto');
   await sleep(page, slot, [png('straat.png')]);
   const duim = slot.locator('.qa-foto');
-  await expect(duim).toHaveCount(1);
-  const d = (await duim.boundingBox())!;
-  expect(d.width).toBeCloseTo(7 * 16, 0);
-  expect(d.width / d.height).toBeCloseTo(1.5, 1);
+  await expect(duim).toBeVisible();
   await expect(duim).toHaveCSS('border-top-width', '1px');
   await expect(duim).not.toHaveCSS('border-top-left-radius', '0px');
 });

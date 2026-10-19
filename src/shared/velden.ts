@@ -1,4 +1,4 @@
-import { CORPORATIES } from './constants.ts';
+import { CORPORATIES, DOORLAATBAARHEID } from './constants.ts';
 import { datum, datumTijd } from './datum.ts';
 import { getal, kaartItems } from './kaart.ts';
 import type { Dossier, Json } from './types.ts';
@@ -15,6 +15,7 @@ export interface Veld {
   pagina: Pagina;
   bewerkers: Bewerker[];
   opties?: [string, string][];
+  vervallen?: [string, string][]; // retired options: no longer offered or accepted, but old values still show their label
   lijst?: boolean; // radio or checks shown as a dropdown, to save room
   menu?: boolean; // a radio shown as a Dropdown menu rather than a select, for long option labels
   rijen?: number; // a textarea's height, default 3
@@ -38,6 +39,7 @@ export interface FotoSlot {
   inPlan?: boolean;
   inOplever?: boolean;
   enkel?: boolean; // a single-photo slot: a new photo goes in only once the old one is deleted
+  heel?: boolean; // its thumbnail shows the whole image, large, at its own aspect ratio
 }
 
 const isHuur = (d: Dossier) => d.huur_koop === 'huur';
@@ -62,18 +64,17 @@ export const VELDEN: Veld[] = [
     opties: [['tussenwoning', 'Tussenwoning'], ['hoekwoning', 'Hoekwoning'], ['geschakeld', 'Geschakeld'], ['2-onder-1-kap', '2-onder-1-kap'], ['vrijstaand', 'Vrijstaand'], ['benedenwoning', 'Benedenwoning'], ['anders', 'Anders, namelijk:']],
   },
   { key: 'rioolstelsel', label: 'Rioolstelsel', type: 'radio', pagina: 'inschrijving', bewerkers: [], opties: [['gemengd', 'Gemengd'], ['gescheiden', 'Gescheiden']] },
-  { key: 'boorlocatie', label: 'Boorlocatie', type: 'text', pagina: 'inschrijving', bewerkers: [], inPlan: true, hint: 'Waar de boring is gedaan, bijvoorbeeld "Voorbeeldplein, Deventer".' },
+  { key: 'boorlocatie', label: 'Boorlocatie', type: 'textarea', rijen: 2, pagina: 'inschrijving', bewerkers: [], inPlan: true, hint: 'Waar de boring is gedaan, bijvoorbeeld "Voorbeeldplein, Deventer".' },
   {
     key: 'bodemsituatie', label: 'Bodemsituatie', type: 'radio', menu: true, pagina: 'inschrijving', bewerkers: [], inPlan: true, anders: true,
     opties: [
+      ...DOORLAATBAARHEID.map(([k, grond, doorlaat]): [string, string] => [k, `${grond} (${doorlaat.toLowerCase()} doorlaatbaar)`]),
+      ['anders', 'Anders, namelijk:'],
+    ],
+    vervallen: [
       ['zand_fijn', 'Zand, fijn tot midden, goed doorlaatbaar'],
       ['zand_grof', 'Zand, grof, zeer goed doorlaatbaar'],
       ['zand_lemig', 'Lemig of siltig zand, matig doorlaatbaar'],
-      ['zavel', 'Zavel (zandige klei), matig tot slecht doorlaatbaar'],
-      ['klei', 'Klei, slecht doorlaatbaar'],
-      ['leem', 'Leem, slecht doorlaatbaar'],
-      ['veen', 'Veen, wisselend tot slecht doorlaatbaar'],
-      ['anders', 'Anders, namelijk:'],
     ],
   },
   { key: 'kaart_annotaties', label: 'Tekeningen op de kaart', type: 'annotaties', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
@@ -125,9 +126,9 @@ export const VELDEN: Veld[] = [
 
 // A tuin's or steen's photos and the kaart sit next to Inschrijving/Bezoek fields; the kaart is shared by both pages.
 export const FOTO_SLOTS: FotoSlot[] = [
-  { key: 'straatfoto', label: 'Straatfoto / vooraanzicht', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true },
-  { key: 'kaart', label: 'Plattegrond van kadaster', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, enkel: true },
-  { key: 'boorprofiel', label: 'Boorprofiel', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true },
+  { key: 'straatfoto', label: 'Straatfoto', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true, heel: true },
+  { key: 'kaart', label: 'Plattegrond', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, enkel: true, heel: true },
+  { key: 'boorprofiel', label: 'Boorprofiel', pagina: 'inschrijving', bewerkers: [], inPlan: true, enkel: true, heel: true },
   { key: 'tuin.*', label: 'Foto’s van de tuin', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'steen.*', label: 'Foto’s van het stenen vlak', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'tuinsituatie', label: 'Foto’s tuinsituatie', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
@@ -187,6 +188,13 @@ export function isLeeg(v: Json): boolean {
   return v === null || v === '' || (Array.isArray(v) && v.length === 0) || (typeof v === 'string' && v.trim() === '');
 }
 
+// An option's label, also for a retired one.
+export function optieTekst(veldDef: Veld, w: string, key: string): string {
+  const o = [...veldDef.opties!, ...(veldDef.vervallen ?? [])].find(([k]) => k === w);
+  if (!o) throw new Error(`Onbekende optie ${w} voor ${key}`);
+  return o[1];
+}
+
 export function optieLabel(veldDef: Veld, d: Dossier, key: string): string | null {
   const v = waarde(d, key);
   if (isLeeg(v)) return null;
@@ -195,9 +203,7 @@ export function optieLabel(veldDef: Veld, d: Dossier, key: string): string | nul
       const extra = d.data[`${key}_anders`];
       return typeof extra === 'string' && extra.trim() ? extra.trim() : 'Anders';
     }
-    const o = veldDef.opties!.find(([k]) => k === w);
-    if (!o) throw new Error(`Onbekende optie ${w} voor ${key}`);
-    return o[1];
+    return optieTekst(veldDef, w, key);
   };
   if (Array.isArray(v)) return v.map((w) => labelVan(w as string)).join(', ');
   return labelVan(v as string);

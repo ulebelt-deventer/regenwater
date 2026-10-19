@@ -165,7 +165,7 @@ function Kop() {
 
 function Sectie(props: { id: string; titel: string; actie?: JSX.Element; children: JSX.Element }) {
   return (
-    <section id={props.id} class={`sectie card card-body mb-3 qa-${props.id}`}>
+    <section id={props.id} class={`sectie card card-body shadow-sm mb-3 qa-${props.id}`}>
       <div class="d-flex align-items-start gap-2 mb-2">
         <h2 class="flex-grow-1 mb-0">{props.titel}</h2>
         {props.actie}

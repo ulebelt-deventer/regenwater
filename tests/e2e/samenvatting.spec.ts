@@ -51,7 +51,7 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
   await expect(inschrijving.locator('.qa-sv-rioolstelsel')).toContainText('Gemengd');
   await expect(inschrijving.locator('.qa-sv-straatfoto')).toContainText('--');
   await expect(inschrijving.locator('.qa-sv-boorlocatie')).toContainText('Voorbeeldplein, Deventer');
-  await expect(inschrijving.locator('.qa-sv-bodemsituatie')).toContainText('Klei, slecht doorlaatbaar');
+  await expect(inschrijving.locator('.qa-sv-bodemsituatie')).toContainText('Klei (slecht doorlaatbaar)');
 
   const bezoek = page.locator('.qa-sectie-bezoek');
   await expect(bezoek.locator('.qa-sv-dak')).toHaveText(/Dak D1\s*24 m² · regenpijp A$/);
@@ -195,6 +195,16 @@ test('Notities is tekst tot je op Bewerken tikt; dan krijgt het tekstvak de focu
   await opslagKlaar(page);
   await page.reload();
   await expect(page.locator('.qa-notities')).toContainText('Sleutel ligt bij de buren');
+});
+
+test('elke sectie op de dossierpagina heeft een kleine schaduw', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}`);
+  const secties = page.locator('section.sectie');
+  await expect(secties.first()).toBeVisible();
+  expect(await secties.count()).toBeGreaterThan(3);
+  for (const schaduw of await secties.evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow))) expect(schaduw).not.toBe('none');
 });
 
 test('elke stap-pagina heeft onderaan ook een link terug naar het dossier', async ({ page }) => {

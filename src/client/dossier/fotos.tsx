@@ -10,7 +10,7 @@ import { Luchtfoto } from './luchtfoto.tsx';
 import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
 
-// `heel`: the whole image at its own aspect ratio, wider than a cropped thumbnail (the kaart).
+// `heel`: the whole image at its own aspect ratio, wider than a cropped thumbnail (single-photo slots like the kaart).
 export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean }) {
   const s = useDossier();
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
@@ -189,7 +189,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
         <For each={fotos()}>
           {(f, i) => (
             <div class="position-relative">
-              <FotoDuim foto={f} heel={k === 'kaart'} klein={k !== 'kaart'} onClick={() => setOpen(f.id)} />
+              <FotoDuim foto={f} heel={slot.heel} klein={!slot.heel} onClick={() => setOpen(f.id)} />
               {/* A full single-photo slot gets no +; a photo dropped or pasted on it asks to replace the old one. */}
               <Show when={!uit() && !slot.enkel && i() === fotos().length - 1}>
                 <Dropdown class="foto-plus" knop={<i class="bi bi-plus-lg" aria-hidden="true" />} knopClass="btn btn-sm btn-light border border-secondary shadow-sm zonder-caret qa-foto-toevoegen" label="Foto toevoegen">
@@ -201,7 +201,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
         </For>
         <For each={wachtend()}>
           {(w) => (
-            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht" classList={{ 'thumb-klein': k !== 'kaart' }}>
+            <div class="thumb wacht border rounded overflow-hidden qa-foto-wacht" classList={{ 'thumb-klein': !slot.heel, 'thumb-heel': slot.heel }}>
               <img src={w.url} alt="" class="w-100 h-100 object-fit-cover" />
             </div>
           )}
@@ -244,7 +244,7 @@ export function KaartVeld() {
   return (
     <div id="veld-kaart" class="mb-3 qa-veld qa-veld-kaart">
       <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-        <div class="form-label fw-semibold mb-0">Plattegrond van kadaster</div>
+        <div class="form-label fw-semibold mb-0">Plattegrond</div>
         <Show when={magBewerken() && s.d.adres}>
           <button type="button" class="btn btn-sm btn-outline-primary qa-luchtfoto-laden" onClick={() => setLucht(true)}>Luchtfoto laden</button>
         </Show>

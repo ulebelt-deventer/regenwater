@@ -94,7 +94,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
     props.opties!.filter(([k]) => gekozen().includes(k)).map(([k, label]) => (k === 'anders' ? tekst(waarde(s.d, andersKey)) || 'Anders' : label)).join(', ');
   const gekozenLabel = () => {
     if (w() === null) return null;
-    const o = props.opties!.find(([k]) => k === w());
+    const o = [...props.opties!, ...(props.veld.vervallen ?? [])].find(([k]) => k === w());
     if (!o) throw new Error(`Onbekende optie ${String(w())} voor ${props.k}`);
     return o[1].replace(/, namelijk:$/, '');
   };

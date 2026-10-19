@@ -361,7 +361,7 @@ function Bijlage(props: { doc: Doc }): JSX.Element {
             </thead>
             <tbody>
               <For each={DOORLAATBAARHEID}>
-                {([g, w]) => (
+                {([, g, w]) => (
                   <tr>
                     <td>{g}</td>
                     <td>{w}</td>

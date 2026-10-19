@@ -44,34 +44,42 @@ export function Inschrijving() {
       <section class="mb-3 qa-inschrijving">
         <h2>Inschrijving</h2>
         <AdresVeld />
-        <VeldInvoer k="bewoner_naam" />
-        <VeldInvoer k="bewoner_email" />
-        <VeldInvoer k="bewoner_telefoon" />
-        <VeldInvoer k="huur_koop" />
-        <VeldInvoer k="woningeigenaar" />
-        <VeldInvoer k="woningtype" />
-
-        <div id="veld-rioolstelsel-kop" class="d-flex flex-wrap align-items-center gap-2 mb-1">
-          <div class="form-label fw-semibold mb-0">Rioolstelsel</div>
-          <Show when={s.d.adres}>
-            {(a) => (
-              <Show when={RIOOLKAARTEN[a().gemeente]} fallback={<span class="small text-danger qa-geen-rioolkaart">Voor {a().gemeente} is nog geen rioolkaart bekend. Vraag de ontwikkelaar om {a().gemeente} toe te voegen.</span>}>
-                {(url) => <a href={url()} target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary qa-rioolkaart">Rioolkaart</a>}
-              </Show>
-            )}
-          </Show>
+        <div class="row">
+          <VeldInvoer k="bewoner_naam" class="col-12 col-md-4 mb-3" />
+          <VeldInvoer k="bewoner_email" class="col-12 col-md-4 mb-3" />
+          <VeldInvoer k="bewoner_telefoon" class="col-12 col-md-4 mb-3" />
         </div>
-        <RioolAutodetectie />
-        <VeldInvoer k="rioolstelsel" kaal class="mb-3" />
+        <div class="row">
+          <VeldInvoer k="huur_koop" class="col-12 col-md-4 mb-3" />
+          <VeldInvoer k="woningeigenaar" class="col-12 col-md-4 mb-3" />
+          <VeldInvoer k="woningtype" class="col-12 col-md-4 mb-3" />
+        </div>
 
-        <div id="veld-subsidiemail" class="mb-3 qa-subsidiemail">
-          <div class="form-label fw-semibold mb-1">📧 Mail aan bewoner over subsidie</div>
-          <Show when={verstuurd()}>
-            {(v) => <div class="text-groen fst-italic mb-1 qa-subsidie-verstuurd">✅ {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)} ({VARIANT[v().sjabloon]})</div>}
-          </Show>
-          <Show when={sjabloon()} fallback={<div class="small text-muted">Kies eerst huur/koop en het rioolstelsel.</div>}>
-            {(sj) => <MailKnop sjabloon={sj()} label={`Mail bewoner: ${VARIANT[sj()]}`} uit={uit()} />}
-          </Show>
+        <div class="row">
+          <div class="col-12 col-md-6 mb-3">
+            <div id="veld-rioolstelsel-kop" class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <div class="form-label fw-semibold mb-0">Rioolstelsel</div>
+              <Show when={s.d.adres}>
+                {(a) => (
+                  <Show when={RIOOLKAARTEN[a().gemeente]} fallback={<span class="small text-danger qa-geen-rioolkaart">Voor {a().gemeente} is nog geen rioolkaart bekend. Vraag de ontwikkelaar om {a().gemeente} toe te voegen.</span>}>
+                    {(url) => <a href={url()} target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary qa-rioolkaart">Rioolkaart</a>}
+                  </Show>
+                )}
+              </Show>
+            </div>
+            <RioolAutodetectie />
+            <VeldInvoer k="rioolstelsel" kaal class="" />
+          </div>
+
+          <div id="veld-subsidiemail" class="col-12 col-md-6 mb-3 qa-subsidiemail">
+            <div class="form-label fw-semibold mb-1">📧 Mail aan bewoner over subsidie</div>
+            <Show when={verstuurd()}>
+              {(v) => <div class="text-groen fst-italic mb-1 qa-subsidie-verstuurd">✅ {v().handmatig ? 'Handmatig verstuurd' : 'Verstuurd'} op {datum(v().created_at)} ({VARIANT[v().sjabloon]})</div>}
+            </Show>
+            <Show when={sjabloon()} fallback={<div class="small text-muted">Kies eerst huur/koop en het rioolstelsel.</div>}>
+              {(sj) => <MailKnop sjabloon={sj()} label={`Mail bewoner: ${VARIANT[sj()]}`} uit={uit()} />}
+            </Show>
+          </div>
         </div>
 
         <Show
@@ -87,7 +95,7 @@ export function Inschrijving() {
         >
           <div id="veld-straatfoto" class="mb-3 qa-veld-straatfoto">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-              <div class="form-label fw-semibold mb-0">Straatfoto / vooraanzicht</div>
+              <div class="form-label fw-semibold mb-0">Straatfoto</div>
               <Show when={s.d.adres}>
                 {(a) => <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${a().ll[1]},${a().ll[0]}`} target="_blank" rel="noopener" class="small qa-streetview">Open Street View</a>}
               </Show>
@@ -97,19 +105,20 @@ export function Inschrijving() {
 
           <KaartVeld />
 
-          <Boorprofiel />
-          <VeldInvoer k="boorlocatie" />
-          <VeldInvoer k="bodemsituatie" />
+          <div class="row">
+            <Boorprofiel />
+            <div class="col-12 col-md-6">
+              <VeldInvoer k="boorlocatie" />
+              <Bodemsituatie />
+            </div>
+          </div>
         </Show>
 
         <div class="border-top pt-3 qa-controle">
           <Show
             when={!s.d.inschrijving_afgerond_at}
             fallback={
-              <>
-                <MijlpaalRegel mijlpaal="inschrijving_afgerond" label="Inschrijving is compleet" />
-                <button type="button" class="btn btn-outline-primary mt-2 qa-naar-dossier" onClick={naarBezoeker}>Naar het dossier</button>
-              </>
+<MijlpaalRegel mijlpaal="inschrijving_afgerond" label="Inschrijving is compleet" />
             }
           >
             <Show when={ontbreekt().length}>
@@ -247,7 +256,6 @@ function AdresVeld() {
 
 function Boorprofiel() {
   const s = useDossier();
-  const [tabel, setTabel] = createSignal(false);
   const [bezig, setBezig] = createSignal(false);
 
   const zoekBoring = async () => {
@@ -267,16 +275,29 @@ function Boorprofiel() {
   };
 
   return (
-    <div id="veld-boorprofiel" class="mb-3 qa-veld-boorprofiel">
+    <div id="veld-boorprofiel" class="col-12 col-md-6 mb-3 qa-veld-boorprofiel">
       <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
         <div class="form-label fw-semibold mb-0">Boorprofiel</div>
         <Show when={s.beheerder() && s.d.adres}>
           <button type="button" class="btn btn-sm btn-outline-secondary qa-boring" disabled={bezig() || !s.mag([])} onClick={() => void zoekBoring()}>{bezig() ? 'Zoeken...' : 'Dichtstbijzijnde boring ophalen'}</button>
         </Show>
         <a href="https://www.dinoloket.nl/ondergrondgegevens" target="_blank" rel="noopener" class="small qa-dinoloket">DINOloket</a>
-        <button type="button" class="btn btn-link btn-sm p-0 qa-doorlaatbaarheid" onClick={() => setTabel(true)}>Doorlaatbaarheid per grondsoort</button>
       </div>
       <FotoSlot k="boorprofiel" />
+    </div>
+  );
+}
+
+// Its options are the rows of the doorlaatbaarheid reference table, which the link beside the label opens.
+function Bodemsituatie() {
+  const [tabel, setTabel] = createSignal(false);
+  return (
+    <div class="mb-3">
+      <div id="veld-bodemsituatie-kop" class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <div class="form-label fw-semibold mb-0">Bodemsituatie</div>
+        <button type="button" class="btn btn-link btn-sm p-0 qa-doorlaatbaarheid" onClick={() => setTabel(true)}>Referentietabel</button>
+      </div>
+      <VeldInvoer k="bodemsituatie" kaal class="" />
       <Show when={tabel()}>
         <Modal titel="Doorlaatbaarheid per grondsoort" onSluit={() => setTabel(false)} class="qa-doorlaatbaarheid-modal">
           <table class="table table-sm mb-0">
@@ -288,7 +309,7 @@ function Boorprofiel() {
             </thead>
             <tbody>
               <For each={DOORLAATBAARHEID}>
-                {([grond, doorlaat]) => (
+                {([, grond, doorlaat]) => (
                   <tr>
                     <td>{grond}</td>
                     <td>{doorlaat}</td>

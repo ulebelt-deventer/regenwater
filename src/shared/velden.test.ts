@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dossier } from './testhulp.ts';
-import { veldTekst } from './velden.ts';
+import { veld, veldTekst } from './velden.ts';
 
 describe('veldTekst', () => {
   const d = dossier({
@@ -20,6 +20,12 @@ describe('veldTekst', () => {
     expect(veldTekst(d, 'huur_koop')).toBe('Huurwoning');
     expect(veldTekst(d, 'woningtype')).toBe('Woonboot');
     expect(veldTekst(d, 'regenpijp.a1.hoe')).toBe('Holie Molie, Ondergronds');
+  });
+
+  it('labels bodemsituatie options from the doorlaatbaarheid table, and still labels a retired option', () => {
+    expect(veldTekst(dossier({ data: { bodemsituatie: 'middelfijn_zand' } }), 'bodemsituatie')).toBe('Middelfijn (duin)zand (goed doorlaatbaar)');
+    expect(veldTekst(dossier({ data: { bodemsituatie: 'zand_grof' } }), 'bodemsituatie')).toBe('Zand, grof, zeer goed doorlaatbaar');
+    expect(veld('bodemsituatie').opties!.map(([k]) => k)).not.toContain('zand_grof');
   });
 
   it('formats numbers Dutch-style, and trims text but keeps its line breaks', () => {
