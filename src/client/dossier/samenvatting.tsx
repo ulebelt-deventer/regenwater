@@ -4,7 +4,7 @@ import { datum, euro } from '../../shared/datum.ts';
 import { type Regenpijp, bronnenTekst, getal, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { lijst, materiaalRijen, materiaalTotaal, veldTekst, veldVoor } from '../../shared/velden.ts';
+import { lijst, materiaalRijen, materiaalTotaal, opsommingRegels, veldTekst, veldVoor } from '../../shared/velden.ts';
 import { FotoDuimen } from './fotos.tsx';
 import { useDossier } from './staat.ts';
 import { Regel } from './velden.tsx';
@@ -36,7 +36,11 @@ function VeldWaarde(props: { k: string }) {
   const s = useDossier();
   return (
     <>
-      <span class={veldVoor(props.k)!.veld.type === 'textarea' ? 'pre-wrap' : ''}>{veldTekst(s.d, props.k) ?? ''}</span>
+      <Show when={veldVoor(props.k)!.veld.opsomming} fallback={<span class={veldVoor(props.k)!.veld.type === 'textarea' ? 'pre-wrap' : ''}>{veldTekst(s.d, props.k) ?? ''}</span>}>
+        <ul class="mb-0 ps-3">
+          <For each={opsommingRegels(veldTekst(s.d, props.k) ?? '')}>{(r) => <li>{r}</li>}</For>
+        </ul>
+      </Show>
       <Show when={fotoSlotVan(props.k)}>{(sl) => <FotoDuimen slot={sl()} />}</Show>
     </>
   );
@@ -187,9 +191,7 @@ export function BezoekSamenvatting() {
       <VeldRegel k="hoosbuien" label="Bij hoosbuien" />
       <VeldRegel k="wensen" label="Wensen bewoner" />
       <VeldRegel k="bewoner_doet" label="Bewoner doet" />
-      <VeldRegel k="bewoner_doet_details" label="Details bewoner" />
       <VeldRegel k="ulebelt_doet" label="De Ulebelt doet" />
-      <VeldRegel k="ulebelt_doet_details" label="Details De Ulebelt" />
     </>
   );
 }

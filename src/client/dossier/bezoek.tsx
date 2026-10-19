@@ -237,7 +237,7 @@ function VerdelingKeuze(props: { id: string }) {
 export function Bezoek() {
   const s = useDossier();
   const items = () => kaartItems(s.d);
-  const ulebeltOpties = () => veld('ulebelt_doet').opties!.filter(([k]) => k !== 'toestemming' || s.d.huur_koop === 'huur');
+  const ulebeltSuggesties = () => veld('ulebelt_doet').suggesties!.filter(([k]) => k !== 'toestemming' || s.d.huur_koop === 'huur');
   const geenDak = () => (
     <div class="text-danger mb-2 qa-geen-dak">
       Er is nog geen dak ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
@@ -349,9 +349,7 @@ export function Bezoek() {
         <div id="veld-afspraken" class="pt-3 qa-afspraken">
           <h3 class="mb-3">Afspraken</h3>
           <VeldInvoer k="bewoner_doet" />
-          <VeldInvoer k="bewoner_doet_details" />
-          <VeldInvoer k="ulebelt_doet" opties={ulebeltOpties()} />
-          <VeldInvoer k="ulebelt_doet_details" />
+          <VeldInvoer k="ulebelt_doet" suggesties={ulebeltSuggesties()} />
         </div>
 
         <Controle s={s} pagina="bezoek" />

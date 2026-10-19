@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dossier } from './testhulp.ts';
-import { veld, veldTekst } from './velden.ts';
+import { opsommingRegels, veld, veldTekst } from './velden.ts';
 
 describe('veldTekst', () => {
   const d = dossier({
@@ -45,5 +45,16 @@ describe('veldTekst', () => {
   it('throws for unknown fields and for fields without a single text value', () => {
     expect(() => veldTekst(d, 'bestaat_niet')).toThrow('Onbekend veld');
     expect(() => veldTekst(dossier({ data: { 'dak.d1.verdeling': { a1: 100 } } }), 'dak.d1.verdeling')).toThrow('geen losse tekstwaarde');
+  });
+});
+
+describe('opsommingRegels', () => {
+  it('drops bullets, surrounding spaces and empty lines, also from pasted text', () => {
+    expect(opsommingRegels('• Tuin opruimen\n•\n\n  •Steen regelen  \nBuren bellen\n• ')).toEqual(['Tuin opruimen', 'Steen regelen', 'Buren bellen']);
+    expect(opsommingRegels('')).toEqual([]);
+  });
+
+  it('keeps a bullet that is part of the text', () => {
+    expect(opsommingRegels('• Tegels • stenen')).toEqual(['Tegels • stenen']);
   });
 });

@@ -58,3 +58,24 @@ describe('the Terras -> Steen rename', () => {
     expect(JSON.parse(db.prepare('SELECT payload FROM audit').pluck().get() as string)).toEqual({ changes: { kaart_annotaties: [null, [vlak('steen')]], 'steen.v1.m2': [null, 12] } });
   });
 });
+
+describe('the Afspraken as bulleted lines', () => {
+  it('turns ticked options into their labels followed by the details, and leaves dossiers without afspraken alone', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes('$.bewoner_doet_details'));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    const dossier = db.prepare('INSERT INTO dossiers (id, created_at, created_by, data) VALUES (?, ?, 1, ?)');
+    dossier.run(7, T, JSON.stringify({ bewoner_doet: ['buren', 'opruimen'], bewoner_doet_details: 'Voor 1 mei\nBel de buurvrouw', ulebelt_doet: ['materialen'], wensen: 'Twee tonnen' }));
+    dossier.run(8, T, JSON.stringify({ ulebelt_doet_details: 'Tegels ophalen' }));
+    dossier.run(9, T, JSON.stringify({ wensen: 'Eén ton' }));
+
+    migreer(db);
+
+    const data = (id: number) => JSON.parse(db.prepare('SELECT data FROM dossiers WHERE id = ?').pluck().get(id) as string);
+    expect(data(7)).toEqual({ bewoner_doet: 'Overleggen met de buren (bij gedeelde regenpijp)\nTuin opruimen op plek regenton\nVoor 1 mei\nBel de buurvrouw', ulebelt_doet: 'Materialen regelen', wensen: 'Twee tonnen' });
+    expect(data(8)).toEqual({ ulebelt_doet: 'Tegels ophalen' });
+    expect(data(9)).toEqual({ wensen: 'Eén ton' });
+  });
+});

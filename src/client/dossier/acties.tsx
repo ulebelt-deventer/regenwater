@@ -271,11 +271,12 @@ export function Toewijzen(props: { rol: 'bezoeker' | 'uitvoerder' }) {
   const kandidaten = () => {
     const q = zoek().trim().toLowerCase();
     return s.gebruikers()
-      .filter((g) => !g.archived_at && g.id !== huidig() && g.naam.toLowerCase().includes(q))
+      .filter((g) => (!g.archived_at || g.id === huidig()) && g.naam.toLowerCase().includes(q))
       .sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
   };
 
   const wijs = async (g: Gebruiker | null, nieuweGebruiker = false) => {
+    if ((g ? g.id : null) === huidig()) return;
     if (props.rol === 'bezoeker' && s.d.bezoek_afgerond_at && huidig() !== null && g) {
       const ja = await bevestig('Bezoeker wijzigen', `Hiermee verandert ook "Schouw door" in het Plan van Aanpak van ${s.naam(huidig())} naar ${g.naam}. Weet je het zeker?`, { ja: 'Wijzigen' });
       if (!ja) return;
@@ -293,19 +294,17 @@ export function Toewijzen(props: { rol: 'bezoeker' | 'uitvoerder' }) {
         <div class="px-2 pb-1" onClick={(e) => e.stopPropagation()}>
           <input class="form-control form-control-sm qa-toewijzen-zoek" placeholder="Zoeken..." value={zoek()} onInput={(e) => setZoek(e.currentTarget.value)} />
         </div>
+        <button type="button" class="dropdown-item qa-kandidaat-niemand" classList={{ active: huidig() === null, 'text-muted': huidig() !== null }} onClick={() => void wijs(null)}>- niemand -</button>
         <For each={kandidaten()}>
           {(g) => (
-            <button type="button" class={`dropdown-item qa-kandidaat qa-kandidaat-${g.id}`} onClick={() => void wijs(g)}>
+            <button type="button" class={`dropdown-item qa-kandidaat qa-kandidaat-${g.id}`} classList={{ active: g.id === huidig() }} onClick={() => void wijs(g)}>
               {g.naam}
               <Show when={g.rol === 'beheerder'}>
-                <span class="small text-muted"> (beheerder)</span>
+                <span class="small" classList={{ 'text-muted': g.id !== huidig() }}> (beheerder)</span>
               </Show>
             </button>
           )}
         </For>
-        <Show when={huidig() !== null}>
-          <button type="button" class="dropdown-item text-muted qa-kandidaat-niemand" onClick={() => void wijs(null)}>Niemand</button>
-        </Show>
         <div class="dropdown-divider" />
         <button type="button" class="dropdown-item qa-nieuwe-klusser" onClick={() => setNieuw(true)}><i class="bi bi-plus-lg me-2" aria-hidden="true" />Nieuwe klusser</button>
       </Dropdown>

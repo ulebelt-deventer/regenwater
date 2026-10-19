@@ -48,7 +48,7 @@ describe('two people editing the same dossier', () => {
   });
 
   it('keeps every row when many saves hit the same dossier at once', async () => {
-    const keys = ['wensen', 'tuinsituatie', 'hoosbuien', 'notities', 'beoordeling_toelichting', 'bewoner_doet_details', 'ulebelt_doet_details'];
+    const keys = ['wensen', 'tuinsituatie', 'hoosbuien', 'notities', 'beoordeling_toelichting', 'bewoner_doet', 'ulebelt_doet'];
     await Promise.all(keys.map((k, i) => zet(i % 2 ? kees : bea, k, `waarde ${i}`)));
     const d = await data();
     expect(keys.map((k) => d[k])).toEqual(keys.map((_, i) => `waarde ${i}`));
@@ -188,11 +188,11 @@ describe('autosave values', () => {
 
   it('accepts only the listed options, each once', async () => {
     await zet(bea, 'huur_koop', 'gehuurd', 400);
-    await zet(kees, 'bewoner_doet', ['opruimen', 'opruimen'], 400);
-    await zet(kees, 'bewoner_doet', ['opruimen', 'onbekend'], 400);
-    await zet(kees, 'bewoner_doet', ['opruimen', 'buren']);
-    await zet(kees, 'bewoner_doet', []);
-    expect('bewoner_doet' in (await data())).toBe(false);
+    await zet(kees, 'regenpijp.ab12cd.hoe', ['ondergronds', 'ondergronds'], 400);
+    await zet(kees, 'regenpijp.ab12cd.hoe', ['ondergronds', 'onbekend'], 400);
+    await zet(kees, 'regenpijp.ab12cd.hoe', ['ondergronds', 'holie_molie']);
+    await zet(kees, 'regenpijp.ab12cd.hoe', []);
+    expect('regenpijp.ab12cd.hoe' in (await data())).toBe(false);
   });
 
   it('accepts a verdeling of whole percents 1-100 adding up to 100, or {} for no regenpijp', async () => {

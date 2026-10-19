@@ -171,7 +171,7 @@
     - At the bottom: a `text-warning` "Nog niet ingevuld: {velden}" list (Adres, naam or e-mail bewoner, huur/koop, rioolstelsel, the eligibility mail; bodemsituatie, boorprofiel and kaart aren't required), and an "Inschrijving is compleet" button (once marked, the milestone line instead; the bottom back link leads to the dossier). The admin decides: with fields still missing it first asks "Toch als compleet markeren?". Marking it stores the milestone (when, by whom; admins can undo it) and goes to the dossier's Bezoeker section.
   - **Bezoeker** (inline, admin)
     - Until the inschrijving is marked compleet, only the line "Je kunt een bezoeker toewijzen zodra de inschrijving compleet is."
-    - searchable dropdown where you assign any beheerder or klusser to do the on-site.
+    - searchable dropdown where you assign any beheerder or klusser to do the on-site. As in the Bodemsituatie menu, it starts with "- niemand -" (to unassign) and lists the current choice too, highlighted as active; picking it again changes nothing. The Uitvoerder dropdown works the same.
     - While no bezoeker is assigned: a "Kopieer oproep voor Signal-groep" button that copies a call for volunteers to the clipboard, from the "Oproep Signal-groep" template with its tags filled in. Its tags are only `{straat}`, `{plaats}` and `{afzender}` (no huisnummer or bewoner name, for privacy). Default text: "Nieuwe klus voor regenwater-infiltratie in de {straat} in {plaats}. Wie wil er op bezoek? Reageer hier of app {afzender}." Mostly used for koopwoningen.
     - The dropdown's last option, "+ Nieuwe klusser", opens the "+ Nieuwe gebruiker" form (see Gebruikers) in a pop-up, with Rol fixed to Klusser. Saving creates the account, assigns them as bezoeker, and continues to the notify pop-up below; that email's link is also how they first log in. The Uitvoerder dropdown has the same option.
     - Changing the bezoeker after "Bezoek afronden" first asks "Hiermee verandert ook 'Schouw door' in het Plan van Aanpak van {oud} naar {nieuw}. Weet je het zeker?"
@@ -230,18 +230,16 @@
       - *Hint: Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst? Let goed op bij hoogteverschillen!*
     - Wat wenst de bewoner?
       - Free textarea, with gray hint text above it: *Wat wil de bewoner bereiken? Regenton(nen) plaatsen? Regenpijp afkoppelen? Water de tuin in laten lopen? Wat wil de bewoner zelf doen?*
-    - Afspraken (section), agreed with the bewoner on-site:
-      - Wat gaat de bewoner doen? - checkboxes and then optional textarea for more info:
+    - Afspraken (section), agreed with the bewoner on-site. Each question is one textarea of bullets, growing with its text from 3 to 5.4 lines high (the cut-off last line shows there is more) and scrolling beyond that: every line starts with "• " as you type or paste, Enter starts the next bullet, and empty lines disappear once it loses focus; stored as plain lines. Above it, links add a common line at the end and put the cursor after it, scrolled into view, so you can edit it like any other; a link hides while its exact line is in the text. The summary and the Plan van Aanpak show the lines as a bulleted list; the paper bezoekformulier lists the suggestions to circle, plus blank lines.
+      - Wat gaat de bewoner doen? Suggestions:
         - Tuin opruimen op plek regenton
         - Steen van 60x60 regelen voor onder regenton
         - Overleggen met de buren (bij gedeelde regenpijp)
-        - Verdere details: <textarea>
-      - Wat gaat De Ulebelt doen? - checkboxes and then optional textarea for more info:
-        - Plan van Aanpak schrijven
+      - Wat gaat De Ulebelt doen? Suggestions only for what's not part of every dossier (writing the plan, materials and so on go without saying):
+        - Regenpijp afkoppelen
+        - Holie Molie plaatsen
+        - Drainageslang aanleggen
         - Toestemming aan woningcorporatie vragen {only show this if huurwoning}
-        - De Klussendienst vragen om afspraak met bewoner te maken
-        - Materialen regelen
-        - Verdere details: <textarea>
     - Controle
       - Brief auto text indicating to the klusser if any Bezoek field is missing & still needs filling in (link to scroll up to it if so), or if it's all saved and looks complete.
       - Big green button: "Bezoek afronden"

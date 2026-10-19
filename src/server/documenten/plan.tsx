@@ -3,7 +3,7 @@ import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { str } from '../../shared/status.ts';
-import { BEOORDELINGEN, lijst, materiaalRijen, optieLabel, veld } from '../../shared/velden.ts';
+import { BEOORDELINGEN, lijst, materiaalRijen, opsommingRegels, optieLabel, veld } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, eigenaar, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
 function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.Element {
@@ -223,22 +223,13 @@ function Bodemgegevens(props: { doc: Doc }): JSX.Element {
   );
 }
 
-function Lijst(props: { doc: Doc; key: string; details: string }): JSX.Element {
-  const keuzes = () => {
-    const v = veld(props.key);
-    return lijst(props.doc.d, props.key).map((k) => v.opties!.find(([o]) => o === k)![1]);
-  };
-  const details = () => str(props.doc.d, props.details);
+function Opsomming(props: { doc: Doc; key: string }): JSX.Element {
+  const regels = () => opsommingRegels(str(props.doc.d, props.key) ?? '');
   return (
-    <Show when={keuzes().length > 0 || details()} fallback={<Show when={props.doc.concept}><p><Leeg doc={props.doc} /></p></Show>}>
-      <Show when={keuzes().length > 0}>
-        <ul>
-          <For each={keuzes()}>{(k) => <li>{k}</li>}</For>
-        </ul>
-      </Show>
-      <Show when={details()}>
-        <p>{details()}</p>
-      </Show>
+    <Show when={regels().length > 0} fallback={<Show when={props.doc.concept}><p><Leeg doc={props.doc} /></p></Show>}>
+      <ul>
+        <For each={regels()}>{(r) => <li>{r}</li>}</For>
+      </ul>
     </Show>
   );
 }
@@ -330,11 +321,11 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
       <p>
         <strong>Wat gaat de bewoner doen?</strong>
       </p>
-      <Lijst doc={props.doc} key="bewoner_doet" details="bewoner_doet_details" />
+      <Opsomming doc={props.doc} key="bewoner_doet" />
       <p>
         <strong>Wat gaat De Ulebelt doen?</strong>
       </p>
-      <Lijst doc={props.doc} key="ulebelt_doet" details="ulebelt_doet_details" />
+      <Opsomming doc={props.doc} key="ulebelt_doet" />
     </>
   );
 }

@@ -31,9 +31,7 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
     wensen: 'Regenton bij de schuur',
     beoordeling: 'uitvoerbaar',
     beoordeling_toelichting: 'Prima te doen',
-    bewoner_doet: ['opruimen'],
-    bewoner_doet_details: 'Voor 1 mei',
-    ulebelt_doet: ['materialen'],
+    bewoner_doet: 'Tuin opruimen op plek regenton\nVoor 1 mei',
     materialen: ['m1', 'm2'],
     'materiaal.m1.naam': 'Regenton 210 liter',
     'materiaal.m1.prijs': 4500,
@@ -67,10 +65,8 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
   await expect(pijp).toContainText('Via: Holie Molie');
   await expect(bezoek.locator('.qa-sv-hoosbuien')).toContainText('Plas op het terras');
   await expect(bezoek.locator('.qa-sv-wensen')).toContainText('Regenton bij de schuur');
-  await expect(bezoek.locator('.qa-sv-bewoner_doet')).toContainText('Tuin opruimen op plek regenton');
-  await expect(bezoek.locator('.qa-sv-bewoner_doet_details')).toContainText('Voor 1 mei');
-  await expect(bezoek.locator('.qa-sv-ulebelt_doet')).toContainText('Materialen regelen');
-  await expect(bezoek.locator('.qa-sv-ulebelt_doet_details')).toContainText('--');
+  await expect(bezoek.locator('.qa-sv-bewoner_doet li')).toHaveText(['Tuin opruimen op plek regenton', 'Voor 1 mei']);
+  await expect(bezoek.locator('.qa-sv-ulebelt_doet')).toContainText('--');
 
   const plan = page.locator('.qa-sectie-plan');
   await expect(plan.locator('.qa-sv-beoordeling')).toContainText('Wensen uitvoerbaar');
@@ -180,6 +176,32 @@ test('een verstuurde bezoekersmail staat op de rij van de toewijzing, met Opnieu
 
   await sectie.locator('.qa-opnieuw-mailen').click();
   await expect(page.locator('.qa-mail .qa-mail-aan')).toBeVisible();
+});
+
+test('de bezoekerkeuze begint met - niemand - en toont de huidige bezoeker in de lijst als actief; hem opnieuw kiezen doet niets', async ({ page }) => {
+  const { klusserId } = await start(page);
+  await nieuwDossier(page, { huurKoop: 'koop' });
+  await subsidieMail(page, 'koop');
+  const blok = page.locator('.qa-toewijzen-bezoeker');
+  await blok.locator('.qa-toewijzen-knop').click();
+  const niemand = blok.locator('.dropdown-item').first();
+  await expect(niemand).toHaveText('- niemand -');
+  await expect(niemand).toHaveClass(/\bactive\b/);
+  await page.keyboard.press('Escape');
+
+  await wijsToe(page, 'bezoeker', klusserId, false);
+  await blok.locator('.qa-toewijzen-knop').click();
+  const huidig = blok.locator(`.qa-kandidaat-${klusserId}`);
+  await expect(huidig).toBeVisible();
+  await expect(huidig).toHaveClass(/\bactive\b/);
+  await expect(blok.locator('.dropdown-item.active')).toHaveCount(1);
+  await huidig.click();
+  await expect(blok.locator('.dropdown-menu')).toBeHidden();
+  await expect(page.locator('.qa-mail')).toHaveCount(0);
+
+  await blok.locator('.qa-toewijzen-knop').click();
+  await blok.locator('.qa-kandidaat-niemand').click();
+  await expect(blok.locator('.qa-toewijzen-knop')).toHaveText('Kies...');
 });
 
 test('Notities is tekst tot je op Bewerken tikt; dan krijgt het tekstvak de focus en slaat het op', async ({ page }) => {

@@ -176,4 +176,19 @@ export const MIGRATIES: string[] = [
   UPDATE fotos SET annotaties = replace(annotaties, '"type":"terras"', '"type":"steen"') WHERE annotaties LIKE '%terras%';
   UPDATE fotos SET slot = 'steen' || substr(slot, 7) WHERE slot LIKE 'terras.%';
   `,
+  // The Afspraken become bulleted lines: each ticked option's label, then the "Verdere details", in one text. group_concat skips the details when there are none.
+  `
+  UPDATE dossiers SET data = json_remove(json_set(data, '$.bewoner_doet', (
+    SELECT group_concat(r, char(10) ORDER BY n) FROM (
+      SELECT j.key AS n, CASE j.value WHEN 'opruimen' THEN 'Tuin opruimen op plek regenton' WHEN 'steen' THEN 'Steen van 60x60 regelen voor onder regenton' WHEN 'buren' THEN 'Overleggen met de buren (bij gedeelde regenpijp)' END AS r FROM json_each(dossiers.data, '$.bewoner_doet') j
+      UNION ALL SELECT 1000, json_extract(dossiers.data, '$.bewoner_doet_details')
+    )
+  )), '$.bewoner_doet_details') WHERE json_type(data, '$.bewoner_doet') IS NOT NULL OR json_type(data, '$.bewoner_doet_details') IS NOT NULL;
+  UPDATE dossiers SET data = json_remove(json_set(data, '$.ulebelt_doet', (
+    SELECT group_concat(r, char(10) ORDER BY n) FROM (
+      SELECT j.key AS n, CASE j.value WHEN 'plan' THEN 'Plan van Aanpak schrijven' WHEN 'toestemming' THEN 'Toestemming aan woningcorporatie vragen' WHEN 'klussendienst' THEN 'De Klussendienst vragen om afspraak met bewoner te maken' WHEN 'materialen' THEN 'Materialen regelen' END AS r FROM json_each(dossiers.data, '$.ulebelt_doet') j
+      UNION ALL SELECT 1000, json_extract(dossiers.data, '$.ulebelt_doet_details')
+    )
+  )), '$.ulebelt_doet_details') WHERE json_type(data, '$.ulebelt_doet') IS NOT NULL OR json_type(data, '$.ulebelt_doet_details') IS NOT NULL;
+  `,
 ];

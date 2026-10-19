@@ -20,7 +20,14 @@ function Lijnen(props: { n: number }): JSX.Element {
 function Antwoord(props: { veld: Veld }): JSX.Element {
   const v = () => props.veld;
   return (
-    <Show when={v().opties} fallback={<Lijnen n={v().type === 'textarea' || v().type === 'ids' ? 3 : 1} />}>
+    <Show when={v().opties} fallback={<>
+      <Show when={v().suggesties}>
+        <div>
+          <For each={v().suggesties!}>{([, t]) => <span class="optie">{t}</span>}</For>
+        </div>
+      </Show>
+      <Lijnen n={v().type === 'textarea' || v().type === 'ids' ? 3 : 1} />
+    </>}>
       <div>
         <For each={v().opties!}>{([, label]) => <span class="optie">{label}</span>}</For>
         <Show when={v().anders}>

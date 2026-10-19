@@ -1,7 +1,7 @@
 // The Bezoek sub-page: the Dak table with each dakdeel's verdeling over the regenpijpen, then one block per regenpijp.
 import { type Locator, type Page, expect, test } from '@playwright/test';
 import sharp from 'sharp';
-import { nieuwDossier, opslagKlaar, planTekst, start, zet } from './hulp.ts';
+import { nieuwDossier, opslagKlaar, planTekst, start, veld, zet } from './hulp.ts';
 
 const vak = (l: Locator) => l.evaluate((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, midden: r.top + r.height / 2 }; });
 
@@ -725,10 +725,10 @@ test('de afspraken staan op de Bezoek-pagina onder de wensen, niet bij het Plan 
   const koop = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${koop}/bezoek`);
   const afspraken = page.locator('.qa-afspraken');
-  for (const k of ['bewoner_doet', 'bewoner_doet_details', 'ulebelt_doet', 'ulebelt_doet_details']) await expect(afspraken.locator(`.qa-veld-${k}`)).toBeVisible();
+  for (const k of ['bewoner_doet', 'ulebelt_doet']) await expect(afspraken.locator(`.qa-veld-${k}`)).toBeVisible();
   expect((await rechthoek(afspraken)).top).toBeGreaterThan((await rechthoek(page.locator('.qa-veld-wensen'))).bottom - 0.5);
-  await expect(afspraken.locator('.qa-veld-ulebelt_doet .qa-optie-materialen')).toBeVisible();
-  await expect(afspraken.locator('.qa-optie-toestemming')).toHaveCount(0);
+  await expect(afspraken.locator('.qa-veld-ulebelt_doet .qa-suggestie-holie_molie')).toBeVisible();
+  await expect(afspraken.locator('.qa-suggestie-toestemming')).toHaveCount(0);
 
   await page.goto(`/dossiers/${koop}/plan`);
   await expect(page.locator('.qa-plan .qa-veld-beoordeling')).toBeVisible();
@@ -736,5 +736,90 @@ test('de afspraken staan op de Bezoek-pagina onder de wensen, niet bij het Plan 
 
   const huur = await nieuwDossier(page, { huurKoop: 'huur' });
   await page.goto(`/dossiers/${huur}/bezoek`);
-  await expect(page.locator('.qa-afspraken .qa-optie-toestemming')).toBeVisible();
+  await expect(page.locator('.qa-afspraken .qa-suggestie-toestemming')).toBeVisible();
+});
+
+test('een afspraak is een tekstvak met een • voor elke regel; de links erboven voegen een gangbare regel toe, en lege regels verdwijnen', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const v = veld(page, 'bewoner_doet');
+  const vak = v.locator('textarea');
+  await vak.click();
+  await page.keyboard.type('Voor 1 mei');
+  await expect(vak).toHaveValue('• Voor 1 mei');
+  await page.keyboard.press('Enter');
+  await expect(vak).toHaveValue('• Voor 1 mei\n• ');
+  await page.keyboard.press('Enter');
+  await expect(vak).toHaveValue('• Voor 1 mei\n• ');
+  await vak.blur();
+  await expect(vak).toHaveValue('• Voor 1 mei');
+
+  await v.locator('.qa-suggestie-opruimen').click();
+  await expect(vak).toHaveValue('• Voor 1 mei\n• Tuin opruimen op plek regenton');
+  await expect(v.locator('.qa-suggestie-opruimen')).toHaveCount(0);
+  await expect(v.locator('.qa-suggestie-steen')).toBeVisible();
+  await vak.fill('Plakken\n\nzonder bullets');
+  await expect(vak).toHaveValue('• Plakken\n\n• zonder bullets');
+  await expect(v.locator('.qa-suggestie-opruimen')).toBeVisible();
+  await opslagKlaar(page);
+
+  await page.goto(`/dossiers/${id}/bezoek`);
+  await expect(vak).toHaveValue('• Plakken\n• zonder bullets');
+  await page.goto(`/dossiers/${id}`);
+  await expect(page.locator('.qa-sv-bewoner_doet li')).toHaveText(['Plakken', 'zonder bullets']);
+  expect(await planTekst(page, id)).toMatch(/Wat gaat de bewoner doen\?\s*Plakken\s*zonder bullets\s*Wat gaat De Ulebelt doen\?/);
+});
+
+test('een regel toevoegen via een link zet de cursor aan het eind van het tekstvak en scrollt de nieuwe regel in beeld', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const v = veld(page, 'bewoner_doet');
+  const vak = v.locator('textarea');
+  await vak.fill('Een\nTwee\nDrie\nVier\nVijf\nZes');
+  await vak.blur();
+  await expect(vak).not.toBeFocused();
+  await v.locator('.qa-suggestie-steen').click();
+  await expect(vak).toBeFocused();
+  await expect(vak).toHaveValue(/• Steen van 60x60 regelen voor onder regenton$/);
+  const stand = await vak.evaluate((el: HTMLTextAreaElement) => ({ cursor: el.selectionStart, eind: el.value.length, onder: el.scrollHeight - el.clientHeight - el.scrollTop }));
+  expect(stand.cursor).toBe(stand.eind);
+  expect(stand.onder).toBeLessThanOrEqual(1);
+});
+
+test('op een smal scherm loopt een te lange suggestielink niet door op een tweede regel en maakt hij de pagina niet breder, maar wordt hij afgeknipt', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'huur' });
+  await page.setViewportSize({ width: 300, height: 800 });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const links = page.locator('.qa-afspraken .qa-suggestie');
+  await expect(links.first()).toBeVisible();
+  const maten = await links.evaluateAll((els) => els.map((el) => ({ hoog: el.getBoundingClientRect().height, regel: parseFloat(getComputedStyle(el).lineHeight), breed: el.scrollWidth, zichtbaar: el.clientWidth })));
+  expect(maten.length).toBeGreaterThan(0);
+  for (const m of maten) expect(m.hoog).toBeLessThan(m.regel * 1.5);
+  expect(maten.some((m) => m.breed > m.zichtbaar)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+test('een afsprakenvak groeit mee met de tekst, van 3 tot 5,4 regels hoog', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const vak = veld(page, 'bewoner_doet').locator('textarea');
+  await expect(vak).toBeVisible();
+  // Height of the text area in lines, without padding and border.
+  const regels = () => vak.evaluate((el: HTMLTextAreaElement) => {
+    const s = getComputedStyle(el);
+    const rand = parseFloat(s.paddingTop) + parseFloat(s.paddingBottom) + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
+    return (el.getBoundingClientRect().height - rand) / parseFloat(s.lineHeight);
+  });
+  expect(await regels()).toBeCloseTo(3, 1);
+  await vak.fill('1\n2\n3\n4');
+  expect(await regels()).toBeCloseTo(4, 1);
+  await vak.fill('1\n2\n3\n4\n5\n6\n7\n8');
+  expect(await regels()).toBeCloseTo(5.4, 1);
+  await page.reload();
+  await expect(vak).toBeVisible();
+  expect(await regels()).toBeCloseTo(5.4, 1);
 });

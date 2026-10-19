@@ -2,7 +2,7 @@
 import { For, type JSX, Match, Show, Switch, createEffect, createMemo, createSignal, untrack } from 'solid-js';
 import { euro } from '../../shared/datum.ts';
 import type { Json } from '../../shared/types.ts';
-import { type Veld, lijst, materiaalRijen, materiaalTotaal, nieuwId, veld, veldVoor, waarde } from '../../shared/velden.ts';
+import { type Veld, lijst, materiaalRijen, materiaalTotaal, nieuwId, opsommingRegels, veld, veldVoor, waarde } from '../../shared/velden.ts';
 import { Dropdown } from '../ui.tsx';
 import { FotoSlot } from './fotos.tsx';
 import { useDossier } from './staat.ts';
@@ -21,7 +21,7 @@ function Hint(props: { veld: Veld }) {
 }
 
 // The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder` or 2+ photos, so those lie side by side. `breed` stretches a dropdown or number input to its column.
-export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
+export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; suggesties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
   const def = veldVoor(k);
@@ -29,7 +29,7 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
   const { veld: v, id } = def;
   const zichtbaar = () => !v.zichtbaar || v.zichtbaar(s.d, id);
   const fotoSlot = v.fotos === undefined ? null : id === null ? v.fotos : v.fotos.replace('*', id);
-  const invoer = <Invoer k={props.k} veld={v} opties={props.opties ?? v.opties} uit={!s.mag(v.bewerkers)} breed={props.breed} />;
+  const invoer = <Invoer k={props.k} veld={v} opties={props.opties ?? v.opties} suggesties={props.suggesties ?? v.suggesties} uit={!s.mag(v.bewerkers)} breed={props.breed} />;
   return (
     <Show when={zichtbaar()}>
       <div id={`veld-${props.k}`} class={`qa-veld qa-veld-${qaNaam(v.key)} ${props.class ?? (props.kaal ? '' : 'mb-3')}`}>
@@ -55,7 +55,7 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
   );
 }
 
-function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | undefined; uit: boolean; breed?: boolean }) {
+function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | undefined; suggesties: [string, string][] | undefined; uit: boolean; breed?: boolean }) {
   const s = useDossier();
   const w = () => waarde(s.d, props.k);
   const zet = (v: Json) => s.zet(props.k, v);
@@ -106,6 +106,9 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
     <Switch fallback={<span class="text-danger">Veldtype {props.veld.type} heeft geen invoer</span>}>
       <Match when={props.veld.type === 'text' || props.veld.type === 'email' || props.veld.type === 'tel'}>
         <input type={props.veld.type} class="form-control qa-invoer" disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
+      </Match>
+      <Match when={props.veld.type === 'textarea' && props.veld.opsomming}>
+        <Opsomming waarde={tekst(w())} suggesties={props.suggesties ?? []} rijen={props.veld.rijen ?? 3} uit={props.uit} onZet={zet} />
       </Match>
       <Match when={props.veld.type === 'textarea'}>
         <textarea class="form-control qa-invoer" rows={props.veld.rijen ?? 3} disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
@@ -190,6 +193,71 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
         <DatumTijd waarde={tekst(w())} uit={props.uit} onZet={zet} />
       </Match>
     </Switch>
+  );
+}
+
+// A textarea whose every line starts with "• "; Enter starts a new bullet, and empty lines go once it loses focus. The links above it add a common line, which can then be edited like any other.
+function Opsomming(props: { waarde: string; suggesties: [string, string][]; rijen: number; uit: boolean; onZet: (t: string | null) => void }) {
+  let el!: HTMLTextAreaElement;
+  const opgeslagen = (t: string) => opsommingRegels(t).join('\n') || null;
+  const metBullets = (t: string) => opsommingRegels(t).map((r) => `• ${r}`).join('\n');
+  // Rewrites the text only when the stored value changed elsewhere, so a fresh empty bullet survives while typing.
+  // Fits the height to the text: `rows` is the minimum, .tekstvak-groei's max-height the maximum.
+  const groei = () => {
+    if (el.offsetParent === null) return; // hidden: nothing to measure, keeps its `rows` height
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+  };
+  createEffect(() => {
+    const w = props.waarde;
+    if (opgeslagen(el.value) !== (w || null)) el.value = metBullets(w);
+    groei();
+  });
+  const bewerk = () => {
+    let pos = el.selectionStart;
+    let begin = 0;
+    const regels = el.value.split('\n').map((r) => {
+      const nieuw = r.trim() !== '' && !r.startsWith('•') ? `• ${r}` : r;
+      if (nieuw !== r && pos > begin) pos += 2;
+      begin += r.length + 1;
+      return nieuw;
+    });
+    el.value = regels.join('\n');
+    el.setSelectionRange(pos, pos);
+    groei();
+    props.onZet(opgeslagen(el.value));
+  };
+  const enter = (e: KeyboardEvent) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+    e.preventDefault();
+    const regel = el.value.slice(0, el.selectionStart).split('\n').pop()!;
+    if (regel.replace('•', '').trim() === '') return;
+    el.setRangeText('\n• ', el.selectionStart, el.selectionEnd, 'end');
+    groei();
+  };
+  const voegToe = (t: string) => {
+    el.value = metBullets(`${props.waarde}\n${t}`);
+    props.onZet(opgeslagen(el.value));
+    groei();
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+    el.scrollTop = el.scrollHeight;
+  };
+  return (
+    <>
+      <Show when={!props.uit && props.suggesties.some(([, t]) => !opsommingRegels(props.waarde).includes(t))}>
+        <div class="d-flex flex-wrap column-gap-3 row-gap-1 mb-1 small qa-suggesties">
+          <For each={props.suggesties}>
+            {([k, t]) => (
+              <Show when={!opsommingRegels(props.waarde).includes(t)}>
+                <button type="button" class={`btn btn-link btn-sm p-0 text-start text-nowrap overflow-hidden mw-100 qa-suggestie qa-suggestie-${k}`} onClick={() => voegToe(t)}><i class="bi bi-plus-lg me-1" aria-hidden="true" />{t}</button>
+              </Show>
+            )}
+          </For>
+        </div>
+      </Show>
+      <textarea ref={el} class="form-control tekstvak-groei qa-invoer" rows={props.rijen} disabled={props.uit} onInput={bewerk} onKeyDown={enter} onBlur={() => { el.value = metBullets(el.value); groei(); }} />
+    </>
   );
 }
 
