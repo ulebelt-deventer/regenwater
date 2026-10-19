@@ -9,16 +9,15 @@
 ### De werkwijze als geheel
 
 - **Loop de werkwijze door met verschillende situaties.** Loop de app een paar keer van begin tot eind door, en denk daarbij aan verschillende situaties: een koopwoning en een huurwoning, een bewoner die halverwege afhaakt, een woningcorporatie die het plan afwijst of om wijzigingen vraagt.
-- **Staan er stappen in de verkeerde volgorde?** Waarschijnlijk staan er in deze eerste versie nog stappen in de verkeerde volgorde. Een voorbeeld: de bezoeker vult de Afspraken pas in na het bezoek. Kijk er eens naar en laat weten wat je ervan vindt, dan passen we het aan.
 - **Werken jullie ook voor huishoudens zonder subsidie?** Als een huishouden een regenton of afkoppeling wil maar daar geen subsidie voor krijgt, helpen jullie ze dan toch? Of sluiten we zo'n dossier meteen?
-- **Alles op de dossierpagina, of een aparte pagina per stap?** Nu heeft elke stap (bijvoorbeeld Bezoek, Plan van Aanpak, Uitvoering) een eigen formulier op een aparte pagina. Werkt dat, of vul je liever alles in op de dossierpagina zelf? Ik twijfel zelf over deze keuze.
-- **Hoe lang bewaren we een dossier? (privacy, AVG)** Voor de AVG moet in onze privacyverklaring duidelijk staan welke persoonsgegevens we verzamelen, waarom, en hoe lang we ze bewaren. Hoe lang moeten jullie een dossier bewaren nadat het werk klaar is? Mijn voorstel: alle persoonsgegevens na 5 jaar verwijderen. In de praktijk betekent dat het hele dossier verwijderen, dus ook alles over het uitgevoerde werk. Wat vinden jullie daarvan? De gevoeligste gegevens zijn de naam, het e-mailadres en het telefoonnummer van de bewoner, en de foto's. Als jullie de gegevens om een wettelijke reden langer moeten bewaren, kunnen we de termijn verlengen tot 20 jaar. Waarschijnlijk vraagt niemand er ooit naar, maar we moeten wel een duidelijk en openbaar vastgelegd beleid hebben.
+- **Alles op één grote dossierpagina, of een aparte pagina per stap?** Nu heeft elke stap (bijvoorbeeld Bezoek, Plan van Aanpak, Uitvoering) een eigen formulier op een aparte pagina. Werkt dat, of vul je liever alles in op de dossierpagina zelf? Sub-paginas lijken me beter, dus dat heb ik gebouwd, maar ik twijfel een beetje.
+- **Hoe lang bewaren we een dossier? (privacy, AVG/GDPR)** Voor de AVG moet in onze privacyverklaring duidelijk staan welke persoonsgegevens we verzamelen, waarom, en hoe lang we ze bewaren. Hoe lang moeten jullie een dossier bewaren nadat het werk klaar is? Claude (de AI-assistent waarmee ik de app bouw) adviseert om alle persoonsgegevens na 5 jaar te verwijderen. In de praktijk betekent dat het hele dossier verwijderen, dus ook alles over het uitgevoerde werk. Wat vinden jullie daarvan? De gevoeligste gegevens zijn de naam, het e-mailadres en het telefoonnummer van de bewoner, en de foto's. Als jullie de gegevens om een wettelijke reden langer moeten bewaren, kunnen we de termijn verlengen tot 20 jaar. Waarschijnlijk vraagt niemand er ooit naar, maar we moeten wel een duidelijk en openbaar vastgelegd beleid hebben.
 - **Afkoppelen = nee: de vragen daarna verbergen?** Als de bezoeker bij een regenpijp "Afkoppelen?" op "Nee" zet, wat doen we dan met de twee vragen daarna ("Waar moet het water naartoe?" en "Hoe moet het water daarnaartoe komen?")? Verbergen, of toch laten zien? Die vragen zijn toch alleen nodig als de pijp wel wordt afgekoppeld?
 
 ### Inloggen & rechten
 
 - **Inloggen met een e-maillink en code, zonder wachtwoord: oké?** Je vult je e-mailadres in en krijgt een link en een code van 6 cijfers. Er zijn geen wachtwoorden. Is dat goed? Er zijn veiligere manieren, maar dit is voor klussers het makkelijkst.
-- **Hoe lang blijf je ingelogd?** Hoe lang moet je ingelogd blijven nadat je bent ingelogd? Mijn eerste voorstel was 30 dagen, zodat klussers niet steeds opnieuw hoeven in te loggen. Hebben jullie een voorkeur?
+- **Hoe lang blijf je ingelogd?** Hoe lang moet je ingelogd blijven nadat je bent ingelogd? Het eerste advies van Claude (de AI-assistent waarmee ik de app bouw) was 30 dagen, zodat klussers niet steeds opnieuw hoeven in te loggen. Hebben jullie een voorkeur?
 - **Wat mogen klussers zelf wijzigen?** Een klusser die bezoeker is, kan de afspraak, de pagina's Bezoek en Plan van Aanpak, en de Notities wijzigen, totdat de klusser op "Klaar voor controle" tikt. Een klusser die uitvoerder is, kan de uitvoeringsdatum, de pagina Uitvoering en de Notities wijzigen, totdat de klusser op "Werk opgeleverd" tikt. Daarna vraagt de klusser een beheerder om iets te wijzigen. Al het andere (inschrijving, adres, toewijzen, versturen, sluiten) kan alleen een beheerder. Is dat de juiste grens? Kun je situaties bedenken waarin een klusser iets daarbuiten moet kunnen wijzigen?
 
 ### Dossierlijst & aandacht
@@ -39,21 +38,17 @@
 
 ### Bezoek: regenpijpen, daken & tuin
 
-- **Vragen per regenpijp: klopt dat?** De meeste vragen bij het bezoek worden per regenpijp beantwoord (soort, diameter, regenton, afkoppelen, waar het water naartoe gaat). Klopt dat?
 - **Diameters 70 en 90 mm toevoegen?** Het formulier heeft nu 80 mm, 100 mm en "Anders". Eerder noemden jullie ook 70 en 90 mm. Komen die vaak genoeg voor om ze als keuze toe te voegen?
 - **Twee regentonnen aan één pijp, of een regenton zonder pijp?** Per regenpijp is er één keuze "Regenton aanwezig?". Komt het voor dat een bewoner twee regentonnen aan één pijp wil, of een regenton die niet aan een pijp hangt?
-- **Afkoppelen per regenpijp (ja/nee/twijfel): oké?** Bij elke regenpijp staat de vraag "Afkoppelen?" (Ja, Nee, Twijfel). Dat komt zo in het Plan van Aanpak, bijvoorbeeld: "Pijp A: regenton en afkoppelen, pijp B: alleen afkoppelen, pijp C: niets". Is dat goed?
-- **Meerdere dakdelen en tuindelen tekenen: nodig?** In de app kun je meerdere dakdelen en tuindelen op de kaart tekenen, en de app berekent van elk deel de m². Hebben jullie dat echt nodig? En hebben jullie de m² van de tuin nodig in het plan?
 
 ### Bezoek: velden & foto's
 
 - **Welke velden missen er, en welke zijn overbodig?** Er staan twee velden in waar jullie niet om gevraagd hebben: woningtype (tussenwoning, 2-onder-1-kap, enz.) en de keuze "Beoordeling", die een vaste openingszin geeft in het Voorstel Ulebelt. Hebben jullie die nodig? En als je de app een paar keer doorloopt met verschillende situaties in gedachten: welke gegevens wil je kunnen invullen of noteren die er nu niet in staan? Welke velden gebruik je nooit, en kunnen beter weg zodat het scherm rustiger wordt?
-- **Welke velden moeten ingevuld zijn voordat het plan verstuurd wordt?** Nu houdt niets "Bezoek afronden" of het versturen tegen. De controletekst noemt wat nog leeg is, en het concept-Plan laat dat duidelijk zien. Zijn er velden die echt ingevuld moeten zijn voordat het plan verstuurd mag worden?
+- **Welke velden moeten ingevuld zijn voordat het plan verstuurd wordt?** Nu houdt niets "Bezoek afronden" of het versturen tegen. De controletekst noemt wat nog leeg is, en het concept-Plan laat dat duidelijk zien. Zijn er velden die echt ingevuld moeten zijn voordat het plan verstuurd mag worden? Of is it nu zo ok?
 - **Genoeg fotovakken, of een vak "Andere foto's"?** Zijn de fotovakken die er nu zijn genoeg? Of willen jullie een vak "Andere foto's" voor alles wat nergens anders past?
 
 ### Plan van Aanpak & controle
 
-- **Plan van Aanpak al ter plekke invullen: past dat?** De bezoeker kan het voorstel en de afspraken al noteren tijdens het bezoek, en de tekst daarna netjes maken, voordat de bezoeker op "Klaar voor controle" tikt. Past dat bij hoe jullie willen werken?
 - **Geen knop "terugsturen naar bezoeker": genoeg?** Als een Plan van Aanpak nog niet goed genoeg is, verbeter je het zelf of bel je de bezoeker. Er is geen knop om het plan terug te sturen naar de bezoeker. Is dat genoeg?
 - **Auteur van het plan: de beheerder, met de bezoeker als "Schouw door"?** In het Plan van Aanpak staat als auteur de beheerder die het dossier heeft aangemaakt. De bezoeker staat erin bij "Schouw door". Is dat goed?
 - **Geen oude versies van het plan bewaren: genoeg?** De app bewaart geen oude versies van de PDF. Elke verstuurde e-mail gaat in CC naar jullie, dus daar zie je wat er verstuurd is. Als het plan na het versturen nog verandert, meldt de app dat ("Plan gewijzigd") en laat precies zien wat er veranderd is, totdat je het opnieuw verstuurt of aangeeft dat opnieuw versturen niet nodig is. Is dat genoeg?
@@ -83,12 +78,10 @@
 
 ### E-mail & meldingen
 
-- **CC en afzender van e-mails: welk adres?** Elke e-mail die de app verstuurt gaat in CC naar jullie, zodat je kunt terugzien wat er verstuurd is. Nu gaat die CC naar de beheerder die de e-mail verstuurt. Moet die liever naar een gedeelde inbox? En moeten e-mails van een algemeen adres komen (bijvoorbeeld regenwater@ulebelt.nl), of op naam van de beheerder?
-- **E-mail aan klusser noemt alleen het adres: oké?** Voor de privacy noemt de e-mail aan een klusser alleen het adres van het dossier, niet de naam van de bewoner. Is dat goed?
+- **E-mail aan klusser noemt alleen het adres: oké?** Voor de privacy noemt de e-mail aan een klusser alleen het adres van het dossier, niet de naam van de bewoner. Is dat goed? (Klusser moet op de link kliken om het app te openen & de bewoner-details te zien.)
 - **Meldingen: naar welk adres, en wanneer nog meer?** De app stuurt jullie een e-mail als een klusser op "Klaar voor controle" of "Werk opgeleverd" tikt, als een e-mail niet bezorgd kan worden (dat komt pas in een latere versie), en elke maandag met de lijst van dossiers die aandacht nodig hebben. Naar welk adres moeten deze meldingen? Willen jullie ook op andere momenten een melding?
 - **E-mailteksten nakijken en links invullen.** Kijk alle e-mailteksten na en vul de ontbrekende links in, bijvoorbeeld de link "Meer informatie" in de e-mail aan bewoners die subsidie kunnen krijgen.
 
 ### Start & inrichting
 
-- **Bestaande spreadsheet importeren of leeg beginnen?** Zullen we bij de start jullie huidige spreadsheet met adressen één keer importeren? Of beginnen we leeg en voeren jullie de lopende dossiers met de hand in?
 - **Broncode open source: akkoord?** Vinden jullie het goed als de broncode van de app openbaar is (open source)? Het gaat alleen om de code op GitHub, niet om de database, gegevens van gebruikers of andere vertrouwelijke informatie.

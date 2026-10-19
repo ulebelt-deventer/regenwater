@@ -13,36 +13,27 @@ export const NIEUWS: NieuwsDatum[] = [
         punten: [
           'De eerste stap heet nu Inschrijving in plaats van Intake. Oude links blijven werken.',
           'Tikt een klusser op de dossierlink in een e-mail terwijl die niet is ingelogd? Dan staat het e-mailadres al ingevuld, en na het inloggen kom je meteen op dat dossier uit.',
-          'Onderaan Inschrijving, Bezoek, Plan van Aanpak en Uitvoering staat nu ook een link Terug naar dossier. Die brengt je terug naar het blok van die stap op de dossierpagina.',
-          'Uitleg bij icoontjes en tekentjes (zoals ** en †) verschijnt als je eroverheen gaat, en op de telefoon als je erop tikt.',
           'De CSV-download van de dossierlijst werkt weer.',
           'De privacypagina is ingevuld: De Ulebelt als verantwoordelijke, waarom we gegevens bewaren, en voorlopig 5 jaar bewaartermijn. Je kunt hem ook lezen zonder in te loggen.',
-          'De uitleg "App op je telefoon zetten" zegt voor Android nu eerst de pagina in Chrome te openen, zodat links uit e-mails in de app openen.',
         ],
       },
       {
         kop: 'Dossierpagina',
         punten: [
           'Latere stappen (Uitvoerder, Uitvoering, Oplevering) zie je al als grijze blokken, met waarom ze nog niet beschikbaar of niet van toepassing zijn.',
-          'Bij de Inschrijving staan de plattegrond, straatfoto en boorprofiel als grote foto\'s naast elkaar.',
-          'Bij het kiezen van een bezoeker of uitvoerder zie je wie er nu gekozen is, en staat "- niemand -" bovenaan.',
         ],
       },
       {
         kop: 'Inschrijving',
         punten: [
           'Op een tablet of computer staan de velden naast elkaar in rijen, dus de pagina is veel korter. Op de telefoon blijft alles onder elkaar.',
-          'De plattegrond staat nu vóór de straatfoto. Je kunt er als beheerder alvast op tekenen, of dat aan de bezoeker overlaten.',
-          'De keuzes bij Bodemsituatie komen nu uit de referentietabel (grondsoort en doorlaatbaarheid), met de link naar die tabel ernaast. Oude keuzes in bestaande dossiers blijven zichtbaar.',
-          'Is de subsidiemail verstuurd, dan wordt de knop een gewone link "Opnieuw mailen", zodat het niet meer als taak oogt.',
-          '"Straatfoto / vooraanzicht" heet nu Straatfoto en "Plattegrond van kadaster" heet Plattegrond.',
+          'De keuzes bij Bodemsituatie komen nu uit de referentietabel (grondsoort en doorlaatbaarheid), met de link naar die tabel ernaast.',
         ],
       },
       {
         kop: 'Kaart en tekenen',
         punten: [
           'Nieuw vlak Steen (rood, S1, S2...) voor terras en andere bestrating, met m² en een foto per vlak, net als dak en tuin. Het Plan van Aanpak krijgt er een eigen tabel voor.',
-          'Dak, tuin, steen en regenpijp hebben elk een eigen icoontje, op de kaart, in de tabellen en in de PDF.',
           'Nieuw: Vrij tekenen. Schets met de vinger of muis op elke foto of op de kaart, en verplaats of vergroot je schets daarna.',
           'Tik in een vlak dat al getekend is om het te selecteren en de hoeken te verschuiven.',
         ],
@@ -50,10 +41,7 @@ export const NIEUWS: NieuwsDatum[] = [
       {
         kop: 'Foto\'s',
         punten: [
-          'Eén + knop opent een menu met Camera, Uploaden en Plakken. Staan er al foto\'s, dan zit die + op de laatste foto.',
           'Plakken: zet een screenshot (bijvoorbeeld van Street View) direct uit het klembord in een fotovakje. Een gekopieerd bestand plak je met ⌘V of Ctrl+V.',
-          'Een nieuwe foto op een volle straatfoto, plattegrond of boorprofiel? Dan vraagt de app of je de bestaande foto wilt vervangen. Tekeningen op de plattegrond blijven staan.',
-          'Bij "Toevoegen of vervangen?" kun je nu ook annuleren.',
           'Foto\'s worden minder bijgesneden: kleine foto\'s zijn 3:2, en straatfoto, plattegrond en boorprofiel tonen de hele foto.',
         ],
       },
@@ -61,9 +49,9 @@ export const NIEUWS: NieuwsDatum[] = [
         kop: 'Bezoek: daken en regenpijpen',
         punten: [
           'Een regenpijp kan nu water krijgen van meerdere dakdelen, en een dakdeel kan verdeeld worden over meerdere regenpijpen. De app verdeelt zelf, naar welke pijp het dichtst bij welk stuk dak ligt.',
-          'Die verdeling pas je aan in de Dak-tabel, kolom Regenpijpen. Een † betekent dat de app het dakdeel zelf heeft verdeeld.',
+          'Die verdeling pas je aan in de Dak-tabel, kolom Regenpijpen. Een † betekent dat de app het dakdeel zelf automatisch heeft verdeeld.',
           'De waterberging wordt nu per regenpijp berekend, met de berekening erbij.',
-          'Elke regenpijp heeft een eigen blok direct onder de Dak-tabel, met een stukje van de kaart rond die pijp. Tik op dat kaartje om naar de kaart te gaan. Een blok kun je dichtklappen.',
+          'Elke regenpijp heeft een eigen blok direct onder de Dak-tabel, met een stukje van de kaart rond die pijp. Tik op dat kaartje om naar de kaart te gaan. Elk regenpijp-blok kun je dichtklappen.',
           'Soort, Diameter, Regenton, Afkoppelen en Hoe zijn nu keuzemenu\'s, dus de blokken zijn compacter.',
           'De vragen "Waar moet het water naartoe?" en "Hoe moet het water daarnaartoe komen?" gaan nu duidelijk over het plan, niet over hoe het nu is.',
           'Het veld "Verhard %" is weg.',
@@ -73,7 +61,7 @@ export const NIEUWS: NieuwsDatum[] = [
         kop: 'Bezoek: afspraken met de bewoner',
         punten: [
           'De Afspraken (wat doet de bewoner, wat doet De Ulebelt) staan nu op de Bezoekpagina in plaats van in het Plan van Aanpak, zodat je ze ter plekke samen maakt.',
-          'Elke afspraak is nu een lijstje met opsommingstekens: typ je eigen regels, of tik op een suggestie erboven. Bestaande afspraken zijn al omgezet.',
+          'Elke afspraak is nu een lijstje met opsommingstekens: schrijf je eigen regels, of tik op een suggestie erboven.',
           'Het papieren bezoekformulier noemt de suggesties om te omcirkelen.',
         ],
       },
