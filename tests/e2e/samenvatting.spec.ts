@@ -303,3 +303,21 @@ test('elke stap-pagina heeft onderaan ook een link terug naar het dossier', asyn
     await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
   }
 });
+
+test('de terug-link van een stap-pagina zet het dossier op de sectie van die stap', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  for (const stap of ['inschrijving', 'bezoek', 'plan']) {
+    await page.goto(`/dossiers/${id}/${stap}`);
+    await page.locator('.qa-terug').last().click();
+    await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
+    const sectie = page.locator(`.qa-sectie-${stap}`);
+    await expect(sectie).toBeInViewport();
+    // At 1rem below the top of the screen, unless the page can't scroll that far.
+    await expect.poll(async () => page.evaluate((s) => {
+      const top = document.querySelector(s)!.getBoundingClientRect().top;
+      const onderaan = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
+      return Math.abs(top - 16) < 2 || (onderaan && top > 16);
+    }, `.qa-sectie-${stap}`)).toBe(true);
+  }
+});

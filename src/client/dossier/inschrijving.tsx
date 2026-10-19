@@ -40,7 +40,7 @@ export function Inschrijving() {
 
   return (
     <>
-      <TerugLink />
+      <TerugLink sectie="sectie-inschrijving" />
       <section class="mb-3 qa-inschrijving">
         <h2>Inschrijving</h2>
         <AdresVeld />
@@ -135,7 +135,7 @@ export function Inschrijving() {
           </Show>
         </div>
         <div class="mt-3 text-center">
-          <TerugLink class="" />
+          <TerugLink sectie="sectie-inschrijving" class="" />
         </div>
       </section>
     </>

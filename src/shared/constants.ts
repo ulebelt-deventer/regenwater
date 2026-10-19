@@ -26,7 +26,8 @@ export function kadastraleKaartUrl([x, y]: [number, number]): string {
 }
 export const SUBSIDIE_INFO_URL = 'https://www.ulebelt.nl/regenwater'; // PLACEHOLDER
 export const NORMAFVOER_MM = 20; // PLACEHOLDER: the sample says 20 mm, its numbers match 10 mm
-export const KLUSSENDIENST_PER_REGENPIJP_CENT = 5000; // PLACEHOLDER
+export const KLUSSENDIENST_PER_REGENPIJP_CENT = 5000; // per afgekoppelde regenpijp, excl. btw
+export const BTW_PROCENT = 21;
 
 // Login
 export const LOGIN_CODE_GELDIG_MIN = 15;

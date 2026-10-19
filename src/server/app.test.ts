@@ -215,6 +215,23 @@ describe('documents', () => {
     expect((await beheerder.verzoek('GET', `/docs/dossiers/${id}/opleverrapport.pdf`)).status).toBe(409);
   });
 
+  it('gives the uitvoeringsspecificatie only to admins, after oplevering, and for koop only with the Klussendienst', async () => {
+    const pad = (id: number) => `/docs/dossiers/${id}/uitvoeringsspecificatie`;
+    const mijlpaal = (id: number, m: string) => beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: m });
+    const koop = await nieuwDossier('koop');
+    expect((await beheerder.verzoek('GET', pad(koop))).status).toBe(409);
+    await mijlpaal(koop, 'werk_opgeleverd');
+    const zelf = await beheerder.verzoek('GET', pad(koop));
+    expect(zelf.status).toBe(409);
+    expect((await zelf.json()).fout).toMatch(/niet voor de Klussendienst gekozen/);
+    await mijlpaal(koop, 'klussendienst_gekozen');
+    const html = await (await beheerder.verzoek('GET', pad(koop))).text();
+    expect(html).toContain('Klimaatadaptatie Deventer');
+    expect(html).toContain('anna@example.org');
+    expect(html).toContain('qa-klussendienst');
+    expect((await klusser.verzoek('GET', pad(koop))).status).toBe(403);
+  });
+
   it('prints a blank bezoekformulier with the current materials list', async () => {
     await beheerder.json('POST', '/api/materialen', { naam: 'Testmateriaal XL', prijs: 1234 }, 201);
     await beheerder.verzoek('GET', '/docs/bezoekformulier-leeg.pdf');

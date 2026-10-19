@@ -1,8 +1,8 @@
 import type { Hono } from 'hono';
 import type { JSX } from 'solid-js';
 import { renderToString } from 'solid-js/web';
-import { isoDatum } from '../../shared/datum.ts';
 import { isBeheerder } from '../../shared/rechten.ts';
+import { geenSpecificatie } from '../../shared/specificatie.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, fout } from '../context.ts';
@@ -11,9 +11,9 @@ import { gebruikersMap } from '../repo.ts';
 import { haalDossier } from '../routes/dossiers.ts';
 import { adresRegel } from '../../shared/status.ts';
 import { Bezoekformulier } from './formulier.tsx';
-import { MaterialenPrijzen } from './materialen.tsx';
 import { type Doc, Pagina } from './onderdelen.tsx';
 import { Opleverrapport, Plan } from './plan.tsx';
+import { Uitvoeringsspecificatie } from './specificatie.tsx';
 import { documentStijl } from './stijl.ts';
 
 export const BIJLAGE_NAAM = { plan: 'Plan van Aanpak', opleverrapport: 'Opleverrapport' } as const;
@@ -90,11 +90,12 @@ export function documentRoutes(app: Hono<Env>, ctx: Ctx): void {
     return pdf(c, inhoud, 'Leeg bezoekformulier.pdf');
   });
 
-  app.get('/docs/dossiers/:id/materialen', (c) => {
+  app.get('/docs/dossiers/:id/uitvoeringsspecificatie', (c) => {
     alleenBeheerder(c);
     const d = haalDossier(ctx, c);
-    opgeleverd(d);
+    const reden = geenSpecificatie(d);
+    if (reden) fout(409, reden);
     const x = doc(ctx, d);
-    return c.html(html(`Materialen ${isoDatum(d.werk_opgeleverd_at!)}`, () => <MaterialenPrijzen doc={x} />, true));
+    return c.html(html(`Uitvoeringsspecificatie ${bestandAdres(d)}`, () => <Uitvoeringsspecificatie doc={x} />, true));
   });
 }

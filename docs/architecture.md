@@ -94,7 +94,7 @@ Stop after each milestone with a summary, so the maintainer can review, commit a
 2. Dossiers: Overzicht, Dossiers list (filters, sort, pagination, CSV), the details page (status, notities, close, reopen, delete), and the Inschrijving sub-page with PDOK address and parcel lookup, rioolkaart links and riool autodetectie (the gemeenten's public ArcGIS layers, see `src/server/riool.ts`), nearest-boring lookup (BRO and DINO), photo slots with annotations, and the luchtfoto from the WMS. The email preview pop-up, E-mailsjablonen (seeded from the prototype's drafts, completed for the ones it lacks), the subsidie mail, the Signal oproep and assigning the bezoeker.
 3. Bezoek sub-page and the kaart editor; the printable and Leeg bezoekformulier PDFs.
 4. Plan van Aanpak sub-page and Materialen beheer, the concept-Plan and Plan PDF, Plan versturen & goedkeuring, assigning the uitvoerder.
-5. Uitvoering and Oplevering: the opleverrapport and the Materialen met prijzen page.
+5. Uitvoering and Oplevering: the opleverrapport and the Uitvoeringsspecificatie page.
 6. Aandacht rules and the Aandacht-criteria page, snoozes, Plan gewijzigd, admin meldingen and the weekly digest.
 7. Deployment scripts, monitoring and backups; restore test.
 8. Later: the Mailgun bounce webhook; the one-off import of the Ulebelt admin's spreadsheet, if the team wants it.

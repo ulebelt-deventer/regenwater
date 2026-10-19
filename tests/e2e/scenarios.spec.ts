@@ -2,7 +2,7 @@
 import { type Page, expect, test } from '@playwright/test';
 import {
   ADRES, BEHEERDER, KLUSSER, afspraak, bezoek, emails, geenAandacht, laatsteDocument, login, mail, naarDossier, nieuwDossier, opslagKlaar,
-  plan, planTekst, sluit, sluitModal, start, status, subsidieMail, uitvoering, veld, verschuifDagen, verstuurMail, wijsToe,
+  plan, planTekst, sluit, sluitModal, start, status, subsidieMail, tekst, uitvoering, veld, verschuifDagen, verstuurMail, wijsToe,
 } from './hulp.ts';
 import { STANDAARD_MATERIALEN } from '../../src/shared/constants.ts';
 
@@ -115,7 +115,7 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
   await expect(page.locator('.qa-stat-open')).toHaveText('0');
 });
 
-test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn dossiers, bewerken stopt na overdracht, opleverrapport opnieuw na sluiten', async ({ page }) => {
+test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn dossiers, bewerken stopt na overdracht, opleverrapport opnieuw na sluiten', async ({ page, context }) => {
   const { klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await subsidieMail(page, 'koop');
@@ -184,6 +184,19 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await login(page, BEHEERDER.email);
   await naarDossier(page, id);
   await status(page, 'Opleverrapport versturen');
+
+  // The uitvoeringsspecificatie for the administratie, as a page and as text to paste in a mail.
+  const href = await page.locator('.qa-specificatie').getAttribute('href');
+  const pagina = tekst(await (await page.request.get(href!)).text());
+  expect(pagina).toContain('Project: Klimaatadaptatie Deventer');
+  expect(pagina).toContain('E-mail: bea@example.org');
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.locator('.qa-specificatie-kopieren').click();
+  const geplakt = await page.evaluate(() => navigator.clipboard.readText());
+  expect(geplakt).toContain('Uitvoeringsspecificatie Klimaatadaptatie Deventer');
+  expect(geplakt).toContain('bea@example.org');
+  expect(geplakt).toMatch(/Totaal: € [\d.,]+/);
+
   await mail(page, 'oplever_bewoner');
   await page.locator('.qa-uitgevoerd-sluiten').click();
   await status(page, 'Gesloten: Uitgevoerd');

@@ -15,7 +15,7 @@ export function Plan() {
 
   return (
     <>
-      <TerugLink />
+      <TerugLink sectie="sectie-plan" />
       <section class="mb-3 qa-plan">
         <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
           <h2 class="mb-0">Plan van Aanpak</h2>
@@ -45,7 +45,7 @@ export function Plan() {
           </button>
         </Show>
         <div class="mt-3 text-center">
-          <TerugLink class="" />
+          <TerugLink sectie="sectie-plan" class="" />
         </div>
       </section>
     </>

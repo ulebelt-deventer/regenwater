@@ -325,7 +325,10 @@
     - Button: "Werk opgeleverd" - uitvoerder taps this to hand the dossier back to the admin.
   - **Oplevering** (inline, admin)
     - Link "Opleverrapport (PDF)" (disabled until "Werk opgeleverd" is tapped)
-    - Link "Materialen met prijzen (voor facturatie)" (same availability): a print-friendly page with the adres, bewoner, woningeigenaar, uitvoerder and opleverdatum, and the Gebruikte materialen with Prijs, Aantal, Subtotaal and Totaal. For a koopwoning it adds a line "Klussendienst: {n} regenpijpen × € 50,00" with its subtotal before the Totaal, which includes it; n counts every regenpijp on the kaart, and the € 50 is a constant in code (both pending the team question). Printed or saved as PDF from the browser; it's for the administratie, never sent from the app.
+    - Link "Uitvoeringsspecificatie (voor de factuur)" and a "Kopieer als tekst" button next to it: everything the administratie needs to make the factuur. The app never makes the factuur itself (no factuurnummer, no Ulebelt bedrijfsgegevens). Available once "Werk opgeleverd" is tapped, for a huurwoning, and for a koopwoning only when the bewoner chose the Klussendienst; otherwise it's greyed out with the reason.
+      - Contents: project ("Klimaatadaptatie {gemeente}"), bewoner naam, adres with postcode, bewoner e-mail, woningeigenaar, uitvoerder and opleverdatum; then the Gebruikte materialen that have an Aantal (Prijs excl. btw, Aantal, Bedrag); for a koopwoning a line "Klussendienst: {n} regenpijpen afgekoppeld × € 50,00", where n counts the regenpijpen with "Afkoppelen: Ja" from the Bezoek; then Subtotaal, btw 21% (over the subtotaal, rounded to the cent) and Totaal. All prices are excl. btw.
+      - A used material without a prijs, or a Klussendienst with no afgekoppelde regenpijp, gets a "Let op" line on the page and in the text.
+      - The link opens a print-friendly page (print or save as PDF from the browser). The copied text has the same contents in plain lines, for pasting into a mail to the administratie; it's never sent from the app.
     - "Opleverrapport versturen naar woningcorporatie" (if huur)
       - Only available once "Werk opgeleverd" is tapped.
       - Button opens a pop-up to preview the email to be sent to the woningcorporatie, with the opleverrapport PDF attached. Green text indicating if it was already sent.

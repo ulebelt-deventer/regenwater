@@ -266,7 +266,7 @@ export function Bezoek() {
 
   return (
     <>
-      <TerugLink />
+      <TerugLink sectie="sectie-bezoek" />
       <section class="mb-3 qa-bezoek">
         <h2>Bezoek</h2>
         <KaartVeld />
@@ -361,7 +361,7 @@ export function Bezoek() {
           <A href={`/dossiers/${s.id}/plan`} class="qa-naar-plan">Verder met het Plan van Aanpak →</A>
         </div>
         <div class="mt-3 text-center">
-          <TerugLink class="" />
+          <TerugLink sectie="sectie-bezoek" class="" />
         </div>
       </section>
     </>

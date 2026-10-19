@@ -4,6 +4,7 @@ import { For, type JSX, Match, Show, Switch, createEffect, createResource, creat
 import { KLOPT_NIET_KOP } from '../../shared/aandacht.ts';
 import { datum, datumTijd } from '../../shared/datum.ts';
 import { PLAN_BEWONER_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
+import { geenSpecificatie, specificatieTekst } from '../../shared/specificatie.ts';
 import type { SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
 import { ApiFout, get } from '../api.ts';
@@ -52,9 +53,10 @@ export function useGaNaarAnker() {
   };
 }
 
-export function TerugLink(props: { class?: string }) {
+// Returns to the details page with `sectie` at the top of the screen; noScroll skips the router's scroll to the top.
+export function TerugLink(props: { sectie?: string; class?: string }) {
   const s = useDossier();
-  return <A href={`/dossiers/${s.id}`} class={`d-inline-block qa-terug ${props.class ?? 'mb-3'}`}>← Terug naar dossier</A>;
+  return <A href={`/dossiers/${s.id}`} state={props.sectie ? { sectie: props.sectie } : undefined} noScroll={!!props.sectie} class={`d-inline-block qa-terug ${props.class ?? 'mb-3'}`}>← Terug naar dossier</A>;
 }
 
 function Kop() {
@@ -259,8 +261,16 @@ export function Details() {
   const naarAnker = useGaNaarAnker();
   onMount(() => {
     const anker = loc.hash.slice(1);
-    // A stale or hidden anchor (eg a section this user can't see) just doesn't scroll.
+    const sectie = (loc.state as { sectie?: string } | null)?.sectie;
+    // A stale or hidden anchor (eg a section this user can't see, or a step not yet open) just doesn't scroll.
     if (anker) requestAnimationFrame(() => document.getElementById(anker) && gaNaar(anker));
+    else if (sectie) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(sectie);
+        // 'instant': Bootstrap's `scroll-behavior: smooth` would otherwise animate the jump.
+        if (el) window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 16, behavior: 'instant' });
+      });
+    }
   });
 
   const open = () => !s.d.gesloten_at;
@@ -281,6 +291,13 @@ export function Details() {
       const r = await get<{ tekst: string }>(`/api/dossiers/${s.id}/oproep`);
       await navigator.clipboard.writeText(r.tekst);
       melding('success', 'Oproep gekopieerd. Plak hem in de Signal-groep.');
+    });
+  };
+
+  const kopieerSpecificatie = async () => {
+    await probeer(async () => {
+      await navigator.clipboard.writeText(specificatieTekst(s.d));
+      melding('success', 'Uitvoeringsspecificatie gekopieerd. Plak hem in een mail aan de administratie.');
     });
   };
 
@@ -480,12 +497,18 @@ export function Details() {
               <Show when={opgeleverd()} fallback={<span class="text-muted qa-opleverrapport-uit"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Opleverrapport (PDF)</span>}>
                 <a href={`/docs/dossiers/${s.id}/opleverrapport.pdf`} target="_blank" class="qa-opleverrapport"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Opleverrapport (PDF)</a>
               </Show>
-              <Show when={opgeleverd()} fallback={<span class="text-muted">Materialen met prijzen (voor facturatie)</span>}>
-                <a href={`/docs/dossiers/${s.id}/materialen`} target="_blank" class="qa-facturatie">Materialen met prijzen (voor facturatie)</a>
+              <Show when={!geenSpecificatie(s.d)} fallback={<span class="text-muted qa-specificatie-uit">Uitvoeringsspecificatie (voor de factuur)</span>}>
+                <span>
+                  <a href={`/docs/dossiers/${s.id}/uitvoeringsspecificatie`} target="_blank" class="qa-specificatie">Uitvoeringsspecificatie (voor de factuur)</a>
+                  <button type="button" class="btn btn-link p-0 ms-2 align-baseline qa-specificatie-kopieren" onClick={() => void kopieerSpecificatie()}><i class="bi bi-clipboard me-1" aria-hidden="true" />Kopieer als tekst</button>
+                </span>
               </Show>
             </div>
             <Show when={!opgeleverd()}>
               <div class="small text-muted mb-2">Beschikbaar zodra de uitvoerder "Werk opgeleverd" heeft aangetikt.</div>
+            </Show>
+            <Show when={opgeleverd() && geenSpecificatie(s.d)}>
+              {(reden) => <div class="small text-muted mb-2 qa-specificatie-reden">{reden()}</div>}
             </Show>
             <Show when={huur()}>
               <div class="mb-3">

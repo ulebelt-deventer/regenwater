@@ -20,7 +20,7 @@ export function Uitvoering() {
 
   return (
     <>
-      <TerugLink />
+      <TerugLink sectie="sectie-uitvoering" />
       <section class="mb-3 qa-uitvoering">
         <div class="d-flex flex-wrap align-items-baseline gap-3 mb-2">
           <h2 class="mb-0">Uitvoering</h2>
@@ -37,7 +37,7 @@ export function Uitvoering() {
           <button type="button" class="btn btn-success btn-lg qa-werk-opgeleverd" onClick={() => void opleveren()}>Werk opgeleverd</button>
         </Show>
         <div class="mt-3 text-center">
-          <TerugLink class="" />
+          <TerugLink sectie="sectie-uitvoering" class="" />
         </div>
       </section>
     </>

@@ -13,7 +13,7 @@
 - **Werken jullie ook voor huishoudens zonder subsidie?** Can you still do work with a household that wants a rain capture system, even if they don't get a subsidy for it? or do we immediately close dossiers that don't have a subsidy available?
 - Should the dossier page form be all on the main Dossier page? or is it useful to have the subforms for each step on separated subpages? I'm iffy about that design decision.
 - For GDPR, we need our data privacy policy to clearly state what personal data we collect and why and how long we keep it. How long do you need to hold onto these dossiers after completion? Claude recommends committing to deleting all personal data after 5 years -- that basically means deleting the whole dossier, all record of the project completed. How do you feel about that? The most sensitive data is bewoner name, email, phone, and any photos taken. If you have a clear legal need to store it for longer, we can raise that to 20. Nobody will ever ask or care, but we do need to have a clear transparent documented policy.
-- For a given regenpijp, if the bezoeker selects Afkoppelen? = nee, what should we do w the remaining 2 questions? should we hide them or continue to show them? They are only relevant if we do want to afkoppelen, right? 
+- For a given regenpijp, if the bezoeker selects Afkoppelen? = nee, what should we do w the remaining 2 questions? should we hide them or continue to show them? They are only relevant if we do want to afkoppelen, right?
 
 ### Login & permissions
 
@@ -49,6 +49,11 @@
 - **Welke normafvoer: 10 of 20 mm?** Waterberging: which normafvoer do you use? The sample says 20 mm, but its numbers (10 m² gives 100 liter) match 10 mm.
 - **Kostenraming in het Plan van Aanpak?** Prices: the Plan van Aanpak lists materials with quantities only, like the sample. Should it include a cost estimate, for corporaties for example?
 
+### Oplever-stap
+
+- What should the oplever-rapport report contain? Should it contain all the same fields and information that the Plan van Aanpak contained? or JUST the uitvoering details?
+- How do you currently generate invoices? I understand that needs to be done in de Ulebelt's official administration software, with correct sequential invoice numbers etc? I don't think we can easily integrate with your invoice generating software, so the app can't generate its own invoices unless the process for creating invoices is much less strict than I thought it was. For now I just let you copy the invoicable details as text that you can easily send to your administrator, does that make sense?
+
 ### Woningcorporaties
 
 - **Met welke woningcorporaties werken jullie?** Who are the main woningcorporaties you work with? For the dropdown list. Do they have different requirements qua this workflow, that we need to know about?
@@ -61,7 +66,8 @@
 - **Gescheiden riool maar toch subsidiabel: hoe vaak?** Rioolkaart: it looks like some houses in Olst/Wijhe have gescheiden riool but are marked as toch subsidiabel. Is this common, should we count this as subsidizable for the purposes of the app?
 - **Rioolkaart voor Zutphen?** You mentioned that some eligible addresses will be in Zutphen. Do you have a rioolkaart link for Zutphen? I only see one for Deventer & north.
 - **Vast blok met subsidie-informatie?** Subsidie: should the Plan van Aanpak or the emails contain a fixed block with the subsidie information (eg the regeling that covers the 11 gemeenten)?
-- **Kosten Klussendienst: vermelden, en wat valt eronder?** Koopwoning: the plan email asks whether the bewoner wants the Klussendienst. Should it state the cost (€ 50 per regenpijp)? Does that cost cover all work that might be in the Plan van Aanpak (eg installing regentonnen, digging a wadi)? The facturatie page counts € 50 for every regenpijp on the kaart; should pijpen where nothing is done be left out?
+- **Kosten Klussendienst: vermelden, en wat valt eronder?** Koopwoning: the plan email asks whether the bewoner wants the Klussendienst. Should it state the cost (€ 50 per regenpijp)? Does that cost cover all work that might be in the Plan van Aanpak (eg installing regentonnen, digging a wadi)?
+- **Uitvoeringsspecificatie: klopt hij voor de administratie?** Is "Klimaatadaptatie {gemeente}" the right project name? The Klussendienst counts the pijpen marked "Afkoppelen: Ja" at the Bezoek, not what the uitvoerder actually afgekoppeld; should the uitvoerder confirm that per pijp? For a huurwoning the specificatie lists only materials: who is invoiced, the corporatie or nobody?
 
 ### E-mail & meldingen
 
@@ -74,3 +80,4 @@
 
 - **Bestaande spreadsheet importeren of leeg beginnen?** Importing your existing sheet: should we import your current spreadsheet of addresses once at launch, or start empty and enter running cases by hand?
 - **Broncode open source: akkoord?** Are you comfortable with this app code being open-source? Just the source code on Github, not any database content, user data, or confidential details.
+- 
