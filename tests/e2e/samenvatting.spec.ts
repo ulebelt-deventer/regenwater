@@ -210,7 +210,7 @@ test('elke sectie op de dossierpagina heeft een kleine schaduw', async ({ page }
   for (const schaduw of await secties.evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow))) expect(schaduw).not.toBe('none');
 });
 
-test('kaart, straatfoto en boorprofiel staan in die volgorde als grote vierkante foto’s naast elkaar, op een telefoon onder elkaar', async ({ page }) => {
+test('kaart, straatfoto en boorprofiel staan in die volgorde als vierkante foto’s zo breed als op de Inschrijving naast elkaar, op een telefoon onder elkaar', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   for (const slot of ['kaart', 'straatfoto', 'boorprofiel']) {
@@ -218,6 +218,7 @@ test('kaart, straatfoto en boorprofiel staan in die volgorde als grote vierkante
     await expect(page.locator(`.qa-fotoslot-${slot} .qa-foto`)).toBeVisible();
   }
   await opslagKlaar(page);
+  const inschrijving = (await page.locator('.qa-fotoslot-straatfoto .qa-foto').boundingBox())!.width;
   await page.goto(`/dossiers/${id}`);
   const vakken = page.locator('.qa-sv-fotos > *');
   await expect(vakken).toHaveCount(3);
@@ -228,7 +229,7 @@ test('kaart, straatfoto en boorprofiel staan in die volgorde als grote vierkante
   const boxen = async () => Promise.all([0, 1, 2].map(async (i) => (await fotos.nth(i).boundingBox())!));
   const breed = await boxen();
   for (const b of breed) {
-    expect(b.width).toBeGreaterThan(250);
+    expect(Math.abs(b.width - inschrijving)).toBeLessThan(2);
     expect(Math.abs(b.width - b.height)).toBeLessThan(2);
     expect(Math.abs(b.y - breed[0].y)).toBeLessThan(2);
   }
@@ -238,6 +239,7 @@ test('kaart, straatfoto en boorprofiel staan in die volgorde als grote vierkante
   const smal = await boxen();
   expect(smal[1].y).toBeGreaterThan(smal[0].y + smal[0].height);
   expect(Math.abs(smal[0].width - smal[0].height)).toBeLessThan(2);
+  expect(smal[0].width).toBeLessThanOrEqual(inschrijving + 1);
 });
 
 test('nog niet geopende stappen staan grijs onderaan, met waarom ze nog niet beschikbaar zijn', async ({ page }) => {

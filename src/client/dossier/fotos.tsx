@@ -11,7 +11,7 @@ import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
 
 // `heel`: the whole image at its own aspect ratio, wider than a cropped thumbnail (single-photo slots like the kaart).
-// `vierkant`: cropped square, as wide as its container.
+// `vierkant`: cropped square, as wide as its container up to the `heel` width.
 export function FotoDuim(props: { foto: Foto; onClick: () => void; klein?: boolean; heel?: boolean; vierkant?: boolean }) {
   const s = useDossier();
   const annots = () => (props.foto.slot === 'kaart' ? kaartAnnotaties(s.d) : props.foto.annotaties);
@@ -254,13 +254,16 @@ export function KaartVeld(props: { alvast?: boolean }) {
           {(a) => <a href={kadastraleKaartUrl(a().rd)} target="_blank" rel="noopener" class="small qa-kadastrale-kaart">Kadastrale kaart</a>}
         </Show>
       </div>
-      <div class="form-text mt-0 mb-1">
-        {props.alvast ? 'Teken hier alvast de daken, tuinen, stenen vlakken en regenpijpen in, of laat dat aan de bezoeker ter plekke over.' : 'Teken de daken, tuinen, stenen vlakken en regenpijpen in.'} Met een luchtfoto rekent de app de oppervlakken zelf uit.
-      </div>
+      <Show when={!props.alvast}>
+        <div class="form-text mt-0 mb-1 qa-kaart-hint">Teken de daken, tuinen, stenen vlakken en regenpijpen in. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
+      </Show>
       <Show when={s.kaartVervangen()}>
         <div class="small text-warning mb-1 qa-kaart-vervangen">Je hebt de kaart vervangen, dus de tekeningen kloppen mogelijk niet meer. Verplaats of pas ze aan waar nodig.</div>
       </Show>
       <FotoSlot k="kaart" />
+      <Show when={props.alvast}>
+        <div class="form-text mt-1 qa-kaart-hint">Teken hier alvast de daken, tuinen, stenen vlakken en regenpijpen in, of laat dat aan de bezoeker ter plekke over. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
+      </Show>
       <Show when={lucht()}>
         <Luchtfoto onSluit={() => setLucht(false)} />
       </Show>

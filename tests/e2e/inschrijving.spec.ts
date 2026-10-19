@@ -117,11 +117,14 @@ test('woningeigenaar, woningtype en bodemsituatie vullen hun kolom', async ({ pa
   }
 });
 
-test('de plattegrond staat vóór de straatfoto, en zijn hint zegt dat je hier alvast kunt tekenen of het aan de bezoeker laat', async ({ page }) => {
+test('de plattegrond staat vóór de straatfoto, en zijn hint onder de foto zegt dat je hier alvast kunt tekenen of het aan de bezoeker laat', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   expect((await page.locator('.qa-veld-kaart').boundingBox())!.x).toBeLessThan((await page.locator('.qa-veld-straatfoto').boundingBox())!.x);
-  await expect(page.locator('.qa-veld-kaart')).toContainText('of laat dat aan de bezoeker ter plekke over');
+  const hint = page.locator('.qa-veld-kaart .qa-kaart-hint');
+  await expect(hint).toContainText('of laat dat aan de bezoeker ter plekke over');
+  const slot = await page.locator('.qa-veld-kaart .qa-fotoslot').boundingBox();
+  expect((await hint.boundingBox())!.y).toBeGreaterThan(slot!.y + slot!.height - 2);
   await page.goto(`/dossiers/${id}/bezoek`);
   await expect(page.locator('.qa-veld-kaart')).toContainText('Teken de daken');
   await expect(page.locator('.qa-veld-kaart')).not.toContainText('bezoeker ter plekke');
