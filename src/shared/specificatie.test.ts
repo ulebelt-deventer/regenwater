@@ -33,10 +33,10 @@ describe('uitvoeringsspecificatie', () => {
     expect(s.waarschuwingen).toEqual([]);
   });
 
-  it('has no Klussendienst for a huurwoning', () => {
+  it('charges the Klussendienst for a huurwoning too', () => {
     const s = specificatie(opgeleverd('huur'));
-    expect(s.klussendienst).toBeNull();
-    expect(s.subtotaal).toBe(5154);
+    expect(s.klussendienst).toEqual({ pijpen: 1, bedrag: 5000 });
+    expect(s.totaal).toBe(12286);
   });
 
   it('warns about a used material without a price and a koop job with no afgekoppelde regenpijp', () => {
@@ -58,10 +58,10 @@ describe('uitvoeringsspecificatie', () => {
     expect(geenSpecificatie(opgeleverd('koop', { klussendienst_gekozen_at: null }))).toMatch(/niet voor de Klussendienst gekozen/);
   });
 
-  it('writes copyable text with the bewoner, the lines and the totals', () => {
-    const t = specificatieTekst(opgeleverd('koop'));
-    expect(t).toContain('Uitvoeringsspecificatie Klimaatadaptatie Deventer');
-    expect(t).toContain('Anna de Vries\nWalstraat 74\n7411GK Deventer\nanna@example.org');
+  it('writes copyable text with labelled details, the lines and the totals', () => {
+    const t = specificatieTekst(opgeleverd('koop'), 'Piet');
+    expect(t).toContain('Uitvoeringsspecificatie\n\nProject: Klimaatadaptatie Deventer\nBewoner: Anna de Vries\nAdres: Walstraat 74, 7411GK Deventer\nE-mail bewoner: anna@example.org\nWoningeigenaar: Bewoner (koopwoning)\nUitvoerder: Piet\nOpgeleverd op: ');
+    expect(specificatieTekst(opgeleverd('koop', { data: {} }), null)).toContain('Bewoner: --\nAdres: Walstraat 74, 7411GK Deventer\nE-mail bewoner: --\nWoningeigenaar: Bewoner (koopwoning)\nUitvoerder: --');
     expect(t).toContain('3 × Rubberen ring à € 1,95: € 5,85');
     expect(t).toContain('0,5 × Flexibele buis 50 mm blind, per meter à € 2,50: € 1,25');
     expect(t).toContain('Klussendienst: 1 regenpijp afgekoppeld × € 50,00: € 50,00');

@@ -1,38 +1,45 @@
-import { For, type JSX, Show } from 'solid-js';
+import { For, type JSX } from 'solid-js';
 import { BTW_PROCENT } from '../../shared/constants.ts';
-import { euro, kortDatum } from '../../shared/datum.ts';
+import { euro } from '../../shared/datum.ts';
 import { getal } from '../../shared/kaart.ts';
-import { klussendienstRegel, project, specificatie } from '../../shared/specificatie.ts';
-import { str, straatNummer } from '../../shared/status.ts';
-import { type Doc, eigenaar, naamVan } from './onderdelen.tsx';
+import { klussendienstRegel, specificatie, specificatieKop, specificatieTekst } from '../../shared/specificatie.ts';
+import { type Doc, Merk, naamVan } from './onderdelen.tsx';
 
-// The Uitvoeringsspecificatie as a print-friendly page; the copyable text version is specificatieTekst.
+const KNOPPEN_SCRIPT = `
+document.querySelector('.qa-afdrukken').addEventListener('click', () => window.print());
+const kopieer = document.querySelector('.qa-kopieren');
+kopieer.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(document.querySelector('.qa-specificatie-tekst').value);
+    kopieer.textContent = 'Gekopieerd ✓';
+  } catch (e) {
+    alert('Kopiëren lukte niet: ' + e.message);
+  }
+});`;
+
+// The Uitvoeringsspecificatie as a print-friendly page, with a button that copies its text version for a mail.
 export function Uitvoeringsspecificatie(props: { doc: Doc }): JSX.Element {
   const d = () => props.doc.d;
   const s = () => specificatie(d());
-  const a = () => d().adres!;
-  const kopRijen = (): [string, string | null][] => [
-    ['Project', project(d())],
-    ['Bewoner', str(d(), 'bewoner_naam')],
-    ['Adres', `${straatNummer(a())}, ${a().postcode} ${a().plaats}`],
-    ['E-mail', str(d(), 'bewoner_email')],
-    ['Woningeigenaar', eigenaar(d())],
-    ['Uitvoerder', naamVan(props.doc, d().uitvoerder_id)],
-    ['Opgeleverd op', kortDatum(d().werk_opgeleverd_at!)],
-  ];
+  const uitvoerder = () => naamVan(props.doc, d().uitvoerder_id);
   return (
     <>
+      <Merk />
       <div class="knoppen geen-print">
         <button type="button" class="knop qa-afdrukken">
           Afdrukken
         </button>
+        <button type="button" class="knop qa-kopieren">
+          Kopieer als tekst
+        </button>
       </div>
+      <textarea hidden class="qa-specificatie-tekst">{specificatieTekst(d(), uitvoerder())}</textarea>
       {/* Server-rendered without hydration, so Solid event handlers would be dropped. */}
-      <script innerHTML="document.querySelector('.qa-afdrukken').addEventListener('click', () => window.print())" />
+      <script innerHTML={KNOPPEN_SCRIPT} />
       <h1>Uitvoeringsspecificatie</h1>
       <table class="kop-tabel">
         <tbody>
-          <For each={kopRijen()}>
+          <For each={specificatieKop(d(), uitvoerder())}>
             {([l, v]) => (
               <tr>
                 <td>{l}:</td>
@@ -62,14 +69,10 @@ export function Uitvoeringsspecificatie(props: { doc: Doc }): JSX.Element {
               </tr>
             )}
           </For>
-          <Show when={s().klussendienst} keyed>
-            {(k) => (
-              <tr class="qa-klussendienst">
-                <td colSpan={3}>{klussendienstRegel(k)}</td>
-                <td class="getal">{euro(k.bedrag)}</td>
-              </tr>
-            )}
-          </Show>
+          <tr class="qa-klussendienst">
+            <td colSpan={3}>{klussendienstRegel(s().klussendienst)}</td>
+            <td class="getal">{euro(s().klussendienst.bedrag)}</td>
+          </tr>
           <tr>
             <td colSpan={3}>Subtotaal</td>
             <td class="getal qa-subtotaal">{euro(s().subtotaal)}</td>

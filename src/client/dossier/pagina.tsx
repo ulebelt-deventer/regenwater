@@ -4,7 +4,7 @@ import { For, type JSX, Match, Show, Switch, createEffect, createResource, creat
 import { KLOPT_NIET_KOP } from '../../shared/aandacht.ts';
 import { datum, datumTijd } from '../../shared/datum.ts';
 import { PLAN_BEWONER_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
-import { geenSpecificatie, specificatieTekst } from '../../shared/specificatie.ts';
+import { geenSpecificatie } from '../../shared/specificatie.ts';
 import type { SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
 import { ApiFout, get } from '../api.ts';
@@ -294,13 +294,6 @@ export function Details() {
     });
   };
 
-  const kopieerSpecificatie = async () => {
-    await probeer(async () => {
-      await navigator.clipboard.writeText(specificatieTekst(s.d));
-      melding('success', 'Uitvoeringsspecificatie gekopieerd. Plak hem in een mail aan de administratie.');
-    });
-  };
-
   const opleverVerstuurd = () => laatsteVerzending(s.d, ['oplever_corporatie', 'oplever_bewoner']) !== null;
   const uitgevoerdSluiten = async () => {
     if (!opleverVerstuurd() && !(await bevestig('Dossier sluiten', 'Het opleverrapport is nog niet verstuurd. Toch sluiten?', { ja: 'Toch sluiten' }))) return;
@@ -498,10 +491,7 @@ export function Details() {
                 <a href={`/docs/dossiers/${s.id}/opleverrapport.pdf`} target="_blank" class="qa-opleverrapport"><i class="bi bi-file-earmark-arrow-down me-1" aria-hidden="true" />Opleverrapport (PDF)</a>
               </Show>
               <Show when={!geenSpecificatie(s.d)} fallback={<span class="text-muted qa-specificatie-uit">Uitvoeringsspecificatie (voor de factuur)</span>}>
-                <span>
-                  <a href={`/docs/dossiers/${s.id}/uitvoeringsspecificatie`} target="_blank" class="qa-specificatie">Uitvoeringsspecificatie (voor de factuur)</a>
-                  <button type="button" class="btn btn-link p-0 ms-2 align-baseline qa-specificatie-kopieren" onClick={() => void kopieerSpecificatie()}><i class="bi bi-clipboard me-1" aria-hidden="true" />Kopieer als tekst</button>
-                </span>
+                <a href={`/docs/dossiers/${s.id}/uitvoeringsspecificatie`} target="_blank" class="qa-specificatie">Uitvoeringsspecificatie (voor de factuur)</a>
               </Show>
             </div>
             <Show when={!opgeleverd()}>

@@ -185,17 +185,20 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await naarDossier(page, id);
   await status(page, 'Opleverrapport versturen');
 
-  // The uitvoeringsspecificatie for the administratie, as a page and as text to paste in a mail.
-  const href = await page.locator('.qa-specificatie').getAttribute('href');
-  const pagina = tekst(await (await page.request.get(href!)).text());
+  // The uitvoeringsspecificatie for the administratie: a branded page that also copies itself as text to paste in a mail.
+  await page.goto((await page.locator('.qa-specificatie').getAttribute('href'))!);
+  await expect(page.locator('.qa-merk')).toContainText('Regenwater');
+  const pagina = tekst(await page.content());
   expect(pagina).toContain('Project: Klimaatadaptatie Deventer');
-  expect(pagina).toContain('E-mail: bea@example.org');
+  expect(pagina).toContain('E-mail bewoner: bea@example.org');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.locator('.qa-specificatie-kopieren').click();
+  await page.locator('.qa-kopieren').click();
+  await expect(page.locator('.qa-kopieren')).toHaveText('Gekopieerd ✓');
   const geplakt = await page.evaluate(() => navigator.clipboard.readText());
-  expect(geplakt).toContain('Uitvoeringsspecificatie Klimaatadaptatie Deventer');
-  expect(geplakt).toContain('bea@example.org');
+  expect(geplakt).toContain('Project: Klimaatadaptatie Deventer');
+  expect(geplakt).toContain('E-mail bewoner: bea@example.org');
   expect(geplakt).toMatch(/Totaal: € [\d.,]+/);
+  await naarDossier(page, id);
 
   await mail(page, 'oplever_bewoner');
   await page.locator('.qa-uitgevoerd-sluiten').click();

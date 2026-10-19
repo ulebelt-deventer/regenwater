@@ -5,7 +5,7 @@ import house from 'bootstrap-icons/icons/house.svg?raw';
 import leaf from 'bootstrap-icons/icons/leaf.svg?raw';
 import logo from '../../client/public/ulebelt-logo.svg?raw';
 import { ICOON, type IcoonSoort, annotatiesSvg } from '../../shared/kaart.ts';
-import { corporatieNaam, adresRegel, str } from '../../shared/status.ts';
+import { adresRegel, eigenaar, str } from '../../shared/status.ts';
 import { kortDatum } from '../../shared/datum.ts';
 import type { Annotatie, Dossier, Foto, Gebruiker } from '../../shared/types.ts';
 import { isLeeg, optieLabel, veld, waarde } from '../../shared/velden.ts';
@@ -57,11 +57,6 @@ export function Keuze(props: { doc: Doc; key: string; veldKey?: string }): JSX.E
 }
 
 export const heeft = (d: Dossier, key: string) => !isLeeg(waarde(d, key));
-
-export function eigenaar(d: Dossier): string | null {
-  if (d.huur_koop === 'koop') return 'Bewoner (koopwoning)';
-  return corporatieNaam(d);
-}
 
 export function Kop(props: { doc: Doc; titel: string; extra?: [string, string | null][] }): JSX.Element {
   const d = () => props.doc.d;
@@ -133,6 +128,19 @@ export function Fotos(props: { doc: Doc; slot: string; onderschrift?: string; br
         </For>
       </div>
     </Show>
+  );
+}
+
+// The app's logo and wordmark, as a document's top line.
+export function Merk(): JSX.Element {
+  return (
+    <div class="merk qa-merk">
+      <span class="logo" innerHTML={logo} />
+      <span class="wordmark">
+        <span class="icoon" innerHTML={droplet} />
+        Regenwater
+      </span>
+    </div>
   );
 }
 

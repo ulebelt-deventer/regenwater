@@ -49,10 +49,11 @@
 - **Welke normafvoer: 10 of 20 mm?** Waterberging: which normafvoer do you use? The sample says 20 mm, but its numbers (10 m² gives 100 liter) match 10 mm.
 - **Kostenraming in het Plan van Aanpak?** Prices: the Plan van Aanpak lists materials with quantities only, like the sample. Should it include a cost estimate, for corporaties for example?
 
-### Oplever-stap
+### Na het uitvoeren
 
 - What should the oplever-rapport report contain? Should it contain all the same fields and information that the Plan van Aanpak contained? or JUST the uitvoering details?
 - How do you currently generate invoices? I understand that needs to be done in de Ulebelt's official administration software, with correct sequential invoice numbers etc? I don't think we can easily integrate with your invoice generating software, so the app can't generate its own invoices unless the process for creating invoices is much less strict than I thought it was. For now I just let you copy the invoicable details as text that you can easily send to your administrator, does that make sense?
+- Should the per-regenpijp klussendienst fee of €50 / pipe be included even if the dossier is for a huurwoning and is eligible for subsidy? Do you send invoices in that case (eg to the gemeente, to claim the subsidy), or only send invoices for koopwoningen?
 
 ### Woningcorporaties
 
@@ -67,7 +68,7 @@
 - **Rioolkaart voor Zutphen?** You mentioned that some eligible addresses will be in Zutphen. Do you have a rioolkaart link for Zutphen? I only see one for Deventer & north.
 - **Vast blok met subsidie-informatie?** Subsidie: should the Plan van Aanpak or the emails contain a fixed block with the subsidie information (eg the regeling that covers the 11 gemeenten)?
 - **Kosten Klussendienst: vermelden, en wat valt eronder?** Koopwoning: the plan email asks whether the bewoner wants the Klussendienst. Should it state the cost (€ 50 per regenpijp)? Does that cost cover all work that might be in the Plan van Aanpak (eg installing regentonnen, digging a wadi)?
-- **Uitvoeringsspecificatie: klopt hij voor de administratie?** Is "Klimaatadaptatie {gemeente}" the right project name? The Klussendienst counts the pijpen marked "Afkoppelen: Ja" at the Bezoek, not what the uitvoerder actually afgekoppeld; should the uitvoerder confirm that per pijp? For a huurwoning the specificatie lists only materials: who is invoiced, the corporatie or nobody?
+- **Uitvoeringsspecificatie: klopt hij voor de administratie?** Is "Klimaatadaptatie {gemeente}" the right project name? The Klussendienst counts the pijpen marked "Afkoppelen: Ja" at the Bezoek, not what the uitvoerder actually afgekoppeld; should the uitvoerder confirm that per pijp? For a huurwoning, who is invoiced: the corporatie or the bewoner?
 
 ### E-mail & meldingen
 

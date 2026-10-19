@@ -39,7 +39,7 @@ a { color: #00643c; }
 table.tabel { border-collapse: collapse; width: 100%; margin: 6px 0 8px; break-inside: avoid; }
 table.tabel th, table.tabel td { border: 1px solid #c9c2b6; padding: 4px 6px; text-align: left; vertical-align: top; }
 table.tabel th { background: #f7f0e5; font-weight: 700; }
-td.getal, th.getal { text-align: right; white-space: nowrap; }
+table.tabel .getal { text-align: right; white-space: nowrap; }
 .klein { font-size: 8.5pt; color: #6c6c6c; }
 .voetnoot { font-size: 8.5pt; color: #444; margin: 0; }
 .leeg { color: #9a6200; font-style: italic; }
@@ -60,7 +60,10 @@ ul { margin: 0 0 8px; padding-left: 20px; }
 .veld { margin-bottom: 12px; break-inside: avoid; }
 .veld-label { font-weight: 700; }
 .blok { border: 1px solid #c9c2b6; border-radius: 4px; padding: 8px 10px; margin-bottom: 10px; break-inside: avoid; }
-.knoppen { margin: 16px 0; }
+.knoppen { margin: 16px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.merk { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #e6dccb; }
+.merk .logo svg { height: 2rem; width: auto; display: block; }
+.wordmark { color: #86afe2; font-weight: 800; font-size: 1.5rem; letter-spacing: -.5px; line-height: 1; }
 .knop { font: inherit; background: #00643c; color: #fff; border: 0; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
 .concept-banner { background: #fff3cd; border: 1px solid #f0a500; color: #6b4500; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px; }
 @media print { .geen-print { display: none !important; } .scherm .blad { padding: 0; margin: 0; } body.scherm { background: #fff; } }

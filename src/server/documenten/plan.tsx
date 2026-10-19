@@ -2,9 +2,9 @@ import { For, type JSX, Show } from 'solid-js';
 import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
-import { str } from '../../shared/status.ts';
+import { eigenaar, str } from '../../shared/status.ts';
 import { BEOORDELINGEN, lijst, materiaalRijen, opsommingRegels, optieLabel, veld } from '../../shared/velden.ts';
-import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, eigenaar, fotosIn, heeft, naamVan } from './onderdelen.tsx';
+import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
 function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.Element {
   const rijen = () => materiaalRijen(props.doc.d, props.lijst).filter((r) => r.naam.trim() && r.aantal !== null && r.aantal > 0);

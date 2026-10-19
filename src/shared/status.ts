@@ -183,6 +183,11 @@ export function corporatieNaam(d: Dossier): string | null {
   return e;
 }
 
+export function eigenaar(d: Dossier): string | null {
+  if (d.huur_koop === 'koop') return 'Bewoner (koopwoning)';
+  return corporatieNaam(d);
+}
+
 export function corporatieEmail(d: Dossier): string {
   const e = str(d, 'woningeigenaar');
   return e && e in CORPORATIE_EMAIL ? CORPORATIE_EMAIL[e] : '';

@@ -2,7 +2,7 @@
 import { BTW_PROCENT, KLUSSENDIENST_PER_REGENPIJP_CENT } from './constants.ts';
 import { euro, kortDatum } from './datum.ts';
 import { getal, kaartItems } from './kaart.ts';
-import { str, straatNummer } from './status.ts';
+import { eigenaar, str, straatNummer } from './status.ts';
 import type { Dossier } from './types.ts';
 import { materiaalRijen } from './velden.ts';
 
@@ -15,7 +15,7 @@ export interface SpecificatieRegel {
 
 export interface Specificatie {
   regels: SpecificatieRegel[];
-  klussendienst: { pijpen: number; bedrag: number } | null;
+  klussendienst: { pijpen: number; bedrag: number };
   subtotaal: number;
   btw: number;
   totaal: number;
@@ -41,32 +41,41 @@ export function specificatie(d: Dossier): Specificatie {
       if (r.prijs === null) waarschuwingen.push(`${naam} heeft geen prijs; telt niet mee in het totaal.`);
       return { naam, aantal: r.aantal!, prijs: r.prijs, bedrag: r.prijs === null ? null : Math.round(r.prijs * r.aantal!) };
     });
-  let klussendienst: Specificatie['klussendienst'] = null;
-  if (d.huur_koop === 'koop') {
-    const pijpen = kaartItems(d).regenpijpen.filter((p) => str(d, `regenpijp.${p.id}.afkoppelen`) === 'ja').length;
-    if (pijpen === 0) waarschuwingen.push('Geen enkele regenpijp staat op "Afkoppelen: Ja" bij het Bezoek, dus de Klussendienst telt als € 0.');
-    klussendienst = { pijpen, bedrag: pijpen * KLUSSENDIENST_PER_REGENPIJP_CENT };
-  }
-  const subtotaal = regels.reduce((s, r) => s + (r.bedrag ?? 0), 0) + (klussendienst?.bedrag ?? 0);
+  // The Klussendienst counts for huur and koop alike.
+  const pijpen = kaartItems(d).regenpijpen.filter((p) => str(d, `regenpijp.${p.id}.afkoppelen`) === 'ja').length;
+  if (pijpen === 0) waarschuwingen.push('Geen enkele regenpijp staat op "Afkoppelen: Ja" bij het Bezoek, dus de Klussendienst telt als € 0.');
+  const klussendienst = { pijpen, bedrag: pijpen * KLUSSENDIENST_PER_REGENPIJP_CENT };
+  const subtotaal = regels.reduce((s, r) => s + (r.bedrag ?? 0), 0) + klussendienst.bedrag;
   const btw = Math.round((subtotaal * BTW_PROCENT) / 100);
   return { regels, klussendienst, subtotaal, btw, totaal: subtotaal + btw, waarschuwingen };
 }
 
-export const project = (d: Dossier) => `Klimaatadaptatie ${d.adres!.gemeente}`;
+// Every detail labelled: the factuur may go to the gemeente for the subsidie rather than to the bewoner.
+export function specificatieKop(d: Dossier, uitvoerder: string | null): [string, string | null][] {
+  const a = d.adres!;
+  return [
+    ['Project', `Klimaatadaptatie ${a.gemeente}`],
+    ['Bewoner', str(d, 'bewoner_naam')],
+    ['Adres', `${straatNummer(a)}, ${a.postcode} ${a.plaats}`],
+    ['E-mail bewoner', str(d, 'bewoner_email')],
+    ['Woningeigenaar', eigenaar(d)],
+    ['Uitvoerder', uitvoerder],
+    ['Opgeleverd op', kortDatum(d.werk_opgeleverd_at!)],
+  ];
+}
 
 export function klussendienstRegel(k: { pijpen: number }): string {
   return `Klussendienst: ${k.pijpen} ${k.pijpen === 1 ? 'regenpijp' : 'regenpijpen'} afgekoppeld × ${euro(KLUSSENDIENST_PER_REGENPIJP_CENT)}`;
 }
 
 // Plain text to paste into an email to the administratie. No column alignment: a proportional font would undo it.
-export function specificatieTekst(d: Dossier): string {
+export function specificatieTekst(d: Dossier, uitvoerder: string | null): string {
   const s = specificatie(d);
-  const a = d.adres!;
   const regel = (r: SpecificatieRegel) => `${getal(r.aantal)} × ${r.naam}${r.prijs === null ? '' : ` à ${euro(r.prijs)}`}: ${r.bedrag === null ? 'prijs ontbreekt' : euro(r.bedrag)}`;
   const blokken = [
-    [`Uitvoeringsspecificatie ${project(d)}`, `Opgeleverd op ${kortDatum(d.werk_opgeleverd_at!)}`],
-    [str(d, 'bewoner_naam') ?? '(geen naam bewoner)', straatNummer(a), `${a.postcode} ${a.plaats}`, str(d, 'bewoner_email') ?? '(geen e-mail bewoner)'],
-    [...s.regels.map(regel), ...(s.klussendienst ? [`${klussendienstRegel(s.klussendienst)}: ${euro(s.klussendienst.bedrag)}`] : [])],
+    ['Uitvoeringsspecificatie'],
+    specificatieKop(d, uitvoerder).map(([l, v]) => `${l}: ${v ?? '--'}`),
+    [...s.regels.map(regel), `${klussendienstRegel(s.klussendienst)}: ${euro(s.klussendienst.bedrag)}`],
     [`Subtotaal: ${euro(s.subtotaal)}`, `btw ${BTW_PROCENT}%: ${euro(s.btw)}`, `Totaal: ${euro(s.totaal)}`],
     s.waarschuwingen.map((w) => `LET OP: ${w}`),
   ];
