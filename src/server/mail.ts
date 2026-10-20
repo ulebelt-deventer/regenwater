@@ -97,5 +97,7 @@ export class MailgunMailer implements Mailer {
       body: form,
     });
     if (!res.ok) throw new Error(`Mailgun ${res.status}: ${await res.text()}`);
+    // Accepted by Mailgun only: a later bounce shows up in Mailgun's event log, not here.
+    log.info(`email sent to ${b.aan}${b.cc ? `, cc ${b.cc}` : ''}, subject ${b.onderwerp}`);
   }
 }

@@ -47,6 +47,17 @@ describe('MAILGUN_REGIO', () => {
     expect(urls).toEqual(['https://api.mailgun.net/v3/mg.example.org/messages']);
   });
 
+  it('logs each accepted send with recipient, cc and subject, and logs nothing when Mailgun refuses', async () => {
+    const info = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await new MailgunMailer(leesConfig()).verstuur({ aan: 'a@example.org', cc: 'c@example.org', replyTo: 'r@example.org', onderwerp: 'Plan van Aanpak', tekst: 'T' });
+    expect(info).toHaveBeenCalledWith('email sent to a@example.org, cc c@example.org, subject Plan van Aanpak');
+    info.mockClear();
+    vi.stubGlobal('fetch', () => Promise.resolve(new Response('Forbidden', { status: 401 })));
+    await expect(stuur()).rejects.toThrow('Mailgun 401: Forbidden');
+    expect(info).not.toHaveBeenCalled();
+    info.mockRestore();
+  });
+
   it('refuses to start on an unknown region', () => {
     vi.stubEnv('MAILGUN_REGIO', 'US');
     expect(() => leesConfig()).toThrow('Onbekende MAILGUN_REGIO US');
