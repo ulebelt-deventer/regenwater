@@ -22,7 +22,7 @@ Inside each environment's directory (`<dir>` below):
 | `<dir>/browsers` | Playwright's Chromium for the PDFs | Same |
 | `<dir>/data/app.db` | SQLite (WAL), replicated by Litestream. Migrations run on boot. | Never |
 | `<dir>/data/fotos` | Photos, synced to the bucket by the daily backup check | Never |
-| `<dir>/logs` | One file per day of warnings and errors, never pruned | Never |
+| `<dir>/logs` | One gzipped file per day of every app and job log line (`zgrep` reads them), never pruned | Never |
 
 ## First time
 

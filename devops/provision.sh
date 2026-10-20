@@ -162,23 +162,24 @@ WantedBy=timers.target
 UNIT
 fi
 
-# journald is size-capped, so warnings and errors are copied out daily into files nothing deletes.
+# journald is size-capped, so the app's and jobs' log lines are copied out daily into gzipped files nothing deletes.
 install -m 755 /dev/stdin "/usr/local/sbin/${SERVICE_NAME}-archive-logs" <<'SCRIPT'
 #!/bin/sh
-# Usage: archive-logs <service> <dir>. Writes <dir>/YYYY-MM-DD.log (warnings and worse, app and jobs) for each of the last 3 days that has no file yet.
+# Usage: archive-logs <service> <dir>. Writes <dir>/YYYY-MM-DD.log.gz (every line, app and jobs) for each of the last 7 days that has no file yet.
 set -eu
 service="$1"; dir="$2"
-for n in 3 2 1; do
+for n in 7 6 5 4 3 2 1; do
   day="$(date -d "${n} days ago" +%F)"
-  [ -e "${dir}/${day}.log" ] && continue
-  journalctl -q -u "${service}*" -p warning -o short-iso --no-pager \
+  [ -e "${dir}/${day}.log.gz" ] && continue
+  journalctl -q -u "${service}*" -o short-iso --no-pager \
     --since "@$(date -d "${day}" +%s)" --until "@$(date -d "${day} + 1 day" +%s)" > "${dir}/${day}.log.tmp"
-  mv "${dir}/${day}.log.tmp" "${dir}/${day}.log"
+  gzip -n -f "${dir}/${day}.log.tmp"
+  mv "${dir}/${day}.log.tmp.gz" "${dir}/${day}.log.gz"
 done
 SCRIPT
 cat > "/etc/systemd/system/${SERVICE_NAME}-archive-logs.service" <<UNIT
 [Unit]
-Description=${SERVICE_NAME} warning and error log archive
+Description=${SERVICE_NAME} log archive
 
 [Service]
 Type=oneshot
@@ -187,7 +188,7 @@ ExecStart=/usr/local/sbin/${SERVICE_NAME}-archive-logs ${SERVICE_NAME} ${LOG_DIR
 UNIT
 cat > "/etc/systemd/system/${SERVICE_NAME}-archive-logs.timer" <<UNIT
 [Unit]
-Description=Daily ${SERVICE_NAME} warning and error log archive
+Description=Daily ${SERVICE_NAME} log archive
 
 [Timer]
 OnCalendar=*-*-* 00:10:00
