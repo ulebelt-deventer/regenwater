@@ -283,25 +283,44 @@ export function GetalInvoer(props: { waarde: Json; min?: number; max?: number; u
   );
 }
 
-// Saves only once both date and time are filled in; clearing the date clears the afspraak.
+const UREN = Array.from({ length: 15 }, (_, i) => String(i + 6).padStart(2, '0'));
+const MINUTEN = ['00', '15', '30', '45'];
+
+// Hour and quarter-hour selects rather than <input type="time">, whose 12h/24h display follows the device's language, not the page's.
+// A saved time off that grid (from before the selects) is kept as an extra option so it still shows.
+// Saves only once date and hour are filled in (the minutes default to :00); clearing the date clears the afspraak.
 function DatumTijd(props: { waarde: string; uit: boolean; onZet: (v: string | null) => void }) {
   const [dag, setDag] = createSignal('');
-  const [tijd, setTijd] = createSignal('');
+  const [uur, setUur] = createSignal('');
+  const [minuut, setMinuut] = createSignal('');
   createEffect(() => {
     if (props.waarde) {
       setDag(props.waarde.slice(0, 10));
-      setTijd(props.waarde.slice(11, 16));
+      setUur(props.waarde.slice(11, 13));
+      setMinuut(props.waarde.slice(14, 16));
     }
   });
   const bewaar = () => {
     if (!dag()) props.onZet(null);
-    else if (tijd()) props.onZet(`${dag()}T${tijd()}`);
+    else if (uur()) props.onZet(`${dag()}T${uur()}:${minuut()}`);
   };
+  const opties = (lijst: string[], huidig: string) => (huidig && !lijst.includes(huidig) ? [...lijst, huidig].sort() : lijst);
   return (
     <div class="d-flex flex-wrap gap-2 align-items-center">
       <input type="date" class="form-control w-auto qa-datum" disabled={props.uit} value={dag()} onInput={(e) => { setDag(e.currentTarget.value); bewaar(); }} />
-      <input type="time" class="form-control w-auto qa-tijd" disabled={props.uit} value={tijd()} onInput={(e) => { setTijd(e.currentTarget.value); bewaar(); }} />
-      <Show when={dag() && !tijd()}>
+      {/* Per-option `selected`: a select's `value` is lost when its options re-render. */}
+      <div class="d-flex align-items-center gap-1">
+        <select class="form-select w-auto qa-uur" aria-label="Uur" disabled={props.uit} onChange={(e) => { setUur(e.currentTarget.value); if (!minuut()) setMinuut('00'); bewaar(); }}>
+          <option value="" selected={!uur()} disabled>uur</option>
+          <For each={opties(UREN, uur())}>{(u) => <option value={u} selected={uur() === u}>{u}</option>}</For>
+        </select>
+        <span>:</span>
+        <select class="form-select w-auto qa-minuut" aria-label="Minuten" disabled={props.uit} onChange={(e) => { setMinuut(e.currentTarget.value); bewaar(); }}>
+          <option value="" selected={!minuut()} disabled>min</option>
+          <For each={opties(MINUTEN, minuut())}>{(m) => <option value={m} selected={minuut() === m}>{m}</option>}</For>
+        </select>
+      </div>
+      <Show when={dag() && !uur()}>
         <span class="small text-warning qa-tijd-ontbreekt">Vul ook een tijd in</span>
       </Show>
     </div>

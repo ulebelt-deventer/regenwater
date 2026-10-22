@@ -6,6 +6,17 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-10-22',
+    groepen: [
+      {
+        kop: 'Dossierpagina',
+        punten: [
+          'Bij de Bezoek-afspraak kies je de tijd nu met twee keuzelijstjes: het uur (6 tot 20 uur, gewoon doorgeteld, dus 14 en niet 2) en de minuten in kwartieren. Kies je alleen een uur, dan wordt het het hele uur.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-10-19',
     groepen: [
       {

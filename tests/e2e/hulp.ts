@@ -186,11 +186,12 @@ export async function wijsToe(page: Page, rol: 'bezoeker' | 'uitvoerder', id: nu
   else await annuleerMail(page);
 }
 
-// An afspraak as the details page takes it: a local date plus a time.
+// An afspraak as the details page takes it: a local date plus an hour and quarter-hour select.
 export async function afspraak(page: Page, dag: string, tijd = '10:00'): Promise<void> {
   const v = veld(page, 'afspraak');
   await v.locator('.qa-datum').fill(dag);
-  await v.locator('.qa-tijd').fill(tijd);
+  await v.locator('.qa-uur').selectOption(tijd.slice(0, 2));
+  await v.locator('.qa-minuut').selectOption(tijd.slice(3, 5));
   await opslagKlaar(page);
 }
 
