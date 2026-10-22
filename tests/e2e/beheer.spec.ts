@@ -23,6 +23,38 @@ test('Gebruikers toont bij openen meteen de actieve gebruikers', async ({ page }
   await expect(page.locator(`.qa-gebruiker-${klusserId}`)).toContainText(KLUSSER.naam);
 });
 
+test('Laatst actief toont in de lijst en op de gebruikerspagina de datum met de tijd', async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 800 });
+  const { beheerderId } = await start(page);
+  await page.goto('/gebruikers');
+  const metTijd = /^\d{1,2} [a-z]+ \d{4} \d{2}:\d{2}$/;
+  await expect(page.locator(`.qa-gebruiker-${beheerderId} .qa-laatst-actief`)).toHaveText(metTijd);
+  await page.goto(`/gebruikers/${beheerderId}`);
+  await expect(page.locator('.qa-laatst-actief')).toHaveText(metTijd);
+});
+
+test('Gebruikers sorteert standaard op Laatst actief, en kan ook op Laatst aangemaakt en Naam', async ({ page, browser }) => {
+  await start(page);
+  await post(page.request, '/api/test/klok', { verschuifDagen: 1 });
+  await post(page.request, '/api/test/gebruiker', { naam: 'Bram Nooit', email: 'bram@ulebelt.test', rol: 'klusser' });
+  const kees = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+  await post(kees.request, '/api/test/login', { email: KLUSSER.email });
+  expect((await kees.request.get('/api/dossiers')).ok()).toBe(true);
+  await kees.close();
+
+  // Opening the page makes the beheerder the most recently active; Kees was created just after her.
+  await page.goto('/gebruikers');
+  const namen = page.locator('.qa-gebruiker td:first-child a');
+  await expect(page.locator('.qa-sorteer')).toContainText('Laatst actief');
+  await expect(namen).toHaveText([BEHEERDER.naam, KLUSSER.naam, 'Bram Nooit']);
+  await page.locator('.qa-sorteer').click();
+  await page.locator('.qa-sorteer-aangemaakt').click();
+  await expect(namen).toHaveText(['Bram Nooit', KLUSSER.naam, BEHEERDER.naam]);
+  await page.locator('.qa-sorteer').click();
+  await page.locator('.qa-sorteer-naam').click();
+  await expect(namen).toHaveText([BEHEERDER.naam, 'Bram Nooit', KLUSSER.naam]);
+});
+
 test('Feedback toont bij openen meteen de openstaande feedback', async ({ page }) => {
   await start(page);
   await post(page.request, '/api/feedback', { tekst: 'De knop is te klein', scherm: '/dossiers' });

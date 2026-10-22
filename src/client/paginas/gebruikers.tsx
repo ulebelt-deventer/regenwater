@@ -1,7 +1,7 @@
 // Gebruikers list and one gebruiker's page (admin).
 import { A, useNavigate, useParams } from '@solidjs/router';
 import { For, Match, Show, Switch, createEffect, createResource, createSignal } from 'solid-js';
-import { datum, kortDatum } from '../../shared/datum.ts';
+import { datum, datumTijd, kortDatum } from '../../shared/datum.ts';
 import type { Gebruiker } from '../../shared/types.ts';
 import { ApiFout, get, post, query } from '../api.ts';
 import { GebruikerForm } from '../gebruikerform.tsx';
@@ -19,12 +19,22 @@ export function Gebruikers() {
   );
 }
 
+// ISO timestamps sort as strings; newest first, never-active last.
+const nieuwsteEerst = (a: string | null, b: string | null) => (b ?? '').localeCompare(a ?? '');
+const SORTERINGEN = {
+  actief: { label: 'Laatst actief', vergelijk: (a: GebruikerRij, b: GebruikerRij) => nieuwsteEerst(a.last_active_at, b.last_active_at) },
+  aangemaakt: { label: 'Laatst aangemaakt', vergelijk: (a: GebruikerRij, b: GebruikerRij) => nieuwsteEerst(a.created_at, b.created_at) || b.id - a.id },
+  naam: { label: 'Naam', vergelijk: (a: GebruikerRij, b: GebruikerRij) => a.naam.localeCompare(b.naam, 'nl', { sensitivity: 'base' }) },
+};
+
 function Lijst() {
   const navigate = useNavigate();
   const [gearchiveerd, setGearchiveerd] = createSignal(false);
   const [nieuw, setNieuw] = createSignal(false);
   // A source of `false` would skip the fetch, so the flag goes in as 0/1.
   const [data, { refetch }] = createResource(() => Number(gearchiveerd()), (g) => get<{ gebruikers: GebruikerRij[] }>(`/api/gebruikers${query({ gearchiveerd: g || null })}`));
+  const [sorteer, setSorteer] = createSignal<keyof typeof SORTERINGEN>('actief');
+  const gesorteerd = (rijen: GebruikerRij[]) => [...rijen].sort(SORTERINGEN[sorteer()].vergelijk);
 
   return (
     <>
@@ -32,9 +42,19 @@ function Lijst() {
         <h1 class="mb-0 me-auto">Gebruikers</h1>
         <button type="button" class="btn btn-primary qa-nieuwe-gebruiker" onClick={() => setNieuw(true)}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Nieuwe<span class="d-none d-sm-inline"> gebruiker</span></button>
       </div>
-      <div class="form-check mb-3">
-        <input id="toon-gearchiveerd" type="checkbox" class="form-check-input qa-toon-gearchiveerd" checked={gearchiveerd()} onChange={(e) => setGearchiveerd(e.currentTarget.checked)} />
-        <label for="toon-gearchiveerd" class="form-check-label">Toon gearchiveerde gebruikers</label>
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <div class="form-check mb-0">
+          <input id="toon-gearchiveerd" type="checkbox" class="form-check-input qa-toon-gearchiveerd" checked={gearchiveerd()} onChange={(e) => setGearchiveerd(e.currentTarget.checked)} />
+          <label for="toon-gearchiveerd" class="form-check-label">Toon gearchiveerde gebruikers</label>
+        </div>
+        <Dropdown knop={<><i class="bi bi-sort-down me-1" aria-hidden="true" />{SORTERINGEN[sorteer()].label}</>} label="Sorteren" knopClass="btn btn-sm btn-outline-secondary qa-sorteer">
+          <h6 class="dropdown-header">Sorteren op</h6>
+          <For each={Object.keys(SORTERINGEN) as (keyof typeof SORTERINGEN)[]}>
+            {(k) => (
+              <button type="button" class={`dropdown-item qa-sorteer-${k}`} classList={{ active: k === sorteer() }} onClick={() => setSorteer(k)}>{SORTERINGEN[k].label}</button>
+            )}
+          </For>
+        </Dropdown>
       </div>
       <Show when={data()} fallback={<Laden />}>
         {(d) => (
@@ -52,7 +72,7 @@ function Lijst() {
                 </tr>
               </thead>
               <tbody>
-                <For each={d().gebruikers}>
+                <For each={gesorteerd(d().gebruikers)}>
                   {(g) => (
                     <tr class={`row-link qa-gebruiker qa-gebruiker-${g.id}`} classList={{ 'text-muted': !!g.archived_at }} onClick={() => navigate(`/gebruikers/${g.id}`)}>
                       <td>
@@ -65,7 +85,7 @@ function Lijst() {
                       <td class="text-break">{g.email}</td>
                       <td class="text-nowrap">{g.telefoon ?? ''}</td>
                       <td class="d-none d-md-table-cell"><RolBadge rol={g.rol} /></td>
-                      <td class="text-nowrap d-none d-md-table-cell">{g.last_active_at ? datum(g.last_active_at) : '--'}</td>
+                      <td class="text-nowrap d-none d-md-table-cell qa-laatst-actief">{g.last_active_at ? datumTijd(g.last_active_at) : '--'}</td>
                       <td class="text-end" data-label="Open dossiers">{g.open}</td>
                       <td class="text-end d-none d-md-table-cell">{g.gesloten}</td>
                     </tr>
@@ -181,7 +201,7 @@ function Pagina() {
                     <tr><th class="pe-4">Telefoon</th><td>{g().telefoon ? <a href={`tel:${g().telefoon}`}>{g().telefoon}</a> : '--'}</td></tr>
                     <tr><th class="pe-4">Rol</th><td>{g().rol === 'beheerder' ? 'Beheerder' : 'Klusser'}</td></tr>
                     <tr><th class="pe-4">Aangemaakt op</th><td>{datum(g().created_at)}</td></tr>
-                    <tr><th class="pe-4">Laatst actief</th><td>{g().last_active_at ? datum(g().last_active_at!) : '--'}</td></tr>
+                    <tr><th class="pe-4">Laatst actief</th><td class="qa-laatst-actief">{g().last_active_at ? datumTijd(g().last_active_at!) : '--'}</td></tr>
                   </tbody>
                 </table>
               </section>
