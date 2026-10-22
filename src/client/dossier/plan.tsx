@@ -4,7 +4,7 @@ import { MijlpaalRegel } from './acties.tsx';
 import { Controle, afronden } from './bezoek.tsx';
 import { TerugLink } from './pagina.tsx';
 import { useDossier } from './staat.ts';
-import { MateriaalTabel, VeldInvoer, VoorstelLijst } from './velden.tsx';
+import { MateriaalTabel, VeldInvoer } from './velden.tsx';
 
 export function Plan() {
   const s = useDossier();
@@ -28,10 +28,9 @@ export function Plan() {
         <Show when={toelichtingNodig()}>
           <div class="small text-warning mt-n2 mb-3 qa-toelichting-nodig">Licht de beoordeling toe voor de bewoner en de woningcorporatie.</div>
         </Show>
-        <VoorstelLijst />
+        <VeldInvoer k="voorstel" />
 
         <MateriaalTabel lijst="materialen" />
-        <VeldInvoer k="werkzaamheden" />
 
         <Controle s={s} pagina="plan" />
         <MijlpaalRegel mijlpaal="klaar_voor_controle" label="Klaar voor controle" />

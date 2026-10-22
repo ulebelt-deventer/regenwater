@@ -4,7 +4,7 @@ import { datum, euro } from '../../shared/datum.ts';
 import { type Regenpijp, bronnenTekst, getal, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { lijst, materiaalRijen, materiaalTotaal, opsommingRegels, veldTekst, veldVoor } from '../../shared/velden.ts';
+import { materiaalRijen, materiaalTotaal, opsommingRegels, veldTekst, veldVoor } from '../../shared/velden.ts';
 import { FotoDuimen } from './fotos.tsx';
 import { useDossier } from './staat.ts';
 import { Regel } from './velden.tsx';
@@ -197,19 +197,12 @@ export function BezoekSamenvatting() {
 }
 
 export function PlanSamenvatting() {
-  const s = useDossier();
-  const voorstel = () => lijst(s.d, 'voorstel').map((id) => str(s.d, `voorstel.${id}.tekst`)).filter((t) => t !== null);
   return (
     <>
       <VeldRegel k="beoordeling" />
       <VeldRegel k="beoordeling_toelichting" label="Toelichting" />
-      <Regel label="Voorstel" leeg={!voorstel().length} class="qa-sv-voorstel">
-        <ul class="mb-0 ps-3">
-          <For each={voorstel()}>{(t) => <li>{t}</li>}</For>
-        </ul>
-      </Regel>
+      <VeldRegel k="voorstel" label="Voorstel" />
       <MateriaalRegel lijst="materialen" label="Materialen" soort="geschat" />
-      <VeldRegel k="werkzaamheden" />
     </>
   );
 }

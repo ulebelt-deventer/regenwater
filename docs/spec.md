@@ -245,7 +245,7 @@
       - Big green button: "Bezoek afronden"
     - At the bottom: the "← Terug naar dossier" link, and a link to the Plan van Aanpak sub-page, so the bezoeker can jot down the voorstel while still with the bewoner.
   - **Plan van Aanpak** (sub-page, bezoeker after the bezoek, then admin during review: what we'll do)
-    - On the details page, inline: the compact summary (beoordeling and toelichting, voorstel, materials with an Aantal as "2 × naam à € x" plus the total, werkzaamheden), a "Bewerken" button to the sub-page, and the "Bekijk concept-Plan" link.
+    - On the details page, inline: the compact summary (beoordeling and toelichting, voorstel, materials with an Aantal as "2 × naam à € x" plus the total), a "Bewerken" button to the sub-page, and the "Bekijk concept-Plan" link.
     - Link "Bekijk concept-Plan": the Plan van Aanpak as it would look right now, so the bezoeker can check their wording in context. Shown as html, not a literal PDF, because that's faster to render & easier to read on a phone screen. Empty fields are marked there with a `text-warning` "nog niet ingevuld" placeholder; the real PDF just leaves them out.
     - Voorstel Ulebelt
       - Beoordeling (radio); each option produces a standard opening sentence in the PDF:
@@ -255,7 +255,7 @@
         - Niet uitvoerbaar ("De Ulebelt denkt helaas dat de wensen van de bewoner niet uitvoerbaar zijn.")
       - Toelichting (optional textarea), printed after that sentence. Required-ish (`text-warning` nudge) for anything but "Wensen uitvoerbaar".
       - The PDF then prints the fixed line "De Ulebelt stelt de volgende werkzaamheden voor:" before the bullets; it isn't an editable field.
-      - Bullet-list of the changes the klusser and bewoner are agreeing to. eg:
+      - Voorgestelde werkzaamheden: a bulleted textarea like the Afspraken, with suggestion links above it (Regenton plaatsen op een steen van 60x60, Regenpijp afzagen en het restant afdoppen, Drainageslang aanleggen naar de tuin). The changes the klusser and bewoner are agreeing to, eg:
         - Zinken regenpijp op maaiveld afzagen en restant daaronder afdoppen.
         - HWA bocht 80 mm 90 graden toevoegen
         - Ca. 3m blinde flexibele buis verbinden aan bocht d.m.v. verloopring 80mm > 50mm
@@ -290,7 +290,6 @@
         | Worteldoek, per m² | € 2,50 |
         | Grind 16-32 mm, zak 25 kg | € 6,00 |
         | PVC-lijm, tube | € 8,00 |
-    - Werkzaamheden (textarea), with the hint "Welke werkzaamheden horen bij deze materialen? Bijvoorbeeld: aanbrengen van het bovenstaande materiaal." Printed below the materials in section 5 of the PDF.
     - Controle: the same brief auto text as on the Bezoek sub-page, for the Plan van Aanpak fields.
     - Button: "Klaar voor controle" - klusser taps this to send it back into admin's court. A confirmation pop-up says that after this only the beheerders can change the dossier. Until then, Bezoek fields stay editable on the Bezoek sub-page after "Bezoek afronden".
   - **Plan versturen & goedkeuring** (inline, admin)
@@ -348,7 +347,7 @@
     - Wensen van de bewoner.
     - Voorstel Ulebelt: the Beoordeling sentence, Toelichting, fixed lead-in line, werkzaamheden bullets.
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.
-  - **5. Materialenlijst en uitvoering**: the rows with an Aantal, listing Materiaal and Aantal only, then the Werkzaamheden text. Prices are left out, as in the sample (see team question).
+  - **5. Materialenlijst**: the rows with an Aantal, listing Materiaal and Aantal only. Prices are left out, as in the sample (see team question).
   - **Bijlage**: in two columns, the boorprofiel image (left) and the standard "Doorlaatbaarheid per grondsoort" table, rendered as text from a constant in code (transcribed from the sample):
 
     | Grondsoort | Doorlaatbaarheid |

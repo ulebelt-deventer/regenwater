@@ -15,6 +15,13 @@ export const NIEUWS: NieuwsDatum[] = [
         ],
       },
       {
+        kop: 'Plan van Aanpak',
+        punten: [
+          'De vraag Werkzaamheden onder de materialen is weg: alles wat we gaan doen staat nu bij Voorgestelde werkzaamheden, bovenaan. Wat er al onder Werkzaamheden stond, staat daar nu onderaan bij.',
+          'Voorgestelde werkzaamheden is nu een lijstje met opsommingstekens, net als de Afspraken: schrijf je eigen regels, of tik op een suggestie erboven.',
+        ],
+      },
+      {
         kop: "Foto's",
         punten: [
           'Staat een foto of de kaart scheef? Open hem en tik op de knop met de ronde pijl: hij draait een kwartslag naar links, en je tekeningen draaien mee. Tik vaker voor de andere kanten. De knop met de pijl naar links die je eerder zag, is Ongedaan maken.',

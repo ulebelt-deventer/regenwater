@@ -134,7 +134,8 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await page.reload();
   await expect(page.locator('.qa-klaar-voor-controle')).toHaveCount(0);
   await expect(veld(page, 'beoordeling').locator('.qa-optie-uitvoerbaar')).toBeDisabled();
-  await expect(page.locator('.qa-voorstel-toevoegen')).toHaveCount(0);
+  await expect(veld(page, 'voorstel').locator('textarea')).toBeDisabled();
+  await expect(veld(page, 'voorstel').locator('.qa-suggestie')).toHaveCount(0);
   await naarDossier(page, id);
   await expect(page.locator('.qa-naar-plan')).toHaveText('Bekijken');
   await expect(veld(page, 'afspraak').locator('.qa-datum')).toBeDisabled();
@@ -259,7 +260,7 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
   await geenAandacht(page);
 
   await page.goto(`/dossiers/${id}/plan`);
-  await page.locator('.qa-voorstel-rij .qa-invoer').first().fill('Regenton en wadi in de achtertuin');
+  await veld(page, 'voorstel').locator('textarea').fill('Regenton en wadi in de achtertuin');
   await opslagKlaar(page);
   await naarDossier(page, id);
   await expect(page.locator('.qa-aandacht')).toContainText('Plan gewijzigd op 2 maart 2026, na versturen naar de woningcorporatie. Opnieuw sturen?');

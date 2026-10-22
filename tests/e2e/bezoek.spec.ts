@@ -771,6 +771,28 @@ test('een afspraak is een tekstvak met een • voor elke regel; de links erboven
   expect(await planTekst(page, id)).toMatch(/Wat gaat de bewoner doen\?\s*Plakken\s*zonder bullets\s*Wat gaat De Ulebelt doen\?/);
 });
 
+test('de voorgestelde werkzaamheden zijn een tekstvak met een • per regel en suggesties erboven, en het Plan van Aanpak heeft geen apart veld Werkzaamheden meer', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/plan`);
+  const v = veld(page, 'voorstel');
+  const vak = v.locator('textarea');
+  await vak.fill('Wadi graven');
+  await v.locator('.qa-suggestie-afzagen').click();
+  await expect(vak).toHaveValue('• Wadi graven\n• Regenpijp afzagen en het restant afdoppen');
+  await expect(v.locator('.qa-suggestie-afzagen')).toHaveCount(0);
+  await expect(v.locator('.qa-suggestie-regenton')).toBeVisible();
+  await expect(page.locator('.qa-veld-werkzaamheden')).toHaveCount(0);
+  await opslagKlaar(page);
+
+  await page.goto(`/dossiers/${id}`);
+  await expect(page.locator('.qa-sv-voorstel li')).toHaveText(['Wadi graven', 'Regenpijp afzagen en het restant afdoppen']);
+  const plan = await planTekst(page, id);
+  expect(plan).toMatch(/De Ulebelt stelt de volgende werkzaamheden voor:\s*Wadi graven\s*Regenpijp afzagen en het restant afdoppen\s*Afspraken/);
+  expect(plan).toContain('5. Materialenlijst');
+  expect(plan).not.toContain('Materialenlijst en uitvoering');
+});
+
 test('een regel toevoegen via een link zet de cursor aan het eind van het tekstvak en scrollt de nieuwe regel in beeld', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });

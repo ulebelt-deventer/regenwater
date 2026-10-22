@@ -209,8 +209,7 @@ export async function bezoek(page: Page, id: number, wensen = 'Regenton bij de a
 export async function plan(page: Page, id: number, opts: { voorstel?: string; aantal?: string } = {}): Promise<void> {
   await page.goto(`/dossiers/${id}/plan`);
   await kies(page, 'beoordeling', 'uitvoerbaar');
-  await page.locator('.qa-voorstel-toevoegen').click();
-  await page.locator('.qa-voorstel-rij input').last().fill(opts.voorstel ?? 'Regenton plaatsen bij pijp A');
+  await veld(page, 'voorstel').locator('textarea').fill(opts.voorstel ?? 'Regenton plaatsen bij pijp A');
   await page.locator('.qa-materialen-materialen .qa-materiaal-rij').first().locator('.qa-materiaal-aantal').fill(opts.aantal ?? '2');
   await opslagKlaar(page);
   await page.locator('.qa-klaar-voor-controle').click();

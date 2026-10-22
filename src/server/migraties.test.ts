@@ -79,3 +79,54 @@ describe('the Afspraken as bulleted lines', () => {
     expect(data(9)).toEqual({ wensen: 'Eén ton' });
   });
 });
+
+describe('the voorstel as bulleted lines', () => {
+  it('joins the voorstel lines in order with the Werkzaamheden text after them, drops the old keys, and keeps other values as they were', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes("'$.werkzaamheden'"));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    const dossier = db.prepare('INSERT INTO dossiers (id, created_at, created_by, data) VALUES (?, ?, 1, ?)');
+    const overig = { wensen: 'Twee tonnen', 'fotos.kaart': ['f1'], kaart_annotaties: [{ id: 'a1', type: 'dak', p: [[0, 0], [1, 1]] }], 'dak.a1.verdeling': { p1: 100 }, aan: true, uit: false, 'materiaal.m1.aantal': 2 };
+    dossier.run(7, T, JSON.stringify({ ...overig, voorstel: ['b2', 'a1', 'c3'], 'voorstel.a1.tekst': 'Wadi graven', 'voorstel.b2.tekst': ' Regenton plaatsen ', 'voorstel.c3.tekst': '', werkzaamheden: 'Bocht aanbrengen\nBuis verbinden' }));
+    dossier.run(8, T, JSON.stringify({ werkzaamheden: 'Tegels leggen' }));
+    dossier.run(9, T, JSON.stringify({ voorstel: ['a1'], 'voorstel.a1.tekst': '  ', werkzaamheden: '' }));
+    dossier.run(10, T, JSON.stringify({ wensen: 'Eén ton' }));
+    dossier.run(11, T, JSON.stringify({ voorstel: ['a1'], 'voorstel.a1.tekst': '- Wadi "graven" 🌧️', werkzaamheden: '\r\n- Bocht\r\n\r\n\t• Buis  \n* Grind\n  1. Worteldoek  \n-10 cm uitgraven\n' }));
+
+    migreer(db);
+
+    const data = (id: number) => JSON.parse(db.prepare('SELECT data FROM dossiers WHERE id = ?').pluck().get(id) as string);
+    expect(data(7)).toEqual({ ...overig, voorstel: 'Regenton plaatsen\nWadi graven\nBocht aanbrengen\nBuis verbinden' });
+    expect(data(8)).toEqual({ voorstel: 'Tegels leggen' });
+    expect(data(9)).toEqual({});
+    expect(data(10)).toEqual({ wensen: 'Eén ton' });
+    expect(data(11)).toEqual({ voorstel: 'Wadi "graven" 🌧️\nBocht\nBuis\nGrind\n1. Worteldoek\n-10 cm uitgraven' });
+  });
+
+  it('turns the line changes in the audit into one voorstel change, and drops id list changes and rows left without changes', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes("'$.werkzaamheden'"));
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    db.prepare('INSERT INTO dossiers (id, created_at, created_by) VALUES (7, ?, 1)').run(T);
+    const audit = db.prepare('INSERT INTO audit (created_at, updated_at, actor_id, dossier_id, type, payload) VALUES (?, ?, 1, 7, ?, ?)');
+    const wijziging = (changes: Record<string, [unknown, unknown]>) => audit.run(T, T, 'dossier_gewijzigd', JSON.stringify({ changes }));
+    wijziging({ beoordeling: [null, 'uitvoerbaar'], voorstel: [null, ['a1', 'b2']], 'voorstel.a1.tekst': [null, 'Ton'], 'voorstel.b2.tekst': ['', 'Wadi'], wensen: ['x', 'y'] });
+    wijziging({ 'voorstel.a1.tekst': ['Ton', 'Ton en wadi'], voorstel: [['a1', 'b2'], ['a1']], 'voorstel.b2.tekst': ['Wadi', null] });
+    wijziging({ voorstel: [['a1'], ['a1', 'c3']] });
+    wijziging({ 'voorstel.c3.tekst': ['', null] });
+    wijziging({ wensen: ['y', 'z'] });
+    audit.run(T, T, 'mijlpaal', JSON.stringify({ mijlpaal: 'bezoek_afgerond', aan: true }));
+
+    migreer(db);
+
+    expect(db.prepare('SELECT type, payload FROM audit ORDER BY id').all().map((r) => ({ ...(r as object), payload: JSON.parse((r as { payload: string }).payload) }))).toEqual([
+      { type: 'dossier_gewijzigd', payload: { changes: { beoordeling: [null, 'uitvoerbaar'], voorstel: [null, 'Ton\nWadi'], wensen: ['x', 'y'] } } },
+      { type: 'dossier_gewijzigd', payload: { changes: { voorstel: ['Ton\nWadi', 'Ton en wadi'] } } },
+      { type: 'dossier_gewijzigd', payload: { changes: { wensen: ['y', 'z'] } } },
+      { type: 'mijlpaal', payload: { mijlpaal: 'bezoek_afgerond', aan: true } },
+    ]);
+  });
+});

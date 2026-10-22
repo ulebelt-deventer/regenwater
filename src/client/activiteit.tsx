@@ -55,7 +55,7 @@ export const TYPE_LABEL: Record<string, string> = {
   feedback: 'Feedback gegeven',
 };
 
-const ITEM_LABEL: Record<string, string> = { dak: 'Dak', tuin: 'Tuin', steen: 'Steen', regenpijp: 'Regenpijp', materiaal: 'Materiaal', gebruikt: 'Gebruikt materiaal', voorstel: 'Werkzaamheid' };
+const ITEM_LABEL: Record<string, string> = { dak: 'Dak', tuin: 'Tuin', steen: 'Steen', regenpijp: 'Regenpijp', materiaal: 'Materiaal', gebruikt: 'Gebruikt materiaal' };
 
 const s = (v: Json) => (typeof v === 'string' ? v : JSON.stringify(v));
 

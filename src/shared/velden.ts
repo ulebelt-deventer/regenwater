@@ -108,14 +108,11 @@ export const VELDEN: Veld[] = [
   // Plan van Aanpak
   { key: 'beoordeling', label: 'Beoordeling', type: 'radio', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: BEOORDELINGEN.map(([k, l]): [string, string] => [k, l]) },
   { key: 'beoordeling_toelichting', label: 'Toelichting', type: 'textarea', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
-  { key: 'voorstel', label: 'Voorgestelde werkzaamheden', type: 'ids', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, controle: true },
-  { key: 'voorstel.*.tekst', label: 'Werkzaamheid', type: 'text', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
+  { key: 'voorstel', label: 'Voorgestelde werkzaamheden', type: 'textarea', opsomming: true, pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, controle: true, hint: 'De Ulebelt stelt de volgende werkzaamheden voor:', suggesties: [['regenton', 'Regenton plaatsen op een steen van 60x60'], ['afzagen', 'Regenpijp afzagen en het restant afdoppen'], ['drainageslang', 'Drainageslang aanleggen naar de tuin']] },
   { key: 'materialen', label: 'Materialen die nodig zijn', type: 'ids', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'materiaal.*.naam', label: 'Materiaal', type: 'text', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'materiaal.*.prijs', label: 'Prijs', type: 'number', pagina: 'plan', bewerkers: ['bezoeker'], min: 0 },
   { key: 'materiaal.*.aantal', label: 'Aantal', type: 'number', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
-  { key: 'werkzaamheden', label: 'Werkzaamheden', type: 'textarea', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, hint: 'Welke werkzaamheden horen bij deze materialen? Bijvoorbeeld: aanbrengen van het bovenstaande materiaal.' },
-
   // Uitvoering
   { key: 'uitgevoerd', label: 'Wat is er uitgevoerd?', type: 'textarea', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true, hint: 'Beschrijf wat er gedaan is en wat er anders ging dan in het plan. Dit komt in het opleverrapport voor de bewoner en de woningcorporatie.' },
   { key: 'gebruikt', label: 'Gebruikte materialen', type: 'ids', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true },
@@ -307,9 +304,6 @@ export function ontbrekend(d: Dossier, pagina: 'bezoek' | 'plan'): Ontbrekend[] 
         const key = v.key.replace('*', r.id);
         if (veldOntbreekt(d, v, key, r.id)) uit.push({ label: `Regenpijp ${r.label}: ${v.label}`, anker: `veld-${key}` });
       }
-    } else if (v.key === 'voorstel') {
-      const tekst = lijst(d, 'voorstel').map((id) => d.data[`voorstel.${id}.tekst`]);
-      if (!tekst.some((t) => typeof t === 'string' && t.trim())) uit.push({ label: v.label, anker: `veld-${v.key}` });
     } else if (veldOntbreekt(d, v, v.key, null)) {
       uit.push({ label: v.label, anker: `veld-${v.key}` });
     }

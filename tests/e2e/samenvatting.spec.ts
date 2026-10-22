@@ -38,7 +38,7 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
     'materiaal.m1.aantal': 2,
     'materiaal.m2.naam': 'Klikmof',
     'materiaal.m2.aantal': 0,
-    werkzaamheden: 'Regenton aansluiten',
+    voorstel: 'Regenton plaatsen\nWadi graven',
     uitgevoerd: 'Regenton geplaatst',
   });
   // The Uitvoering section only shows once the plan is approved.
@@ -75,7 +75,7 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
   await expect(materialen).toContainText('2 × Regenton 210 liter à € 45,00');
   await expect(materialen).toContainText('Totaal € 90,00 (geschat)');
   await expect(materialen).not.toContainText('Klikmof');
-  await expect(plan.locator('.qa-sv-werkzaamheden')).toContainText('Regenton aansluiten');
+  await expect(plan.locator('.qa-sv-voorstel li')).toHaveText(['Regenton plaatsen', 'Wadi graven']);
 
   const uitvoering = page.locator('.qa-sectie-uitvoering');
   await expect(uitvoering.locator('.qa-sv-uitgevoerd')).toContainText('Regenton geplaatst');

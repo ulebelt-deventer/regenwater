@@ -195,4 +195,42 @@ export const MIGRATIES: string[] = [
   `ALTER TABLE gebruikers ADD COLUMN nieuws_gezien TEXT;`,
   // On a rotated photo: the photo as first uploaded, whose row and file stay (verwijderd_at set) for diagnosis. Rotations in between are deleted.
   `ALTER TABLE fotos ADD COLUMN origineel_id TEXT;`,
+  // The voorstel becomes bulleted lines: each voorstel.<id>.tekst in list order, then the dropped Werkzaamheden text, split into lines cleaned like opsommingRegels plus a typed "- " or "* " marker.
+  // The rebuild drops the per-line keys (a removed row's key is already gone); json() keeps nested values and booleans JSON.
+  // In the audit, a row's line changes become one voorstel change of the changed lines; the id list changes go, and a row left without changes too.
+  `
+  CREATE TEMP TABLE voorstel_bron AS SELECT id, (
+    SELECT group_concat(t, char(10) ORDER BY n) FROM (
+      SELECT j.key AS n, json_extract(dossiers.data, '$."voorstel.' || j.value || '.tekst"') AS t FROM json_each(dossiers.data, '$.voorstel') j WHERE json_type(dossiers.data, '$.voorstel') = 'array'
+      UNION ALL SELECT 1000000, json_extract(dossiers.data, '$.werkzaamheden')
+    )
+  ) AS tekst FROM dossiers WHERE json_type(data, '$.voorstel') = 'array' OR json_type(data, '$.werkzaamheden') IS NOT NULL;
+  CREATE TEMP TABLE voorstel_regels AS WITH RECURSIVE s(id, n, regel, rest) AS (
+    SELECT id, 0, NULL, replace(replace(coalesce(tekst, ''), char(13) || char(10), char(10)), char(13), char(10)) || char(10) FROM voorstel_bron
+    UNION ALL SELECT id, n + 1, substr(rest, 1, instr(rest, char(10)) - 1), substr(rest, instr(rest, char(10)) + 1) FROM s WHERE rest <> ''
+  ) SELECT id, n, trim(regel, ' ' || char(9)) AS regel FROM s WHERE n > 0;
+  UPDATE voorstel_regels SET regel = trim(substr(regel, 2), ' ' || char(9)) WHERE substr(regel, 1, 1) = '•' OR substr(regel, 1, 2) IN ('- ', '* ');
+  UPDATE dossiers SET data = json_set(data, '$.voorstel', (SELECT group_concat(regel, char(10) ORDER BY n) FROM voorstel_regels r WHERE r.id = dossiers.id AND r.regel <> ''))
+    WHERE id IN (SELECT id FROM voorstel_bron);
+  DROP TABLE voorstel_bron;
+  DROP TABLE voorstel_regels;
+  UPDATE dossiers SET data = (
+    SELECT json_group_object(j.key, CASE j.type WHEN 'true' THEN json('true') WHEN 'false' THEN json('false') WHEN 'object' THEN json(j.value) WHEN 'array' THEN json(j.value) ELSE j.value END)
+    FROM json_each(dossiers.data) j
+    WHERE j.key NOT LIKE 'voorstel.%' AND j.key <> 'werkzaamheden' AND NOT (j.key = 'voorstel' AND j.type = 'null')
+  ) WHERE data LIKE '%"voorstel%' OR data LIKE '%"werkzaamheden"%';
+  UPDATE audit SET payload = json_set(payload, '$.changes', (
+    SELECT json_group_object(k, json(v)) FROM (
+      SELECT j.id AS n, j.key AS k, j.value AS v FROM json_each(audit.payload, '$.changes') j WHERE j.key <> 'voorstel' AND j.key NOT LIKE 'voorstel.%'
+      UNION ALL SELECT n, 'voorstel', json_array(oud, nieuw) FROM (
+        SELECT min(j.id) AS n,
+          group_concat(CASE WHEN json_extract(j.value, '$[0]') <> '' THEN json_extract(j.value, '$[0]') END, char(10) ORDER BY j.id) AS oud,
+          group_concat(CASE WHEN json_extract(j.value, '$[1]') <> '' THEN json_extract(j.value, '$[1]') END, char(10) ORDER BY j.id) AS nieuw
+        FROM json_each(audit.payload, '$.changes') j WHERE j.key LIKE 'voorstel.%.tekst'
+      ) WHERE n IS NOT NULL AND oud IS NOT nieuw
+      ORDER BY n
+    )
+  )) WHERE type = 'dossier_gewijzigd' AND payload LIKE '%"voorstel%';
+  DELETE FROM audit WHERE type = 'dossier_gewijzigd' AND json_extract(payload, '$.changes') = '{}';
+  `,
 ];

@@ -3,7 +3,7 @@ import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { eigenaar, str } from '../../shared/status.ts';
-import { BEOORDELINGEN, lijst, materiaalRijen, opsommingRegels, optieLabel, veld } from '../../shared/velden.ts';
+import { BEOORDELINGEN, materiaalRijen, opsommingRegels, optieLabel, veld } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
 function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.Element {
@@ -245,10 +245,6 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
     const r = BEOORDELINGEN.find(([key]) => key === b);
     return r ? r[2] : null;
   };
-  const voorstel = () =>
-    lijst(d(), 'voorstel')
-      .map((id) => str(d(), `voorstel.${id}.tekst`))
-      .filter((t): t is string => t !== null);
   return (
     <>
       <h2>4. Plan van aanpak</h2>
@@ -311,12 +307,10 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
       <Show when={heeft(d(), 'beoordeling_toelichting')}>
         <p>{str(d(), 'beoordeling_toelichting')}</p>
       </Show>
-      <Show when={voorstel().length > 0} fallback={<Show when={props.doc.concept}><p><Leeg doc={props.doc} /></p></Show>}>
+      <Show when={opsommingRegels(str(d(), 'voorstel') ?? '').length > 0}>
         <p>De Ulebelt stelt de volgende werkzaamheden voor:</p>
-        <ul>
-          <For each={voorstel()}>{(t) => <li>{t}</li>}</For>
-        </ul>
       </Show>
+      <Opsomming doc={props.doc} key="voorstel" />
       <h3>Afspraken</h3>
       <p>
         <strong>Wat gaat de bewoner doen?</strong>
@@ -378,10 +372,8 @@ export function Plan(props: { doc: Doc }): JSX.Element {
       <Infiltratie doc={props.doc} />
       <Bodemgegevens doc={props.doc} />
       <PlanVanAanpak doc={props.doc} />
-      <h2>5. Materialenlijst en uitvoering</h2>
+      <h2>5. Materialenlijst</h2>
       <Materialen doc={props.doc} lijst="materialen" />
-      <h3>Werkzaamheden</h3>
-      <Alinea doc={props.doc} key="werkzaamheden" />
       <Bijlage doc={props.doc} />
     </>
   );

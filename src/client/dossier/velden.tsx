@@ -327,44 +327,7 @@ function DatumTijd(props: { waarde: string; uit: boolean; onZet: (v: string | nu
   );
 }
 
-// ---- Lists of items with their own ids: voorstel bullets and materiaal rows ----
-
-export function VoorstelLijst() {
-  const s = useDossier();
-  const v = veld('voorstel');
-  const uit = () => !s.mag(v.bewerkers);
-  const ids = () => lijst(s.d, 'voorstel');
-  const voegToe = () => {
-    const id = nieuwId();
-    s.zet('voorstel', [...ids(), id]);
-    queueMicrotask(() => document.querySelector<HTMLInputElement>(`#veld-voorstel\\.${id}\\.tekst input`)!.focus());
-  };
-  const haalWeg = (id: string) => {
-    const rest = ids().filter((x) => x !== id);
-    s.zet('voorstel', rest.length ? rest : null);
-    s.zet(`voorstel.${id}.tekst`, null);
-  };
-  return (
-    <div id="veld-voorstel" class="mb-3 qa-veld qa-veld-voorstel">
-      <div class="form-label fw-semibold mb-1">{v.label}</div>
-      <p class="small text-muted mb-2">De Ulebelt stelt de volgende werkzaamheden voor:</p>
-      <For each={ids()}>
-        {(id) => (
-          <div class="d-flex gap-2 align-items-center mb-2 qa-voorstel-rij">
-            <span aria-hidden="true">•</span>
-            <VeldInvoer k={`voorstel.${id}.tekst`} kaal class="flex-grow-1" />
-            <Show when={!uit()}>
-              <button type="button" class="btn btn-sm btn-outline-danger qa-voorstel-weg" aria-label="Verwijderen" onClick={() => haalWeg(id)}><i class="bi bi-trash3" aria-hidden="true" /></button>
-            </Show>
-          </div>
-        )}
-      </For>
-      <Show when={!uit()}>
-        <button type="button" class="btn btn-sm btn-outline-primary qa-voorstel-toevoegen" onClick={voegToe}><i class="bi bi-plus-lg me-1" aria-hidden="true" />Werkzaamheid toevoegen</button>
-      </Show>
-    </div>
-  );
-}
+// ---- Lists of items with their own ids: materiaal rows ----
 
 export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
   const s = useDossier();

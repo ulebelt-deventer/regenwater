@@ -192,12 +192,11 @@ export function Bezoekformulier(props: { doc: Doc | null; standaardMaterialen: s
       </For>
 
       <h2 class="nieuwe-pagina">Plan van Aanpak</h2>
-      <For each={losseVelden('plan').filter((v) => v.key !== 'werkzaamheden')}>{(v) => <Vraag veld={v} />}</For>
+      <For each={losseVelden('plan')}>{(v) => <Vraag veld={v} />}</For>
       <div class="veld">
         <div class="veld-label">Materialen die nodig zijn</div>
         <Materiaallijst namen={materialen()} />
       </div>
-      <Vraag veld={VELDEN.find((v) => v.key === 'werkzaamheden')!} />
     </>
   );
 }
