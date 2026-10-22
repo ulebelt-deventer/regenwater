@@ -418,18 +418,20 @@ export function Details() {
                 <Show when={huur()}>
                   <MijlpaalRegel mijlpaal="corporatie_akkoord" label="Woningcorporatie heeft het plan goedgekeurd" />
                   <Show when={open() && !s.d.corporatie_akkoord_at}>
-                    <div class="d-flex flex-wrap align-items-center gap-3">
-                      <button type="button" class="btn btn-success qa-akkoord" onClick={() => void zetMijlpaal(s, 'corporatie_akkoord')}>✅ Woningcorporatie heeft het plan goedgekeurd</button>
-                      <SluitKnop reden="Plan afgewezen" label="Plan afgewezen: dossier sluiten" class="btn btn-link link-danger p-0 qa-afgewezen" />
+                    <div class="form-label fw-semibold mb-1">Wat heeft de woningcorporatie besloten?</div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                      <button type="button" class="btn btn-success qa-akkoord" onClick={() => void zetMijlpaal(s, 'corporatie_akkoord')}>Goedgekeurd</button>
+                      <SluitKnop reden="Plan afgewezen" label="Afgewezen: dossier sluiten" class="btn btn-danger qa-afgewezen" />
                     </div>
                   </Show>
                 </Show>
                 <Show when={koop()}>
                   <MijlpaalRegel mijlpaal="klussendienst_gekozen" label="Bewoner kiest voor de Klussendienst" />
                   <Show when={open() && !s.d.klussendienst_gekozen_at}>
-                    <div class="d-flex flex-wrap align-items-center gap-3">
-                      <button type="button" class="btn btn-success qa-klussendienst" onClick={() => void zetMijlpaal(s, 'klussendienst_gekozen')}>✅ Bewoner kiest voor de Klussendienst</button>
-                      <SluitKnop reden="Bewoner doet het zelf" label="Bewoner doet het zelf: dossier sluiten" class="btn btn-link link-danger p-0 qa-zelf" />
+                    <div class="form-label fw-semibold mb-1">Wat kiest de bewoner?</div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                      <button type="button" class="btn btn-success qa-klussendienst" onClick={() => void zetMijlpaal(s, 'klussendienst_gekozen')}>Klussendienst</button>
+                      <SluitKnop reden="Bewoner doet het zelf" label="Doet het zelf: dossier sluiten" class="btn btn-danger qa-zelf" />
                     </div>
                   </Show>
                 </Show>

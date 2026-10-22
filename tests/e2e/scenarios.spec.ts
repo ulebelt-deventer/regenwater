@@ -220,6 +220,8 @@ test('koop, bewoner doet het zelf: gesloten na het plan', async ({ page }) => {
   const id = await totPlanKlaar(page, klusserId, 'koop');
   await mail(page, 'plan_bewoner_koop');
   await status(page, 'Klussendienst of zelf? (koop)');
+  await expect(page.locator('.qa-klussendienst.btn-success')).not.toContainText('✅');
+  await expect(page.locator('.qa-zelf.btn-danger')).toBeVisible();
   await page.locator('.qa-zelf').click();
   await expect(page.locator('.qa-sluit-modal .qa-reden-bewoner-doet-het-zelf')).toBeChecked();
   await sluitModal(page, null, 'Gaat zelf aan de slag met de tips uit het plan.');
@@ -309,6 +311,9 @@ test('woningcorporatie wijst af: gesloten als Plan afgewezen', async ({ page }) 
   await totPlanKlaar(page, klusserId, 'huur');
   await mail(page, 'plan_corporatie');
   await status(page, 'Plan goedkeuren (huur)');
+  // Two equal buttons, without a ✅ that reads as already done.
+  await expect(page.locator('.qa-akkoord.btn-success')).not.toContainText('✅');
+  await expect(page.locator('.qa-afgewezen.btn-danger')).toBeVisible();
   await page.locator('.qa-afgewezen').click();
   await expect(page.locator('.qa-sluit-modal .qa-reden-plan-afgewezen')).toBeChecked();
   await sluitModal(page, null, 'Ieder1 wil geen wadi naast de fundering.');
