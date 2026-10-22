@@ -41,14 +41,18 @@ export function Luchtfoto(props: { onSluit: () => void }) {
   const [laadt, setLaadt] = createSignal(false);
   const [bewaart, setBewaart] = createSignal(false);
   const [maat, setMaat] = createSignal(1);
+  // The kadastrale kaart alone, without the luchtfoto under it: the lines are easier to see.
+  const [kaart, setKaart] = createSignal(false);
+  const weergave = () => (kaart() ? 'kaart' : 'luchtfoto');
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   let nr = 0;
   const laad = () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
-      const staticKader = kader(); // the frame as it was when this load started
-      const url = `/api/dossiers/${s.id}/luchtfoto?bbox=${bbox(staticKader).join(',')}`;
+      const staticKader = kader(); // the frame and view as they were when this load started
+      const staticWeergave = weergave();
+      const url = `/api/dossiers/${s.id}/luchtfoto?bbox=${bbox(staticKader).join(',')}&weergave=${staticWeergave}`;
       const mijn = ++nr;
       setLaadt(true);
       const img = new Image();
@@ -131,7 +135,7 @@ export function Luchtfoto(props: { onSluit: () => void }) {
     setBewaart(true);
     const hadTekeningen = kaartAnnotaties(s.d).length > 0;
     const ok = await probeer(async () => {
-      const r = await post<{ dossier: Dossier; plan_gewijzigd_at: string | null }>(`/api/dossiers/${s.id}/luchtfoto`, { bbox: bbox(kader()) });
+      const r = await post<{ dossier: Dossier; plan_gewijzigd_at: string | null }>(`/api/dossiers/${s.id}/luchtfoto`, { bbox: bbox(kader()), weergave: weergave() });
       s.vervang(r.dossier);
     });
     setBewaart(false);
@@ -149,16 +153,28 @@ export function Luchtfoto(props: { onSluit: () => void }) {
         <>
           <button type="button" class="btn btn-outline-secondary" onClick={() => props.onSluit()}>Annuleren</button>
           <button type="button" class="btn btn-primary qa-luchtfoto-opslaan" disabled={bewaart() || !geladen()} onClick={() => void opslaan()}>
-            {bewaart() ? 'Bezig...' : 'Gebruik deze luchtfoto'}
+            {bewaart() ? 'Bezig...' : kaart() ? 'Gebruik deze kaart' : 'Gebruik deze luchtfoto'}
           </button>
         </>
       }
     >
-      <p class="small text-muted">Sleep en zoom tot het huis en de tuin in beeld zijn.</p>
+      <div class="d-flex flex-wrap justify-content-between gap-2 mb-3 small">
+        <span class="text-muted">Sleep en zoom tot het huis en de tuin in beeld zijn.</span>
+        <button
+          type="button"
+          class="btn btn-link btn-sm p-0 qa-luchtfoto-weergave"
+          onClick={() => {
+            setKaart(!kaart());
+            laad();
+          }}
+        >
+          {kaart() ? 'Luchtfoto tonen' : 'Alleen de kaart tonen'}
+        </button>
+      </div>
       <div ref={vlak} class="ratio ratio-1x1 bg-secondary-subtle overflow-hidden position-relative" style={{ 'touch-action': 'none', cursor: 'grab' }} onPointerDown={neer} onPointerMove={beweeg} onPointerUp={op} onPointerCancel={op}>
         <div>
           <Show when={plek()}>
-            {(p) => <img src={geladen()!.url} alt="Luchtfoto" class="position-absolute qa-luchtfoto-beeld" style={p()} draggable={false} />}
+            {(p) => <img src={geladen()!.url} alt={kaart() ? 'Kaart' : 'Luchtfoto'} class="position-absolute qa-luchtfoto-beeld" style={p()} draggable={false} />}
           </Show>
           <Show when={laadt()}>
             <span class="position-absolute top-0 end-0 m-2 badge text-bg-light">Laden...</span>

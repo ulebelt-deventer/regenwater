@@ -5,7 +5,7 @@ import { annotatiesSvg, kaartAnnotaties } from '../../shared/kaart.ts';
 import type { Foto } from '../../shared/types.ts';
 import { fotoSlotVoor } from '../../shared/velden.ts';
 import { fotoInWachtrij, naarJpeg, wachtendeFotos } from '../opslag.ts';
-import { Dropdown, bevestig, kies, melding, probeer } from '../ui.tsx';
+import { Dropdown, Modal, bevestig, kies, melding, probeer } from '../ui.tsx';
 import { Luchtfoto } from './luchtfoto.tsx';
 import { useDossier } from './staat.ts';
 import { Tekenaar } from './tekenaar.tsx';
@@ -49,7 +49,8 @@ export function FotoDuimen(props: { slot: string; vierkant?: boolean }) {
   );
 }
 
-export function FotoSlot(props: { k: string; label?: string }) {
+// `eerst`: runs before an image is added and calls `doorgaan` to go on, eg the kaart's warning that an own image has no scale.
+export function FotoSlot(props: { k: string; label?: string; eerst?: (doorgaan: () => void) => void }) {
   const s = useDossier();
   const k = untrack(() => props.k); // fixed for the life of the slot
   const def = fotoSlotVoor(k);
@@ -66,6 +67,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
   let camera!: HTMLInputElement;
   let vak!: HTMLDivElement;
 
+  const eerst = (doe: () => void) => (props.eerst ? props.eerst(doe) : doe());
   const weiger = (naam: string) => melding('danger', `${naam} kon niet worden toegevoegd. Gebruik een JPG- of PNG-afbeelding.`);
   const zetOm = async (b: File) => {
     try {
@@ -147,7 +149,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
     const bestanden = [...e.clipboardData!.files];
     if (!bestanden.length) return melding('danger', GEEN_AFBEELDING);
     e.preventDefault();
-    void voegToe(bestanden);
+    eerst(() => void voegToe(bestanden));
   };
   const uitInvoer = (e: Event & { currentTarget: HTMLInputElement }) => {
     const bestanden = [...e.currentTarget.files!];
@@ -157,9 +159,9 @@ export function FotoSlot(props: { k: string; label?: string }) {
   // The add menu, in the empty slot's button and in the + on the last photo. It sits inside the slot, so a drop on it lands in the slot.
   const Opties = () => (
     <>
-      <button type="button" class="dropdown-item qa-foto-maken" onClick={() => camera.click()}><i class="bi bi-camera me-2" aria-hidden="true" />Camera</button>
-      <button type="button" class="dropdown-item qa-foto-kiezen" onClick={() => kiezer.click()}><i class="bi bi-cloud-upload me-2" aria-hidden="true" />Uploaden</button>
-      <button type="button" class="dropdown-item qa-foto-plakken" onClick={() => void probeer(plak)}><i class="bi bi-clipboard me-2" aria-hidden="true" />Plakken</button>
+      <button type="button" class="dropdown-item qa-foto-maken" onClick={() => eerst(() => camera.click())}><i class="bi bi-camera me-2" aria-hidden="true" />Camera</button>
+      <button type="button" class="dropdown-item qa-foto-kiezen" onClick={() => eerst(() => kiezer.click())}><i class="bi bi-cloud-upload me-2" aria-hidden="true" />Uploaden</button>
+      <button type="button" class="dropdown-item qa-foto-plakken" onClick={() => eerst(() => void probeer(plak))}><i class="bi bi-clipboard me-2" aria-hidden="true" />Plakken</button>
       <div class="dropdown-item-text small text-muted d-none d-md-block">Of hierheen slepen.</div>
     </>
   );
@@ -180,7 +182,8 @@ export function FotoSlot(props: { k: string; label?: string }) {
       onDrop={(e) => {
         e.preventDefault();
         setSleep(false);
-        void voegToe([...e.dataTransfer!.files]);
+        const bestanden = [...e.dataTransfer!.files];
+        eerst(() => void voegToe(bestanden));
       }}
     >
       <Show when={props.label}>
@@ -242,6 +245,8 @@ export function FotoSlot(props: { k: string; label?: string }) {
 export function KaartVeld(props: { alvast?: boolean }) {
   const s = useDossier();
   const [lucht, setLucht] = createSignal(false);
+  // Open while warning that an own image has no scale; `doorgaan` adds the image.
+  const [eigen, setEigen] = createSignal<{ doorgaan: () => void } | null>(null);
   const magBewerken = () => s.mag(fotoSlotVoor('kaart')!.slot.bewerkers);
   return (
     <div id="veld-kaart" class="mb-3 qa-veld qa-veld-kaart">
@@ -260,13 +265,50 @@ export function KaartVeld(props: { alvast?: boolean }) {
       <Show when={s.kaartVervangen()}>
         <div class="small text-warning mb-1 qa-kaart-vervangen">Je hebt de kaart vervangen, dus de tekeningen kloppen mogelijk niet meer. Verplaats of pas ze aan waar nodig.</div>
       </Show>
-      <FotoSlot k="kaart" />
+      <FotoSlot k="kaart" eerst={(doorgaan) => setEigen({ doorgaan })} />
       <Show when={props.alvast}>
         <div class="form-text mt-1 qa-kaart-hint">Teken hier alvast de daken, tuinen, stenen vlakken en regenpijpen in, of laat dat aan de bezoeker ter plekke over. Met een luchtfoto rekent de app de oppervlakken zelf uit.</div>
       </Show>
       <Show when={lucht()}>
         <Luchtfoto onSluit={() => setLucht(false)} />
       </Show>
+      <Show when={eigen()}>
+        {(e) => (
+          <EigenKaart
+            doorgaan={e().doorgaan}
+            onLuchtfoto={() => {
+              setEigen(null);
+              setLucht(true);
+            }}
+            onSluit={() => setEigen(null)}
+          />
+        )}
+      </Show>
     </div>
+  );
+}
+
+function EigenKaart(props: { doorgaan: () => void; onLuchtfoto: () => void; onSluit: () => void }) {
+  const s = useDossier();
+  return (
+    <Modal titel="Eigen kaart gebruiken?" onSluit={() => props.onSluit()} class="qa-eigen-kaart">
+      <p>Met <strong>Luchtfoto laden</strong> zet de app een luchtfoto of kaart met de perceelgrenzen en gebouwen van de kadastrale kaart erop. Die is op schaal, dus de app rekent de oppervlakken van de daken, tuinen en stenen vlakken zelf uit.</p>
+      <p class="text-danger">Een eigen schermafbeelding of foto van de kaart kan ook, maar die is niet op schaal. <strong>De app kan de oppervlakken dan niet uitrekenen</strong>, en je vult ze zelf in.</p>
+      <button
+        type="button"
+        class="btn btn-primary btn-lg w-100 qa-eigen-kaart-doorgaan"
+        onClick={() => {
+          // Read before closing: closing clears the signal that props.doorgaan reads from.
+          const doorgaan = props.doorgaan;
+          props.onSluit();
+          doorgaan();
+        }}
+      >
+        Toch een eigen afbeelding gebruiken
+      </button>
+      <Show when={s.d.adres}>
+        <button type="button" class="btn btn-outline-primary w-100 mt-2 qa-eigen-kaart-luchtfoto" onClick={() => props.onLuchtfoto()}>Liever de luchtfoto laden</button>
+      </Show>
+    </Modal>
   );
 }

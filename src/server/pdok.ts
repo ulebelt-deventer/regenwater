@@ -98,13 +98,12 @@ async function plaatje(ctx: Ctx, url: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-// The aerial photo with the cadastral parcel lines, labels and buildings drawn over it, for exactly this RD box.
-export async function luchtfoto(ctx: Ctx, bbox: Bbox, w: number, h: number): Promise<Buffer> {
+// The cadastral parcel lines, labels and buildings for exactly this RD box, drawn over the aerial photo, or on white for `kaart`.
+export async function luchtfoto(ctx: Ctx, bbox: Bbox, w: number, h: number, kaart: boolean): Promise<Buffer> {
   const { default: sharp } = await import('sharp');
-  const [foto, kadaster] = await Promise.all([
-    plaatje(ctx, wmsUrl(LUCHTFOTO_WMS, 'Actueel_orthoHR', bbox, w, h, 'image/jpeg', false)),
-    plaatje(ctx, wmsUrl(KADASTER_WMS, 'Perceel,KadastraleGrens,Bebouwing,Label', bbox, w, h, 'image/png', true)),
-  ]);
+  const lijnen = wmsUrl(KADASTER_WMS, 'Perceel,KadastraleGrens,Bebouwing,Label', bbox, w, h, 'image/png', !kaart);
+  if (kaart) return sharp(await plaatje(ctx, lijnen)).flatten({ background: '#ffffff' }).jpeg({ quality: 85 }).toBuffer();
+  const [foto, kadaster] = await Promise.all([plaatje(ctx, wmsUrl(LUCHTFOTO_WMS, 'Actueel_orthoHR', bbox, w, h, 'image/jpeg', false)), plaatje(ctx, lijnen)]);
   return sharp(foto).composite([{ input: kadaster }]).jpeg({ quality: 85 }).toBuffer();
 }
 

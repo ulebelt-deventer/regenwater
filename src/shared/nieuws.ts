@@ -22,6 +22,12 @@ export const NIEUWS: NieuwsDatum[] = [
         ],
       },
       {
+        kop: 'Kaart',
+        punten: [
+          'Bij Luchtfoto laden kun je nu kiezen voor Alleen de kaart: de perceelgrenzen en gebouwen op een witte achtergrond, zonder luchtfoto eronder. Die is net zo goed op schaal, dus de app rekent de oppervlakken nog steeds zelf uit. Met een eigen schermafbeelding van de kaart kan dat niet.',
+        ],
+      },
+      {
         kop: "Foto's",
         punten: [
           'Staat een foto of de kaart scheef? Open hem en tik op de knop met de ronde pijl: hij draait een kwartslag naar links, en je tekeningen draaien mee. Tik vaker voor de andere kanten. De knop met de pijl naar links die je eerder zag, is Ongedaan maken.',

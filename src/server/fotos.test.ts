@@ -261,6 +261,10 @@ describe('luchtfoto frame', () => {
     await frame([207970, 474190, 207960, 474200]);
   });
 
+  it('refuses a weergave other than luchtfoto or kaart', async () => {
+    expect((await bea.json('POST', `/api/dossiers/${id}/luchtfoto`, { bbox: [207900, 474100, 208000, 474200], weergave: 'satelliet' }, 400)).fout).toBe('Ongeldige weergave');
+  });
+
   it('keeps the frame within 500 meters of the address', async () => {
     expect((await frame([208450, 474150, 208550, 474250])).fout).toBe('Het kader ligt te ver van het adres.');
   });

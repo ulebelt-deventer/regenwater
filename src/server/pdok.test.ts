@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import type { Ctx } from './context.ts';
-import { dichtsteBoring } from './pdok.ts';
+import { dichtsteBoring, luchtfoto } from './pdok.ts';
 
 // The address as [lon, lat], as PDOK's centroide_ll gives it.
 const LL: [number, number] = [6.16, 52.255];
@@ -145,5 +145,36 @@ describe('dichtsteBoring', () => {
   it('fails when DINO returns only part of the borings in the circle', async () => {
     const { ctx } = nep({ bro: [broAntwoord([])], dino: [{ ...dinoAntwoord([{ id: 'X', lat: 52.255, lon: 6.16 }]), exceededTransferLimit: true }] });
     await expect(dichtsteBoring(ctx, LL)).rejects.toThrow('DINOloket gaf niet alle boringen binnen 0.5 km');
+  });
+});
+
+describe('luchtfoto', () => {
+  // Answers the luchtfoto with green and the kadaster lines with a transparent PNG, or a red one when not asked for transparency.
+  async function wms() {
+    const verzoeken: URL[] = [];
+    const groen = await sharp({ create: { width: 4, height: 4, channels: 3, background: '#00ff00' } }).jpeg().toBuffer();
+    const doorzichtig = await sharp({ create: { width: 4, height: 4, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).png().toBuffer();
+    const rood = await sharp({ create: { width: 4, height: 4, channels: 3, background: '#ff0000' } }).png().toBuffer();
+    const haal = async (invoer: string | URL | Request) => {
+      const u = new URL(String(invoer));
+      verzoeken.push(u);
+      const beeld = u.pathname.includes('luchtfotorgb') ? groen : u.searchParams.get('TRANSPARENT') === 'true' ? doorzichtig : rood;
+      return new Response(new Uint8Array(beeld), { headers: { 'content-type': u.pathname.includes('luchtfotorgb') ? 'image/jpeg' : 'image/png' } });
+    };
+    return { ctx: { haal } as unknown as Ctx, verzoeken };
+  }
+  const BBOX: [number, number, number, number] = [207900, 474100, 207904, 474104];
+  const diensten = (vs: URL[]) => vs.map((u) => `${u.pathname.split('/')[1]} ${u.searchParams.get('LAYERS')} transparent=${u.searchParams.get('TRANSPARENT')}`).sort();
+
+  it('draws the transparent kadaster lines over the luchtfoto', async () => {
+    const { ctx, verzoeken } = await wms();
+    expect(await kleur(await luchtfoto(ctx, BBOX, 4, 4, false))).toMatch(/^\d,2\d\d,\d$/);
+    expect(diensten(verzoeken)).toEqual(['hwh Actueel_orthoHR transparent=null', 'kadaster Perceel,KadastraleGrens,Bebouwing,Label transparent=true']);
+  });
+
+  it('for the kaart, asks only for the kadaster lines on their own background', async () => {
+    const { ctx, verzoeken } = await wms();
+    expect(await kleur(await luchtfoto(ctx, BBOX, 4, 4, true))).toMatch(/^2\d\d,\d,\d$/);
+    expect(diensten(verzoeken)).toEqual(['kadaster Perceel,KadastraleGrens,Bebouwing,Label transparent=null']);
   });
 });

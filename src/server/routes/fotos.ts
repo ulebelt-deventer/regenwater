@@ -73,6 +73,13 @@ async function verwerk(invoer: Buffer, maxPx: number): Promise<{ inhoud: Buffer;
   }
 }
 
+// Whether the kaart shows the kadastrale kaart alone instead of over the luchtfoto; a client from before the choice sends nothing.
+function leesKaart(v: unknown): boolean {
+  if (v === undefined || v === 'luchtfoto') return false;
+  if (v === 'kaart') return true;
+  fout(400, 'Ongeldige weergave');
+}
+
 function leesBbox(v: unknown, d: Dossier): Bbox {
   if (!Array.isArray(v) || v.length !== 4 || !v.every((n) => typeof n === 'number' && Number.isFinite(n))) fout(400, 'Ongeldig kaartkader');
   const [x1, y1, x2, y2] = v as Bbox;
@@ -183,7 +190,7 @@ export function fotoRoutes(app: Hono<Env>, ctx: Ctx): void {
     const d = haalDossier(ctx, c);
     const bbox = leesBbox(String(c.req.query('bbox')).split(',').map(Number), d);
     const { w, h } = afmetingen(bbox, LUCHTFOTO_PREVIEW_PX);
-    return c.body(new Uint8Array(await luchtfoto(ctx, bbox, w, h)), 200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=3600' });
+    return c.body(new Uint8Array(await luchtfoto(ctx, bbox, w, h, leesKaart(c.req.query('weergave')))), 200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=3600' });
   });
 
   // Re-requests the framed box at full resolution and stores it as the kaart, to scale. The kaart's tekeningen stay.
@@ -191,9 +198,11 @@ export function fotoRoutes(app: Hono<Env>, ctx: Ctx): void {
     const d = haalDossier(ctx, c);
     const slot = fotoSlotVoor('kaart')!.slot;
     magFotoBewerken(c, d, slot);
-    const bbox = leesBbox((await body<{ bbox: unknown }>(c)).bbox, d);
+    const b = await body<{ bbox: unknown; weergave: unknown }>(c);
+    const bbox = leesBbox(b.bbox, d);
+    const kaart = leesKaart(b.weergave);
     const { w, h } = afmetingen(bbox, LUCHTFOTO_MAX_PX);
-    const inhoud = await luchtfoto(ctx, bbox, w, h);
+    const inhoud = await luchtfoto(ctx, bbox, w, h, kaart);
     const id = crypto.randomUUID();
     bewaarFoto(ctx.config, id, inhoud);
     const nu = ctx.klok.iso();

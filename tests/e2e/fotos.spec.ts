@@ -230,6 +230,7 @@ test('straatfoto, kaart en boorprofiel staan er heel en 16,5rem breed', async ({
   for (const naam of ['straatfoto', 'kaart', 'boorprofiel']) {
     const slot = page.locator(`.qa-fotoslot-${naam}`);
     await sleep(page, slot, [png(`${naam}.png`)]);
+    if (naam === 'kaart') await page.locator('.qa-eigen-kaart-doorgaan').click();
     const foto = slot.locator('.qa-foto');
     await expect(foto).toBeVisible();
     const k = (await foto.boundingBox())!;
@@ -308,15 +309,63 @@ test('meerdere foto’s tegelijk op een vak met één foto worden zonder vraag t
   await expect(page.locator('.qa-bevestig')).toHaveCount(0);
 });
 
+test('een eigen afbeelding op de kaart waarschuwt eerst dat de app de oppervlakken dan niet kan uitrekenen, en biedt de luchtfoto aan', async ({ page }) => {
+  const id = await nieuwBezoekDossier(page);
+  await page.route(`**/api/dossiers/${id}/luchtfoto?**`, (r) => r.fulfill({ contentType: 'image/png', body: Buffer.from(PNG, 'base64') }));
+  const slot = page.locator('.qa-fotoslot-kaart');
+  const popup = page.locator('.qa-eigen-kaart');
+  let kiezers = 0;
+  page.on('filechooser', () => kiezers++);
+
+  await slot.locator('.qa-foto-toevoegen').click();
+  await slot.locator('.qa-foto-kiezen').click();
+  await expect(popup).toContainText('De app kan de oppervlakken dan niet uitrekenen');
+  await popup.locator('.qa-eigen-kaart-luchtfoto').click();
+  await expect(popup).toHaveCount(0);
+  await expect(page.locator('.qa-luchtfoto .qa-luchtfoto-beeld')).toBeVisible();
+  await page.locator('.qa-luchtfoto .btn-close').click();
+  expect(kiezers).toBe(0);
+
+  await slot.locator('.qa-foto-toevoegen').click();
+  await slot.locator('.qa-foto-kiezen').click();
+  const [kiezer] = await Promise.all([page.waitForEvent('filechooser'), popup.locator('.qa-eigen-kaart-doorgaan').click()]);
+  await expect(popup).toHaveCount(0);
+  await kiezer.setFiles({ name: 'schermafbeelding.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') });
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+});
+
+test('Luchtfoto laden kan wisselen naar alleen de kaart, en bewaart dan de kaart', async ({ page }) => {
+  const id = await nieuwBezoekDossier(page);
+  const weergaven: string[] = [];
+  await page.route(`**/api/dossiers/${id}/luchtfoto?**`, (r) => {
+    weergaven.push(new URL(r.request().url()).searchParams.get('weergave')!);
+    return r.fulfill({ contentType: 'image/png', body: Buffer.from(PNG, 'base64') });
+  });
+  await page.locator('.qa-luchtfoto-laden').click();
+  const popup = page.locator('.qa-luchtfoto');
+  await expect(popup.locator('.qa-luchtfoto-beeld')).toBeVisible();
+  await expect(popup.locator('.qa-luchtfoto-opslaan')).toHaveText('Gebruik deze luchtfoto');
+  expect(weergaven).toEqual(['luchtfoto']);
+
+  await popup.locator('.qa-luchtfoto-weergave').click();
+  await expect.poll(() => weergaven).toEqual(['luchtfoto', 'kaart']);
+  await expect(popup.locator('.qa-luchtfoto-opslaan')).toHaveText('Gebruik deze kaart');
+  await page.route(`**/api/dossiers/${id}/luchtfoto`, (r) => r.abort());
+  const [opslaan] = await Promise.all([page.waitForRequest((r) => r.method() === 'POST' && r.url().endsWith('/luchtfoto')), popup.locator('.qa-luchtfoto-opslaan').click()]);
+  expect(opslaan.postDataJSON()).toMatchObject({ weergave: 'kaart' });
+});
+
 test('een vervangen kaart houdt de tekeningen en waarschuwt dat ze misschien niet meer kloppen', async ({ page }) => {
   await nieuwBezoekDossier(page);
   const slot = page.locator('.qa-fotoslot-kaart');
   await sleep(page, slot, [png('kaart1.png')]);
+  await page.locator('.qa-eigen-kaart-doorgaan').click();
   await expect(slot.locator('.qa-foto')).toHaveCount(1);
   await expect(page.locator('.qa-kaart-vervangen')).toHaveCount(0);
   await tekenRegenpijp(page);
 
   await sleep(page, slot, [png('kaart2.png')]);
+  await page.locator('.qa-eigen-kaart-doorgaan').click();
   await expect(page.locator('.qa-kaart-vervangen')).toHaveCount(0);
   await ja(page);
   await expect(page.locator('.qa-kaart-vervangen')).toBeVisible();
