@@ -53,6 +53,10 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
   await expect(rijen).toHaveCount(STANDAARD_MATERIALEN.length);
   await expect(rijen.first().locator('.qa-materiaal-naam')).toHaveValue('Regenton 210 liter');
   await expect(rijen.first().locator('.qa-materiaal-prijs')).toHaveValue('45');
+  // The table is as wide as its columns, not the whole page.
+  const tabelBreedte = (await page.locator('.qa-materialen-materialen').boundingBox())!.width;
+  const veldBreedte = (await page.locator('.qa-veld-materialen').locator('xpath=..').boundingBox())!.width;
+  expect(tabelBreedte).toBeLessThan(veldBreedte * 0.9);
   await plan(page, id);
   await expect(page.locator('.qa-materiaal-totaal')).toContainText('€ 90,00');
 

@@ -345,21 +345,22 @@ export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
     const rest = ids().filter((x) => x !== id);
     s.zet(props.lijst, rest.length ? rest : null);
   };
+  // From sm as wide as the table (d-sm-inline-block), so the totaal ends at its right edge; on a phone the table fills the width.
   return (
-    <div id={`veld-${props.lijst}`} class={`mb-3 qa-veld qa-veld-${props.lijst}`}>
+    <div id={`veld-${props.lijst}`} class={`d-sm-inline-block mw-100 mb-3 qa-veld qa-veld-${props.lijst}`}>
       <div class="form-label fw-semibold mb-1">{v.label}</div>
       <Show when={props.lijst === 'materialen'}>
         <div class="form-text mt-0 mb-1">Vul het aantal in bij wat nodig is; laat de rest leeg.</div>
       </Show>
       <div class="table-responsive">
-        <table class={`table table-sm align-middle qa-materialen-${props.lijst}`}>
+        <table class={`table table-sm align-middle w-100 w-sm-auto qa-materialen-${props.lijst}`}>
           <thead>
             <tr>
               <th>Materiaal</th>
-              <th style={{ width: '7.5rem' }}>Prijs (€)</th>
-              <th style={{ width: '6rem' }}>Aantal</th>
+              <th class="w-4-5rem w-sm-7-5rem">Prijs (€)</th>
+              <th class="w-3-6rem w-sm-6rem">Aantal</th>
               <th class="d-none d-sm-table-cell text-end">Subtotaal</th>
-              <th />
+              <th class="d-none d-sm-table-cell w-1px" />
             </tr>
           </thead>
           <tbody>
@@ -369,18 +370,21 @@ export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
                 return (
                   <tr class="qa-materiaal-rij">
                     <td>
-                      <input class="form-control form-control-sm qa-materiaal-naam" disabled={uit()} value={tekst(waarde(s.d, k('naam')))} onInput={(e) => s.zet(k('naam'), e.currentTarget.value === '' ? null : e.currentTarget.value)} />
+                      <input class="form-control form-control-sm px-1 px-sm-2 qa-materiaal-naam" disabled={uit()} value={tekst(waarde(s.d, k('naam')))} onInput={(e) => s.zet(k('naam'), e.currentTarget.value === '' ? null : e.currentTarget.value)} />
                     </td>
                     <td>
-                      <GetalInvoer waarde={waarde(s.d, k('prijs'))} min={0} schaal={100} uit={uit()} onZet={(n) => s.zet(k('prijs'), n === null ? null : Math.round(n))} class="form-control-sm qa-materiaal-prijs" />
+                      <GetalInvoer waarde={waarde(s.d, k('prijs'))} min={0} schaal={100} uit={uit()} onZet={(n) => s.zet(k('prijs'), n === null ? null : Math.round(n))} class="form-control-sm px-1 px-sm-2 qa-materiaal-prijs" />
                     </td>
                     <td>
-                      <GetalInvoer waarde={waarde(s.d, k('aantal'))} min={0} uit={uit()} onZet={(n) => s.zet(k('aantal'), n)} class="form-control-sm qa-materiaal-aantal" />
+                      <GetalInvoer waarde={waarde(s.d, k('aantal'))} min={0} uit={uit()} onZet={(n) => s.zet(k('aantal'), n)} class="form-control-sm px-1 px-sm-2 qa-materiaal-aantal" />
                     </td>
                     <td class="d-none d-sm-table-cell text-end text-nowrap qa-subtotaal">{subtotaal(id)}</td>
-                    <td class="text-end">
+                    {/* Hidden on a phone to give Materiaal room; there an empty Aantal keeps a row out of the plan. */}
+                    <td class="d-none d-sm-table-cell text-end">
                       <Show when={!uit()}>
-                        <button type="button" class="btn btn-sm btn-outline-danger qa-materiaal-weg" aria-label="Verwijderen" onClick={() => haalWeg(id)}><i class="bi bi-trash3" aria-hidden="true" /></button>
+                        <Dropdown knop="" label="Meer" knopClass="btn btn-sm btn-link text-secondary qa-materiaal-menu" vast>
+                          <button type="button" class="dropdown-item text-danger qa-materiaal-weg" onClick={() => haalWeg(id)}><i class="bi bi-trash3 me-2" aria-hidden="true" />Verwijderen</button>
+                        </Dropdown>
                       </Show>
                     </td>
                   </tr>

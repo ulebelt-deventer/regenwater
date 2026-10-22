@@ -793,6 +793,53 @@ test('de voorgestelde werkzaamheden zijn een tekstvak met een • per regel en s
   expect(plan).not.toContain('Materialenlijst en uitvoering');
 });
 
+test('op een telefoon past de materialentabel zonder zijwaarts scrollen, met smalle Prijs en Aantal, geen menukolom en de meeste ruimte voor Materiaal', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto(`/dossiers/${id}/plan`);
+  const rij = page.locator('.qa-materialen-materialen .qa-materiaal-rij').first();
+  await expect(rij).toBeVisible();
+  const scroller = page.locator('.qa-veld-materialen .table-responsive');
+  expect(await scroller.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  const [naam, prijs, aantal] = await Promise.all(['naam', 'prijs', 'aantal'].map(async (k) => (await rij.locator(`.qa-materiaal-${k}`).boundingBox())!.width));
+  expect(prijs).toBeLessThan(80);
+  expect(aantal).toBeLessThan(65);
+  expect(naam).toBeGreaterThan(prijs + aantal);
+  await expect(rij.locator('.qa-materiaal-menu')).toBeHidden();
+});
+
+test('een materiaalregel verwijder je via het menu achter de regel: de knop opent het menu, Verwijderen haalt de regel weg', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/plan`);
+  const rijen = page.locator('.qa-materialen-materialen .qa-materiaal-rij');
+  const aantal = await rijen.count();
+  const laatste = rijen.last();
+  const naam = await laatste.locator('.qa-materiaal-naam').inputValue();
+
+  await expect(laatste.locator('.qa-materiaal-weg')).toBeHidden();
+  await laatste.locator('.qa-materiaal-menu').click();
+  const weg = laatste.locator('.qa-materiaal-weg');
+  await expect(weg).toBeVisible();
+  // Not clipped by the scrolling .table-responsive: the item itself is what sits at its centre.
+  expect(await weg.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+  })).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(weg).toBeHidden();
+  await expect(rijen).toHaveCount(aantal);
+
+  await laatste.locator('.qa-materiaal-menu').click();
+  await weg.click();
+  await expect(rijen).toHaveCount(aantal - 1);
+  await expect(rijen.last().locator('.qa-materiaal-naam')).not.toHaveValue(naam);
+  await opslagKlaar(page);
+  await page.reload();
+  await expect(rijen).toHaveCount(aantal - 1);
+});
+
 test('een regel toevoegen via een link zet de cursor aan het eind van het tekstvak en scrollt de nieuwe regel in beeld', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });

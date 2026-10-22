@@ -15,22 +15,32 @@ interface Melding {
   icoon?: string; // a Bootstrap Icons name
 }
 const [meldingen, setMeldingen] = createSignal<Melding[]>([]);
+const [vervagend, setVervagend] = createSignal<number[]>([]);
 let meldingNr = 0;
 
+// A success message fades out after 3s, over the .melding-weg transition.
 export function melding(soort: Melding['soort'], tekst: string, icoon?: string): number {
   const id = ++meldingNr;
   setMeldingen((m) => [...m, { id, soort, tekst, icoon }]);
-  if (soort === 'success') setTimeout(() => sluitMelding(id), 4000);
+  if (soort === 'success') {
+    setTimeout(() => {
+      setVervagend((v) => [...v, id]);
+      setTimeout(() => sluitMelding(id), 250);
+    }, 3000);
+  }
   return id;
 }
-export const sluitMelding = (id: number) => setMeldingen((m) => m.filter((x) => x.id !== id));
+export const sluitMelding = (id: number) => {
+  setMeldingen((m) => m.filter((x) => x.id !== id));
+  setVervagend((v) => v.filter((x) => x !== id));
+};
 
 export function Meldingen() {
   return (
     <div class="meldingen">
       <For each={meldingen()}>
         {(m) => (
-          <div class={`alert alert-${m.soort} alert-dismissible shadow-sm qa-melding qa-melding-${m.soort}`} role="alert">
+          <div class={`alert alert-${m.soort} alert-dismissible shadow-sm qa-melding qa-melding-${m.soort}`} classList={{ 'melding-weg': vervagend().includes(m.id) }} role="alert">
             <Show when={m.icoon}>
               <i class={`bi bi-${m.icoon} me-2`} aria-hidden="true" />
             </Show>
@@ -161,39 +171,52 @@ export function Vragen() {
 
 // `kiezer`: looks and opens like a select field: the menu covers the field and its search input gets the focus.
 // `label` names a caret-only button (knop=""), which must stay :empty for Bootstrap to center the caret.
-export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean; kiezer?: boolean }) {
+// `vast`: a right-aligned menu that is position: fixed, so an overflow ancestor (.table-responsive) can't clip it; it follows its button on scroll.
+export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?: string; rechts?: boolean; children: JSX.Element; class?: string; sluitBijKlik?: boolean; kiezer?: boolean; vast?: boolean }) {
   const [open, setOpen] = createSignal(false);
   // A left-aligned menu that would run off the right of the screen opens right-aligned instead.
   const [omklappen, setOmklappen] = createSignal(false);
+  const [plek, setPlek] = createSignal<JSX.CSSProperties>({});
   let el!: HTMLDivElement;
+  let knop!: HTMLButtonElement;
   let menu!: HTMLDivElement;
   // composedPath, not el.contains(e.target): a click that removes its own target (eg a button hidden by the change it makes) is no longer inside el by the time this runs.
   const buiten = (e: MouseEvent) => {
     if (!e.composedPath().includes(el)) setOpen(false);
   };
   const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+  // Below the button, or above it when it doesn't fit below.
+  const plaats = () => {
+    if (!open()) return;
+    const r = knop.getBoundingClientRect();
+    const top = r.bottom + menu.offsetHeight > window.innerHeight ? r.top - menu.offsetHeight - 4 : r.bottom;
+    setPlek({ position: 'fixed', top: `${top}px`, right: `${document.documentElement.clientWidth - r.right}px`, left: 'auto' });
+  };
   onMount(() => {
     document.addEventListener('click', buiten);
     document.addEventListener('keydown', esc);
+    if (props.vast) document.addEventListener('scroll', plaats, true);
   });
   onCleanup(() => {
     document.removeEventListener('click', buiten);
     document.removeEventListener('keydown', esc);
+    document.removeEventListener('scroll', plaats, true);
   });
   const wissel = () => {
     setOmklappen(false);
     setOpen(!open());
-    if (open() && !props.rechts) setOmklappen(menu.getBoundingClientRect().right > document.documentElement.clientWidth);
+    if (props.vast) plaats();
+    if (open() && !props.rechts && !props.vast) setOmklappen(menu.getBoundingClientRect().right > document.documentElement.clientWidth);
     if (open() && props.kiezer) el.querySelector<HTMLInputElement>('.dropdown-menu input')!.focus();
   };
   return (
     <div class={`dropdown ${props.kiezer ? 'kiezer' : ''} ${props.class ?? ''}`} ref={el}>
-      <button type="button" class={`${props.kiezer ? '' : 'dropdown-toggle'} ${props.knopClass ?? 'btn btn-outline-secondary'}`} aria-label={props.label} aria-expanded={open()} onClick={wissel}>
+      <button type="button" class={`${props.kiezer ? '' : 'dropdown-toggle'} ${props.knopClass ?? 'btn btn-outline-secondary'}`} aria-label={props.label} aria-expanded={open()} onClick={wissel} ref={knop}>
         {props.knop}
       </button>
       {/* Bootstrap positions the menu (incl. -end alignment) only when data-bs-popper is set; "static" is its no-Popper mode. */}
       {/* A reactive `class` would overwrite whatever `classList` set, so every conditional class goes in `classList`. */}
-      <div ref={menu} class="dropdown-menu shadow" data-bs-popper="static" classList={{ 'dropdown-menu-end': props.rechts || omklappen(), show: open() }} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
+      <div ref={menu} class="dropdown-menu shadow" data-bs-popper="static" classList={{ 'dropdown-menu-end': props.rechts || omklappen(), show: open() }} style={plek()} onClick={() => props.sluitBijKlik !== false && setOpen(false)}>
         {props.children}
       </div>
     </div>

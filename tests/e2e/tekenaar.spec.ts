@@ -236,6 +236,8 @@ test('een regenpijp bijzetten zet een met de hand verdeeld dak terug op automati
   await gereedschap(page, 'regenpijp');
   await tik(page, 0.5, 0.6);
   await expect(page.locator('.qa-melding-success')).toContainText('Verdeling van D1 opnieuw berekend.');
+  await expect(page.locator('.qa-melding-success')).toHaveClass(/melding-weg/, { timeout: 4000 });
+  await expect(page.locator('.qa-melding-success')).toHaveCount(0, { timeout: 1000 });
   await tekenaarOpgeslagen(page);
   expect((await serverDossier(page, id)).data).not.toHaveProperty([`dak.${dak}.verdeling`]);
 
