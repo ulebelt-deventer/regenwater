@@ -64,6 +64,10 @@ export function wachtend(dossierId: number): Item[] {
   return rijen.map((r) => r.item).filter((i) => i.dossierId === dossierId);
 }
 
+// Reactive: whether drawings on this photo are still waiting to be sent. `fotoId` null means the kaart, whose drawings are a dossier field.
+export const tekeningenWachtend = (dossierId: number, fotoId: string | null): boolean =>
+  aantal() > 0 && rijen.some((r) => doel(r.item) === (fotoId === null ? `v:${dossierId}:kaart_annotaties` : `a:${fotoId}`));
+
 // api() is already on its way to the login page; the queue stays put and is sent once the next page load starts it.
 const sessieVerlopen = (e: unknown) => e instanceof ApiFout && e.status === 401;
 

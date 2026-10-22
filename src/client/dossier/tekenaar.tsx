@@ -1,9 +1,10 @@
 // Full-screen photo viewer and drawing tool. Zoom and pan move the SVG viewBox, so image coordinates never change.
-import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
+import { For, Match, Show, Switch, batch, createMemo, createSignal, onCleanup, onMount, untrack } from 'solid-js';
 import { ICOON, KLEUR, TEKST_PX, afstandTotLijn, afstandTotPolygoon, afstandTotRand, annotatieLabels, annotatiesSvg, binnen, isVlak, kaartAnnotaties, verdelingenTeWissen } from '../../shared/kaart.ts';
-import type { Annotatie, AnnotatieType, Json } from '../../shared/types.ts';
+import type { Annotatie, AnnotatieType, Dossier, Json } from '../../shared/types.ts';
 import { fotoSlotVoor, nieuwId } from '../../shared/velden.ts';
-import { del } from '../api.ts';
+import { del, post } from '../api.ts';
+import { tekeningenWachtend } from '../opslag.ts';
 import { Modal, OnderdeelIcoon, bevestig, melding, probeer, tip } from '../ui.tsx';
 import { useDossier } from './staat.ts';
 
@@ -59,7 +60,8 @@ interface Stap {
   data: Record<string, Json>;
 }
 
-export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
+// Rotating swaps in a new photo id, which `onGedraaid` hands back as the new `fotoId`.
+export function Tekenaar(props: { fotoId: string; onSluit: () => void; onGedraaid: (id: string) => void }) {
   const s = useDossier();
   const foto = () => {
     const f = s.d.fotos.find((x) => x.id === props.fotoId);
@@ -393,6 +395,26 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
     });
   };
 
+  // Disabled while drawings are unsent: they would land on the old photo id, or unturned on the kaart.
+  const [draait, setDraait] = createSignal(false);
+  const draai = async () => {
+    const id = props.fotoId;
+    setDraait(true);
+    await probeer(async () => {
+      const r = await post<{ dossier: Dossier; foto_id: string }>(`/api/fotos/${id}/draai`);
+      // Together, or foto() runs in between and finds neither id.
+      batch(() => {
+        s.vervang(r.dossier);
+        props.onGedraaid(r.foto_id);
+      });
+      // Undo steps hold drawings in the old orientation.
+      setGeschiedenis([]);
+      setGekozen(null);
+      setBeeld(begrens(0, 0, 1));
+    });
+    setDraait(false);
+  };
+
   const bewaarTekst = () => {
     const t = tekstInvoer()!;
     setTekstInvoer(null);
@@ -450,6 +472,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
           <Show when={inWording().length >= 3}>
             <button type="button" class="btn btn-sm btn-primary qa-klaar" onClick={sluitVlak}>Klaar</button>
           </Show>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-foto-draaien" aria-label="Foto draaien" ref={tip('Foto draaien')} disabled={draait() || tekeningenWachtend(s.id, isKaart ? null : props.fotoId)} onClick={() => void draai()}><i class="bi bi-arrow-counterclockwise" aria-hidden="true" /></button>
           <span class="vr mx-1" />
           <Show when={gekozen()}>
             <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" aria-label="Verwijderen" ref={tip('Verwijderen')} onClick={() => void verwijder()}><i class="bi bi-eraser" aria-hidden="true" /></button>

@@ -193,4 +193,6 @@ export const MIGRATIES: string[] = [
   `,
   // The newest NIEUWS datum this beheerder has seen on "Wat is er nieuw".
   `ALTER TABLE gebruikers ADD COLUMN nieuws_gezien TEXT;`,
+  // On a rotated photo: the photo as first uploaded, whose row and file stay (verwijderd_at set) for diagnosis. Rotations in between are deleted.
+  `ALTER TABLE fotos ADD COLUMN origineel_id TEXT;`,
 ];

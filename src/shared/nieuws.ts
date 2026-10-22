@@ -14,6 +14,12 @@ export const NIEUWS: NieuwsDatum[] = [
           'Onderaan de Inschrijving kun je nu Notities kwijt, bijvoorbeeld wie de opdrachtgever is of wie toestemming heeft gegeven. Het zijn dezelfde notities als bovenaan de dossierpagina, dus de bezoeker en uitvoerder zien ze ook.',
         ],
       },
+      {
+        kop: "Foto's",
+        punten: [
+          'Staat een foto of de kaart scheef? Open hem en tik op de knop met de ronde pijl: hij draait een kwartslag naar links, en je tekeningen draaien mee. Tik vaker voor de andere kanten. De knop met de pijl naar links die je eerder zag, is Ongedaan maken.',
+        ],
+      },
     ],
   },
   {

@@ -147,6 +147,37 @@ export function fotoRoutes(app: Hono<Env>, ctx: Ctx): void {
     return c.json({ ok: true, plan_gewijzigd_at: slot.inPlan ? planGewijzigd(ctx, d.id) : null });
   });
 
+  // Turns the photo a quarter left as a new photo in the same place, with its drawings turned along (the kaart's live in the dossier data). A new id because photos are cached as immutable.
+  app.post('/api/fotos/:id/draai', async (c) => {
+    const { f, d, slot } = haalFoto(ctx, c);
+    magFotoBewerken(c, d, slot);
+    const oud = ctx.db.prepare('SELECT rowid, * FROM fotos WHERE id = ?').get(f.id) as { rowid: number; breedte: number; m_per_px: number | null; annotaties: string; created_at: string; created_by: number; origineel_id: string | null };
+    const inhoud = await sharp(fotoPad(ctx.config, f.id)).rotate(-90).jpeg({ quality: 82 }).toBuffer({ resolveWithObject: true });
+    const draai = (lijst: Annotatie[]) => lijst.map((a) => ({ ...a, p: a.p.map(([x, y]) => [y, oud.breedte - x] as [number, number]) }));
+    const id = crypto.randomUUID();
+    bewaarFoto(ctx.config, id, inhoud.data);
+    // Only the original and the current version are kept: an earlier rotation is deleted outright.
+    const tussenversie = oud.origineel_id !== null;
+    // Slots sort by created_at, rowid, so the new row takes over both to keep the photo's place.
+    const plan = wijzigSlot(ctx, c, d, f.slot, slot, () => {
+      if (tussenversie) ctx.db.prepare('DELETE FROM fotos WHERE id = ?').run(f.id);
+      else ctx.db.prepare('UPDATE fotos SET verwijderd_at = ?, rowid = (SELECT max(rowid) + 1 FROM fotos) WHERE id = ?').run(ctx.klok.iso(), f.id);
+      ctx.db
+        .prepare('INSERT INTO fotos (rowid, id, dossier_id, slot, breedte, hoogte, m_per_px, annotaties, created_at, created_by, origineel_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(oud.rowid, id, d.id, f.slot, inhoud.info.width, inhoud.info.height, oud.m_per_px, JSON.stringify(draai(JSON.parse(oud.annotaties) as Annotatie[])), oud.created_at, oud.created_by, oud.origineel_id ?? f.id);
+      // Read inside the transaction, so a tekening saved meanwhile is turned too.
+      const vers = laadDossier(ctx.db, d.id)!;
+      const kaart = vers.data.kaart_annotaties;
+      if (f.slot === 'kaart' && kaart !== undefined) {
+        const gedraaid = draai(kaart as unknown as Annotatie[]) as unknown as Json;
+        ctx.db.prepare('UPDATE dossiers SET data = ? WHERE id = ?').run(JSON.stringify({ ...vers.data, kaart_annotaties: gedraaid }), d.id);
+        auditWijzigingen(ctx, actorVan(c), d.id, { kaart_annotaties: [kaart, gedraaid] });
+      }
+    });
+    if (tussenversie) fs.rmSync(fotoPad(ctx.config, f.id));
+    return c.json({ dossier: laadDossier(ctx.db, d.id)!, foto_id: id, plan_gewijzigd_at: plan }, 201);
+  });
+
   // A quick, small render of any RD box, for framing the luchtfoto.
   app.get('/api/dossiers/:id/luchtfoto', async (c) => {
     const d = haalDossier(ctx, c);

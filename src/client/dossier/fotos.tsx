@@ -44,7 +44,7 @@ export function FotoDuimen(props: { slot: string; vierkant?: boolean }) {
       <div class={`d-flex flex-wrap gap-1 my-1 qa-duimen qa-duimen-${props.slot.replace(/\./g, '-')}`}>
         <For each={fotos()}>{(f) => <FotoDuim foto={f} klein={!props.vierkant} vierkant={props.vierkant} onClick={() => setOpen(f.id)} />}</For>
       </div>
-      <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} />}</Show>
+      <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} onGedraaid={setOpen} />}</Show>
     </Show>
   );
 }
@@ -232,7 +232,7 @@ export function FotoSlot(props: { k: string; label?: string }) {
         <input ref={camera} type="file" accept="image/*" capture="environment" class="d-none" onChange={uitInvoer} />
         <input ref={kiezer} type="file" accept="image/*" multiple={!slot.enkel} class="d-none qa-foto-invoer" onChange={uitInvoer} />
       </Show>
-      <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} />}</Show>
+      <Show when={open()}>{(id) => <Tekenaar fotoId={id()} onSluit={() => setOpen(null)} onGedraaid={setOpen} />}</Show>
     </div>
   );
 }

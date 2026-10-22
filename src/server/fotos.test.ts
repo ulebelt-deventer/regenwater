@@ -1,6 +1,8 @@
-// Photo routes: who may upload where, replacing, sizes, the luchtfoto frame checks and the nearest boring's profile.
+// Photo routes: who may upload where, replacing, rotating, sizes, the luchtfoto frame checks and the nearest boring's profile.
+import fs from 'node:fs';
 import sharp from 'sharp';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { fotoPad } from './fotos.ts';
 import { DINO_BORING } from './pdokfake.ts';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier, testApp } from './testapp.ts';
 
@@ -176,6 +178,69 @@ describe('drawing on photos', () => {
     const { foto, plan_gewijzigd_at } = await bea.json('POST', `/api/dossiers/${id}/fotos/opleverfotos`, new Uint8Array(await beeld()), 201);
     expect(plan_gewijzigd_at).toBeNull();
     expect((await bea.json('PUT', `/api/fotos/${foto.id}/annotaties`, { annotaties: [{ id: 'a1', type: 'tekst', p: [[1, 2]], tekst: 'hier' }] })).plan_gewijzigd_at).toBeNull();
+  });
+});
+
+describe('rotating', () => {
+  type GedraaideFoto = { id: string; slot: string; breedte: number; hoogte: number; m_per_px: number | null; annotaties: unknown };
+  // The rotated photo as the returned dossier holds it.
+  const draai = async (fotoId: string, k = bea, status = 201) => {
+    const r = await k.json<{ dossier?: { data: Record<string, unknown>; fotos: GedraaideFoto[] }; foto_id?: string; fout?: string }>('POST', `/api/fotos/${fotoId}/draai`, {}, status);
+    return { ...r, foto: r.dossier?.fotos.find((f) => f.id === r.foto_id) };
+  };
+  // Blue, with a red block in the top right corner.
+  const metHoek = async () => sharp({ create: { width: 40, height: 30, channels: 3, background: '#0000ff' } })
+    .composite([{ input: await sharp({ create: { width: 10, height: 10, channels: 3, background: '#ff0000' } }).png().toBuffer(), left: 30, top: 0 }])
+    .png().toBuffer();
+
+  it('turns the photo a quarter left as a new photo in the same place, with its drawings turned along', async () => {
+    const voor = (await upload(bea, 'hoosbuien')).foto.id;
+    const oud = (await upload(bea, 'hoosbuien', 201, await metHoek())).foto.id;
+    const na = (await upload(bea, 'hoosbuien')).foto.id;
+    await bea.json('PUT', `/api/fotos/${oud}/annotaties`, { annotaties: [{ id: 'a1', type: 'pijl', p: [[40, 0], [10, 20]] }] });
+    t.klok.verschuif(2 * 3600e3);
+    const foto = (await draai(oud)).foto!;
+    expect(foto).toMatchObject({ breedte: 30, hoogte: 40, annotaties: [{ id: 'a1', type: 'pijl', p: [[0, 0], [20, 30]] }] });
+    expect(await slotIds('hoosbuien')).toEqual([voor, foto.id, na]);
+    // The red top right corner is now top left.
+    const pixels = await sharp(Buffer.from(await (await bea.verzoek('GET', `/api/fotos/${foto.id}`)).arrayBuffer())).raw().toBuffer({ resolveWithObject: true });
+    expect(pixels.info).toMatchObject({ width: 30, height: 40 });
+    const [r, , b] = pixels.data.subarray(0, 3);
+    expect(r).toBeGreaterThan(200);
+    expect(b).toBeLessThan(60);
+    const { items } = await bea.json<{ items: { payload: { changes: Record<string, unknown> } }[] }>('GET', `/api/dossiers/${id}/activiteit`);
+    expect(items[0].payload.changes).toEqual({ 'fotos.hoosbuien': [[voor, oud, na], [voor, foto.id, na]] });
+  });
+
+  it('turns the kaart with its tekeningen in the dossier data, and keeps its scale', async () => {
+    const oud = (await upload(bea, 'kaart', 201, await metHoek())).foto.id;
+    t.ctx.db.prepare('UPDATE fotos SET m_per_px = 0.05 WHERE id = ?').run(oud);
+    const tekeningen = [{ id: 'd1', type: 'dak', p: [[30, 0], [40, 0], [40, 10]] }, { id: 'r1', type: 'regenpijp', p: [[40, 30]] }];
+    await bea.json('PATCH', `/api/dossiers/${id}`, { key: 'kaart_annotaties', value: tekeningen });
+    t.klok.verschuif(2 * 3600e3);
+    const { dossier, foto } = await draai(oud);
+    expect(foto).toMatchObject({ slot: 'kaart', breedte: 30, hoogte: 40, m_per_px: 0.05 });
+    const gedraaid = [{ id: 'd1', type: 'dak', p: [[0, 10], [0, 0], [10, 0]] }, { id: 'r1', type: 'regenpijp', p: [[30, 0]] }];
+    expect(dossier!.data.kaart_annotaties).toEqual(gedraaid);
+    const { items } = await bea.json<{ items: { payload: { changes: Record<string, unknown> } }[] }>('GET', `/api/dossiers/${id}/activiteit`);
+    expect(items[0].payload.changes).toEqual({ 'fotos.kaart': [[oud], [foto!.id]], kaart_annotaties: [tekeningen, gedraaid] });
+  });
+
+  it('keeps only the photo as first uploaded and the current rotation, which points back to it', async () => {
+    const eerste = (await upload(bea, 'straatfoto')).foto.id;
+    const tweede = (await draai(eerste)).foto!.id;
+    const derde = (await draai(tweede)).foto!.id;
+    const rijen = t.ctx.db.prepare("SELECT id, origineel_id, verwijderd_at IS NOT NULL AS weg FROM fotos WHERE slot = 'straatfoto' ORDER BY rowid").all();
+    expect(rijen).toEqual([{ id: derde, origineel_id: eerste, weg: 0 }, { id: eerste, origineel_id: null, weg: 1 }]);
+    expect([eerste, tweede, derde].map((f) => fs.existsSync(fotoPad(t.ctx.config, f)))).toEqual([true, false, true]);
+    await draai(tweede, bea, 404);
+  });
+
+  it('refuses a photo the user may not change, and a closed dossier', async () => {
+    const straat = (await upload(bea, 'straatfoto')).foto.id;
+    await draai(straat, kees, 403);
+    await sluit();
+    await draai(straat, bea, 409);
   });
 });
 

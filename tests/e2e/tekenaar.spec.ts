@@ -427,6 +427,49 @@ test('een foto op de dossierpagina opent als duimpje in de tekenaar, en wat je t
   expect(foto.annotaties.map((a) => [a.type, a.tekst])).toEqual([['tekst', 'Voordeur']]);
 });
 
+test('Foto draaien zet een foto en de kaart een kwartslag naar links op dezelfde plek, met de tekeningen mee', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  await slot.locator('.qa-foto-invoer').setInputFiles(['a', 'b'].map((n) => ({ name: `${n}.png`, mimeType: 'image/png', buffer: PNG })));
+  await expect(slot.locator('.qa-foto')).toHaveCount(2);
+  await openTekenaar(page, 'tuinsituatie');
+  await gereedschap(page, 'tekst');
+  await tik(page, 0.25, 0.5);
+  await page.locator('.qa-tekst-invoer').fill('Put');
+  await page.locator('.qa-tekst-invoer').press('Enter');
+  await tekenaarOpgeslagen(page);
+
+  // With the drawing tools, before the separator that sets off undo and delete.
+  await expect(page.locator('.qa-tekenaar .tools .qa-foto-draaien + .vr')).toBeVisible();
+  await page.locator('.qa-foto-draaien').click();
+  await expect(page.locator('.qa-tekenaar-svg image')).toHaveAttribute('width', '300');
+  await expect(page.locator('.qa-tekenaar-svg image')).toHaveAttribute('height', '400');
+  await expect(page.locator('.qa-ongedaan')).toBeDisabled();
+  await expect(page.locator('.qa-melding-danger')).toHaveCount(0);
+  await sluitTekenaar(page);
+
+  const fotos = ((await serverDossier(page, id)).fotos as unknown as { slot: string; breedte: number; hoogte: number; annotaties: Annotatie[] }[]).filter((f) => f.slot === 'tuinsituatie');
+  expect(fotos.map((f) => [f.breedte, f.hoogte])).toEqual([[300, 400], [400, 300]]);
+  const [x, y] = fotos[0].annotaties[0].p[0];
+  expect(x).toBeCloseTo(150, -1);
+  expect(y).toBeCloseTo(300, -1);
+
+  await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: PNG });
+  await openTekenaar(page, 'kaart');
+  await gereedschap(page, 'regenpijp');
+  await tik(page, 0.25, 0.5);
+  await tekenaarOpgeslagen(page);
+  await page.locator('.qa-foto-draaien').click();
+  await expect(page.locator('.qa-tekenaar-svg image')).toHaveAttribute('width', '300');
+  await sluitTekenaar(page);
+  const [pijp] = await kaart(page, id);
+  expect(pijp.p[0][0]).toBeCloseTo(150, -1);
+  expect(pijp.p[0][1]).toBeCloseTo(300, -1);
+  await expect(page.locator('.qa-regenpijp .qa-regenpijp-titel')).toHaveText(['Regenpijp A']);
+});
+
 test.describe('op een touchscreen', () => {
   test.use({ hasTouch: true });
 
