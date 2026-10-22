@@ -21,12 +21,14 @@ import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Nieuws } from './paginas/nieuws.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
 import { AandachtUitleg, Installeren, Privacy, RechtenUitleg, Statussen } from './paginas/uitleg.tsx';
+import { startVersieControle } from './versie.ts';
 
 function NietGevonden() {
   return <div class="alert alert-warning qa-niet-gevonden">Deze pagina bestaat niet.</div>;
 }
 
 startOpslag();
+startVersieControle();
 
 render(
   () => (

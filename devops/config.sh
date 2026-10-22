@@ -33,7 +33,7 @@ APP_DIR="${REMOTE_DIR}/app"
 DATA_DIR="${REMOTE_DIR}/data"
 # Playwright's Chromium for the PDFs, outside app/ so rsync --delete leaves it alone.
 BROWSERS_DIR="${REMOTE_DIR}/browsers"
-# Daily warning-and-error archive, one file per day, never pruned (journald is size-capped).
+# Daily log archive, one file per day, deleted after 12 months (journald is size-capped).
 LOG_DIR="${REMOTE_DIR}/logs"
 # Secrets (Mailgun, Healthchecks, S3) live only here on the host; push-env.sh writes it.
 ENV_FILE="/etc/${SERVICE_NAME}.env"

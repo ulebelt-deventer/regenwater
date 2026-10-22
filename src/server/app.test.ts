@@ -310,7 +310,48 @@ describe('test-only routes', () => {
     expect((await new Klant(t).verzoek('POST', '/api/test/klok', { verschuifDagen: 1 })).status).toBe(200);
     t.ctx.config.modus = 'development';
     const { createApp } = await import('./app.ts');
-    const res = await createApp(t.ctx).request('/api/test/klok', { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' } });
+    const res = await createApp(t.ctx).request('/api/test/klok', { method: 'POST', body: '{}', headers: { 'content-type': 'application/json', 'x-forwarded-for': '10.0.0.1' } });
     expect(res.status).toBe(401);
+  });
+});
+
+describe('request log', () => {
+  const id = (email: string) => (t.ctx.db.prepare('SELECT id FROM gebruikers WHERE email = ?').get(email) as { id: number }).id;
+  const laatste = () => t.verzoeken.at(-1)!;
+
+  it('logs method, path with query, status, duration, the user and the IP, but not the body', async () => {
+    const dossierId = await nieuwDossier();
+    t.verzoeken.length = 0;
+    await beheerder.json('PATCH', `/api/dossiers/${dossierId}`, { key: 'wensen', value: 'Geheime wens' });
+    expect(laatste()).toMatch(new RegExp(`^PATCH /api/dossiers/${dossierId} 200 \\d+ms gebruiker=`));
+    await beheerder.json('GET', '/api/dossiers?pagina=2&q=Dorp');
+    expect(laatste()).toMatch(new RegExp(`^GET /api/dossiers\\?pagina=2&q=Dorp 200 \\d+ms gebruiker=${id('bea.beheer@example.org')} ip=10\\.0\\.0\\.1$`));
+    expect(t.verzoeken.join('\n')).not.toContain('Geheime wens');
+  });
+
+  it('logs refused and unknown requests with their status, without a user when not logged in', async () => {
+    await new Klant(t, '10.0.0.7').verzoek('GET', '/api/dossiers');
+    expect(laatste()).toMatch(/^GET \/api\/dossiers 401 \d+ms ip=10\.0\.0\.7$/);
+    await beheerder.verzoek('GET', '/api/bestaat-niet');
+    expect(laatste()).toMatch(/^GET \/api\/bestaat-niet 404 /);
+  });
+
+  it('names the impersonated klusser next to the admin during "Inloggen als"', async () => {
+    await beheerder.json('POST', `/api/auth/als/${klusserId}`);
+    await beheerder.json('GET', '/api/auth/me');
+    expect(laatste()).toContain(`gebruiker=${id('bea.beheer@example.org')} als=${klusserId} `);
+  });
+
+  it('hides a login token or code in the query', async () => {
+    await new Klant(t).verzoek('GET', '/inloggen/link?token=abc123&email=x%40example.org');
+    expect(laatste()).toMatch(/^GET \/inloggen\/link\?token=\*\*\*&email=x%40example\.org 404 /);
+    expect(t.verzoeken.join('\n')).not.toContain('abc123');
+  });
+
+  it('skips static files, which follow a logged page load', async () => {
+    t.verzoeken.length = 0;
+    await new Klant(t).verzoek('GET', '/assets/index-abc.js');
+    await new Klant(t).verzoek('GET', '/favicon.ico');
+    expect(t.verzoeken).toEqual([]);
   });
 });

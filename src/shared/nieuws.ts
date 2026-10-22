@@ -6,6 +6,17 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-10-23',
+    groepen: [
+      {
+        kop: 'Privacy',
+        punten: [
+          'De app houdt nu een logboek bij van elk verzoek aan de server: wanneer, welke pagina, of het lukte, wie er was ingelogd en het IP-adres, maar niet wat je invult. Zo kunnen we bij een storing of een vermoeden van misbruik terugzien wat er gebeurde. Het logboek wordt na 12 maanden verwijderd. De Privacy-pagina is aangevuld.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-10-22',
     groepen: [
       {

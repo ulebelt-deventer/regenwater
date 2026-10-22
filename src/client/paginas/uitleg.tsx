@@ -290,6 +290,7 @@ export function Privacy() {
         <ul class="mb-0">
           <li>Gegevens van bewoners gebruiken we om de afkoppeling uit te voeren waarvoor ze zich hebben aangemeld (uitvoering van een overeenkomst, art. 6 lid 1 sub b AVG).</li>
           <li>Gegevens van vrijwilligers en beheerders gebruiken we om het werk te organiseren en te kunnen laten zien wie wat heeft gedaan (gerechtvaardigd belang, art. 6 lid 1 sub f AVG).</li>
+          <li>Het logboek van de server gebruiken we om de app te beveiligen en storingen op te lossen (gerechtvaardigd belang, art. 6 lid 1 sub f AVG).</li>
         </ul>
       </section>
       <section class="card card-body mb-3">
@@ -298,6 +299,7 @@ export function Privacy() {
           <li>Over de bewoner: naam, e-mailadres, telefoonnummer, adres en of de woning huur of koop is.</li>
           <li>Over de woning en de tuin: foto’s, een schets op de kadastrale kaart, metingen en wat er is afgesproken en uitgevoerd.</li>
           <li>Over gebruikers van de app: naam, e-mailadres, telefoonnummer en wanneer ze de app gebruikten. Elke wijziging wordt vastgelegd met wie het deed.</li>
+          <li>In het logboek van de server, bij elk verzoek: het tijdstip, welke pagina of welk onderdeel van de app, of het lukte, wie er was ingelogd en het IP-adres. Een zoekterm komt erin mee, maar niet wat je invult of opslaat.</li>
         </ul>
       </section>
       <section class="card card-body mb-3">
@@ -316,7 +318,7 @@ export function Privacy() {
       <section class="card card-body mb-3">
         <h2>Bewaren en je rechten</h2>
         <p>
-          We bewaren een dossier tot vijf jaar nadat het is afgesloten, zodat we vragen over het uitgevoerde werk kunnen beantwoorden. Gegevens van een gebruiker van de app bewaren we tot vijf jaar nadat diens account is gearchiveerd. Daarna verwijderen we de persoonsgegevens.
+          We bewaren een dossier tot vijf jaar nadat het is afgesloten, zodat we vragen over het uitgevoerde werk kunnen beantwoorden. Gegevens van een gebruiker van de app bewaren we tot vijf jaar nadat diens account is gearchiveerd. Daarna verwijderen we de persoonsgegevens. Het logboek van de server wordt na 12 maanden vanzelf verwijderd.
         </p>
         <p>
           Wil je weten welke gegevens over jou zijn vastgelegd, of wil je ze laten verwijderen of aanpassen? Mail <a href={`mailto:${ULEBELT_CONTACT_EMAIL}`}>{ULEBELT_CONTACT_EMAIL}</a>.

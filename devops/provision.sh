@@ -162,10 +162,10 @@ WantedBy=timers.target
 UNIT
 fi
 
-# journald is size-capped, so the app's and jobs' log lines are copied out daily into gzipped files nothing deletes.
+# journald is size-capped, so the app's and jobs' log lines (the request log included) are copied out daily into gzipped files, deleted after 12 months like journald's own (host-setup.sh).
 install -m 755 /dev/stdin "/usr/local/sbin/${SERVICE_NAME}-archive-logs" <<'SCRIPT'
 #!/bin/sh
-# Usage: archive-logs <service> <dir>. Writes <dir>/YYYY-MM-DD.log.gz (every line, app and jobs) for each of the last 7 days that has no file yet.
+# Usage: archive-logs <service> <dir>. Writes <dir>/YYYY-MM-DD.log.gz (every line, app and jobs) for each of the last 7 days that has no file yet, and deletes the files for days more than 12 months ago.
 set -eu
 service="$1"; dir="$2"
 for n in 7 6 5 4 3 2 1; do
@@ -175,6 +175,12 @@ for n in 7 6 5 4 3 2 1; do
     --since "@$(date -d "${day}" +%s)" --until "@$(date -d "${day} + 1 day" +%s)" > "${dir}/${day}.log.tmp"
   gzip -n -f "${dir}/${day}.log.tmp"
   mv "${dir}/${day}.log.tmp.gz" "${dir}/${day}.log.gz"
+done
+# By the day a file holds (its name as YYYYMMDD), not when it was written.
+oudste="$(date -d '12 months ago' +%Y%m%d)"
+for f in "${dir}"/*.log.gz; do
+  [ -e "${f}" ] || continue
+  if [ "$(basename "${f}" .log.gz | tr -d -)" -lt "${oudste}" ]; then rm "${f}"; fi
 done
 SCRIPT
 cat > "/etc/systemd/system/${SERVICE_NAME}-archive-logs.service" <<UNIT

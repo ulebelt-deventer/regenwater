@@ -258,7 +258,7 @@ describe('sessions', () => {
   });
 
   it('refuses a made-up cookie', async () => {
-    const res = await t.app.request('/api/auth/me', { headers: { cookie: 'sessie=verzonnen' } });
+    const res = await t.app.request('/api/auth/me', { headers: { cookie: 'sessie=verzonnen', 'x-forwarded-for': '10.0.0.1' } });
     expect(res.status).toBe(401);
   });
 

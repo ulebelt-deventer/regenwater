@@ -21,6 +21,7 @@ export interface TestApp {
   klok: VerstelbareKlok;
   mailer: GeheugenMailer;
   pdfs: string[]; // HTML of every document sent to the printer
+  verzoeken: string[]; // request log lines
 }
 
 export function testApp(): TestApp {
@@ -34,12 +35,14 @@ export function testApp(): TestApp {
   klok.zet(new Date('2026-03-02T09:00:00.000Z'));
   const mailer = new GeheugenMailer();
   const pdfs: string[] = [];
+  const verzoeken: string[] = [];
   const ctx: Ctx = {
     db: openDb(':memory:'), klok, mailer, config,
     haal: async (invoer) => fakePdok(String(invoer)),
     pdf: { print: async (html) => (pdfs.push(html), Buffer.from('%PDF-test')) },
+    verzoek: (regel) => verzoeken.push(regel),
   };
-  return { app: createApp(ctx), ctx, klok, mailer, pdfs };
+  return { app: createApp(ctx), ctx, klok, mailer, pdfs, verzoeken };
 }
 
 export function maakGebruiker(t: TestApp, naam: string, rol: 'beheerder' | 'klusser'): number {
@@ -65,7 +68,7 @@ export class Klant {
       headers['content-type'] = 'application/json';
       b = JSON.stringify(inhoud);
     }
-    const res = await this.t.app.request(pad, { method: methode, headers, body: b, ...extra });
+    const res = await this.t.app.request(pad, { method: methode, body: b, ...extra, headers: { ...headers, ...(extra.headers as Record<string, string>) } });
     const gezet = res.headers.get('set-cookie');
     if (gezet) this.cookie = gezet.split(';')[0];
     return res;

@@ -6,9 +6,10 @@ import { openDb } from './db.ts';
 import { VerstelbareKlok } from './klok.ts';
 import { BestandMailer, GeheugenMailer, MailgunMailer, type Mailer } from './mail.ts';
 import { ChromiumPrinter, OpnemendePrinter } from './pdf.ts';
+import { log } from './log.ts';
 import { fakePdok } from './pdokfake.ts';
 
-// The real context for the server and the jobs. Mail goes out only in production; development writes it to files; test keeps it in memory, fakes PDOK and records printed documents.
+// The real context for the server and the jobs. Mail goes out only in production; development writes it to files; test keeps it in memory, fakes PDOK, records printed documents and logs no requests.
 export function maakCtx(config: Config): Ctx & { pdf: ChromiumPrinter } {
   const test = config.modus === 'test';
   fs.mkdirSync(config.fotoDir, { recursive: true });
@@ -24,5 +25,6 @@ export function maakCtx(config: Config): Ctx & { pdf: ChromiumPrinter } {
     config,
     haal: test ? async (invoer) => fakePdok(String(invoer)) : fetch,
     pdf: test ? new OpnemendePrinter() : new ChromiumPrinter(),
+    verzoek: test ? () => {} : log.info,
   };
 }

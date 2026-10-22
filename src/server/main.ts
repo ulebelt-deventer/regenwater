@@ -16,6 +16,10 @@ const app = createApp(ctx);
 const clientDir = path.resolve('dist/client');
 if (config.modus !== 'development' && fs.existsSync(clientDir)) {
   const index = fs.readFileSync(path.join(clientDir, 'index.html'), 'utf8');
+  const versie = /<meta name="app-versie" content="([^"]+)"/.exec(index)?.[1];
+  if (!versie) throw new Error('index.html mist <meta name="app-versie">');
+  // Under /api, so the session middleware puts the user on its request log line.
+  app.get('/api/versie', (c) => c.json({ versie }, 200, { 'Cache-Control': 'no-store' }));
   app.use('/*', serveStatic({ root: path.relative(process.cwd(), clientDir) }));
   app.get('/*', (c) => c.html(index));
 }

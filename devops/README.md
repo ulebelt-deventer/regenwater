@@ -22,7 +22,7 @@ Inside each environment's directory (`<dir>` below):
 | `<dir>/browsers` | Playwright's Chromium for the PDFs | Same |
 | `<dir>/data/app.db` | SQLite (WAL), replicated by Litestream. Migrations run on boot. | Never |
 | `<dir>/data/fotos` | Photos, synced to the bucket by the daily backup check | Never |
-| `<dir>/logs` | One gzipped file per day of every app and job log line (`zgrep` reads them), never pruned | Never |
+| `<dir>/logs` | One gzipped file per day of every app and job log line, the request log included (`zgrep` reads them), deleted after 12 months | Never |
 
 ## First time
 
@@ -41,7 +41,7 @@ Per environment (`<env>` = `production` or `staging`):
 
 ## Operate
 
-- `bash devops/deploy.sh <env>`: ships the local working tree, committed or not, after typecheck, lint, unit tests and the build pass.
+- `bash devops/deploy.sh <env>`: ships the current commit after typecheck, lint, unit tests and the build pass. It refuses uncommitted changes, because the commit is the version the app and the request log report.
 - `bash devops/status.sh <env>`: service, health, TLS, memory, errors, Litestream, backup check, digest and host at a glance.
 - `bash devops/logs.sh <env>`: follows the app's and the jobs' journald logs. With more args (e.g. `--since "1 hour ago" -p warning`) it passes them to journalctl and prints once.
 - `bash devops/backup.sh <env>`: downloads a consistent snapshot of `app.db` to `backups/` (gitignored) and checks its integrity. Run it before a deploy with a data migration; it does not depend on Litestream. Photos are not included.

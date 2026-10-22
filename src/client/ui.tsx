@@ -5,6 +5,7 @@ import { tijd } from '../shared/datum.ts';
 import { ICOON, type IcoonSoort } from '../shared/kaart.ts';
 import type { LigtBij } from '../shared/status.ts';
 import { isBeheerderNu } from './sessie.ts';
+import { nieuweVersie, verbergNieuweVersie } from './versie.ts';
 
 // ---- Pop-up messages ----
 
@@ -38,6 +39,15 @@ export const sluitMelding = (id: number) => {
 export function Meldingen() {
   return (
     <div class="meldingen">
+      {/* Unsent edits survive the reload: the autosave queue lives in localStorage and IndexedDB. */}
+      <Show when={nieuweVersie()}>
+        <div class="alert alert-info alert-dismissible shadow-sm d-flex align-items-center gap-2 qa-nieuwe-versie" role="alert">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true" />
+          <span class="me-auto">Er is een nieuwe versie van de app.</span>
+          <button type="button" class="btn btn-sm btn-primary qa-vernieuwen" onClick={() => location.reload()}>Vernieuwen</button>
+          <button type="button" class="btn-close qa-nieuwe-versie-sluiten" aria-label="Sluiten" onClick={verbergNieuweVersie} />
+        </div>
+      </Show>
       <For each={meldingen()}>
         {(m) => (
           <div class={`alert alert-${m.soort} alert-dismissible shadow-sm qa-melding qa-melding-${m.soort} ${vervagend().includes(m.id) ? 'melding-weg' : ''}`} role="alert">

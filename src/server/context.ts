@@ -19,6 +19,7 @@ export interface Ctx {
   config: Config;
   haal: typeof fetch; // outbound HTTP to PDOK and BRO
   pdf: PdfPrinter;
+  verzoek: (regel: string) => void; // the request log, see verzoeklog.ts
 }
 
 export interface Env {

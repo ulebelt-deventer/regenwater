@@ -8,14 +8,15 @@ Internal notes on how the app handles personal data and where it stands on AVG (
 
 ## Legal basis and retention
 
-- Bewoners: performance of the agreement they signed up for (Art. 6(1)(b)). Volunteers and admins: legitimate interest in organizing the work and accounting for who did what (Art. 6(1)(f)).
-- Retention: 5 years after a dossier is closed, and 5 years after a user's account is archived; then the personal data is deleted. The 5 years echoes the Dutch limitation period for claims (BW 3:310), though that runs from when damage becomes known, so a claim can still come later; the period is provisional until the team confirms it. Nothing deletes automatically yet.
+- Bewoners: performance of the agreement they signed up for (Art. 6(1)(b)). Volunteers and admins: legitimate interest in organizing the work and accounting for who did what (Art. 6(1)(f)). The request log: legitimate interest in security and troubleshooting (Art. 6(1)(f), Recital 49).
+- Retention: 5 years after a dossier is closed, and 5 years after a user's account is archived; then the personal data is deleted. The 5 years echoes the Dutch limitation period for claims (BW 3:310), though that runs from when damage becomes known, so a claim can still come later; the period is provisional until the team confirms it. Nothing deletes automatically yet. Logs (journald and the daily archive) are deleted automatically after 12 months, within CNIL's recommended 6 to 12 months for security logs.
 - **Technisch beheerder (maintainer):** a volunteer acting under Ulebelt's authority (AVG Art. 29), so part of the organization rather than a processor; no separate agreement needed. The privacy page mentions the role, not the person.
 
 ## Personal data stored
 
 - Bewoners: name, e-mail, phone, address, rent or own, and through the dossier photos of house and garden, a sketch on the cadastral map, RD coordinates, measurements and agreements.
 - App users (volunteers, admins): name, e-mail, phone, login times, and an audit trail of every change with who made it.
+- Request log (`src/server/verzoeklog.ts`), one line per request: method, path and query (login token and code masked), status, duration, user id, IP, client build. Never the body. A search term in the query can name a bewoner or address.
 - No special categories (health, religion, etc.).
 
 ## Processors (need a DPA)

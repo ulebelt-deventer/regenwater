@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Once per VPS: packages, Node, Caddy, Litestream, rclone, firewall, swap, timezone. The VPS runs only this app (one or both environments); either environment's argument picks the host.
+# Once per VPS: packages, Node, Caddy, Litestream, rclone, firewall, swap, timezone, journald retention. The VPS runs only this app (one or both environments); either environment's argument picks the host.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
 echo "==> Host setup on ${DEPLOY_HOST} (via ${ENVIRONMENT}'s deploy.${ENVIRONMENT}.env). FYI: this does the same thing for either environment; the argument only picks the host."
@@ -12,6 +12,10 @@ apt-get install -y rsync curl ca-certificates gnupg ufw fail2ban unattended-upgr
 systemctl enable --now fail2ban
 systemctl enable --now unattended-upgrades
 timedatectl set-timezone Europe/Amsterdam
+# The request log holds user ids and IPs; the privacy page promises they are gone after 12 months. The daily archive in provision.sh prunes the same way.
+install -d /etc/systemd/journald.conf.d
+printf '[Journal]\nMaxRetentionSec=1year\n' > /etc/systemd/journald.conf.d/retentie.conf
+systemctl restart systemd-journald
 
 ufw allow "${SSH_PORT}/tcp"
 ufw allow 80/tcp

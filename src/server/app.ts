@@ -14,9 +14,11 @@ import { dossierRoutes } from './routes/dossiers.ts';
 import { fotoRoutes } from './routes/fotos.ts';
 import { gebruikerRoutes } from './routes/gebruikers.ts';
 import { mailRoutes } from './routes/mail.ts';
+import { verzoekLog } from './verzoeklog.ts';
 
 export function createApp(ctx: Ctx): Hono<Env> {
   const app = new Hono<Env>();
+  app.use('*', verzoekLog(ctx));
 
   app.get('/health', (c) => {
     ctx.db.prepare('SELECT 1').get();

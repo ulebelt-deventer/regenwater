@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
-# Check and build locally, rsync the runtime files, install deps and Chromium if the lockfile changed, restart, wait for /health. Migrations run on boot.
+# Refuse uncommitted changes, check and build locally, rsync the runtime files, install deps and Chromium if the lockfile changed, restart, wait for /health. Migrations run on boot.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# The build's version is the commit (vite.config.ts), which the request log and the app's new-version check rely on.
+if [ -n "$(git -C "${REPO_ROOT}" status --porcelain)" ]; then
+  echo "ERROR: uncommitted changes. Commit them first; the deployed version is the commit." >&2
+  git -C "${REPO_ROOT}" status --short >&2
+  exit 1
+fi
 
 echo "==> Local checks + build"
 ( cd "${REPO_ROOT}" && npm run typecheck && npm run lint && npm run test:vite && npm run build )
