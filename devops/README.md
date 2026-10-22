@@ -44,6 +44,7 @@ Per environment (`<env>` = `production` or `staging`):
 - `bash devops/deploy.sh <env>`: ships the local working tree, committed or not, after typecheck, lint, unit tests and the build pass.
 - `bash devops/status.sh <env>`: service, health, TLS, memory, errors, Litestream, backup check, digest and host at a glance.
 - `bash devops/logs.sh <env>`: follows the app's and the jobs' journald logs. With more args (e.g. `--since "1 hour ago" -p warning`) it passes them to journalctl and prints once.
+- `bash devops/backup.sh <env>`: downloads a consistent snapshot of `app.db` to `backups/` (gitignored) and checks its integrity. Run it before a deploy with a data migration; it does not depend on Litestream. Photos are not included.
 - `bash devops/restart.sh <env>`: restart without deploying. Sessions live in SQLite, so no one is logged out.
 - `bash devops/push-env.sh <env>`: update secrets; restarts the app and Litestream.
 - Run a job now: `ssh <host> systemctl start regenton-<env>-backup-check.service` (or `regenton-<env>-digest.service`).

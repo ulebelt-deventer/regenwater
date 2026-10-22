@@ -8,3 +8,4 @@ playwright-report/
 devops/*.env
 _files
 TODO.md
+backups/
