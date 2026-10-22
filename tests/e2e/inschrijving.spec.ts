@@ -1,6 +1,6 @@
-// The Inschrijving page: the one-line address with its pencil, and the admin's "Inschrijving is compleet" that unlocks the bezoeker.
+// The Inschrijving page: the one-line address with its pencil, the shared Notities, and the admin's "Inschrijving is compleet" that unlocks the bezoeker.
 import { expect, test } from '@playwright/test';
-import { kies, nieuwDossier, start, veld } from './hulp.ts';
+import { kies, nieuwDossier, opslagKlaar, start, veld, vul } from './hulp.ts';
 
 test('een gekozen adres staat op één regel; het potlood opent het zoekveld met de focus erin', async ({ page }) => {
   await start(page);
@@ -8,6 +8,17 @@ test('een gekozen adres staat op één regel; het potlood opent het zoekveld met
   await expect(page.locator('.qa-adres-zoek')).toHaveCount(0);
   await page.locator('.qa-adres-wijzigen').click();
   await expect(page.locator('.qa-adres-zoek')).toBeFocused();
+});
+
+test('onderaan de Inschrijving staan de Notities van de dossierpagina, met de uitleg wie ze ziet', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/inschrijving`);
+  await expect(veld(page, 'notities').locator('.qa-hint')).toContainText('bezoeker en uitvoerder');
+  await vul(page, 'notities', 'Gemeente en school hebben toestemming gegeven.');
+  await opslagKlaar(page);
+  await page.goto(`/dossiers/${id}`);
+  await expect(page.locator('.qa-notities')).toContainText('Gemeente en school hebben toestemming gegeven.');
 });
 
 test('met nog ontbrekende velden vraagt Inschrijving is compleet eerst bevestiging, en pas daarna kun je een bezoeker toewijzen', async ({ page }) => {

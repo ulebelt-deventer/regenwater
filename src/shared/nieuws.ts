@@ -14,6 +14,12 @@ export const NIEUWS: NieuwsDatum[] = [
           'Bij de Bezoek-afspraak kies je de tijd nu met twee keuzelijstjes: het uur (6 tot 20 uur, gewoon doorgeteld, dus 14 en niet 2) en de minuten in kwartieren. Kies je alleen een uur, dan wordt het het hele uur.',
         ],
       },
+      {
+        kop: 'Inschrijving',
+        punten: [
+          'Onderaan de Inschrijving kun je nu Notities kwijt, bijvoorbeeld wie de opdrachtgever is of wie toestemming heeft gegeven. Het zijn dezelfde notities als bovenaan de dossierpagina, dus de bezoeker en uitvoerder zien ze ook.',
+        ],
+      },
     ],
   },
   {

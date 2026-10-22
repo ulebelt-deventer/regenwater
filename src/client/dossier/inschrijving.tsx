@@ -121,6 +121,8 @@ export function Inschrijving() {
           </div>
         </Show>
 
+        <VeldInvoer k="notities" hint="Dezelfde notities als bovenaan de dossierpagina. De bezoeker en uitvoerder zien ze ook." />
+
         <div class="border-top pt-3 qa-controle">
           <Show
             when={!s.d.inschrijving_afgerond_at}

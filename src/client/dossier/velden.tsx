@@ -12,16 +12,16 @@ export const qaNaam = (patroon: string) => patroon.replace(/\.\*\./g, '-').repla
 
 const tekst = (v: Json) => (typeof v === 'string' ? v : '');
 
-function Hint(props: { veld: Veld }) {
+function Hint(props: { tekst: string | undefined }) {
   return (
-    <Show when={props.veld.hint}>
-      <div class="form-text mt-0 mb-1">{props.veld.hint}</div>
+    <Show when={props.tekst}>
+      <div class="form-text mt-0 mb-1 qa-hint">{props.tekst}</div>
     </Show>
   );
 }
 
 // The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder` or 2+ photos, so those lie side by side. `breed` stretches a dropdown or number input to its column.
-export function VeldInvoer(props: { k: string; label?: string; opties?: [string, string][]; suggesties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
+export function VeldInvoer(props: { k: string; label?: string; hint?: string; opties?: [string, string][]; suggesties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
   const def = veldVoor(k);
@@ -35,7 +35,7 @@ export function VeldInvoer(props: { k: string; label?: string; opties?: [string,
       <div id={`veld-${props.k}`} class={`qa-veld qa-veld-${qaNaam(v.key)} ${props.class ?? (props.kaal ? '' : 'mb-3')}`}>
         <Show when={!props.kaal}>
           <div class={`form-label fw-semibold mb-1 ${props.labelClass ?? ''}`}>{props.label ?? v.label}</div>
-          <Hint veld={v} />
+          <Hint tekst={props.hint ?? v.hint} />
         </Show>
         <Show when={fotoSlot} fallback={invoer}>
           {(slot) => {
