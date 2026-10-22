@@ -298,6 +298,10 @@ test('een regenpijp met ingevulde gegevens verwijderen vraagt bevestiging, en on
   expect((d.data.kaart_annotaties as Annotatie[]).map((a) => a.id)).toEqual([pijpId]);
   expect(d.data[`regenpijp.${pijpId}.waar`]).toBe('Naar de border');
   await expect(page.locator('.qa-ongedaan')).toBeDisabled();
+  // Our own ↶ icon: the SVG mask must load, or the button shows a filled square.
+  const icoon = page.locator('.qa-ongedaan .icoon-ongedaan');
+  await expect(icoon).toBeVisible();
+  expect(await icoon.evaluate((el) => getComputedStyle(el).maskImage)).toContain('svg');
 
   await sluitTekenaar(page);
   await expect(page.locator('.qa-regenpijp .qa-veld-regenpijp-waar .qa-invoer')).toHaveValue('Naar de border');

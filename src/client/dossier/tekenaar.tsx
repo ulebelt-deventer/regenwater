@@ -454,7 +454,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void }) {
           <Show when={gekozen()}>
             <button type="button" class="btn btn-sm btn-outline-danger qa-verwijder" aria-label="Verwijderen" ref={tip('Verwijderen')} onClick={() => void verwijder()}><i class="bi bi-eraser" aria-hidden="true" /></button>
           </Show>
-          <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" aria-label="Ongedaan maken" ref={tip('Ongedaan maken')} disabled={!geschiedenis().length} onClick={ongedaan}><i class="bi bi-arrow-counterclockwise" aria-hidden="true" /></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary qa-ongedaan" aria-label="Ongedaan maken" ref={tip('Ongedaan maken')} disabled={!geschiedenis().length} onClick={ongedaan}><i class="icoon icoon-ongedaan" aria-hidden="true" /></button>
           <button type="button" class="btn btn-sm btn-outline-danger qa-foto-verwijderen" onClick={() => void fotoVerwijderen()}><i class="bi bi-trash3 me-1" aria-hidden="true" />Foto<span class="d-none d-sm-inline"> verwijderen</span></button>
         </Show>
         <button type="button" class="btn btn-sm btn-success ms-auto qa-tekenaar-sluiten" aria-label="Sluiten" onClick={() => props.onSluit()}>✕</button>
