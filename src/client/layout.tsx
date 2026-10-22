@@ -97,6 +97,8 @@ function Navbar() {
               <i class="bi bi-stars me-2" aria-hidden="true" />Wat is er nieuw
               <Show when={nieuwsOngezien(s().ik.nieuws_gezien)}><NieuwStip /></Show>
             </A>
+            {/* The build this page runs: after a reload, the deployed commit. */}
+            <div class="dropdown-item-text small text-muted qa-versie">Versie: {import.meta.env.VITE_APP_VERSIE}</div>
           </Dropdown>
         </Show>
         <Dropdown

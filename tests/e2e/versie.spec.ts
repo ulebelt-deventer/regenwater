@@ -78,3 +78,11 @@ test('na wegklikken blijft de pagina op deze versie en vraagt de server niets me
   expect(verzoeken).toHaveLength(0);
   await expect(page.locator('.qa-nieuwe-versie')).toHaveCount(0);
 });
+
+test('het Beheer-menu toont de versie van de pagina', async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  const eigen = await page.locator('meta[name="app-versie"]').getAttribute('content');
+  await page.locator('.qa-nav-beheer').click();
+  await expect(page.locator('.qa-versie')).toHaveText(`Versie: ${eigen}`);
+});
