@@ -40,7 +40,7 @@ export function Meldingen() {
     <div class="meldingen">
       <For each={meldingen()}>
         {(m) => (
-          <div class={`alert alert-${m.soort} alert-dismissible shadow-sm qa-melding qa-melding-${m.soort}`} classList={{ 'melding-weg': vervagend().includes(m.id) }} role="alert">
+          <div class={`alert alert-${m.soort} alert-dismissible shadow-sm qa-melding qa-melding-${m.soort} ${vervagend().includes(m.id) ? 'melding-weg' : ''}`} role="alert">
             <Show when={m.icoon}>
               <i class={`bi bi-${m.icoon} me-2`} aria-hidden="true" />
             </Show>

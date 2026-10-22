@@ -214,7 +214,7 @@ test('Wat is er nieuw toont een rode stip tot de beheerder de pagina opent, met 
   await page.locator('.qa-nav-nieuws').click();
 
   await expect(page).toHaveURL(/\/beheer\/nieuw$/);
-  await expect(page.locator('.qa-nieuws-datum').first().locator('h2')).toHaveText(datum(NIEUWS[0].datum));
+  await expect(page.locator('.qa-nieuws-datum').first().locator('.qa-nieuws-kop')).toHaveText(datum(NIEUWS[0].datum));
   await expect(page.locator('.qa-nieuws-datum').first().locator('li').first()).toHaveText(NIEUWS[0].groepen[0].punten[0]);
   await expect(page.locator('.qa-nav-beheer')).toBeVisible();
   await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);

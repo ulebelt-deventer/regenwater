@@ -27,11 +27,11 @@ function NieuwsInhoud() {
       <For each={NIEUWS}>
         {(n) => (
           <section class="mb-4 qa-nieuws-datum">
-            <h2 class="h3 border-bottom pb-1">{datum(n.datum)}</h2>
+            <h3 class="border-bottom pb-1 qa-nieuws-kop">{datum(n.datum)}</h3>
             <For each={n.groepen}>
               {(g) => (
                 <>
-                  <h3 class="h5 mt-3">{g.kop}</h3>
+                  <h5 class="mt-3">{g.kop}</h5>
                   <ul>
                     <For each={g.punten}>{(p) => <li>{p}</li>}</For>
                   </ul>
