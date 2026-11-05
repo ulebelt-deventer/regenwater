@@ -163,3 +163,26 @@ describe('the Salland Wonen -> SallandWonen rename', () => {
     ]);
   });
 });
+
+describe('the normafvoeren table', () => {
+  it('seeds the standaard row at 20 mm and fixes that value on dossiers past their Bezoek, leaving the others open', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes('CREATE TABLE normafvoeren'));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    db.prepare('INSERT INTO dossiers (id, created_at, created_by) VALUES (1, ?, 1)').run(T);
+    db.prepare('INSERT INTO dossiers (id, created_at, created_by, bezoek_afgerond_at, bezoek_afgerond_by) VALUES (2, ?, 1, ?, 1)').run(T, T);
+    db.prepare("INSERT INTO dossiers (id, created_at, created_by, gesloten_at, gesloten_by, gesloten_reden) VALUES (3, ?, 1, ?, 1, 'anders')").run(T, T);
+
+    migreer(db);
+
+    expect(db.prepare('SELECT gemeente, mm FROM normafvoeren').all()).toEqual([{ gemeente: null, mm: 20 }]);
+    expect(db.prepare('SELECT id, normafvoer_mm, normafvoer_gemeente FROM dossiers ORDER BY id').all()).toEqual([
+      { id: 1, normafvoer_mm: null, normafvoer_gemeente: null },
+      { id: 2, normafvoer_mm: 20, normafvoer_gemeente: null },
+      { id: 3, normafvoer_mm: 20, normafvoer_gemeente: null },
+    ]);
+    expect(db.prepare('SELECT normafvoer_at IS NOT NULL AS vast FROM dossiers ORDER BY id').pluck().all()).toEqual([0, 1, 1]);
+  });
+});

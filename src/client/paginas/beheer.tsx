@@ -1,10 +1,108 @@
-// Beheer pages (admin): Materialen, E-mailsjablonen and Feedback.
+// Beheer pages (admin): Normafvoer, Materialen, E-mailsjablonen and Feedback.
 import { A, useParams } from '@solidjs/router';
 import { For, Show, createResource, createSignal } from 'solid-js';
-import { datumTijd } from '../../shared/datum.ts';
+import { NORM_STANDAARD_LABEL } from '../../shared/constants.ts';
+import { datum, datumTijd } from '../../shared/datum.ts';
 import { controleerTags, probleemTeksten, sjabloonDef } from '../../shared/sjablonen.ts';
+import type { NormafvoerRij } from '../../shared/types.ts';
 import { del, get, patch, post, put, query } from '../api.ts';
 import { AlleenBeheerder, Kruimels, Laden, bevestig, melding, probeer, titel } from '../ui.tsx';
+
+// ---- Normafvoer ----
+
+interface Normen {
+  normafvoeren: NormafvoerRij[];
+  gemeenten: string[];
+}
+
+export function NormafvoerBeheer() {
+  titel('Normafvoer');
+  return (
+    <AlleenBeheerder>
+      <NormafvoerInhoud />
+    </AlleenBeheerder>
+  );
+}
+
+function NormafvoerInhoud() {
+  const [data, { mutate }] = createResource(() => get<Normen>('/api/normafvoeren'));
+  const [gemeente, setGemeente] = createSignal('');
+  const [mm, setMm] = createSignal('');
+  const vrij = () => {
+    const bezet = new Set(data()!.normafvoeren.map((n) => n.gemeente));
+    return data()!.gemeenten.filter((g) => !bezet.has(g));
+  };
+
+  const toevoegen = async (e: Event) => {
+    e.preventDefault();
+    const naam = gemeente().trim();
+    if (!data()!.gemeenten.includes(naam) && !(await bevestig(`${naam} toevoegen?`, 'Deze naam kennen we nog niet uit de dossiers. Hij moet precies zo geschreven zijn als in het adres, anders geldt de norm niet.', { ja: 'Toevoegen' }))) return;
+    if (await probeer(async () => mutate(await post<Normen>('/api/normafvoeren', { gemeente: naam, mm: Number(mm()) })))) {
+      setGemeente('');
+      setMm('');
+    }
+  };
+  const wijzig = async (n: NormafvoerRij, invoer: HTMLInputElement) => {
+    if (Number(invoer.value) === n.mm) return;
+    if (!(await probeer(async () => mutate(await patch<Normen>(`/api/normafvoeren/${n.id}`, { mm: Number(invoer.value) }))))) invoer.value = String(n.mm);
+  };
+  const nagekeken = (n: NormafvoerRij) => probeer(async () => mutate(await post<Normen>(`/api/normafvoeren/${n.id}/nagekeken`)));
+  const verwijder = async (n: NormafvoerRij) => {
+    if (!(await bevestig(`${n.gemeente} verwijderen?`, 'Dossiers in deze gemeente krijgen dan de standaardnorm, tenzij hun Bezoek al is geopend.', { ja: 'Verwijderen', gevaar: true }))) return;
+    await probeer(async () => mutate(await del<Normen>(`/api/normafvoeren/${n.id}`)));
+  };
+
+  return (
+    <>
+      <h1>Normafvoer</h1>
+      <p class="text-muted">De regenval waarmee de app de waterberging per regenpijp berekent. Een gemeente zonder eigen rij krijgt de standaardnorm. Een dossier houdt de norm vanaf het moment dat het Bezoek voor het eerst wordt geopend, dus een wijziging hier geldt alleen voor dossiers waarvan het Bezoek nog niet is geopend. Elk jaar vraagt de mail Aandacht nodig om de normen na te kijken.</p>
+      <Show when={data()} fallback={<Laden />}>
+        <div class="table-responsive">
+          <table class="table align-middle qa-normen" style={{ 'max-width': '42rem' }}>
+            <thead>
+              <tr>
+                <th>Gemeente</th>
+                <th style={{ width: '6rem' }}>Norm (mm)</th>
+                <th colspan="2">Nagekeken</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={data()!.normafvoeren}>
+                {(n) => (
+                  <tr class="qa-norm-rij">
+                    <td class="qa-norm-gemeente">{n.gemeente ?? NORM_STANDAARD_LABEL}</td>
+                    <td><input class="form-control form-control-sm qa-norm-mm" type="number" min="1" max="100" step="1" aria-label={`Norm in mm, ${n.gemeente ?? NORM_STANDAARD_LABEL}`} value={n.mm} onChange={(e) => wijzig(n, e.currentTarget)} /></td>
+                    <td class="text-nowrap">
+                      <span class="me-2 qa-norm-nagekeken">{datum(n.gecontroleerd_at)}</span>
+                      <button type="button" class="btn btn-outline-secondary btn-sm qa-norm-nagekeken-knop" onClick={() => nagekeken(n)}>Nagekeken</button>
+                    </td>
+                    <td class="w-1px">
+                      <Show when={n.gemeente !== null}>
+                        <button type="button" class="btn btn-outline-danger btn-sm qa-norm-verwijder" aria-label={`${n.gemeente} verwijderen`} onClick={() => verwijder(n)}><i class="bi bi-trash" aria-hidden="true" /></button>
+                      </Show>
+                    </td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
+        <form class="d-flex flex-wrap gap-2 align-items-end qa-norm-toevoegen" style={{ 'max-width': '42rem' }} onSubmit={toevoegen}>
+          <div class="flex-grow-1">
+            <label class="form-label" for="norm-gemeente">Gemeente</label>
+            <input id="norm-gemeente" class="form-control qa-norm-nieuw-gemeente" list="norm-gemeenten" required value={gemeente()} onInput={(e) => setGemeente(e.currentTarget.value)} />
+            <datalist id="norm-gemeenten"><For each={vrij()}>{(g) => <option value={g} />}</For></datalist>
+          </div>
+          <div style={{ width: '6rem' }}>
+            <label class="form-label" for="norm-nieuw-mm">Norm (mm)</label>
+            <input id="norm-nieuw-mm" class="form-control qa-norm-nieuw-mm" type="number" min="1" max="100" step="1" required value={mm()} onInput={(e) => setMm(e.currentTarget.value)} />
+          </div>
+          <button type="submit" class="btn btn-primary qa-norm-voeg-toe">Toevoegen</button>
+        </form>
+      </Show>
+    </>
+  );
+}
 
 // ---- Materialen ----
 

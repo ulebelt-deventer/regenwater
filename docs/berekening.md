@@ -4,11 +4,11 @@ How the app estimates how much water each regenpijp must be able to store or inf
 
 ## Formula
 
-`V = Σ (share × m²) × NORMAFVOER_MM`, summed over every dakdeel the pijp drains. 1 m² × 1 mm = 1 liter, so 34 m² at 20 mm is 680 liter. The uitleg shows the sum, eg `62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter` (liters are rounded from the unrounded m²).
+`V = Σ (share × m²) × normafvoer`, summed over every dakdeel the pijp drains. 1 m² × 1 mm = 1 liter, so 34 m² at 20 mm is 680 liter. The uitleg shows the sum, eg `62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter` (liters are rounded from the unrounded m²).
 
 - **m²** is the horizontal projected area: what the kadasterkaart gives, or what the bezoeker types on an unscaled kaart. Rain falls (nearly) vertically, so the projection is the catching area and a sloped roof needs no slope correction.
 - **Runoff coefficient** is taken as 1.0: pitched tiles, bitumen and metal shed practically all water. A green or gravel roof sheds less (roughly 0.3 to 0.7), which the app ignores, so it overestimates there.
-- **NORMAFVOER_MM** (`src/shared/constants.ts`) is 20 mm, a PLACEHOLDER pending the team: the sample plan says 20 mm but its numbers match 10 mm.
+- **Normafvoer** comes from the table under Beheer: the row for the dossier's gemeente, else the standaard row (20 mm, a PLACEHOLDER pending the team: the sample plan says 20 mm but its numbers match 10 mm). The dossier reads the table live until its norm is fixed, the first time its Bezoek opens (Bezoek afgerond fixes it too, when that request got lost on site), and keeps that value from then on, also when the step is undone. A beheerder can override it per dossier, with a reason. Dossiers past Bezoek afgerond or closed when the table arrived are fixed at 20 mm, the value they were calculated with. A closed dossier's norm is not fixed afterwards.
 
 ## Which pijp drains which part of a dakdeel
 

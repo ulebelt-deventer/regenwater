@@ -1,12 +1,13 @@
 import type { Hono } from 'hono';
 import { NIEUWS } from '../../shared/nieuws.ts';
 import { SJABLONEN, TAG_UITLEG, controleerTags } from '../../shared/sjablonen.ts';
-import type { Adres } from '../../shared/types.ts';
+import type { Adres, NormafvoerRij } from '../../shared/types.ts';
 import { audit, type AuditRij } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
-import { type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
+import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
 import { melding } from '../meldingen.ts';
-import { gebruikersMap } from '../repo.ts';
+import { gebruikersMap, leesNormMm, normafvoeren } from '../repo.ts';
+import { DETECTIE_GEMEENTEN } from '../riool.ts';
 import { auditItem } from './dossiers.ts';
 
 const ACTIVITEIT_PER_PAGINA = 50;
@@ -76,6 +77,62 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
     ctx.db.prepare('DELETE FROM materialen WHERE id = ?').run(id);
     audit(ctx, actorVan(c), null, 'materiaal_verwijderd', { id, naam: oud.naam, prijs: oud.prijs });
     return c.json({ materialen: materialen(ctx) });
+  });
+
+  // Normafvoer per gemeente. A dossier reads its row until its norm is fixed, so nothing here touches existing dossiers past that point.
+  const normRij = (c: C) => {
+    const rij = ctx.db.prepare('SELECT * FROM normafvoeren WHERE id = ?').get(idParam(c)) as NormafvoerRij | undefined;
+    if (!rij) fout(404, 'Normafvoer niet gevonden');
+    return rij;
+  };
+  const normAntwoord = (c: C) => {
+    const gebruikt = ctx.db.prepare("SELECT DISTINCT json_extract(adres_json, '$.gemeente') FROM dossiers WHERE adres_json IS NOT NULL").pluck().all() as string[];
+    return c.json({ normafvoeren: normafvoeren(ctx.db), gemeenten: [...new Set([...DETECTIE_GEMEENTEN, ...gebruikt])].sort() });
+  };
+
+  app.get('/api/normafvoeren', (c) => {
+    alleenBeheerder(c);
+    return normAntwoord(c);
+  });
+
+  app.post('/api/normafvoeren', async (c) => {
+    alleenBeheerder(c);
+    const b = await body<Record<string, unknown>>(c);
+    const gemeente = typeof b.gemeente === 'string' ? b.gemeente.trim() : '';
+    if (!gemeente) fout(400, 'Vul een gemeente in.');
+    const mm = leesNormMm(b);
+    if (normafvoeren(ctx.db).some((n) => n.gemeente?.toLowerCase() === gemeente.toLowerCase())) fout(409, `${gemeente} staat al in de tabel.`);
+    ctx.db.prepare('INSERT INTO normafvoeren (gemeente, mm, gecontroleerd_at) VALUES (?, ?, ?)').run(gemeente, mm, ctx.klok.iso());
+    audit(ctx, actorVan(c), null, 'normafvoer_toegevoegd', { gemeente, mm });
+    return normAntwoord(c);
+  });
+
+  // Saving counts as nagekeken, also when the value stays the same.
+  app.patch('/api/normafvoeren/:id', async (c) => {
+    alleenBeheerder(c);
+    const b = await body<Record<string, unknown>>(c);
+    const oud = normRij(c);
+    const mm = leesNormMm(b);
+    ctx.db.prepare('UPDATE normafvoeren SET mm = ?, gecontroleerd_at = ? WHERE id = ?').run(mm, ctx.klok.iso(), oud.id);
+    audit(ctx, actorVan(c), null, 'normafvoer_gewijzigd', { gemeente: oud.gemeente, oud: oud.mm, nieuw: mm });
+    return normAntwoord(c);
+  });
+
+  app.post('/api/normafvoeren/:id/nagekeken', (c) => {
+    alleenBeheerder(c);
+    const rij = normRij(c);
+    ctx.db.prepare('UPDATE normafvoeren SET gecontroleerd_at = ? WHERE id = ?').run(ctx.klok.iso(), rij.id);
+    audit(ctx, actorVan(c), null, 'normafvoer_nagekeken', { gemeente: rij.gemeente, mm: rij.mm });
+    return normAntwoord(c);
+  });
+
+  app.delete('/api/normafvoeren/:id', (c) => {
+    alleenBeheerder(c);
+    const rij = normRij(c);
+    if (rij.gemeente === null) fout(400, 'De standaardnorm kun je niet verwijderen.');
+    ctx.db.prepare('DELETE FROM normafvoeren WHERE id = ?').run(rij.id);
+    audit(ctx, actorVan(c), null, 'normafvoer_verwijderd', { gemeente: rij.gemeente, mm: rij.mm });
+    return normAntwoord(c);
   });
 
   // E-mailsjablonen. Tag problems don't block saving; they come back so the page can warn, as the preview pop-up does.

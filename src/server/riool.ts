@@ -98,6 +98,7 @@ const DETECTIE: Record<string, (ctx: Ctx, rd: [number, number]) => Promise<Riool
   Raalte: (ctx, rd) => perPand(ctx, RAALTE, rd, 'Categorie', RAALTE_LABELS),
   'Olst-Wijhe': (ctx, rd) => perPand(ctx, OLST_WIJHE, rd, 'hemelwater_gebied', OLST_WIJHE_LABELS),
 };
+export const DETECTIE_GEMEENTEN = Object.keys(DETECTIE);
 
 export async function detecteerRiool(ctx: Ctx, a: Adres): Promise<RioolDetectie> {
   const at = ctx.klok.iso();

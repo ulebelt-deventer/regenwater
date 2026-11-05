@@ -1,7 +1,7 @@
 import { For, type JSX, Show } from 'solid-js';
 import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
-import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
+import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { eigenaar, str } from '../../shared/status.ts';
 import { BEOORDELINGEN, materiaalRijen, opsommingRegels, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, fotosIn, heeft, naamVan } from './onderdelen.tsx';
@@ -120,7 +120,7 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
             <tbody>
               <For each={items().regenpijpen}>
                 {(r) => {
-                  const wb = waterberging(r, items().daken);
+                  const wb = waterberging(r, items().daken, d().normafvoer.mm);
                   return (
                     <tr>
                       <td>{r.label}</td>
@@ -137,7 +137,7 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
         <Show when={items().daken.some(autoGesplitst)}>
           <p class="voetnoot qa-pdf-voetnoot-verdeling">† automatisch verdeeld: {AUTO_VERDELING_UITLEG}</p>
         </Show>
-        <p class="voetnoot">** per regenpijp gebaseerd op normafvoer 20 mm regenwater</p>
+        <p class="voetnoot qa-pdf-voetnoot-normafvoer">** {normafvoerTekst(d().normafvoer)}</p>
       </Show>
     </>
   );

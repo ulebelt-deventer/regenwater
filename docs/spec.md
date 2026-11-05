@@ -220,7 +220,7 @@
         - Ondergronds
         - Anders, namelijk: (write-in)
       - *Only when the regenton is gewenst:* Hoe is de ondergrond bij de pijp? (textarea, photo slot below it). Hidden the same way as Waar and Hoe when the regenton isn't gewenst: the answer is kept but left out everywhere, photos included.
-      - Footnote: "\*\* per regenpijp gebaseerd op normafvoer 20 mm regenwater". The 20 mm is a constant in code (tentative, pending the team question).
+      - Footnote: "\*\* per regenpijp gebaseerd op normafvoer {n} mm regenwater ({bron})", where the bron is "gemeente Deventer", "standaardnorm" (no row for this gemeente) or "aangepast voor dit dossier". Admins get a Wijzigen link behind it that overrides the norm for this dossier, with a required reason shown in the activity log, and marks the Plan as changed. See the Beheer page Normafvoer and `docs/berekening.md` for when the norm is fixed.
     - Tuin
       - "Tuin" table: 1 row per tuindeel, with lines between the rows like the Dak table, with number (eg "T1") and m² (auto-calculated, or manual input as above). In a 3rd column, photos can be uploaded and annotated, same as the other image slots, to capture the current situation of the garden. The number and m² columns are narrow and fixed-width, so the rows line up. The photos stay in the 3rd column, side by side, except on phones (below sm), where two or more get a line of their own.
       - If no tuin is drawn on the kaart yet: red warning "Er is nog geen tuin ingetekend op de kadasterkaart" with a link that scrolls back up to the kaart.
@@ -446,6 +446,10 @@
 - "Beheer" (navbar dropdown of further less-used links, all of these links & pages are admin-only)
   - "Materialen"
     - Lets admins manage the default list of materials (Materiaal, Prijs) and its order, set by dragging a row by its grip (or arrow keys on the grip). It's only the prefill for new dossiers' Materialen tables (see Plan van Aanpak).
+  - "Normafvoer"
+    - The norm per gemeente in whole mm, starting with one undeletable row "Standaard (overige gemeenten)" at 20 mm for every gemeente without its own row. Admins add a gemeente (suggestions from existing dossiers and the riool detection; an unknown name asks for confirmation, since it must match the address spelling), change a value, delete a row, or tap Nagekeken. Changing a value counts as nagekeken. All of it is in the activity log.
+    - A dossier keeps the norm from the first time its Bezoek opens, so a change only reaches dossiers whose Bezoek hasn't opened yet.
+    - A row not checked for 12 months appears in the weekly digest until it's marked Nagekeken.
   - "E-mailsjablonen"
     - The templates: Subsidie: subsidiabel, huurwoning / subsidiabel, koopwoning / niet subsidiabel; Bezoeker toegewezen; Plan naar bewoner (huur); Plan naar bewoner (koop, asks Klussendienst of zelf); Plan naar woningcorporatie; Uitvoerder toegewezen; Opleverrapport naar woningcorporatie; Opleverrapport naar bewoner; Oproep Signal-groep (copied to the clipboard, no onderwerp). The login email is fixed in code.
     - Seeded at launch from the prototype's drafts, with texts written for the ones it lacks; admins edit them from then on.
@@ -475,7 +479,7 @@
     - "Klaar voor controle" tapped: "Plan van Aanpak klaar voor controle: {adres} ({klusser})".
     - "Werk opgeleverd" tapped: "Werk opgeleverd: {adres} ({klusser})".
     - Not when an admin does it themselves (eg typing up a paper visit), and not for "Bezoek afronden": the ball stays with the klusser until "Klaar voor controle".
-  - Weekly, Monday at 08:00: "Aandacht nodig: {n} dossiers", listing every open dossier with a non-snoozed finding, grouped Klopt niet / Plan gewijzigd / Ligt stil, each with its banner line. A dossier with no activity in the past 7 days also gets "geen activiteit sinds {datum}". Not sent if the list is empty. *A weekly digest rather than one email per dossier, because at hundreds of open dossiers per-dossier mails would get filtered and ignored.*
+  - Weekly, Monday at 08:00: "Aandacht nodig: {n} dossiers", listing every open dossier with a non-snoozed finding, grouped Klopt niet / Plan gewijzigd / Ligt stil, each with its banner line, then any norm due for its yearly check under Normafvoer nakijken (with no dossiers to report the subject is "Aandacht nodig: normafvoer nakijken"). A dossier with no activity in the past 7 days also gets "geen activiteit sinds {datum}". Not sent if the list is empty. *A weekly digest rather than one email per dossier, because at hundreds of open dossiers per-dossier mails would get filtered and ignored.*
   - Immediately, when an outbound email fails to send: "E-mail niet afgeleverd: {onderwerp} aan {adres}". The send is then shown in red on the dossier ("Niet afgeleverd op {datum}") and doesn't count as sent. *(At launch this covers only a rejection by the provider at send time. Bounces after sending are detected from a later milestone, via the Mailgun webhook.)*
   - Server errors, PDF render failures and failed backups go to the maintainer, not to these lists.
 

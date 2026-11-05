@@ -237,7 +237,7 @@ export function Dropdown(props: { knop: JSX.Element; knopClass?: string; label?:
 
 // A tooltip in Bootstrap's markup, placed by hand (no Popper): `ref={tip('...')}`. Shows on mouse hover and keyboard focus; a tap
 // toggles it on an element that does nothing else, so touch screens get it too. It sits above the element, below it when there's no room, and stays on screen.
-export function tip(tekst: string): (el: HTMLElement) => void {
+export function tip(tekst: string | (() => string)): (el: HTMLElement) => void {
   return (el) => {
     let bel: HTMLDivElement | null = null;
     const toon = () => {
@@ -249,7 +249,7 @@ export function tip(tekst: string): (el: HTMLElement) => void {
       pijl.className = 'tooltip-arrow';
       pijl.style.position = 'absolute';
       bel.appendChild(document.createElement('div')).className = 'tooltip-inner';
-      bel.lastElementChild!.textContent = tekst;
+      bel.lastElementChild!.textContent = typeof tekst === 'function' ? tekst() : tekst;
       // Fixed (and the arrow absolute) before measuring: as a block in the body it would measure the full page width.
       Object.assign(bel.style, { position: 'fixed', left: '0', top: '0' });
       document.body.appendChild(bel);

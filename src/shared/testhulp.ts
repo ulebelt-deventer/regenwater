@@ -33,6 +33,7 @@ export function dossier(over: Partial<Dossier> = {}): Dossier {
     gesloten_reden: null,
     gesloten_toelichting: null,
     plan_gewijzigd_at: null,
+    normafvoer: { mm: 20, gemeente: null, vast_at: null, reden: null },
     data: {},
     extra: {},
     verzendingen: [],

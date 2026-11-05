@@ -238,4 +238,19 @@ export const MIGRATIES: string[] = [
   UPDATE audit SET payload = json_set(payload, '$.changes.woningeigenaar[0]', 'SallandWonen') WHERE type = 'dossier_gewijzigd' AND json_extract(payload, '$.changes.woningeigenaar[0]') = 'Salland Wonen';
   UPDATE audit SET payload = json_set(payload, '$.changes.woningeigenaar[1]', 'SallandWonen') WHERE type = 'dossier_gewijzigd' AND json_extract(payload, '$.changes.woningeigenaar[1]') = 'Salland Wonen';
   `,
+  `
+  CREATE TABLE normafvoeren (
+    id INTEGER PRIMARY KEY,
+    gemeente TEXT,
+    mm INTEGER NOT NULL,
+    gecontroleerd_at TEXT NOT NULL
+  );
+  CREATE UNIQUE INDEX normafvoeren_gemeente ON normafvoeren (COALESCE(gemeente, '') COLLATE NOCASE);
+  INSERT INTO normafvoeren (gemeente, mm, gecontroleerd_at) VALUES (NULL, 20, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'));
+  ALTER TABLE dossiers ADD COLUMN normafvoer_mm INTEGER;
+  ALTER TABLE dossiers ADD COLUMN normafvoer_gemeente TEXT;
+  ALTER TABLE dossiers ADD COLUMN normafvoer_reden TEXT;
+  ALTER TABLE dossiers ADD COLUMN normafvoer_at TEXT;
+  UPDATE dossiers SET normafvoer_mm = 20, normafvoer_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE bezoek_afgerond_at IS NOT NULL OR gesloten_at IS NOT NULL;
+  `,
 ];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   type DakDeel, afstandTotLijn, afstandTotPolygoon, annotatieLabels, annotatiesSvg, binnen, bronnenTekst, dichtstbijzijndeDak, dichtstbijzijndeVerdeling, getal, herverdeel, isAnnotatieLijst,
-  kaartItems, letter, oppervlakPx, procenten, verdelingTekst, verdelingVoor, verdelingWaarde, verdelingenTeWissen, regenpijpUitsnede, vierkanteUitsnede, waterberging, zijdeLengtes,
+  kaartItems, letter, normafvoerTekst, oppervlakPx, procenten, verdelingTekst, verdelingVoor, verdelingWaarde, verdelingenTeWissen, regenpijpUitsnede, vierkanteUitsnede, waterberging, zijdeLengtes,
 } from './kaart.ts';
 import { ontbrekend } from './velden.ts';
 import { dossier } from './testhulp.ts';
@@ -325,13 +325,24 @@ describe('waterberging', () => {
   const daken = [dakDeel('d1', 42), dakDeel('d2', 8), dakDeel('d3', null)];
 
   it('takes each regenpijp’s share of its dakdelen at the normafvoer, with the sum shown', () => {
-    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd1', pct: 62 }, { dak: 'd2', pct: 100 }] }, daken)).toEqual({ liter: 681, uitleg: '62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter' });
-    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd2', pct: 100 }] }, daken)).toEqual({ liter: 160, uitleg: '8 m² × 20 mm = 160 liter' });
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd1', pct: 62 }, { dak: 'd2', pct: 100 }] }, daken, 20)).toEqual({ liter: 681, uitleg: '62% × 42 m² + 8 m² = 34 m² × 20 mm = 681 liter' });
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd2', pct: 100 }] }, daken, 20)).toEqual({ liter: 160, uitleg: '8 m² × 20 mm = 160 liter' });
+  });
+
+  it('calculates with the norm it is given', () => {
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd2', pct: 100 }] }, daken, 10)).toEqual({ liter: 80, uitleg: '8 m² × 10 mm = 80 liter' });
+  });
+
+  it('names where the norm comes from: the gemeente, the standaard row, or an override for this dossier', () => {
+    const n = { mm: 20, gemeente: null, vast_at: null, reden: null };
+    expect(normafvoerTekst({ ...n, gemeente: 'Deventer' })).toBe('per regenpijp gebaseerd op normafvoer 20 mm regenwater (gemeente Deventer)');
+    expect(normafvoerTekst(n)).toBe('per regenpijp gebaseerd op normafvoer 20 mm regenwater (standaardnorm)');
+    expect(normafvoerTekst({ ...n, gemeente: 'Deventer', reden: 'Klei' })).toBe('per regenpijp gebaseerd op normafvoer 20 mm regenwater (aangepast voor dit dossier)');
   });
 
   it('gives nothing for a regenpijp without a dakdeel, or with a dakdeel of unknown m²', () => {
-    expect(waterberging({ id: 'a', label: 'A', bronnen: [] }, daken)).toBeNull();
-    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd1', pct: 50 }, { dak: 'd3', pct: 100 }] }, daken)).toBeNull();
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [] }, daken, 20)).toBeNull();
+    expect(waterberging({ id: 'a', label: 'A', bronnen: [{ dak: 'd1', pct: 50 }, { dak: 'd3', pct: 100 }] }, daken, 20)).toBeNull();
   });
 });
 

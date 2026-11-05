@@ -84,6 +84,7 @@ function Navbar() {
           <Dropdown knop={<>Beheer<Show when={nieuwsOngezien(s().ik.nieuws_gezien)}><NieuwStip /></Show></>} knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
             <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>
             <A class="dropdown-item" href="/beheer/materialen"><i class="bi bi-hammer me-2" aria-hidden="true" />Materialen</A>
+            <A class="dropdown-item qa-nav-normafvoer" href="/beheer/normafvoer"><i class="bi bi-cloud-rain me-2" aria-hidden="true" />Normafvoer</A>
             <A class="dropdown-item" href="/beheer/sjablonen"><i class="bi bi-envelope me-2" aria-hidden="true" />E-mailsjablonen</A>
             <A class="dropdown-item" href="/beheer/feedback"><i class="bi bi-lightbulb me-2" aria-hidden="true" />Feedback</A>
             <a class="dropdown-item" href="/docs/bezoekformulier-leeg.pdf" target="_blank"><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />Leeg bezoekformulier (PDF)</a>

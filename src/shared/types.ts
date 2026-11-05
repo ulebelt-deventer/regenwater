@@ -121,6 +121,22 @@ export interface Annotatie {
   tekst?: string;
 }
 
+// A row of the Normafvoer table. gemeente null is the standaard row, for every gemeente without its own.
+export interface NormafvoerRij {
+  id: number;
+  gemeente: string | null;
+  mm: number;
+  gecontroleerd_at: string;
+}
+
+// The norm a dossier calculates with: fixed once vast_at is set, until then whatever the table says for its gemeente. reden is set when a beheerder overrode it for this dossier.
+export interface Normafvoer {
+  mm: number;
+  gemeente: string | null;
+  vast_at: string | null;
+  reden: string | null;
+}
+
 // Everything the shared rules need about one dossier. The server assembles it from the row and its related tables.
 export interface Dossier {
   id: number;
@@ -153,6 +169,7 @@ export interface Dossier {
   gesloten_reden: SluitReden | null;
   gesloten_toelichting: string | null;
   plan_gewijzigd_at: string | null;
+  normafvoer: Normafvoer;
   data: Record<string, Json>;
   extra: Extra;
   verzendingen: Verzending[];

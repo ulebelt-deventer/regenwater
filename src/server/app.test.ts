@@ -427,3 +427,132 @@ describe('request log', () => {
     expect(t.verzoeken).toEqual([]);
   });
 });
+
+describe('normafvoer', () => {
+  const norm = (id: number) => beheerder.json('GET', `/api/dossiers/${id}`).then((r) => r.dossier.normafvoer);
+  const normen = () => beheerder.json('GET', '/api/normafvoeren').then((r) => r.normafvoeren as { id: number; gemeente: string | null; mm: number }[]);
+  const voegToe = (gemeente: string, mm: number) => beheerder.json('POST', '/api/normafvoeren', { gemeente, mm });
+  const openBezoek = (id: number) => beheerder.json('POST', `/api/dossiers/${id}/bezoek-geopend`);
+
+  it('falls back to the standaard row, and an address in a gemeente with its own row uses that row', async () => {
+    const id = await nieuwDossier();
+    expect(await norm(id)).toEqual({ mm: 20, gemeente: null, vast_at: null, reden: null });
+    await voegToe('Deventer', 10);
+    expect(await norm(id)).toEqual({ mm: 10, gemeente: 'Deventer', vast_at: null, reden: null });
+  });
+
+  it('fixes the norm when the Bezoek first opens, so later table changes leave the dossier alone but do reach new dossiers', async () => {
+    await voegToe('Deventer', 10);
+    const id = await nieuwDossier();
+    await openBezoek(id);
+    const vast = await norm(id);
+    expect(vast).toMatchObject({ mm: 10, gemeente: 'Deventer' });
+    expect(vast.vast_at).not.toBeNull();
+
+    const rij = (await normen()).find((n) => n.gemeente === 'Deventer')!;
+    await beheerder.json('PATCH', `/api/normafvoeren/${rij.id}`, { mm: 15 });
+    await openBezoek(id);
+    expect(await norm(id)).toEqual(vast);
+    expect(await norm(await nieuwDossier())).toMatchObject({ mm: 15, vast_at: null });
+  });
+
+  it('logs the fix once on the dossier, however often the Bezoek opens', async () => {
+    const id = await nieuwDossier();
+    await openBezoek(id);
+    await openBezoek(id);
+    const { items } = await beheerder.json('GET', `/api/dossiers/${id}/activiteit`);
+    expect(items.filter((i: { type: string }) => i.type === 'normafvoer_vastgezet').map((i: { payload: unknown }) => i.payload)).toEqual([{ mm: 20, gemeente: null }]);
+  });
+
+  it('fixes the norm at Bezoek afgerond when the opening never reached the server, and keeps it when that is undone', async () => {
+    const id = await nieuwDossier();
+    await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'bezoek_afgerond' });
+    const vast = await norm(id);
+    expect(vast.vast_at).not.toBeNull();
+    await beheerder.json('PATCH', `/api/normafvoeren/${(await normen())[0].id}`, { mm: 25 });
+    await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'bezoek_afgerond', aan: false });
+    expect(await norm(id)).toEqual(vast);
+  });
+
+  it('leaves a closed dossier unfixed when its Bezoek is opened', async () => {
+    const id = await nieuwDossier();
+    await beheerder.json('POST', `/api/dossiers/${id}/sluiten`, { reden: 'Uitgevoerd', toelichting: 'Test' });
+    await openBezoek(id);
+    expect((await norm(id)).vast_at).toBeNull();
+  });
+
+  it('lets a beheerder override one dossier with a reason, which flags the Plan as changed and fixes the norm; a klusser is refused', async () => {
+    const id = await nieuwDossier();
+    await klusser.json('POST', `/api/dossiers/${id}/normafvoer`, { mm: 12, reden: 'Klei' }, 403);
+    await beheerder.json('POST', `/api/dossiers/${id}/normafvoer`, { mm: 12, reden: '  ' }, 400);
+    await beheerder.json('POST', `/api/dossiers/${id}/normafvoer`, { mm: 0, reden: 'Klei' }, 400);
+    const { dossier } = await beheerder.json('POST', `/api/dossiers/${id}/normafvoer`, { mm: 12, reden: 'Klei' });
+    expect(dossier.normafvoer).toMatchObject({ mm: 12, gemeente: null, reden: 'Klei' });
+    expect(dossier.normafvoer.vast_at).not.toBeNull();
+    expect(dossier.plan_gewijzigd_at).not.toBeNull();
+    await openBezoek(id);
+    expect((await norm(id)).mm).toBe(12);
+    const { items } = await beheerder.json('GET', `/api/dossiers/${id}/activiteit`);
+    expect(items.find((i: { type: string }) => i.type === 'normafvoer_aangepast').payload).toEqual({ oud: 20, nieuw: 12, reden: 'Klei' });
+  });
+
+  it('keeps the table to admins, with one row per gemeente and an undeletable standaard row', async () => {
+    await klusser.json('GET', '/api/normafvoeren', undefined, 403);
+    await klusser.json('POST', '/api/normafvoeren', { gemeente: 'Raalte', mm: 10 }, 403);
+    await voegToe('Raalte', 10);
+    await beheerder.json('POST', '/api/normafvoeren', { gemeente: 'raalte', mm: 12 }, 409);
+    await beheerder.json('POST', '/api/normafvoeren', { gemeente: 'Olst-Wijhe', mm: 0 }, 400);
+    await beheerder.json('POST', '/api/normafvoeren', { gemeente: '  ', mm: 10 }, 400);
+    const [standaard, raalte] = await normen();
+    expect(standaard.gemeente).toBeNull();
+    await beheerder.json('DELETE', `/api/normafvoeren/${standaard.id}`, undefined, 400);
+    expect((await beheerder.json('DELETE', `/api/normafvoeren/${raalte.id}`)).normafvoeren).toHaveLength(1);
+  });
+
+  it('records every table change in the activity log', async () => {
+    await voegToe('Raalte', 10);
+    const rij = (await normen())[1];
+    await beheerder.json('PATCH', `/api/normafvoeren/${rij.id}`, { mm: 12 });
+    await beheerder.json('POST', `/api/normafvoeren/${rij.id}/nagekeken`);
+    await beheerder.json('DELETE', `/api/normafvoeren/${rij.id}`);
+    const { items } = await beheerder.json('GET', '/api/activiteit');
+    const eigen = items.filter((i: { type: string }) => i.type.startsWith('normafvoer_')).map((i: { type: string; payload: unknown }) => [i.type, i.payload]);
+    expect(eigen).toEqual(expect.arrayContaining([
+      ['normafvoer_toegevoegd', { gemeente: 'Raalte', mm: 10 }],
+      ['normafvoer_gewijzigd', { gemeente: 'Raalte', oud: 10, nieuw: 12 }],
+      ['normafvoer_nagekeken', { gemeente: 'Raalte', mm: 12 }],
+      ['normafvoer_verwijderd', { gemeente: 'Raalte', mm: 12 }],
+    ]));
+  });
+
+  it('offers the gemeenten of existing dossiers and of the riool detection as known names', async () => {
+    await nieuwDossier();
+    const { gemeenten } = await beheerder.json('GET', '/api/normafvoeren');
+    expect(gemeenten).toEqual(expect.arrayContaining(['Deventer', 'Olst-Wijhe', 'Raalte']));
+  });
+
+  it('asks in the weekly digest to recheck a norm unchecked for a year, also with no dossiers to report, until it is marked nagekeken', async () => {
+    const [standaard] = await normen();
+    await beheerder.json('POST', `/api/normafvoeren/${standaard.id}/nagekeken`);
+    t.klok.verschuif(364 * 864e5);
+    expect(digestTekst(t.ctx)).toBeNull();
+    t.klok.verschuif(864e5);
+    const m = digestTekst(t.ctx)!;
+    expect(m.onderwerp).toBe('Aandacht nodig: normafvoer nakijken');
+    expect(m.tekst).toContain('Standaard (overige gemeenten): 20 mm');
+    expect(m.tekst).toContain('https://regenton.test/beheer/normafvoer');
+    beheerder = await new Klant(t).login('bea.beheer@example.org');
+    await beheerder.json('POST', `/api/normafvoeren/${standaard.id}/nagekeken`);
+    expect(digestTekst(t.ctx)).toBeNull();
+  });
+
+  it('changing a value counts as nagekeken for the digest', async () => {
+    const [standaard] = await normen();
+    await beheerder.json('PATCH', `/api/normafvoeren/${standaard.id}`, { mm: 20 });
+    t.klok.verschuif(365 * 864e5);
+    expect(digestTekst(t.ctx)!.onderwerp).toContain('normafvoer');
+    beheerder = await new Klant(t).login('bea.beheer@example.org');
+    await beheerder.json('PATCH', `/api/normafvoeren/${standaard.id}`, { mm: 21 });
+    expect(digestTekst(t.ctx)).toBeNull();
+  });
+});

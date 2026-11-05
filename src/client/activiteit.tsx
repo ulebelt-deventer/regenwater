@@ -1,6 +1,7 @@
 // Audit rows as readable lines, for a dossier's "Alle activiteit" and the app-wide one.
 import { A } from '@solidjs/router';
 import { For, type JSX, Show, createSignal } from 'solid-js';
+import { NORM_STANDAARD_LABEL } from '../shared/constants.ts';
 import { datumTijd, euro } from '../shared/datum.ts';
 import { SJABLONEN } from '../shared/sjablonen.ts';
 import type { Json } from '../shared/types.ts';
@@ -51,6 +52,12 @@ export const TYPE_LABEL: Record<string, string> = {
   materiaal_gewijzigd: 'Materiaal gewijzigd',
   materiaal_verwijderd: 'Materiaal verwijderd',
   materialen_volgorde: 'Volgorde materialen gewijzigd',
+  normafvoer_vastgezet: 'Normafvoer vastgezet',
+  normafvoer_aangepast: 'Normafvoer aangepast voor dit dossier',
+  normafvoer_toegevoegd: 'Normafvoer toegevoegd',
+  normafvoer_gewijzigd: 'Normafvoer gewijzigd',
+  normafvoer_nagekeken: 'Normafvoer nagekeken',
+  normafvoer_verwijderd: 'Normafvoer verwijderd',
   sjabloon_gewijzigd: 'E-mailsjabloon gewijzigd',
   feedback: 'Feedback gegeven',
 };
@@ -58,6 +65,7 @@ export const TYPE_LABEL: Record<string, string> = {
 const ITEM_LABEL: Record<string, string> = { dak: 'Dak', tuin: 'Tuin', steen: 'Steen', regenpijp: 'Regenpijp', materiaal: 'Materiaal', gebruikt: 'Gebruikt materiaal' };
 
 const s = (v: Json) => (typeof v === 'string' ? v : JSON.stringify(v));
+const normGemeente = (v: Json) => (v === null ? NORM_STANDAARD_LABEL : s(v));
 
 // Old audit rows can name fields that no longer exist, so unknown keys fall back to the raw key.
 function veldLabel(key: string): string {
@@ -158,6 +166,9 @@ function samenvatting(item: AuditItem): JSX.Element {
     const nieuw = p().nieuw as { naam: string; prijs: number };
     return <>{oud.naam}, {euro(oud.prijs)} → {nieuw.naam}, {euro(nieuw.prijs)}</>;
   }
+  if (t === 'normafvoer_vastgezet' || t === 'normafvoer_toegevoegd' || t === 'normafvoer_nagekeken' || t === 'normafvoer_verwijderd') return <>{normGemeente(p().gemeente)}: {s(p().mm)} mm</>;
+  if (t === 'normafvoer_gewijzigd') return <>{normGemeente(p().gemeente)}: {s(p().oud)} mm → {s(p().nieuw)} mm</>;
+  if (t === 'normafvoer_aangepast') return <>{s(p().oud)} mm → {s(p().nieuw)} mm. {s(p().reden)}</>;
   if (t === 'sjabloon_gewijzigd') return <>{sjabloonNaam(p().sjabloon)}</>;
   if (t === 'feedback') return <A href="/beheer/feedback">Op {s(p().scherm)}</A>;
   return null;

@@ -1,5 +1,4 @@
-import { NORMAFVOER_MM } from './constants.ts';
-import type { Annotatie, AnnotatieType, Dossier, Foto, Json } from './types.ts';
+import type { Annotatie, AnnotatieType, Dossier, Foto, Json, Normafvoer } from './types.ts';
 
 type Pt = [number, number];
 
@@ -304,7 +303,7 @@ export function verdelingenTeWissen(d: Dossier, oud: Annotatie[], nieuw: Annotat
 }
 
 // Per regenpijp: its share of each dakdeel's m², times the normafvoer. Null while a dakdeel's m² is unknown.
-export function waterberging(pijp: Regenpijp, daken: DakDeel[]): { liter: number; uitleg: string } | null {
+export function waterberging(pijp: Regenpijp, daken: DakDeel[], normMm: number): { liter: number; uitleg: string } | null {
   if (!pijp.bronnen.length) return null;
   const delen = pijp.bronnen.map((b) => {
     const dak = daken.find((x) => x.id === b.dak);
@@ -313,10 +312,16 @@ export function waterberging(pijp: Regenpijp, daken: DakDeel[]): { liter: number
   });
   if (delen.some((x) => x.m2 === null)) return null;
   const m2 = delen.reduce((s, x) => s + (x.pct / 100) * x.m2!, 0);
-  const liter = Math.round(m2 * NORMAFVOER_MM);
+  const liter = Math.round(m2 * normMm);
   const termen = delen.map((x) => (x.pct === 100 ? `${getal(x.m2!)} m²` : `${x.pct}% × ${getal(x.m2!)} m²`));
   const som = delen.length === 1 && delen[0].pct === 100 ? '' : ` = ${getal(m2)} m²`;
-  return { liter, uitleg: `${termen.join(' + ')}${som} × ${NORMAFVOER_MM} mm = ${liter} liter` };
+  return { liter, uitleg: `${termen.join(' + ')}${som} × ${normMm} mm = ${liter} liter` };
+}
+
+// The footnote under every waterberging, naming where the dossier's norm comes from.
+export function normafvoerTekst(n: Normafvoer): string {
+  const bron = n.reden !== null ? 'aangepast voor dit dossier' : n.gemeente !== null ? `gemeente ${n.gemeente}` : 'standaardnorm';
+  return `per regenpijp gebaseerd op normafvoer ${n.mm} mm regenwater (${bron})`;
 }
 
 // "A 62% · B 38%", or just "A" for a single pijp.

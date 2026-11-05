@@ -1,11 +1,12 @@
 // Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen, stenen and regenpijpen, then what was found.
 import { A } from '@solidjs/router';
-import { For, Show, createSignal } from 'solid-js';
-import { NORMAFVOER_MM } from '../../shared/constants.ts';
-import { AUTO_VERDELING_UITLEG, type Aandeel, KOPPEL_M, annotatiesSvg, autoGesplitst, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
+import { For, Show, createSignal, onMount } from 'solid-js';
+import { AUTO_VERDELING_UITLEG, type Aandeel, KOPPEL_M, annotatiesSvg, autoGesplitst, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
+import type { Dossier } from '../../shared/types.ts';
 import { ontbrekend, veld } from '../../shared/velden.ts';
-import { Dropdown, OnderdeelIcoon, bevestig, gaNaar, scrollNaar, tip } from '../ui.tsx';
-import { MijlpaalRegel, zetMijlpaal } from './acties.tsx';
+import { isNetwerkFout, post } from '../api.ts';
+import { Dropdown, Modal, OnderdeelIcoon, bevestig, gaNaar, melding, scrollNaar, tip } from '../ui.tsx';
+import { MijlpaalRegel, actie, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
@@ -42,7 +43,36 @@ function BronnenUitsnede(props: { id: string }) {
 const KORT = 'col-6 col-md-4 col-lg-2';
 // Labels too long for their cell are cut off on one line, so the inputs below stay level with their neighbours'.
 const LABEL_CLASS: Record<string, string> = { regenton: 'label-klein label-afgekapt', hoe: 'label-afgekapt' };
-const BERGING_UITLEG = `per regenpijp gebaseerd op normafvoer ${NORMAFVOER_MM} mm regenwater`;
+
+// A beheerder's override of the dossier's norm, with a reason for the activity log.
+function NormModal(props: { onSluit: () => void }) {
+  const s = useDossier();
+  const [mm, setMm] = createSignal(String(s.d.normafvoer.mm));
+  const [reden, setReden] = createSignal('');
+  const opslaan = async (e: Event) => {
+    e.preventDefault();
+    if (await actie(s, 'normafvoer', { mm: Number(mm()), reden: reden() })) props.onSluit();
+  };
+  return (
+    <Modal
+      titel="Normafvoer van dit dossier"
+      onSluit={props.onSluit}
+      voet={
+        <>
+          <button type="button" class="btn btn-outline-secondary" onClick={props.onSluit}>Annuleren</button>
+          <button type="submit" form="norm-form" class="btn btn-primary qa-norm-opslaan">Opslaan</button>
+        </>
+      }
+    >
+      <form id="norm-form" onSubmit={opslaan}>
+        <label class="form-label fw-semibold" for="norm-mm">Normafvoer (mm)</label>
+        <input id="norm-mm" class="form-control mb-3 qa-norm-mm" style={{ 'max-width': '7rem' }} type="number" min="1" max="100" step="1" required value={mm()} onInput={(e) => setMm(e.currentTarget.value)} />
+        <label class="form-label fw-semibold" for="norm-reden">Reden</label>
+        <input id="norm-reden" class="form-control qa-norm-reden" required value={reden()} onInput={(e) => setReden(e.currentTarget.value)} />
+      </form>
+    </Modal>
+  );
+}
 
 // One regenpijp as a bordered, collapsible block (open by default): the kaart thumbnail on its corner, a heading that toggles it, then a grid whose columns line up from block to block.
 function RegenpijpBlok(props: { id: string }) {
@@ -106,10 +136,10 @@ function RegenpijpBlok(props: { id: string }) {
             </div>
             <div class={KORT}>
               <div class="form-label fw-semibold mb-1">
-                Waterberging<span class="cursor-help qa-waterberging-uitleg" ref={tip(BERGING_UITLEG)}>**</span>
+                Waterberging<span class="cursor-help qa-waterberging-uitleg" ref={tip(() => normafvoerTekst(s.d.normafvoer))}>**</span>
               </div>
               <div class="qa-waterberging">
-                <Show when={waterberging(pijp(), items().daken)} fallback="--">
+                <Show when={waterberging(pijp(), items().daken, s.d.normafvoer.mm)} fallback="--">
                   {(w) => (
                     <>
                       {w().liter} liter
@@ -237,7 +267,18 @@ function VerdelingKeuze(props: { id: string }) {
 export function Bezoek() {
   const s = useDossier();
   const items = () => kaartItems(s.d);
-  const ulebeltSuggesties = () => veld('ulebelt_doet').suggesties!.filter(([k]) => k !== 'toestemming' || s.d.huur_koop === 'huur');
+  const [normOpen, setNormOpen] = createSignal(false);
+  // A lost request isn't reported: Bezoek afgerond fixes the norm as well, and the bezoeker can't act on it on site.
+  onMount(() => {
+    if (s.d.normafvoer.vast_at || s.d.gesloten_at) return;
+    post<{ dossier: Dossier }>(`/api/dossiers/${s.id}/bezoek-geopend`).then(
+      (r) => s.vervang(r.dossier),
+      (e: Error) => {
+        if (!isNetwerkFout(e)) melding('danger', e.message);
+      },
+    );
+  });
+  const ulebeltSuggesties =() => veld('ulebelt_doet').suggesties!.filter(([k]) => k !== 'toestemming' || s.d.huur_koop === 'huur');
   const geenDak = () => (
     <div class="text-danger mb-2 qa-geen-dak">
       Er is nog geen dak ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
@@ -313,7 +354,13 @@ export function Bezoek() {
           <div id="veld-regenpijpen" class="mb-3 pt-3 qa-regenpijpen">
             <h3 class="mb-3"><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</h3>
             <For each={items().regenpijpen.map((r) => r.id)}>{(id) => <RegenpijpBlok id={id} />}</For>
-            <div class="small text-muted">** {BERGING_UITLEG}</div>
+            <div class="small text-muted">
+              ** <span class="qa-normafvoer">{normafvoerTekst(s.d.normafvoer)}</span>
+              <Show when={s.beheerder() && !s.d.gesloten_at}>
+                {' '}<button type="button" class="btn btn-link btn-sm p-0 align-baseline qa-norm-wijzigen" onClick={() => setNormOpen(true)}>Wijzigen</button>
+              </Show>
+            </div>
+            <Show when={normOpen()}><NormModal onSluit={() => setNormOpen(false)} /></Show>
           </div>
         </Show>
 

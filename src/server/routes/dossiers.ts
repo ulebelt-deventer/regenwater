@@ -14,7 +14,7 @@ import { fotoPad } from '../fotos.ts';
 import { log } from '../log.ts';
 import { dossierLink, melding } from '../meldingen.ts';
 import { suggesties, zoekAdres } from '../pdok.ts';
-import { gebruiker, gebruikersMap, laadDossier, laadDossiers } from '../repo.ts';
+import { gebruiker, gebruikersMap, laadDossier, laadDossiers, leesNormMm } from '../repo.ts';
 import { detecteerRiool } from '../riool.ts';
 import { controleerWaarde } from '../veldwaarde.ts';
 
@@ -57,6 +57,14 @@ function dubbel(ctx: Ctx, d: Dossier): { id: number; gesloten: boolean }[] {
 function tekstVeld(b: Record<string, unknown>, key: string): string {
   const v = b[key];
   return typeof v === 'string' ? v.trim() : '';
+}
+
+// From here on the dossier keeps this norm, whatever happens to the Normafvoer table.
+function zetNormVast(ctx: Ctx, c: C, d: Dossier): void {
+  if (d.normafvoer.vast_at) return;
+  const { mm, gemeente } = d.normafvoer;
+  ctx.db.prepare('UPDATE dossiers SET normafvoer_mm = ?, normafvoer_gemeente = ?, normafvoer_at = ? WHERE id = ?').run(mm, gemeente, ctx.klok.iso(), d.id);
+  audit(ctx, actorVan(c), d.id, 'normafvoer_vastgezet', { mm, gemeente });
 }
 
 export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
@@ -230,11 +238,37 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!magMijlpaal(ik, d, m)) fout(403, 'Je kunt deze stap niet (meer) registreren. Vraag een beheerder.');
     ctx.db.prepare(`UPDATE dossiers SET ${at} = ?, ${by} = ? WHERE id = ?`).run(ctx.klok.iso(), ik.id, d.id);
     audit(ctx, actorVan(c), d.id, 'mijlpaal', { mijlpaal: m, aan: true });
+    // The opening's own request can get lost on a bad connection on site.
+    if (m === 'bezoek_afgerond') zetNormVast(ctx, c, d);
     // Only a klusser's own hand-off alerts the admins; an admin registering it (or acting as the klusser) already knows.
     if (c.get('actor').rol === 'klusser' && (m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
       const titel = m === 'klaar_voor_controle' ? 'Plan van Aanpak klaar voor controle' : 'Werk opgeleverd';
       await melding(ctx, 'dossier', `${titel}: ${adresRegel(d)} (${ik.naam})`, `${ik.naam} heeft "${titel}" aangetikt voor ${adresRegel(d)}.\n\n${dossierLink(ctx, d.id)}`, d.id);
     }
+    return c.json({ dossier: laadDossier(ctx.db, d.id)! });
+  });
+
+  app.post('/api/dossiers/:id/bezoek-geopend', (c) => {
+    const d = haalDossier(ctx, c);
+    if (d.gesloten_at) return c.json({ dossier: d });
+    zetNormVast(ctx, c, d);
+    return c.json({ dossier: laadDossier(ctx.db, d.id)! });
+  });
+
+  // A beheerder's override for one dossier. It changes what the Plan says, so it flags the Plan like any other change.
+  app.post('/api/dossiers/:id/normafvoer', async (c) => {
+    alleenBeheerder(c);
+    const b = await body<Record<string, unknown>>(c);
+    const d = haalDossier(ctx, c);
+    nietGesloten(d);
+    const mm = leesNormMm(b);
+    const reden = tekstVeld(b, 'reden');
+    if (!reden) fout(400, 'Vul een reden in.');
+    ctx.db.transaction(() => {
+      ctx.db.prepare('UPDATE dossiers SET normafvoer_mm = ?, normafvoer_gemeente = ?, normafvoer_reden = ?, normafvoer_at = ? WHERE id = ?').run(mm, d.normafvoer.gemeente, reden, ctx.klok.iso(), d.id);
+      planGewijzigd(ctx, d.id);
+      audit(ctx, actorVan(c), d.id, 'normafvoer_aangepast', { oud: d.normafvoer.mm, nieuw: mm, reden });
+    })();
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });
 

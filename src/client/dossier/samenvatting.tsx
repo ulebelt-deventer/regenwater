@@ -122,7 +122,7 @@ function RegenpijpRegel(props: { pijp: Regenpijp }) {
   const k = (veld: string) => `regenpijp.${props.pijp.id}.${veld}`;
   const items = () => kaartItems(s.d);
   const kort = () => {
-    const w = waterberging(props.pijp, items().daken);
+    const w = waterberging(props.pijp, items().daken, s.d.normafvoer.mm);
     const delen = [
       props.pijp.bronnen.length ? `van ${bronnenTekst(props.pijp, items().labels)}` : 'aan geen dak gekoppeld',
       w && `${w.liter} liter waterberging`,

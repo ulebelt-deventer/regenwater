@@ -1,5 +1,8 @@
-import type { Adres, Annotatie, Dossier, Extra, Foto, Gebruiker, Json, PlanAck, Uitstel, Verzending } from '../shared/types.ts';
+import type { Adres, Annotatie, Dossier, Extra, Foto, Gebruiker, Json, Normafvoer, NormafvoerRij, PlanAck, Uitstel, Verzending } from '../shared/types.ts';
+import { fout } from './context.ts';
 import type { DB } from './db.ts';
+
+const NORM_MAX_MM = 100;
 
 export const DOSSIER_KOLOMMEN = [
   'huur_koop', 'bezoeker_id', 'uitvoerder_id', 'afspraak', 'uitvoering_gepland',
@@ -38,10 +41,27 @@ function groepeer<T>(rijen: Record<string, unknown>[], maak: (r: Record<string, 
   return m;
 }
 
-function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; f: Foto[] }): Dossier {
+export const normafvoeren = (db: DB) => db.prepare('SELECT * FROM normafvoeren ORDER BY gemeente').all() as NormafvoerRij[];
+
+export function leesNormMm(b: Record<string, unknown>): number {
+  if (typeof b.mm !== 'number' || !Number.isInteger(b.mm) || b.mm < 1 || b.mm > NORM_MAX_MM) fout(400, `Vul een heel aantal millimeter in, van 1 tot ${NORM_MAX_MM}.`);
+  return b.mm;
+}
+
+function normafvoerVan(r: Rij, adres: Adres | null, normen: NormafvoerRij[]): Normafvoer {
+  if (r.normafvoer_at !== null) return { mm: r.normafvoer_mm as number, gemeente: r.normafvoer_gemeente as string | null, vast_at: r.normafvoer_at as string, reden: r.normafvoer_reden as string | null };
+  const gemeente = adres?.gemeente.toLowerCase();
+  const n = normen.find((x) => x.gemeente?.toLowerCase() === gemeente) ?? normen.find((x) => x.gemeente === null);
+  if (!n) throw new Error('De standaardrij van de normafvoer ontbreekt');
+  return { mm: n.mm, gemeente: n.gemeente, vast_at: null, reden: null };
+}
+
+function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; f: Foto[]; n: NormafvoerRij[] }): Dossier {
   const d: Record<string, unknown> = { id: r.id, created_at: r.created_at, created_by: r.created_by };
   for (const k of DOSSIER_KOLOMMEN) d[k] = r[k];
-  d.adres = r.adres_json ? (JSON.parse(r.adres_json) as Adres) : null;
+  const adres = r.adres_json ? (JSON.parse(r.adres_json) as Adres) : null;
+  d.adres = adres;
+  d.normafvoer = normafvoerVan(r, adres, rel.n);
   d.data = JSON.parse(r.data) as Record<string, Json>;
   d.extra = JSON.parse(r.extra_json) as Extra;
   d.verzendingen = rel.v;
@@ -60,6 +80,7 @@ export function laadDossier(db: DB, id: number): Dossier | null {
     u: db.prepare('SELECT * FROM uitstellen WHERE dossier_id = ? ORDER BY id').all(id) as Uitstel[],
     a: db.prepare('SELECT * FROM plan_acks WHERE dossier_id = ? ORDER BY id').all(id) as PlanAck[],
     f: (db.prepare('SELECT * FROM fotos WHERE dossier_id = ? AND verwijderd_at IS NULL ORDER BY created_at, rowid').all(id) as Record<string, unknown>[]).map(fotoVan),
+    n: normafvoeren(db),
   });
 }
 
@@ -74,7 +95,8 @@ export function laadDossiers(db: DB, waar = '1 = 1', params: unknown[] = []): Do
     db.prepare('SELECT id, dossier_id, slot, breedte, hoogte, m_per_px, created_at FROM fotos WHERE verwijderd_at IS NULL ORDER BY created_at, rowid').all() as Record<string, unknown>[],
     fotoVan,
   );
-  return rijen.map((r) => bouw(r, { v: v.get(r.id) ?? [], u: u.get(r.id) ?? [], a: a.get(r.id) ?? [], f: f.get(r.id) ?? [] }));
+  const n = normafvoeren(db);
+  return rijen.map((r) => bouw(r, { v: v.get(r.id) ?? [], u: u.get(r.id) ?? [], a: a.get(r.id) ?? [], f: f.get(r.id) ?? [], n }));
 }
 
 export function gebruikersMap(db: DB): Map<number, Gebruiker> {

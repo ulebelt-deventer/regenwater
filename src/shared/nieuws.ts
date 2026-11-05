@@ -6,6 +6,19 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-11-06',
+    groepen: [
+      {
+        kop: 'Normafvoer',
+        punten: [
+          'De normafvoer staat nu niet meer vast op 20 mm: onder Beheer > Normafvoer stel je per gemeente de norm in. Gemeentes zonder eigen rij krijgen de standaardnorm. Elk jaar vraagt de mail Aandacht nodig om de normen na te kijken.',
+          'De waterberging rekent met de norm van de gemeente van het dossier. De voetnoot en het Plan van Aanpak noemen de gemeente, of dat het de standaardnorm is.',
+          'Een dossier houdt de norm van het moment dat het Bezoek voor het eerst wordt geopend. Pas je de norm daarna aan, dan verandert er niets aan dat dossier. Moet het voor één dossier toch anders? Tik dan als beheerder op Wijzigen bij de voetnoot op de Bezoekpagina.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-11-05',
     groepen: [
       {
