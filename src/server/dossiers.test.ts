@@ -102,6 +102,7 @@ describe('merging edits in Alle activiteit', () => {
   });
 
   it('starts a new item after a milestone', async () => {
+    await kees.json('POST', `/api/dossiers/${id}/bezoek-geopend`);
     const vanaf = laatsteId();
     await zet(kees, 'wensen', 'a');
     await kees.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'bezoek_afgerond' });

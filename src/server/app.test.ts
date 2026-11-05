@@ -254,6 +254,64 @@ describe('documents', () => {
     expect(await plan()).toMatch(/>Andere foto’s<\/h3><div[^>]*class="fotos">.*<img /);
   });
 
+  describe('Kosteninschatting in the Plan', () => {
+    const zet = (id: number, key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
+    const plan = async (id: number) => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
+    const metMaterialen = async (huurKoop: 'huur' | 'koop') => {
+      const id = await nieuwDossier(huurKoop);
+      const { dossier } = await beheerder.json('GET', `/api/dossiers/${id}`);
+      const [m1, m2] = dossier.data.materialen;
+      for (const [key, value] of [[`materiaal.${m1}.prijs`, 4500], [`materiaal.${m1}.aantal`, 2], [`materiaal.${m2}.prijs`, 2000], [`materiaal.${m2}.aantal`, 1]] as const) await zet(id, key, value);
+      return { id, m2 };
+    };
+
+    it('totals the listed materials excl. btw with the caveat for a koopwoning, and is absent for a huurwoning', async () => {
+      const koop = await plan((await metMaterialen('koop')).id);
+      expect(koop).toMatch(/qa-pdf-kosteninschatting.*Kosteninschatting.*€ 110,00.*excl\. btw/);
+      expect(koop).toContain('Dit is een inschatting; de werkelijke kosten kunnen afwijken.');
+      expect(koop).not.toContain('qa-pdf-zonder-prijs');
+      const huur = await plan((await metMaterialen('huur')).id);
+      expect(huur).toContain('Materialenlijst');
+      expect(huur).not.toContain('Kosteninschatting');
+      expect(huur).not.toContain('€ 110,00');
+    });
+
+    it('leaves out a koopwoning without materials', async () => {
+      expect(await plan(await nieuwDossier('koop'))).not.toContain('Kosteninschatting');
+    });
+
+    it('names a listed material without a price, which the total leaves out', async () => {
+      const { id, m2 } = await metMaterialen('koop');
+      await zet(id, `materiaal.${m2}.naam`, 'Speciaal hulpstuk');
+      await zet(id, `materiaal.${m2}.prijs`, null);
+      const html = await plan(id);
+      expect(html).toContain('€ 90,00');
+      expect(html).toMatch(/qa-pdf-zonder-prijs[^<]*>[^<]*Speciaal hulpstuk/);
+    });
+
+    it('counts only rows the materials table lists, so a row without a name stays out of the total', async () => {
+      const { id, m2 } = await metMaterialen('koop');
+      await zet(id, `materiaal.${m2}.naam`, null);
+      expect(await plan(id)).toContain('€ 90,00');
+    });
+
+    it('flags the Plan as changed when a price changes', async () => {
+      const { id, m2 } = await metMaterialen('koop');
+      const { plan_gewijzigd_at: voor } = (await beheerder.json('GET', `/api/dossiers/${id}`)).dossier;
+      t.klok.verschuif(6e4);
+      const { plan_gewijzigd_at: na } = await zet(id, `materiaal.${m2}.prijs`, 2500);
+      expect(na > voor).toBe(true);
+    });
+
+    it('stays out of the Opleverrapport', async () => {
+      const { id } = await metMaterialen('koop');
+      await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
+      await beheerder.verzoek('GET', `/docs/dossiers/${id}/opleverrapport.pdf`);
+      expect(t.pdfs.at(-1)).toContain('Gebruikte materialen');
+      expect(t.pdfs.at(-1)).not.toContain('Kosteninschatting');
+    });
+  });
+
   it('prints the plan PDF without the concept markers', async () => {
     const id = await nieuwDossier();
     const res = await beheerder.verzoek('GET', `/docs/dossiers/${id}/plan.pdf`);

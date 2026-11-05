@@ -16,6 +16,12 @@ export const NIEUWS: NieuwsDatum[] = [
           'Een dossier houdt de norm van het moment dat het Bezoek voor het eerst wordt geopend. Pas je de norm daarna aan, dan verandert er niets aan dat dossier. Moet het voor één dossier toch anders? Tik dan als beheerder op Wijzigen bij de voetnoot op de Bezoekpagina.',
         ],
       },
+      {
+        kop: 'Plan van Aanpak',
+        punten: [
+          'Bij koopwoningen staat in het Plan van Aanpak nu onder de Materialenlijst een Kosteninschatting met de totaalprijs van het materiaal, excl. btw. Bij huurwoningen staat die er niet. Wijzig je een materiaalprijs nadat het Plan is verstuurd, dan telt dat nu als Plan gewijzigd.',
+        ],
+      },
     ],
   },
   {

@@ -1,13 +1,16 @@
 import { For, type JSX, Show } from 'solid-js';
 import { DOORLAATBAARHEID } from '../../shared/constants.ts';
-import { kortDatum } from '../../shared/datum.ts';
+import { euro, kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { eigenaar, str } from '../../shared/status.ts';
-import { BEOORDELINGEN, materiaalRijen, opsommingRegels, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
+import type { Dossier } from '../../shared/types.ts';
+import { BEOORDELINGEN, materiaalRijen, materiaalTotaal, opsommingRegels, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
+const getoondeMaterialen = (d: Dossier, lijst: 'materialen' | 'gebruikt') => materiaalRijen(d, lijst).filter((r) => r.naam.trim() && r.aantal !== null && r.aantal > 0);
+
 function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.Element {
-  const rijen = () => materiaalRijen(props.doc.d, props.lijst).filter((r) => r.naam.trim() && r.aantal !== null && r.aantal > 0);
+  const rijen = () => getoondeMaterialen(props.doc.d, props.lijst);
   return (
     <Show when={rijen().length > 0} fallback={<Show when={props.doc.concept}><p><Leeg doc={props.doc} /></p></Show>}>
       <table class="tabel">
@@ -28,6 +31,26 @@ function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.
           </For>
         </tbody>
       </table>
+    </Show>
+  );
+}
+
+// Only for a koopwoning: a huurwoning's plan carries no prices.
+function Kosteninschatting(props: { doc: Doc }): JSX.Element {
+  const rijen = () => getoondeMaterialen(props.doc.d, 'materialen');
+  const zonderPrijs = () => rijen().filter((r) => r.prijs === null).map((r) => r.naam.trim());
+  return (
+    <Show when={props.doc.d.huur_koop === 'koop' && rijen().length > 0}>
+      <div class="qa-pdf-kosteninschatting">
+        <h3>Kosteninschatting</h3>
+        <p>
+          Totaalprijs materiaal: <strong>{euro(materiaalTotaal(rijen()))}</strong> excl. btw
+        </p>
+        <Show when={zonderPrijs().length > 0}>
+          <p class="qa-pdf-zonder-prijs">{`Nog zonder prijs, dus niet meegeteld: ${zonderPrijs().join(', ')}.`}</p>
+        </Show>
+        <p class="klein">Dit is een inschatting; de werkelijke kosten kunnen afwijken.</p>
+      </div>
     </Show>
   );
 }
@@ -381,6 +404,7 @@ export function Plan(props: { doc: Doc }): JSX.Element {
       <PlanVanAanpak doc={props.doc} />
       <h2>5. Materialenlijst</h2>
       <Materialen doc={props.doc} lijst="materialen" />
+      <Kosteninschatting doc={props.doc} />
       <Bijlage doc={props.doc} />
     </>
   );
