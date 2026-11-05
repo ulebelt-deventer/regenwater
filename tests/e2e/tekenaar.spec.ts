@@ -559,13 +559,12 @@ test('in een vak met meerdere foto’s blader je met pijltjes in de hoeken van h
   expect(onder).toBeCloseTo(stage.y + stage.height, 0);
   expect(await vorige.boundingBox()).toEqual(pijlL);
   expect(await volgende.boundingBox()).toEqual(pijlR);
-  expect(pijlL.x - stage.x).toBeGreaterThanOrEqual(0);
-  expect(pijlL.x - stage.x).toBeLessThan(20);
-  expect(pijlL.y - stage.y).toBeGreaterThanOrEqual(0);
-  expect(pijlL.y - stage.y).toBeLessThan(20);
-  const rand = stage.x + stage.width - (pijlR.x + pijlR.width);
-  expect(rand).toBeGreaterThanOrEqual(0);
-  expect(rand).toBeLessThan(20);
+  const halveRem = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize) / 2);
+  expect(pijlL.x - stage.x).toBeCloseTo(-halveRem, 0);
+  expect(pijlL.y - stage.y).toBeCloseTo(-halveRem, 0);
+  expect(stage.x + stage.width - (pijlR.x + pijlR.width)).toBeCloseTo(-halveRem, 0);
+  expect(pijlR.y - stage.y).toBeCloseTo(-halveRem, 0);
+  await expect(volgende.locator('i')).toHaveCSS('-webkit-text-stroke-width', '1px');
 
   await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
   await page.mouse.wheel(0, -300);

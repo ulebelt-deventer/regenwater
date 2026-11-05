@@ -135,11 +135,13 @@ $container-max-widths: (lg: 1200px);
 // Full-screen photo viewer and drawing editor
 .annot { position: fixed; inset: 0; background: $ub-zwart; z-index: 1050; display: flex; flex-direction: column; }
 .annot .tools { background: #fff; padding: .5rem; display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
-.annot .stage { flex: 1; position: relative; overflow: hidden; touch-action: none; user-select: none; }
+// `clip`, not `hidden`: focusing a .foto-pijl would scroll a `hidden` stage, shifting the photo off its drawing coordinates.
+.annot .stage { flex: 1; position: relative; overflow: clip; touch-action: none; user-select: none; }
 .annot .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .annot .hint { background: #2b2b2b; color: #f7f0e5; font-size: $font-size-sm; padding: .35rem .75rem; }
 .annot .btn.active { background: $ub-groen; border-color: $ub-groen; color: #fff; }
-.annot .foto-pijl { --bs-btn-disabled-opacity: .35; width: 2.75rem; height: 2.75rem; padding: 0; flex: none; }
+// The stage clips the outer .5rem, tucking the circles into its corners. The icon's lines are 1px wide; the text stroke doubles them.
+.annot .foto-pijl { --bs-btn-disabled-opacity: .35; width: 2.75rem; height: 2.75rem; margin: -.5rem; padding: 0; flex: none; -webkit-text-stroke: 1px currentColor; }
 
 .big-touch .form-check-input { width: 1.3em; height: 1.3em; }
 .big-touch .form-check { margin-bottom: .35rem; }

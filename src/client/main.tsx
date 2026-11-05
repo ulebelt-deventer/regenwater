@@ -21,6 +21,7 @@ import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Nieuws } from './paginas/nieuws.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
 import { AandachtUitleg, Databeleid, Installeren, Privacy, RechtenUitleg, Statussen } from './paginas/uitleg.tsx';
+import { startScrollHerstel } from './scrollherstel.ts';
 import { startVersieControle } from './versie.ts';
 
 function NietGevonden() {
@@ -29,6 +30,7 @@ function NietGevonden() {
 
 startOpslag();
 startVersieControle();
+startScrollHerstel();
 
 render(
   () => (

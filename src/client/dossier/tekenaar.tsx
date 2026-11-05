@@ -526,7 +526,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void; onFoto: (
           </Show>
         </svg>
         <Show when={rij().length > 1 && gereedschap() === null && beeld().z === 1}>
-          <div class="position-absolute top-0 start-0 w-100 d-flex justify-content-between p-2 pe-none">
+          <div class="position-absolute top-0 start-0 w-100 d-flex justify-content-between pe-none">
             <Pijl stap={-1} naam="Vorige foto" qa="qa-foto-vorige" icoon="bi-arrow-left" />
             <Pijl stap={1} naam="Volgende foto" qa="qa-foto-volgende" icoon="bi-arrow-right" />
           </div>
