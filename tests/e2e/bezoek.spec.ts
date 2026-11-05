@@ -325,6 +325,22 @@ test('elke regenpijp is een omkaderd blok met Pijp, Voert af van en Waterberging
   expect([data['regenpijp.r1.soort'], data['regenpijp.r1.diameter'], data['regenpijp.r1.regenton'], data['regenpijp.r1.afkoppelen']]).toEqual(['zink', 'anders', 'gewenst', 'twijfel']);
 });
 
+test('Andere foto’s staat op het Bezoek tussen Wat wenst de bewoner en Afspraken, neemt meerdere foto’s en komt in de samenvatting', async ({ page }) => {
+  const id = await tweeRegenpijpen(page);
+  const slot = page.locator('.qa-fotoslot-andere_fotos');
+  const boven = async (l: Locator) => (await rechthoek(l)).top;
+  expect(await boven(page.locator('.qa-veld-wensen'))).toBeLessThan(await boven(slot));
+  expect(await boven(slot)).toBeLessThan(await boven(page.locator('.qa-afspraken')));
+  await expect(page.locator('#veld-andere_fotos .form-label')).toHaveText('Andere foto’s');
+
+  const png = await kaartPng();
+  await slot.locator('.qa-foto-invoer').setInputFiles([{ name: 'een.png', mimeType: 'image/png', buffer: png }, { name: 'twee.png', mimeType: 'image/png', buffer: png }]);
+  await expect(slot.locator('.qa-foto')).toHaveCount(2);
+
+  await page.goto(`/dossiers/${id}`);
+  await expect(page.locator('.qa-sectie-bezoek .qa-duimen-andere_fotos > *')).toHaveCount(2);
+});
+
 test('Afkoppelen op Nee verbergt Waar en Hoe alleen bij die regenpijp en ook in de samenvatting; terug op Ja staat het antwoord er nog', async ({ page }) => {
   const id = await tweeRegenpijpen(page);
   const [a, b] = [page.locator('.qa-regenpijp').first(), page.locator('.qa-regenpijp').nth(1)];

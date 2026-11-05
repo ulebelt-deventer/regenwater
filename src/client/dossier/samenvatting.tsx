@@ -183,6 +183,7 @@ export function BezoekSamenvatting() {
       <For each={items().regenpijpen}>{(r) => <RegenpijpRegel pijp={r} />}</For>
       <VeldRegel k="hoosbuien" label="Bij hoosbuien" />
       <VeldRegel k="wensen" label="Wensen bewoner" />
+      <FotoRegel slot="andere_fotos" label="Andere foto’s" />
       <VeldRegel k="bewoner_doet" label="Bewoner doet" />
       <VeldRegel k="ulebelt_doet" label="De Ulebelt doet" />
     </>

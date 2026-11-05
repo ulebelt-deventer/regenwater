@@ -301,6 +301,10 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
       </Show>
       <h3>Wensen van de bewoner</h3>
       <Alinea doc={props.doc} key="wensen" />
+      <Show when={fotosIn(d(), 'andere_fotos').length > 0}>
+        <h3>Andere foto’s</h3>
+        <Fotos doc={props.doc} slot="andere_fotos" />
+      </Show>
       <h3>Voorstel Ulebelt</h3>
       <Show when={beoordeling() || props.doc.concept}>
         <p>

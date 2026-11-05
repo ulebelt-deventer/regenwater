@@ -345,6 +345,10 @@ export function Bezoek() {
         <VeldInvoer k="tuinsituatie" />
         <VeldInvoer k="hoosbuien" />
         <VeldInvoer k="wensen" />
+        <div id="veld-andere_fotos" class="mb-3">
+          <div class="form-label fw-semibold mb-1">Andere foto’s</div>
+          <FotoSlot k="andere_fotos" />
+        </div>
 
         <div id="veld-afspraken" class="pt-3 qa-afspraken">
           <h3 class="mb-3">Afspraken</h3>

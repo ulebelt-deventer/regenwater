@@ -134,6 +134,7 @@ export const FOTO_SLOTS: FotoSlot[] = [
   { key: 'regenpijp.*.waar', label: 'Foto’s waar het water heen moet', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'regenpijp.*.hoe', label: 'Foto’s hoe het water er moet komen', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'hoosbuien', label: 'Foto’s hoosbuien', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
+  { key: 'andere_fotos', label: 'Andere foto’s', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'opleverfotos', label: 'Opleverfoto’s', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true },
 ];
 

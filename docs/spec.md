@@ -231,6 +231,7 @@
       - *Hint: Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst? Let goed op bij hoogteverschillen!*
     - Wat wenst de bewoner?
       - Free textarea, with gray hint text above it: *Wat wil de bewoner bereiken? Regenton(nen) plaatsen? Regenpijp afkoppelen? Water de tuin in laten lopen? Wat wil de bewoner zelf doen?*
+    - Andere foto’s: a photo slot for pictures that fit nowhere else. Also in the summary, and in the Plan under its own heading after Wensen van de bewoner, once it holds a photo.
     - Afspraken (section), agreed with the bewoner on-site. Each question is one textarea of bullets, growing with its text from 3 to 5.4 lines high (the cut-off last line shows there is more) and scrolling beyond that: every line starts with "• " as you type or paste, Enter starts the next bullet, and empty lines disappear once it loses focus; stored as plain lines. Above it, links add a common line at the end and put the cursor after it, scrolled into view, so you can edit it like any other; a link hides while its exact line is in the text. The summary and the Plan van Aanpak show the lines as a bulleted list; the paper bezoekformulier lists the suggestions to circle, plus blank lines.
       - Wat gaat de bewoner doen? Suggestions:
         - Tuin opruimen op plek regenton
@@ -345,7 +346,7 @@
   - **3. Bodemgegevens**: the bodemsituatie choice, with the boorlocatie and bron (BRO/DINOloket); boorprofiel image in the bijlage.
   - **4. Plan van aanpak**
     - Regenpijpen: one compact row per pijp (letter, dakdelen with shares, soort, diameter, regenton, afkoppelen, waar & hoe het water naartoe moet).
-    - Wensen van de bewoner.
+    - Wensen van de bewoner, then Andere foto’s if there are any.
     - Voorstel Ulebelt: the Beoordeling sentence, Toelichting, fixed lead-in line, werkzaamheden bullets.
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.
   - **5. Materialenlijst**: the rows with an Aantal, listing Materiaal and Aantal only. Prices are left out, as in the sample (see team question).

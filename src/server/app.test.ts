@@ -246,6 +246,14 @@ describe('documents', () => {
     expect(niet).not.toContain('>Regenpijp A</figcaption>');
   });
 
+  it('prints Andere foto’s under its own heading in the Plan, only once there is a photo', async () => {
+    const id = await nieuwDossier();
+    const plan = async () => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
+    expect(await plan()).not.toContain('Andere foto’s');
+    await beheerder.json('POST', `/api/dossiers/${id}/fotos/andere_fotos`, new Uint8Array(await png()), 201);
+    expect(await plan()).toMatch(/>Andere foto’s<\/h3><div[^>]*class="fotos">.*<img /);
+  });
+
   it('prints the plan PDF without the concept markers', async () => {
     const id = await nieuwDossier();
     const res = await beheerder.verzoek('GET', `/docs/dossiers/${id}/plan.pdf`);
