@@ -60,8 +60,8 @@ interface Stap {
   data: Record<string, Json>;
 }
 
-// Rotating swaps in a new photo id, which `onGedraaid` hands back as the new `fotoId`.
-export function Tekenaar(props: { fotoId: string; onSluit: () => void; onGedraaid: (id: string) => void }) {
+// Rotating swaps in a new photo id and the arrows go to another photo in the slot; `onFoto` hands either back as the new `fotoId`.
+export function Tekenaar(props: { fotoId: string; onSluit: () => void; onFoto: (id: string) => void }) {
   const s = useDossier();
   const foto = () => {
     const f = s.d.fotos.find((x) => x.id === props.fotoId);
@@ -405,15 +405,32 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void; onGedraai
       // Together, or foto() runs in between and finds neither id.
       batch(() => {
         s.vervang(r.dossier);
-        props.onGedraaid(r.foto_id);
+        props.onFoto(r.foto_id);
       });
-      // Undo steps hold drawings in the old orientation.
-      setGeschiedenis([]);
-      setGekozen(null);
-      setBeeld(begrens(0, 0, 1));
+      nieuwBeeld();
     });
     setDraait(false);
   };
+
+  // Undo steps hold drawings as they were on the previous photo id, and would land on the wrong photo or orientation.
+  const nieuwBeeld = () => {
+    setGeschiedenis([]);
+    setGekozen(null);
+    setBeeld(begrens(0, 0, 1));
+  };
+
+  const rij = () => s.d.fotos.filter((f) => f.slot === fotoSlot);
+  const plek = () => rij().findIndex((f) => f.id === props.fotoId);
+  const blader = (stap: -1 | 1) => {
+    props.onFoto(rij()[plek() + stap].id);
+    nieuwBeeld();
+  };
+  // Inside the stage so a scroll over an arrow still zooms; its own pointerdown must not reach `neer`, whose pointer capture would swallow the click.
+  const Pijl = (p: { stap: -1 | 1; naam: string; qa: string; icoon: string }) => (
+    <button type="button" class={`btn btn-light rounded-circle shadow pe-auto foto-pijl ${p.qa}`} aria-label={p.naam} disabled={rij()[plek() + p.stap] === undefined} onPointerDown={(e) => e.stopPropagation()} onClick={() => blader(p.stap)}>
+      <i class={`bi ${p.icoon}`} aria-hidden="true" />
+    </button>
+  );
 
   const bewaarTekst = () => {
     const t = tekstInvoer()!;
@@ -508,6 +525,12 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void; onGedraai
             <For each={inWording()}>{(q, i) => <circle cx={q[0]} cy={q[1]} r={(i() === 0 ? HANDVAT_PX * 1.4 : HANDVAT_PX) / px()} fill={i() === 0 ? '#ffd84d' : '#fff'} stroke="#1a1a1a" stroke-width={2 / px()} />}</For>
           </Show>
         </svg>
+        <Show when={rij().length > 1 && gereedschap() === null && beeld().z === 1}>
+          <div class="position-absolute top-0 start-0 w-100 d-flex justify-content-between p-2 pe-none">
+            <Pijl stap={-1} naam="Vorige foto" qa="qa-foto-vorige" icoon="bi-arrow-left" />
+            <Pijl stap={1} naam="Volgende foto" qa="qa-foto-volgende" icoon="bi-arrow-right" />
+          </div>
+        </Show>
       </div>
       <Show when={tekstInvoer()}>
         {(t) => (

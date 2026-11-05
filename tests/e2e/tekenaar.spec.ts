@@ -493,6 +493,101 @@ test.describe('op een touchscreen', () => {
     const foto = (await serverDossier(page, id)).fotos.find((f) => f.slot === 'tuinsituatie')!;
     expect(foto.annotaties.map((a) => [a.type, a.tekst])).toEqual([['tekst', 'Put']]);
   });
+
+  test('op een telefoon blader je met een tik op de pijltjes, die allebei in beeld staan', async ({ page }) => {
+    await start(page);
+    await page.setViewportSize({ width: 375, height: 667 });
+    const { slot, ids } = await vakMetDrieFotos(page);
+    await openTekenaar(page, 'tuinsituatie', slot.locator('.qa-foto').first());
+    await expect(page.locator('.qa-foto-vorige')).toBeInViewport();
+    await expect(page.locator('.qa-foto-volgende')).toBeInViewport();
+    await page.locator('.qa-foto-volgende').tap();
+    await expect(page.locator('.qa-tekenaar-svg image')).toHaveAttribute('href', `/api/fotos/${ids[1]}`);
+    await expect(page.locator('.qa-foto-vorige')).toBeInViewport();
+    await expect(page.locator('.qa-foto-volgende')).toBeInViewport();
+  });
+});
+
+// A dossier's Bezoek page with a landscape, a portrait and a landscape photo in the tuinsituatie slot.
+async function vakMetDrieFotos(page: Page) {
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  const slot = page.locator('.qa-fotoslot-tuinsituatie');
+  const hoog = await sharp({ create: { width: 300, height: 600, channels: 3, background: '#d0d0d0' } }).png().toBuffer();
+  await slot.locator('.qa-foto-invoer').setInputFiles([PNG, hoog, PNG].map((buffer, i) => ({ name: `${i}.png`, mimeType: 'image/png', buffer })));
+  await expect(slot.locator('.qa-foto')).toHaveCount(3);
+  const fotos = (await serverDossier(page, id)).fotos as unknown as { id: string; slot: string }[];
+  return { id, slot, ids: fotos.filter((f) => f.slot === 'tuinsituatie').map((f) => f.id) };
+}
+
+test('in een vak met meerdere foto’s blader je met pijltjes in de hoeken van het tekenvlak, alleen bij het handje en niet ingezoomd', async ({ page }) => {
+  await start(page);
+  const { id, slot, ids } = await vakMetDrieFotos(page);
+  const vorige = page.locator('.qa-foto-vorige');
+  const volgende = page.locator('.qa-foto-volgende');
+  const foto = page.locator('.qa-tekenaar-svg image');
+
+  await openTekenaar(page, 'tuinsituatie', slot.locator('.qa-foto').first());
+  await expect(foto).toHaveAttribute('href', `/api/fotos/${ids[0]}`);
+  await expect(vorige).toBeVisible();
+  await expect(vorige).toBeDisabled();
+  await expect(vorige).toHaveCSS('opacity', '0.35');
+  await expect(volgende).toBeEnabled();
+  await expect(volgende).toHaveCSS('opacity', '1');
+
+  await gereedschap(page, 'tekst');
+  await expect(volgende).toHaveCount(0);
+  await tik(page, 0.5, 0.5);
+  await page.locator('.qa-tekst-invoer').fill('Put');
+  await page.locator('.qa-tekst-invoer').press('Enter');
+  await tekenaarOpgeslagen(page);
+  await gereedschap(page, 'kies');
+
+  // The arrows stay in the stage's top corners when a portrait photo, narrower than the stage, fits centred.
+  const pijlL = (await vorige.boundingBox())!;
+  const pijlR = (await volgende.boundingBox())!;
+  await volgende.click();
+  await expect(foto).toHaveAttribute('href', `/api/fotos/${ids[1]}`);
+  await expect(page.locator('.qa-ongedaan')).toBeDisabled();
+  await expect(vorige).toBeEnabled();
+  await expect(volgende).toBeEnabled();
+  const stage = (await page.locator('.qa-tekenvlak').boundingBox())!;
+  const [links, boven] = await schermPunt(page, 0, 0);
+  const [rechts, onder] = await schermPunt(page, 1, 1);
+  expect(links - stage.x).toBeCloseTo(stage.x + stage.width - rechts, 0);
+  expect(boven).toBeCloseTo(stage.y, 0);
+  expect(onder).toBeCloseTo(stage.y + stage.height, 0);
+  expect(await vorige.boundingBox()).toEqual(pijlL);
+  expect(await volgende.boundingBox()).toEqual(pijlR);
+  expect(pijlL.x - stage.x).toBeGreaterThanOrEqual(0);
+  expect(pijlL.x - stage.x).toBeLessThan(20);
+  expect(pijlL.y - stage.y).toBeGreaterThanOrEqual(0);
+  expect(pijlL.y - stage.y).toBeLessThan(20);
+  const rand = stage.x + stage.width - (pijlR.x + pijlR.width);
+  expect(rand).toBeGreaterThanOrEqual(0);
+  expect(rand).toBeLessThan(20);
+
+  await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+  await page.mouse.wheel(0, -300);
+  await expect(volgende).toHaveCount(0);
+  await page.mouse.wheel(0, 3000);
+  await expect(volgende).toBeVisible();
+
+  await volgende.click();
+  await expect(foto).toHaveAttribute('href', `/api/fotos/${ids[2]}`);
+  await expect(volgende).toBeDisabled();
+  await expect(vorige).toBeEnabled();
+  await sluitTekenaar(page);
+
+  const fotos = (await serverDossier(page, id)).fotos.filter((f) => f.slot === 'tuinsituatie');
+  expect(fotos.map((f) => f.annotaties.length)).toEqual([1, 0, 0]);
+});
+
+test('een vak met één foto heeft geen pijltjes', async ({ page }) => {
+  await openKaart(page);
+  await expect(page.locator('.qa-tekenvlak')).toBeVisible();
+  await expect(page.locator('.qa-foto-vorige')).toHaveCount(0);
+  await expect(page.locator('.qa-foto-volgende')).toHaveCount(0);
 });
 
 test('de derde foto uit een vak verwijderen sluit de tekenaar zonder foutmelding', async ({ page }) => {

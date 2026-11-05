@@ -6,6 +6,23 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-11-05',
+    groepen: [
+      {
+        kop: 'Bezoek',
+        punten: [
+          'Onder Wat wenst de bewoner? staat nu een nieuw fotovak Andere foto’s, voor foto’s die nergens anders passen. Ze komen ook in het Plan van Aanpak, onder een eigen kopje.',
+        ],
+      },
+      {
+        kop: 'Foto\'s',
+        punten: [
+          'Staan er meerdere foto’s in een fotovak, dan blader je in de grote weergave met de pijltjes linksboven en rechtsboven. Ze verschijnen als het handje is gekozen en je niet hebt ingezoomd.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-10-23',
     groepen: [
       {

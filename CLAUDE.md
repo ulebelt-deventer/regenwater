@@ -2,12 +2,12 @@
 
 ## Wat is er nieuw
 
-Only when a change alters how the team works with the app, add a bullet to `src/shared/nieuws.ts`, which feeds the admin-only "Wat is er nieuw" page (Beheer menu, `/beheer/nieuw`). The test for each bullet: if nobody told them, would an admin miss something they need, keep doing it the old way, or get it wrong? A change they will notice and understand the moment they meet it on the page fails that test, however much the page changed. The admins' time is the cost; most changes get no bullet, and a short list gets read.
+When a change is a significant enough addition or change to the workflow to be worth calling attention to, add a bullet to `src/shared/nieuws.ts`, which feeds the admin-only "Wat is er nieuw" page (Beheer menu, `/beheer/nieuw`). The test is significance, not whether the change is noticeable when clicking around: a bullet is most necessary for invisible changes, but a visible change gets one too when it is significant enough, such as a new step, field group or photo slot. The admins' time is the cost; small changes get no bullet, and a short list gets read.
 
 Include:
 - Renamed concepts or steps (Intake → Inschrijving), not shortened labels whose meaning is unchanged.
 - Things moved to another page or to another step of the workflow (Afspraken from Plan to Bezoek), where people would look in the old place.
-- New capabilities and tools they wouldn't stumble on, or that change a habit (a new kaart vlak type, freehand drawing, pasting from the clipboard).
+- New capabilities and tools, even visible ones, that add to the workflow or change a habit (a new kaart vlak type, freehand drawing, pasting from the clipboard, a new photo slot).
 - Removed fields or features, and questions whose meaning changed.
 - Changed calculations, money and rules (waterberging per regenpijp, Klussendienst fee, when the Uitvoeringsspecificatie is available).
 - Fixes to something the team reported as broken and worked around, so they can stop working around it.
