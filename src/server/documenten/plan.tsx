@@ -3,7 +3,7 @@ import { DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { eigenaar, str } from '../../shared/status.ts';
-import { BEOORDELINGEN, materiaalRijen, opsommingRegels, optieLabel, veld } from '../../shared/velden.ts';
+import { BEOORDELINGEN, materiaalRijen, opsommingRegels, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
 function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.Element {
@@ -240,6 +240,7 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
   const labels = () => kaartItems(d()).labels;
   const k = (id: string, veldNaam: string) => `regenpijp.${id}.${veldNaam}`;
   const kies = (id: string, veldNaam: string) => optieLabel(veld(`regenpijp.*.${veldNaam}`), d(), k(id, veldNaam));
+  const getoond = (id: string, veldNaam: string) => veldZichtbaar(d(), k(id, veldNaam));
   const beoordeling = () => {
     const b = d().data.beoordeling;
     const r = BEOORDELINGEN.find(([key]) => key === b);
@@ -273,12 +274,14 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
                   <td><Of doc={props.doc} v={kies(r.id, 'regenton')} /></td>
                   <td><Of doc={props.doc} v={kies(r.id, 'afkoppelen')} /></td>
                   <td>
-                    <Of doc={props.doc} v={str(d(), k(r.id, 'waar'))} />
-                    <Show when={kies(r.id, 'hoe')}>
-                      <br />
-                      <span class="klein">Via: {kies(r.id, 'hoe')}</span>
+                    <Show when={getoond(r.id, 'waar')} fallback="--">
+                      <Of doc={props.doc} v={str(d(), k(r.id, 'waar'))} />
+                      <Show when={kies(r.id, 'hoe')}>
+                        <br />
+                        <span class="klein">Via: {kies(r.id, 'hoe')}</span>
+                      </Show>
                     </Show>
-                    <Show when={str(d(), k(r.id, 'ondergrond'))}>
+                    <Show when={getoond(r.id, 'ondergrond') && str(d(), k(r.id, 'ondergrond'))}>
                       <br />
                       <span class="klein">Ondergrond: {str(d(), k(r.id, 'ondergrond'))}</span>
                     </Show>
@@ -290,7 +293,7 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
         </table>
         <For each={pijpen()}>
           {(r) => (
-            <For each={['ondergrond', 'waar', 'hoe']}>
+            <For each={['ondergrond', 'waar', 'hoe'].filter((s) => getoond(r.id, s))}>
               {(s) => <Fotos doc={props.doc} slot={k(r.id, s)} onderschrift={`Regenpijp ${r.label}`} />}
             </For>
           )}

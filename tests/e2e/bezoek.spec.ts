@@ -325,6 +325,31 @@ test('elke regenpijp is een omkaderd blok met Pijp, Voert af van en Waterberging
   expect([data['regenpijp.r1.soort'], data['regenpijp.r1.diameter'], data['regenpijp.r1.regenton'], data['regenpijp.r1.afkoppelen']]).toEqual(['zink', 'anders', 'gewenst', 'twijfel']);
 });
 
+test('Afkoppelen op Nee verbergt Waar en Hoe alleen bij die regenpijp en ook in de samenvatting; terug op Ja staat het antwoord er nog', async ({ page }) => {
+  const id = await tweeRegenpijpen(page);
+  const [a, b] = [page.locator('.qa-regenpijp').first(), page.locator('.qa-regenpijp').nth(1)];
+  const waar = a.locator('.qa-veld-regenpijp-waar textarea');
+  await waar.fill('De border in');
+  await waar.blur();
+  await expect(a.locator('.qa-veld-regenpijp-hoe')).toBeVisible();
+
+  await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('nee');
+  await expect(a.locator('.qa-veld-regenpijp-waar')).toHaveCount(0);
+  await expect(a.locator('.qa-veld-regenpijp-hoe')).toHaveCount(0);
+  await expect(b.locator('.qa-veld-regenpijp-waar')).toBeVisible();
+  await expect(b.locator('.qa-veld-regenpijp-hoe')).toBeVisible();
+  await opslagKlaar(page);
+
+  await page.goto(`/dossiers/${id}`);
+  const samenvatting = page.locator('.qa-sectie-bezoek .qa-sv-regenpijp').first();
+  await expect(samenvatting).toContainText('Afkoppelen: Nee');
+  await expect(samenvatting).not.toContainText('De border in');
+
+  await page.goto(`/dossiers/${id}/bezoek`);
+  await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('ja');
+  await expect(waar).toHaveValue('De border in');
+});
+
 test('Hoe moet het water komen is een keuzemenu met vinkjes; Anders maakt plaats voor een invulveld met de focus, en dat leeg verlaten zet het vinkje terug', async ({ page }) => {
   const id = await tweeRegenpijpen(page);
   const veld = page.locator('.qa-regenpijp').first().locator('.qa-veld-regenpijp-hoe');

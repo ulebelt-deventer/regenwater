@@ -98,7 +98,3 @@ Stop after each milestone with a summary, so the maintainer can review, commit a
 6. Aandacht rules and the Aandacht-criteria page, snoozes, Plan gewijzigd, admin meldingen and the weekly digest.
 7. Deployment scripts, monitoring and backups; restore test.
 8. Later: the Mailgun bounce webhook; the one-off import of the Ulebelt admin's spreadsheet, if the team wants it.
-
-## Open questions
-
-- The data retention policy, and who is the data controller (needs a processing agreement with the organization).

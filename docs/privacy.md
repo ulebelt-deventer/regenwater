@@ -8,8 +8,8 @@ Internal notes on how the app handles personal data and where it stands on AVG (
 
 ## Legal basis and retention
 
-- Bewoners: performance of the agreement they signed up for (Art. 6(1)(b)). Volunteers and admins: legitimate interest in organizing the work and accounting for who did what (Art. 6(1)(f)). The request log: legitimate interest in security and troubleshooting (Art. 6(1)(f), Recital 49).
-- Retention: 5 years after a dossier is closed, and 5 years after a user's account is archived; then the personal data is deleted. The 5 years echoes the Dutch limitation period for claims (BW 3:310), though that runs from when damage becomes known, so a claim can still come later; the period is provisional until the team confirms it. Nothing deletes automatically yet. Logs (journald and the daily archive) are deleted automatically after 12 months, within CNIL's recommended 6 to 12 months for security logs.
+- Bewoners: performance of the agreement they signed up for (Art. 6(1)(b)). After the work: legitimate interest in answering questions about it and learning what works long term, since this is pioneering work (Art. 6(1)(f)); bewoners can object (Art. 21), and "Dossier verwijderen" handles that. Volunteers and admins: legitimate interest in organizing the work and accounting for who did what (Art. 6(1)(f)). The request log: legitimate interest in security and troubleshooting (Art. 6(1)(f), Recital 49).
+- Retention: the bewoner's name, e-mail and phone go 5 years after a dossier is closed; address, photos and work details go after 20 years. User data goes 5 years after the account is archived. Keeping the address past 5 years lets someone with a question still find their dossier. The periods echo the Dutch limitation periods for claims (BW 3:310): 5 years from when damage becomes known, 20 years at the latest. The team keeps the work record for learning, not for a legal duty; woningcorporaties hold their own copy of the Plan and opleverrapport (huur only), so for koop Ulebelt's is the only one. Address and photos stay personal data, so this is not anonymisation. Nothing deletes automatically yet. Logs (journald and the daily archive) are deleted automatically after 12 months, within CNIL's recommended 6 to 12 months for security logs.
 - **Technisch beheerder (maintainer):** a volunteer acting under Ulebelt's authority (AVG Art. 29), so part of the organization rather than a processor; no separate agreement needed. The privacy page mentions the role, not the person.
 
 ## Personal data stored
@@ -49,5 +49,6 @@ Healthchecks pings are empty POSTs and fonts are self-hosted, so neither receive
 
 ## Open
 
-- Detect and delete personal data past its retention period (nothing does this yet).
+- Detect and delete personal data past its retention period (nothing does this yet). Removing the bewoner's contact details has to reach the dossier fields, old values in `audit` payloads, `verzendingen` (recipient and mail text), names in free text such as Notities, and the backups. Deleting a user has to deal with the audit rows that point to them.
 - Backup retention, which decides how long deleted data lingers.
+- Questions for the team: do they want to go back to the same house, or only keep lessons and numbers (which could shorten how long the address stays)? Do subsidy terms or contracts set a retention period? Does the administratie keep facturen and Uitvoeringsspecificaties outside the app?

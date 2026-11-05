@@ -4,7 +4,7 @@ import { datum, euro } from '../../shared/datum.ts';
 import { type Regenpijp, bronnenTekst, getal, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { materiaalRijen, materiaalTotaal, opsommingRegels, veldTekst, veldVoor } from '../../shared/velden.ts';
+import { materiaalRijen, materiaalTotaal, opsommingRegels, veldTekst, veldVoor, veldZichtbaar } from '../../shared/velden.ts';
 import { FotoDuimen } from './fotos.tsx';
 import { useDossier } from './staat.ts';
 import { Regel } from './velden.tsx';
@@ -17,13 +17,6 @@ const SUBSIDIE_VARIANT: Record<string, string> = {
 
 function aantalFotos(d: Dossier, slot: string): number {
   return d.fotos.filter((f) => f.slot === slot).length;
-}
-
-// The part of a field the edit page shows: hidden fields (eg Woningeigenaar for a koopwoning) are left out here too.
-function zichtbaar(d: Dossier, key: string): boolean {
-  const g = veldVoor(key);
-  if (!g) throw new Error(`Onbekend veld: ${key}`);
-  return !g.veld.zichtbaar || g.veld.zichtbaar(d, g.id);
 }
 
 function fotoSlotVan(key: string): string | null {
@@ -54,7 +47,7 @@ function heeftWaarde(d: Dossier, key: string): boolean {
 function VeldRegel(props: { k: string; label?: string }) {
   const s = useDossier();
   return (
-    <Show when={zichtbaar(s.d, props.k)}>
+    <Show when={veldZichtbaar(s.d, props.k)}>
       <Regel label={props.label ?? veldVoor(props.k)!.veld.label} leeg={!heeftWaarde(s.d, props.k)} class={`qa-sv-${props.k.replace(/\./g, '-')}`}>
         <VeldWaarde k={props.k} />
       </Regel>
@@ -95,7 +88,7 @@ export function InschrijvingSamenvatting() {
         <Show when={str(s.d, 'bewoner_email')}>{(e) => <span class="text-nowrap">{str(s.d, 'bewoner_naam') || str(s.d, 'bewoner_telefoon') ? '• ' : ''}<a href={`mailto:${e()}`} class="qa-mailto">{e()}</a></span>}</Show>
       </Regel>
       <Regel label="Woning" leeg={!s.d.huur_koop}>
-        {['huur_koop', 'woningeigenaar', 'woningtype'].filter((k) => zichtbaar(s.d, k)).map((k) => veldTekst(s.d, k)).filter(Boolean).join(', ')}
+        {['huur_koop', 'woningeigenaar', 'woningtype'].filter((k) => veldZichtbaar(s.d, k)).map((k) => veldTekst(s.d, k)).filter(Boolean).join(', ')}
       </Regel>
       <VeldRegel k="rioolstelsel" />
       <Regel label="Subsidiemail">
@@ -144,7 +137,7 @@ function RegenpijpRegel(props: { pijp: Regenpijp }) {
   return (
     <Regel label={`Regenpijp ${props.pijp.label}`} class="qa-sv-regenpijp">
       <div>{kort() || <span class="text-muted">--</span>}</div>
-      <For each={sub.filter(([v]) => zichtbaar(s.d, k(v)) && heeftWaarde(s.d, k(v)))}>
+      <For each={sub.filter(([v]) => veldZichtbaar(s.d, k(v)) && heeftWaarde(s.d, k(v)))}>
         {([v, label]) => <div><span class="text-muted">{label}:</span> <VeldWaarde k={k(v)} /></div>}
       </For>
     </Regel>

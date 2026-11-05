@@ -46,6 +46,7 @@ export interface FotoSlot {
 
 const isHuur = (d: Dossier) => d.huur_koop === 'huur';
 const regenpijpWaarde = (d: Dossier, id: string | null, veld: string) => d.data[`regenpijp.${id}.${veld}`];
+const nietOpRiool = (d: Dossier, id: string | null) => regenpijpWaarde(d, id, 'afkoppelen') !== 'nee';
 
 export const BEOORDELINGEN: [string, string, string][] = [
   ['uitvoerbaar', 'Wensen uitvoerbaar', 'De Ulebelt is positief over de wensen van de bewoner en denkt dat ze uitvoerbaar zijn.'],
@@ -98,8 +99,8 @@ export const VELDEN: Veld[] = [
   { key: 'regenpijp.*.regenton', label: 'Regenton aanwezig?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['aanwezig', 'Is al aanwezig'], ['gewenst', 'Niet aanwezig, wel gewenst'], ['niet', 'Niet gewenst']] },
   { key: 'regenpijp.*.ondergrond', label: 'Hoe is de ondergrond bij de pijp?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.ondergrond', zichtbaar: (d, id) => regenpijpWaarde(d, id, 'regenton') === 'gewenst' },
   { key: 'regenpijp.*.afkoppelen', label: 'Afkoppelen?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['ja', 'Ja'], ['nee', 'Nee (blijft naar riool gaan)'], ['twijfel', 'Twijfel']] },
-  { key: 'regenpijp.*.waar', label: 'Waar moet het water naartoe?', type: 'textarea', rijen: 2, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.waar' },
-  { key: 'regenpijp.*.hoe', label: 'Hoe moet het water daarnaartoe komen?', type: 'checks', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, fotos: 'regenpijp.*.hoe', opties: [['holie_molie', 'Holie Molie'], ['drainageslang', 'Drainageslang bovengronds'], ['ondergronds', 'Ondergronds'], ['anders', 'Anders, namelijk:']] },
+  { key: 'regenpijp.*.waar', label: 'Waar moet het water naartoe?', type: 'textarea', rijen: 2, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.waar', zichtbaar: nietOpRiool },
+  { key: 'regenpijp.*.hoe', label: 'Hoe moet het water daarnaartoe komen?', type: 'checks', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, fotos: 'regenpijp.*.hoe', zichtbaar: nietOpRiool, opties: [['holie_molie', 'Holie Molie'], ['drainageslang', 'Drainageslang bovengronds'], ['ondergronds', 'Ondergronds'], ['anders', 'Anders, namelijk:']] },
   { key: 'hoosbuien', label: 'Wat gebeurt er bij hoosbuien?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'hoosbuien', hint: 'Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst? Let goed op bij hoogteverschillen!' },
   { key: 'wensen', label: 'Wat wenst de bewoner?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, hint: 'Wat wil de bewoner bereiken? Regenton(nen) plaatsen? Regenpijp afkoppelen? Water de tuin in laten lopen? Wat wil de bewoner zelf doen?' },
   { key: 'bewoner_doet', label: 'Wat gaat de bewoner doen?', type: 'textarea', opsomming: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, suggesties: [['opruimen', 'Tuin opruimen op plek regenton'], ['steen', 'Steen van 60x60 regelen voor onder regenton'], ['buren', 'Overleggen met de buren (bij gedeelde regenpijp)']] },
@@ -159,6 +160,13 @@ export function veldVoor(key: string): { veld: Veld; id: string | null; anders: 
   const veld = VELDEN.find((v) => v.key === p);
   if (!veld || (anders && !veld.anders)) return null;
   return { veld, id, anders };
+}
+
+// Whether the edit page shows this field. A hidden field keeps its stored answer, so anything printing a stored value checks this too.
+export function veldZichtbaar(d: Dossier, key: string): boolean {
+  const g = veldVoor(key);
+  if (!g) throw new Error(`Onbekend veld: ${key}`);
+  return !g.veld.zichtbaar || g.veld.zichtbaar(d, g.id);
 }
 
 export function fotoSlotVoor(key: string): { slot: FotoSlot; id: string | null } | null {

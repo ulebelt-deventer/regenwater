@@ -385,6 +385,15 @@ describe('ontbrekend (Controle)', () => {
     expect(labels).not.toContain('Regenpijp A: Regenton aanwezig?');
   });
 
+  it('only asks Waar and Hoe of a regenpijp that does not stay on the riool', () => {
+    const labels = (afkoppelen: string) => ontbrekend(dossier({ data: { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[5, 5]] }], 'regenpijp.r1.afkoppelen': afkoppelen } }), 'bezoek').map((o) => o.label);
+    for (const vraag of ['Regenpijp A: Waar moet het water naartoe?', 'Regenpijp A: Hoe moet het water daarnaartoe komen?']) {
+      expect(labels('ja')).toContain(vraag);
+      expect(labels('twijfel')).toContain(vraag);
+      expect(labels('nee')).not.toContain(vraag);
+    }
+  });
+
   it('lists a regenpijp that drains no dakdeel', () => {
     const d = dossier({ data: { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[5, 5]] }] } });
     expect(ontbrekend(d, 'bezoek')).toContainEqual({ label: 'Regenpijp A: aan geen dak gekoppeld', anker: 'veld-regenpijp.r1.bronnen' });

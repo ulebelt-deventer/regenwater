@@ -289,6 +289,7 @@ export function Privacy() {
         <h2>Grondslag</h2>
         <ul class="mb-0">
           <li>Gegevens van bewoners gebruiken we om de afkoppeling uit te voeren waarvoor ze zich hebben aangemeld (uitvoering van een overeenkomst, art. 6 lid 1 sub b AVG).</li>
+          <li>Na afloop bewaren we het adres, de foto’s en de gegevens over het uitgevoerde werk nog om vragen over het werk te beantwoorden en om te leren wat op de lange duur werkt, want afkoppelen op deze manier is pionierswerk (gerechtvaardigd belang, art. 6 lid 1 sub f AVG).</li>
           <li>Gegevens van vrijwilligers en beheerders gebruiken we om het werk te organiseren en te kunnen laten zien wie wat heeft gedaan (gerechtvaardigd belang, art. 6 lid 1 sub f AVG).</li>
           <li>Het logboek van de server gebruiken we om de app te beveiligen en storingen op te lossen (gerechtvaardigd belang, art. 6 lid 1 sub f AVG).</li>
         </ul>
@@ -318,10 +319,10 @@ export function Privacy() {
       <section class="card card-body mb-3">
         <h2>Bewaren en je rechten</h2>
         <p>
-          We bewaren een dossier tot vijf jaar nadat het is afgesloten, zodat we vragen over het uitgevoerde werk kunnen beantwoorden. Gegevens van een gebruiker van de app bewaren we tot vijf jaar nadat diens account is gearchiveerd. Daarna verwijderen we de persoonsgegevens. Het logboek van de server wordt na 12 maanden vanzelf verwijderd.
+          De naam, het e-mailadres en het telefoonnummer van de bewoner bewaren we tot vijf jaar nadat het dossier is afgesloten. Het adres, de foto’s en de gegevens over het uitgevoerde werk bewaren we tot twintig jaar na het afsluiten, en daarna verwijderen we ook die. Gegevens van een gebruiker van de app bewaren we tot vijf jaar nadat diens account is gearchiveerd. Het logboek van de server wordt na 12 maanden vanzelf verwijderd.
         </p>
         <p>
-          Wil je weten welke gegevens over jou zijn vastgelegd, of wil je ze laten verwijderen of aanpassen? Mail <a href={`mailto:${ULEBELT_CONTACT_EMAIL}`}>{ULEBELT_CONTACT_EMAIL}</a>.
+          Wil je weten welke gegevens over jou zijn vastgelegd, wil je ze laten verwijderen of aanpassen, of heb je bezwaar tegen het langer bewaren? Mail <a href={`mailto:${ULEBELT_CONTACT_EMAIL}`}>{ULEBELT_CONTACT_EMAIL}</a>.
         </p>
         <p class="mb-0">
           Ben je het niet eens met hoe wij met je gegevens omgaan? Dan kun je een klacht indienen bij de <a href="https://autoriteitpersoonsgegevens.nl">Autoriteit Persoonsgegevens</a>.

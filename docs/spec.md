@@ -213,13 +213,13 @@
       - Diameter (dropdown: 80 mm, 100 mm, Anders... (write-in))
       - Regenton aanwezig? (dropdown: Is al aanwezig / Niet aanwezig, wel gewenst / Niet gewenst)
       - Afkoppelen? (dropdown: Ja, Nee (blijft naar riool gaan), Twijfel). Ja = this pijp no longer drains into the riool.
-      - Waar moet het water naartoe? (2-line textarea, photo slot below it). Both this and the next question are about the planned situation, not the current one.
-      - Hoe moet het water daarnaartoe komen? - a full-width dropdown button showing the chosen options, whose menu lists them as checkboxes (several can combine, eg a Holie Molie onto an ondergrondse buis); photo slot below it. Ticking Anders replaces its checkbox in the menu with a focused write-in field; leaving that field empty unticks Anders again.
+      - *Unless Afkoppelen is Nee:* Waar moet het water naartoe? (2-line textarea, photo slot below it). Both this and the next question are about the planned situation, not the current one. A Nee hides both, here, in the summary, the Controle text and the Plan (their photos too); the answers are kept, so they return if Afkoppelen changes back.
+      - *Unless Afkoppelen is Nee:* Hoe moet het water daarnaartoe komen? - a full-width dropdown button showing the chosen options, whose menu lists them as checkboxes (several can combine, eg a Holie Molie onto an ondergrondse buis); photo slot below it. Ticking Anders replaces its checkbox in the menu with a focused write-in field; leaving that field empty unticks Anders again.
         - Holie Molie
         - Drainageslang bovengronds
         - Ondergronds
         - Anders, namelijk: (write-in)
-      - *Only when the regenton is gewenst:* Hoe is de ondergrond bij de pijp? (textarea, photo slot below it)
+      - *Only when the regenton is gewenst:* Hoe is de ondergrond bij de pijp? (textarea, photo slot below it). Hidden the same way as Waar and Hoe when the regenton isn't gewenst: the answer is kept but left out everywhere, photos included.
       - Footnote: "\*\* per regenpijp gebaseerd op normafvoer 20 mm regenwater". The 20 mm is a constant in code (tentative, pending the team question).
     - Tuin
       - "Tuin" table: 1 row per tuindeel, with lines between the rows like the Dak table, with number (eg "T1") and m² (auto-calculated, or manual input as above). In a 3rd column, photos can be uploaded and annotated, same as the other image slots, to capture the current situation of the garden. The number and m² columns are narrow and fixed-width, so the rows line up. The photos stay in the 3rd column, side by side, except on phones (below sm), where two or more get a line of their own.

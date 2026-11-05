@@ -203,6 +203,49 @@ describe('documents', () => {
     expect(html).toContain('nog niet ingevuld');
   });
 
+  it('leaves Waar and Hoe with their photos out of the Plan for a regenpijp that stays on the riool, and keeps them for Twijfel', async () => {
+    const id = await nieuwDossier();
+    const zet = (key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
+    await zet('kaart_annotaties', [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }]);
+    await zet('regenpijp.r1.waar', 'De border in');
+    await zet('regenpijp.r1.hoe', ['holie_molie']);
+    await beheerder.json('POST', `/api/dossiers/${id}/fotos/regenpijp.r1.waar`, new Uint8Array(await png()), 201);
+    const plan = async () => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
+
+    await zet('regenpijp.r1.afkoppelen', 'nee');
+    const nee = await plan();
+    expect(nee).toContain('Nee (blijft naar riool gaan)');
+    expect(nee).not.toContain('De border in');
+    expect(nee).not.toContain('Via:');
+    expect(nee).not.toContain('>Regenpijp A</figcaption>');
+
+    await zet('regenpijp.r1.afkoppelen', 'twijfel');
+    const twijfel = await plan();
+    expect(twijfel).toContain('De border in');
+    expect(twijfel).toContain('Holie Molie');
+    expect(twijfel).toContain('>Regenpijp A</figcaption>');
+  });
+
+  it('leaves Ondergrond with its photos out of the Plan unless the regenton is gewenst', async () => {
+    const id = await nieuwDossier();
+    const zet = (key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
+    await zet('kaart_annotaties', [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }]);
+    await zet('regenpijp.r1.ondergrond', 'Tegels');
+    await beheerder.json('POST', `/api/dossiers/${id}/fotos/regenpijp.r1.ondergrond`, new Uint8Array(await png()), 201);
+    const plan = async () => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
+
+    await zet('regenpijp.r1.regenton', 'gewenst');
+    const gewenst = await plan();
+    expect(gewenst).toContain('Ondergrond: <!--$-->Tegels');
+    expect(gewenst).toContain('>Regenpijp A</figcaption>');
+
+    await zet('regenpijp.r1.regenton', 'niet');
+    const niet = await plan();
+    expect(niet).toContain('Niet gewenst');
+    expect(niet).not.toContain('Tegels');
+    expect(niet).not.toContain('>Regenpijp A</figcaption>');
+  });
+
   it('prints the plan PDF without the concept markers', async () => {
     const id = await nieuwDossier();
     const res = await beheerder.verzoek('GET', `/docs/dossiers/${id}/plan.pdf`);
