@@ -3,11 +3,12 @@
 export const APP_NAAM = 'Ulebelt Regenwater';
 export const ULEBELT_CONTACT_EMAIL = 'regenwater@ulebelt.nl'; // PLACEHOLDER
 
-export const CORPORATIES = ['Ieder1', 'Rentree', 'Salland Wonen'] as const;
+export const CORPORATIES = ['SallandWonen', 'Rentree', 'Ieder1', 'De Marken'] as const;
+// A corporatie without an address here leaves Aan empty in the mail preview, for the admin to fill in.
 export const CORPORATIE_EMAIL: Record<string, string> = {
-  Ieder1: 'regenwater@ieder1.nl', // PLACEHOLDER
+  SallandWonen: 'regenwater@sallandwonen.nl', // PLACEHOLDER
   Rentree: 'regenwater@rentree.nl', // PLACEHOLDER
-  'Salland Wonen': 'regenwater@sallandwonen.nl', // PLACEHOLDER
+  Ieder1: 'regenwater@ieder1.nl', // PLACEHOLDER
 };
 
 export const RIOOLKAARTEN: Record<string, string> = {

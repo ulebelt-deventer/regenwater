@@ -133,7 +133,7 @@
     - Telefoon bewoner
     - Huurwoning of koopwoning
     - (if huurwoning) Woningeigenaar (dropdown)
-      - Options: Ieder1, Rentree, Salland Wonen, Anders, namelijk: (write-in)
+      - Options: SallandWonen, Rentree, Ieder1, De Marken, Anders, namelijk: (write-in)
     - Woningtype (dropdown)
       - Options: Tussenwoning, Hoekwoning, Geschakeld, 2-onder-1-kap, Vrijstaand, Benedenwoning, Anders, namelijk: (write-in)
     - Rioolstelsel (gemengd, gescheiden)

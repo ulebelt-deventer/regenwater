@@ -130,3 +130,36 @@ describe('the voorstel as bulleted lines', () => {
     ]);
   });
 });
+
+describe('the Salland Wonen -> SallandWonen rename', () => {
+  it('renames the woningeigenaar in dossiers and field changes, and leaves other values and sent mail alone', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes("'SallandWonen'"));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    const dossier = db.prepare('INSERT INTO dossiers (id, created_at, created_by, data) VALUES (?, ?, 1, ?)');
+    dossier.run(7, T, JSON.stringify({ woningeigenaar: 'Salland Wonen', wensen: 'Ton bij Salland Wonen' }));
+    dossier.run(8, T, JSON.stringify({ woningeigenaar: 'Rentree' }));
+    dossier.run(9, T, JSON.stringify({ woningeigenaar: 'anders', woningeigenaar_anders: 'Salland Wonen' }));
+    const audit = db.prepare('INSERT INTO audit (created_at, updated_at, actor_id, dossier_id, type, payload) VALUES (?, ?, 1, 7, ?, ?)');
+    audit.run(T, T, 'dossier_gewijzigd', JSON.stringify({ changes: { woningeigenaar: [null, 'Salland Wonen'], woningtype: [null, 'anders'] } }));
+    audit.run(T, T, 'dossier_gewijzigd', JSON.stringify({ changes: { woningeigenaar: ['Salland Wonen', 'Rentree'] } }));
+    audit.run(T, T, 'dossier_gewijzigd', JSON.stringify({ changes: { wensen: ['Salland Wonen', 'Ton'] } }));
+    audit.run(T, T, 'email_verstuurd', JSON.stringify({ sjabloon: 'plan_corporatie', tekst: 'Beste Salland Wonen,' }));
+
+    migreer(db);
+
+    expect(db.prepare('SELECT data FROM dossiers ORDER BY id').pluck().all().map((p) => JSON.parse(p as string))).toEqual([
+      { woningeigenaar: 'SallandWonen', wensen: 'Ton bij Salland Wonen' },
+      { woningeigenaar: 'Rentree' },
+      { woningeigenaar: 'anders', woningeigenaar_anders: 'Salland Wonen' },
+    ]);
+    expect(db.prepare('SELECT payload FROM audit ORDER BY id').pluck().all().map((p) => JSON.parse(p as string))).toEqual([
+      { changes: { woningeigenaar: [null, 'SallandWonen'], woningtype: [null, 'anders'] } },
+      { changes: { woningeigenaar: ['SallandWonen', 'Rentree'] } },
+      { changes: { wensen: ['Salland Wonen', 'Ton'] } },
+      { sjabloon: 'plan_corporatie', tekst: 'Beste Salland Wonen,' },
+    ]);
+  });
+});

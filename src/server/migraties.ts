@@ -233,4 +233,9 @@ export const MIGRATIES: string[] = [
   )) WHERE type = 'dossier_gewijzigd' AND payload LIKE '%"voorstel%';
   DELETE FROM audit WHERE type = 'dossier_gewijzigd' AND json_extract(payload, '$.changes') = '{}';
   `,
+  `
+  UPDATE dossiers SET data = json_set(data, '$.woningeigenaar', 'SallandWonen') WHERE json_extract(data, '$.woningeigenaar') = 'Salland Wonen';
+  UPDATE audit SET payload = json_set(payload, '$.changes.woningeigenaar[0]', 'SallandWonen') WHERE type = 'dossier_gewijzigd' AND json_extract(payload, '$.changes.woningeigenaar[0]') = 'Salland Wonen';
+  UPDATE audit SET payload = json_set(payload, '$.changes.woningeigenaar[1]', 'SallandWonen') WHERE type = 'dossier_gewijzigd' AND json_extract(payload, '$.changes.woningeigenaar[1]') = 'Salland Wonen';
+  `,
 ];
