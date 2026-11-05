@@ -1,6 +1,6 @@
 # Privacy and AVG
 
-Internal notes on how the app handles personal data and where it stands on AVG (GDPR) compliance. The public text is the `/privacy` page (`Privacy()` in `src/client/paginas/uitleg.tsx`), reachable without logging in.
+Internal notes on how the app handles personal data and where it stands on AVG (GDPR) compliance. The public text is the `/privacy` page (`Privacy()` in `src/client/paginas/uitleg.tsx`), reachable without logging in. The admins' procedures are the admin-only `/uitleg/databeleid` page (`Databeleid()` in the same file), which repeats the retention periods, so change both together.
 
 ## Roles
 

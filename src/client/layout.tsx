@@ -92,6 +92,7 @@ function Navbar() {
             <A class="dropdown-item" href="/uitleg/statussen"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: statussen</A>
             <A class="dropdown-item" href="/uitleg/aandacht"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: aandacht</A>
             <A class="dropdown-item" href="/uitleg/rechten"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: rechten</A>
+            <A class="dropdown-item" href="/uitleg/databeleid"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: databeleid</A>
             <div class="dropdown-divider" />
             <A class="dropdown-item qa-nav-nieuws" href="/beheer/nieuw">
               <i class="bi bi-stars me-2" aria-hidden="true" />Wat is er nieuw

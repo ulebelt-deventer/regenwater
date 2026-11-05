@@ -223,6 +223,23 @@ test('Wat is er nieuw toont een rode stip tot de beheerder de pagina opent, met 
   await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
 });
 
+test('Uitleg: databeleid staat in het Beheer-menu, legt de procedures uit en is alleen voor beheerders', async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  await page.locator('.qa-nav-beheer').click();
+  await page.locator('a[href="/uitleg/databeleid"]').click();
+  await expect(page.locator('.qa-databeleid-titel')).toBeVisible();
+  await expect(page.locator('.qa-databeleid-verzoek li')).toHaveCount(6);
+  await expect(page.locator('.qa-databeleid-datalek ol li')).toHaveCount(4);
+  await expect(page.locator('.qa-datalek-voorbeelden li')).toHaveCount(4);
+  await expect(page.locator('main a[href="/privacy"]')).toBeVisible();
+
+  await login(page, KLUSSER.email);
+  await page.goto('/uitleg/databeleid');
+  await expect(page.locator('.qa-alleen-beheerder')).toBeVisible();
+  await expect(page.locator('.qa-databeleid-titel')).toHaveCount(0);
+});
+
 test('Wat is er nieuw is alleen voor beheerders', async ({ page }) => {
   await start(page);
   await login(page, KLUSSER.email);

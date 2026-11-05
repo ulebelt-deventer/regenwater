@@ -5,7 +5,7 @@ import { nieuwDossier, start } from './hulp.ts';
 test('elke kop h1 tot en met h6 heeft op elke pagina de lettergrootte van zijn eigen niveau', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
-  const paginas = ['/', '/dossiers', `/dossiers/${id}`, `/dossiers/${id}/inschrijving`, `/dossiers/${id}/bezoek`, `/dossiers/${id}/plan`, `/dossiers/${id}/activiteit`, '/gebruikers', '/beheer/materialen', '/beheer/sjablonen', '/beheer/feedback', '/beheer/activiteit', '/beheer/nieuw', '/uitleg/statussen', '/uitleg/aandacht', '/uitleg/rechten', '/installeren', '/privacy'];
+  const paginas = ['/', '/dossiers', `/dossiers/${id}`, `/dossiers/${id}/inschrijving`, `/dossiers/${id}/bezoek`, `/dossiers/${id}/plan`, `/dossiers/${id}/activiteit`, '/gebruikers', '/beheer/materialen', '/beheer/sjablonen', '/beheer/feedback', '/beheer/activiteit', '/beheer/nieuw', '/uitleg/statussen', '/uitleg/aandacht', '/uitleg/rechten', '/uitleg/databeleid', '/installeren', '/privacy'];
   for (const pad of paginas) {
     await page.goto(pad);
     await expect(page.locator('main h1, main h2').first(), pad).toBeVisible();

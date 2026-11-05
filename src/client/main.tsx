@@ -20,7 +20,7 @@ import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
 import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Nieuws } from './paginas/nieuws.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
-import { AandachtUitleg, Installeren, Privacy, RechtenUitleg, Statussen } from './paginas/uitleg.tsx';
+import { AandachtUitleg, Databeleid, Installeren, Privacy, RechtenUitleg, Statussen } from './paginas/uitleg.tsx';
 import { startVersieControle } from './versie.ts';
 
 function NietGevonden() {
@@ -58,6 +58,7 @@ render(
       <Route path="/uitleg/statussen" component={Statussen} />
       <Route path="/uitleg/aandacht" component={AandachtUitleg} />
       <Route path="/uitleg/rechten" component={RechtenUitleg} />
+      <Route path="/uitleg/databeleid" component={Databeleid} />
       <Route path="/installeren" component={Installeren} />
       <Route path="/privacy" component={Privacy} />
       <Route path="*" component={NietGevonden} />

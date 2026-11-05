@@ -457,6 +457,7 @@
   - "Uitleg: statussen" (link to the Statussen page)
   - "Uitleg: aandacht" (link to the Aandacht-criteria page)
   - "Uitleg: rechten" (link to the Rechten page: what beheerders and klussers (per role, per step) may see and edit, and that the Beheer menu is admin-only)
+  - "Uitleg: databeleid" (link to the Databeleid page: the admins' procedures for privacy requests, data leaks and retention)
 - Account (navbar dropdown at the right, labeled with the user's naam; everyone)
   - "App op je telefoon zetten" (the install-guide page)
   - "Uitloggen"

@@ -1,4 +1,5 @@
-// Explanation pages: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Installeren and Privacy.
+// Explanation pages: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Databeleid, Installeren and Privacy.
+import { A } from '@solidjs/router';
 import { For, type JSX, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { KLOPT_NIET_KOP, KLOPT_NIET_REGELS, LIGT_STIL_REGELS } from '../../shared/aandacht.ts';
 import { ULEBELT_CONTACT_EMAIL } from '../../shared/constants.ts';
@@ -193,6 +194,79 @@ export function RechtenUitleg() {
       <section class="card card-body mb-3 qa-rechten-beheer">
         <h2>Het Beheer-menu</h2>
         <p class="mb-0">Alles onder Beheer is alleen voor beheerders: gebruikers, materialen, e-mailsjablonen, feedback, het lege bezoekformulier, alle activiteit en deze uitlegpagina’s. Klussers zien het menu niet, en de server weigert deze gegevens aan hen. Een beheerder kan met “Inloggen als” de app bekijken zoals een klusser hem ziet, met precies diens rechten.</p>
+      </section>
+    </AlleenBeheerder>
+  );
+}
+
+// What the admins must do to keep the promises on the Privacy page; the legal reasoning is in docs/privacy.md.
+export function Databeleid() {
+  titel('Uitleg: databeleid');
+  return (
+    <AlleenBeheerder>
+      <h1 class="qa-databeleid-titel">Uitleg: databeleid</h1>
+      <p>
+        Op de <A href="/privacy">Privacy-pagina</A> staat wat bewoners en gebruikers van ons mogen verwachten. Hier staat wat wij moeten doen om dat waar te maken.
+      </p>
+
+      <section class="card card-body mb-3">
+        <h2>Wie doet wat</h2>
+        <ul class="mb-0">
+          <li>De Ulebelt is verantwoordelijk voor de gegevens in deze app.</li>
+          <li>De beheerders spreken samen af wie de aangewezen beheerder is. Die pakt privacyverzoeken en datalekken op. Is die er niet, dan neemt een andere beheerder het over.</li>
+          <li>De technisch beheerder zorgt voor de server en de back-ups, en helpt als iets niet in de app zelf kan.</li>
+        </ul>
+      </section>
+
+      <section class="card card-body mb-3">
+        <h2>Elke dag</h2>
+        <ul class="mb-0">
+          <li>Gebruik gegevens uit de app alleen voor het afkoppelwerk.</li>
+          <li>Zet dossiergegevens niet in privé-apps of andere diensten. Twijfel je, overleg dan eerst met de technisch beheerder.</li>
+          <li>Verwijder een gedownloade CSV zodra je hem niet meer nodig hebt.</li>
+        </ul>
+      </section>
+
+      <section class="card card-body mb-3 qa-databeleid-verzoek">
+        <h2>Als iemand iets vraagt over zijn of haar gegevens</h2>
+        <p>Iedereen mag vragen welke gegevens we hebben, ze laten aanpassen of verwijderen, of bezwaar maken tegen het langer bewaren.</p>
+        <ol class="mb-0">
+          <li>Stuur elk verzoek door naar de aangewezen beheerder, ook als het via de telefoon of een klusser binnenkomt. Verzoeken per mail komen binnen op {ULEBELT_CONTACT_EMAIL}.</li>
+          <li>Controleer dat het verzoek echt van die persoon komt, bijvoorbeeld via het e-mailadres in het dossier.</li>
+          <li>Inzage: stuur de persoon wat er over hem of haar is vastgelegd. De technisch beheerder helpt als dat niet uit het dossier te halen is.</li>
+          <li>Aanpassen: wijzig de gegevens in het dossier.</li>
+          <li>Verwijderen of bezwaar: gebruik Dossier verwijderen. Bij een huurwoning laat je het ook aan de woningcorporatie weten, want die heeft het Plan van Aanpak en het opleverrapport.</li>
+          <li>Geef binnen één maand antwoord, ook als het antwoord nee is.</li>
+        </ol>
+      </section>
+
+      <section class="card card-body mb-3 qa-databeleid-datalek">
+        <h2>Als er iets misgaat</h2>
+        <p>Een datalek is als persoonsgegevens bij iemand terechtkomen die ze niet mag zien, of als ze kwijtraken. De meeste kleine datalekken hoef je alleen op te schrijven.</p>
+        <ol>
+          <li>Meld het dezelfde dag bij de aangewezen beheerder, ook als je twijfelt.</li>
+          <li>Is een telefoon of account niet meer veilig? Archiveer de gebruiker: dan is die meteen overal uitgelogd. Daarna kun je het account weer terughalen.</li>
+          <li>De aangewezen beheerder meldt het datalek binnen 72 uur bij de <a href="https://autoriteitpersoonsgegevens.nl">Autoriteit Persoonsgegevens</a>, tenzij het waarschijnlijk geen risico oplevert voor de betrokkenen. Kan het datalek de betrokkenen waarschijnlijk ernstig schaden, bijvoorbeeld door oplichting, bedreiging of doordat bekend wordt waar iemand woont die dat geheim wil houden? Dan informeer je ook de betrokkenen zelf.</li>
+          <li>Schrijf elk datalek op een vaste plek op, ook als je het niet hoeft te melden. Een paar regels is genoeg: wat er gebeurde, wat de gevolgen waren en wat je hebt gedaan.</li>
+        </ol>
+        <p class="mb-2">Voorbeelden:</p>
+        <ul class="mb-0 qa-datalek-voorbeelden">
+          <li>Telefoon kwijt, maar vergrendeld met een code: archiveer de gebruiker en schrijf het op. Melden hoeft niet.</li>
+          <li>Een e-mail met een naam en adres aan één verkeerde persoon: vraag die om de mail te verwijderen en schrijf het op. Melden hoeft meestal niet.</li>
+          <li>Telefoon kwijt zonder code, een gehackt account, of gegevens van veel bewoners bij de verkeerde persoon: meld het binnen 72 uur.</li>
+          <li>Twijfel je? Dan is melden de veilige keuze.</li>
+        </ul>
+      </section>
+
+      <section class="card card-body mb-3">
+        <h2>Bewaartermijnen</h2>
+        <ul>
+          <li>Naam, e-mailadres en telefoonnummer van de bewoner: vijf jaar nadat het dossier is afgesloten.</li>
+          <li>Adres, foto’s en gegevens over het werk: twintig jaar nadat het dossier is afgesloten.</li>
+          <li>Gegevens van een gebruiker: vijf jaar nadat diens account is gearchiveerd.</li>
+          <li>Het logboek van de server: 12 maanden.</li>
+        </ul>
+        <p class="mb-0">Het logboek wordt vanzelf verwijderd. De rest verwijdert de app nog niet zelf; de eerste termijn loopt rond 2031 af en de technisch beheerder regelt dit voor die tijd.</p>
       </section>
     </AlleenBeheerder>
   );
