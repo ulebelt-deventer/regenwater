@@ -470,14 +470,14 @@
   - Then: open the app from the new icon and log in once more with your e-mail and code. *The home-screen app keeps its own login, separate from the browser's.*
   - On a desktop browser: a big amber banner on top, "Open deze pagina op je telefoon", without hiding the steps.
 - Meldingen aan beheerders (automatic emails, no page)
-  - The app's only automatic emails. They go to one alert address (a constant in code, pending the team question), never to bewoners, corporaties or klussers, and change nothing in the data; they're logged in Alle activiteit. Each links to the dossier.
+  - The app's only automatic emails. Each type goes to its own list of one or more recipients, set per environment: the weekly digest, feedback, and the per-dossier meldingen below. They never go to bewoners, corporaties or klussers, and change nothing in the data; each send is logged in Alle activiteit. Each links to the dossier.
   - Immediately, when a klusser hands the ball back to the admins:
     - "Klaar voor controle" tapped: "Plan van Aanpak klaar voor controle: {adres} ({klusser})".
     - "Werk opgeleverd" tapped: "Werk opgeleverd: {adres} ({klusser})".
     - Not when an admin does it themselves (eg typing up a paper visit), and not for "Bezoek afronden": the ball stays with the klusser until "Klaar voor controle".
   - Weekly, Monday at 08:00: "Aandacht nodig: {n} dossiers", listing every open dossier with a non-snoozed finding, grouped Klopt niet / Plan gewijzigd / Ligt stil, each with its banner line. A dossier with no activity in the past 7 days also gets "geen activiteit sinds {datum}". Not sent if the list is empty. *A weekly digest rather than one email per dossier, because at hundreds of open dossiers per-dossier mails would get filtered and ignored.*
   - Immediately, when an outbound email fails to send: "E-mail niet afgeleverd: {onderwerp} aan {adres}". The send is then shown in red on the dossier ("Niet afgeleverd op {datum}") and doesn't count as sent. *(At launch this covers only a rejection by the provider at send time. Bounces after sending are detected from a later milestone, via the Mailgun webhook.)*
-  - Server errors, PDF render failures and failed backups go to the maintainer, not to this address.
+  - Server errors, PDF render failures and failed backups go to the maintainer, not to these lists.
 
 ## Footer & other UI
 
@@ -486,7 +486,7 @@
 - Footer needs a couple links:
   - Data privacy (page that details the privacy policy, data handling, subprocessors, and other GDPR requirements)
   - Give Feedback
-    - opens a pop-up where you can fill in feedback similar to what the prototype had, with the cursor already in the text box. Admin and dev (me) are notified via email on each feedback. Admin nav dropdown has a "Feedback" page that lists all feedback; each can be marked as "Handled" to hide it from the default list (toggle at the top to show all vs default of showing just unhandled)
+    - opens a pop-up where you can fill in feedback similar to what the prototype had, with the cursor already in the text box. The feedback recipients are notified via email on each feedback. Admin nav dropdown has a "Feedback" page that lists all feedback; each can be marked as "Handled" to hide it from the default list (toggle at the top to show all vs default of showing just unhandled)
 
 ## Scenario tests
 

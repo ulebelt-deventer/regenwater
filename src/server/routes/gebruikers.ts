@@ -4,9 +4,8 @@ import { audit } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
 import { lijstRij } from '../lijst.ts';
+import { EMAIL_RE } from '../mail.ts';
 import { gebruiker, gebruikersMap, laadDossiers } from '../repo.ts';
-
-export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface GebruikerRij extends Gebruiker {
   open: number;

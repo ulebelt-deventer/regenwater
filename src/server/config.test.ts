@@ -16,14 +16,45 @@ describe('STAGING', () => {
   });
 });
 
+function stubProductie(): void {
+  vi.stubEnv('APP_MODUS', 'production');
+  vi.stubEnv('BASIS_URL', 'https://regenton.example.org');
+  vi.stubEnv('MAILGUN_API_KEY', 'sleutel');
+  vi.stubEnv('MAILGUN_DOMEIN', 'mg.example.org');
+  vi.stubEnv('MAIL_AFZENDER', 'Test <test@mg.example.org>');
+  vi.stubEnv('MELDINGEN_DIGEST', 'a@example.org');
+  vi.stubEnv('MELDINGEN_FEEDBACK', 'b@example.org');
+  vi.stubEnv('MELDINGEN_DOSSIER', 'c@example.org');
+}
+
+describe('MELDINGEN_*', () => {
+  beforeEach(stubProductie);
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('reads a separate list per soort, trimming spaces around the commas', () => {
+    vi.stubEnv('MELDINGEN_DIGEST', 'a@example.org, b@example.org ,c@example.org');
+    expect(leesConfig().meldingen).toEqual({ digest: ['a@example.org', 'b@example.org', 'c@example.org'], feedback: ['b@example.org'], dossier: ['c@example.org'] });
+  });
+
+  it('refuses to start in production when a list is missing or holds an invalid address', () => {
+    vi.stubEnv('MELDINGEN_FEEDBACK', '');
+    expect(() => leesConfig()).toThrow('Omgevingsvariabele MELDINGEN_FEEDBACK ontbreekt');
+    vi.stubEnv('MELDINGEN_FEEDBACK', 'a@example.org,,b@example.org');
+    expect(() => leesConfig()).toThrow('Ongeldig e-mailadres in MELDINGEN_FEEDBACK: ""');
+    vi.stubEnv('MELDINGEN_FEEDBACK', 'a@example.org;b@example.org');
+    expect(() => leesConfig()).toThrow('Ongeldig e-mailadres in MELDINGEN_FEEDBACK: "a@example.org;b@example.org"');
+  });
+
+  it('needs no lists outside production', () => {
+    vi.unstubAllEnvs();
+    expect(leesConfig().meldingen.digest).toEqual(['meldingen@example.org']);
+  });
+});
+
 describe('MAILGUN_REGIO', () => {
   let urls: string[];
   beforeEach(() => {
-    vi.stubEnv('APP_MODUS', 'production');
-    vi.stubEnv('BASIS_URL', 'https://regenton.example.org');
-    vi.stubEnv('MAILGUN_API_KEY', 'sleutel');
-    vi.stubEnv('MAILGUN_DOMEIN', 'mg.example.org');
-    vi.stubEnv('MAIL_AFZENDER', 'Test <test@mg.example.org>');
+    stubProductie();
     urls = [];
     vi.stubGlobal('fetch', (url: string) => {
       urls.push(url);

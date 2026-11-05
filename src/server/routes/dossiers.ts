@@ -233,7 +233,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     // Only a klusser's own hand-off alerts the admins; an admin registering it (or acting as the klusser) already knows.
     if (c.get('actor').rol === 'klusser' && (m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
       const titel = m === 'klaar_voor_controle' ? 'Plan van Aanpak klaar voor controle' : 'Werk opgeleverd';
-      await melding(ctx, `${titel}: ${adresRegel(d)} (${ik.naam})`, `${ik.naam} heeft "${titel}" aangetikt voor ${adresRegel(d)}.\n\n${dossierLink(ctx, d.id)}`, d.id);
+      await melding(ctx, 'dossier', `${titel}: ${adresRegel(d)} (${ik.naam})`, `${ik.naam} heeft "${titel}" aangetikt voor ${adresRegel(d)}.\n\n${dossierLink(ctx, d.id)}`, d.id);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });

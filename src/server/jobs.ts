@@ -3,8 +3,8 @@ import { controleerBackup } from './backupcheck.ts';
 import { leesConfig } from './config.ts';
 import { verstuurDigest } from './digest.ts';
 import { log, stelHealthcheckIn } from './log.ts';
+import { EMAIL_RE } from './mail.ts';
 import { maakCtx } from './opstart.ts';
-import { EMAIL_RE } from './routes/gebruikers.ts';
 
 // Usage: node dist/server/jobs.js digest | beheerder <naam> <email> | backupcheck <restored-db>
 const [taak, ...args] = process.argv.slice(2);

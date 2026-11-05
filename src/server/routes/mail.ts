@@ -8,11 +8,10 @@ import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout } from '../context.ts';
 import { bijlageNaam, bijlagePdf } from '../documenten/index.tsx';
 import { log } from '../log.ts';
-import { tekstNaarHtml } from '../mail.ts';
+import { EMAIL_RE, tekstNaarHtml } from '../mail.ts';
 import { dossierLink, melding } from '../meldingen.ts';
 import { laadDossier } from '../repo.ts';
 import { haalDossier } from './dossiers.ts';
-import { EMAIL_RE } from './gebruikers.ts';
 
 export function sjabloonTekst(ctx: Ctx, key: string): { onderwerp: string; tekst: string } {
   const r = ctx.db.prepare('SELECT onderwerp, tekst FROM sjablonen WHERE key = ?').get(key) as { onderwerp: string; tekst: string } | undefined;
@@ -118,7 +117,7 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
       sjabloon: def.key, aan, onderwerp: bericht.onderwerp, tekst: bericht.tekst, tag_problemen: ontbrekend.length > 0,
     });
     if (mislukt) {
-      await melding(ctx, `E-mail niet afgeleverd: ${bericht.onderwerp} aan ${aan}`, `De e-mail "${bericht.onderwerp}" aan ${aan} is niet afgeleverd.\n\nFoutmelding: ${mislukt}\n\n${dossierLink(ctx, d.id)}`, d.id);
+      await melding(ctx, 'dossier', `E-mail niet afgeleverd: ${bericht.onderwerp} aan ${aan}`, `De e-mail "${bericht.onderwerp}" aan ${aan} is niet afgeleverd.\n\nFoutmelding: ${mislukt}\n\n${dossierLink(ctx, d.id)}`, d.id);
       fout(502, `De e-mail aan ${aan} kon niet worden verstuurd. Controleer het adres en probeer het opnieuw.`);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });

@@ -1,7 +1,7 @@
 import sharp from 'sharp';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NIEUWS } from '../shared/nieuws.ts';
-import { digestTekst } from './digest.ts';
+import { digestTekst, verstuurDigest } from './digest.ts';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier as maakDossier, testApp } from './testapp.ts';
 
 let t: TestApp;
@@ -92,11 +92,11 @@ describe('dossiers', () => {
     expect((await beheerder.json('GET', `/api/dossiers/${id}`)).dossier.data.wensen).toBe('Regenton bij de schuur');
   });
 
-  it("mails the admins when a klusser taps Klaar voor controle, but not when an admin does", async () => {
+  it("mails the dossier recipients when a klusser taps Klaar voor controle, but not when an admin does", async () => {
     const id = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
     await klusser.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
-    expect(t.mailer.verstuurd.map((m) => m.onderwerp)).toEqual(['Plan van Aanpak klaar voor controle: Walstraat 74, Deventer (Kees Klus)']);
+    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['dossier@example.org', 'Plan van Aanpak klaar voor controle: Walstraat 74, Deventer (Kees Klus)']]);
     const id2 = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id2}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
     expect(t.mailer.verstuurd).toHaveLength(1);
@@ -323,9 +323,9 @@ describe('beheer', () => {
     expect(sjablonen.find((s: { key: string }) => s.key === 'subsidie_huur').tekst).toBe('Beste {bewonr}');
   });
 
-  it('mails feedback to the admins and the developer and lists it for admins', async () => {
+  it('mails feedback to every feedback recipient and lists it for admins', async () => {
     await klusser.json('POST', '/api/feedback', { scherm: '/dossiers/1', tekst: 'Knop te klein' }, 201);
-    expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['regenwater@ulebelt.nl', 'hunt.topher@gmail.com']);
+    expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);
     expect(t.mailer.verstuurd[0].tekst).toContain('Knop te klein');
     const { feedback } = await beheerder.json('GET', '/api/feedback');
     expect(feedback.map((f: { tekst: string }) => f.tekst)).toEqual(['Knop te klein']);
@@ -353,6 +353,27 @@ describe('weekly digest', () => {
     expect(m.tekst).toContain(`https://regenton.test/dossiers/${id}`);
     expect(m.tekst).toContain('Inschrijving al 8 dagen open');
     expect(m.tekst).toContain('geen activiteit sinds 2 maart 2026');
+  });
+
+  it('mails every digest recipient, logging each in the audit trail', async () => {
+    await beheerder.json<{ id: number }>('POST', '/api/dossiers');
+    t.klok.verschuif(8 * 864e5);
+    expect(await verstuurDigest(t.ctx)).toBe(true);
+    expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['digest1@example.org', 'digest2@example.org']);
+    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
+    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['digest1@example.org', 'digest2@example.org']);
+  });
+
+  it('still mails the other recipients when one is refused, and logs no send for the refused one', async () => {
+    await beheerder.json<{ id: number }>('POST', '/api/dossiers');
+    t.klok.verschuif(8 * 864e5);
+    t.mailer.faalVoor = 'digest1@example.org';
+    const fout = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await verstuurDigest(t.ctx);
+    fout.mockRestore();
+    expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['digest2@example.org']);
+    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
+    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['digest2@example.org']);
   });
 });
 

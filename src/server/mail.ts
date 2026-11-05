@@ -3,6 +3,8 @@ import path from 'node:path';
 import type { Config } from './config.ts';
 import { log } from './log.ts';
 
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export interface Bijlage {
   naam: string;
   inhoud: Buffer;

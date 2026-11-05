@@ -36,6 +36,6 @@ export function digestTekst(ctx: Ctx): { onderwerp: string; tekst: string } | nu
 export async function verstuurDigest(ctx: Ctx): Promise<boolean> {
   const m = digestTekst(ctx);
   if (!m) return false;
-  await melding(ctx, m.onderwerp, m.tekst, null);
+  await melding(ctx, 'digest', m.onderwerp, m.tekst, null);
   return true;
 }

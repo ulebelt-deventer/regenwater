@@ -1,5 +1,4 @@
 import type { Hono } from 'hono';
-import { MELDINGEN_EMAIL, ONTWIKKELAAR_EMAIL } from '../../shared/constants.ts';
 import { NIEUWS } from '../../shared/nieuws.ts';
 import { SJABLONEN, TAG_UITLEG, controleerTags } from '../../shared/sjablonen.ts';
 import type { Adres } from '../../shared/types.ts';
@@ -107,7 +106,7 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
     return c.json({ ok: true, problemen: controleerTags(def, onderwerp, tekst) });
   });
 
-  // Feedback from anyone; each item mails the admins and the developer.
+  // Feedback from anyone; each item mails the feedback recipients.
   app.post('/api/feedback', async (c) => {
     const b = await body<Record<string, unknown>>(c);
     const tekst = typeof b.tekst === 'string' ? b.tekst.trim() : '';
@@ -119,7 +118,7 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
     audit(ctx, actorVan(c), null, 'feedback', { id: Number(lastInsertRowid), scherm });
     const onderwerp = `Feedback van ${ik.naam}`;
     const inhoud = `${ik.naam} (${ik.email}) op ${ctx.config.basisUrl}${scherm}:\n\n${tekst}\n\nAlle feedback: ${ctx.config.basisUrl}/beheer/feedback`;
-    for (const aan of [MELDINGEN_EMAIL, ONTWIKKELAAR_EMAIL]) await melding(ctx, onderwerp, inhoud, null, aan);
+    await melding(ctx, 'feedback', onderwerp, inhoud, null);
     return c.json({ ok: true }, 201);
   });
 

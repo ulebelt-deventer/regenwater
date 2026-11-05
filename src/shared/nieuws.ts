@@ -20,6 +20,12 @@ export const NIEUWS: NieuwsDatum[] = [
           'Staan er meerdere foto’s in een fotovak, dan blader je in de grote weergave met de pijltjes linksboven en rechtsboven. Ze verschijnen als het handje is gekozen en je niet hebt ingezoomd.',
         ],
       },
+      {
+        kop: 'Meldingen',
+        punten: [
+          'De wekelijkse mail Aandacht nodig en de meldingen per dossier, zoals Klaar voor controle en E-mail niet afgeleverd, kwamen niet aan. Vanaf nu komen ze wel aan.',
+        ],
+      },
     ],
   },
   {

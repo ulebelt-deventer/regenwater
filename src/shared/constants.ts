@@ -2,8 +2,6 @@
 
 export const APP_NAAM = 'Ulebelt Regenwater';
 export const ULEBELT_CONTACT_EMAIL = 'regenwater@ulebelt.nl'; // PLACEHOLDER
-export const MELDINGEN_EMAIL = 'regenwater@ulebelt.nl'; // PLACEHOLDER: receives klaar-voor-controle, opgeleverd, niet-afgeleverd and the weekly digest
-export const ONTWIKKELAAR_EMAIL = 'hunt.topher@gmail.com'; // receives every feedback item, next to MELDINGEN_EMAIL
 
 export const CORPORATIES = ['Ieder1', 'Rentree', 'Salland Wonen'] as const;
 export const CORPORATIE_EMAIL: Record<string, string> = {
