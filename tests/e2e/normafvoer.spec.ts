@@ -123,7 +123,7 @@ test('het Beheer-menu heeft een link naar Normafvoer', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await naarDossier(page, id);
-  await page.getByRole('button', { name: 'Beheer' }).click();
+  await page.locator('.qa-nav-beheer').click();
   await page.locator('.qa-nav-normafvoer').click();
   await expect(page.locator('.qa-normen')).toBeVisible();
 });

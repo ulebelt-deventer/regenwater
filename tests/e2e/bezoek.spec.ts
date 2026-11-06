@@ -440,7 +440,7 @@ test('de lange labels Regenton aanwezig? (90% groot) en Hoe moet het water komen
 
 test('de ** bij Waterberging toont de uitleg als eigen tooltip boven zich bij muis-hover en bij een tik, en de voetnoot staat er nog onder', async ({ page }) => {
   await tweeRegenpijpen(page);
-  const uitleg = 'per regenpijp gebaseerd op normafvoer 20 mm regenwater';
+  const uitleg = 'per regenpijp gebaseerd op normafvoer 20 mm regenwater (standaardnorm)';
   const sterren = page.locator('.qa-waterberging-uitleg').first();
   const tooltip = page.locator('.qa-tip');
   // No browser tooltips anywhere on the page.
