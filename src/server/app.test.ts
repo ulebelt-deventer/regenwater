@@ -131,6 +131,50 @@ describe('dossiers', () => {
   });
 });
 
+describe('verborgen meldingen', () => {
+  const bevindingen = async (id: number) => (await beheerder.json('GET', `/api/dossiers/${id}`)).aandacht.bevindingen as { sleutel: string; tekst: string }[];
+  const verberg = (id: number, sleutels: unknown, status = 200) => beheerder.json('POST', `/api/dossiers/${id}/verbergen`, { sleutels }, status);
+
+  it('hides a Klopt niet finding on this dossier for good, logs its text and keeps the others', async () => {
+    const id = await nieuwDossier();
+    await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
+    const voor = await bevindingen(id);
+    expect(voor.length).toBeGreaterThan(1);
+    await verberg(id, [voor[0].sleutel]);
+    expect((await bevindingen(id)).map((b) => b.sleutel)).toEqual(voor.slice(1).map((b) => b.sleutel));
+    const { items } = await beheerder.json('GET', `/api/dossiers/${id}/activiteit`);
+    expect(items[0]).toMatchObject({ type: 'meldingen_verborgen', payload: { meldingen: [voor[0].tekst] } });
+    await verberg(id, [voor[0].sleutel]);
+    expect((await beheerder.json('GET', `/api/dossiers/${id}/activiteit`)).items[0].id).toBe(items[0].id);
+  });
+
+  it('accepts a Plan gewijzigd finding without a note, and warns again after the next plan change', async () => {
+    const id = await nieuwDossier();
+    await beheerder.json('POST', `/api/dossiers/${id}/mail/plan_corporatie`, { aan: 'ieder1@example.org', onderwerp: 'Plan', tekst: 'Plan' });
+    const wijzig = async (wens: string) => {
+      t.klok.verschuif(6e4);
+      await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'wensen', value: wens });
+    };
+    await wijzig('Een regenton');
+    expect((await bevindingen(id)).map((b) => b.sleutel)).toContain('plan_gewijzigd:corporatie');
+    const { dossier } = await verberg(id, ['plan_gewijzigd:corporatie']);
+    expect(dossier.plan_acks).toMatchObject([{ ontvanger: 'corporatie', notitie: '' }]);
+    expect(dossier.verborgen).toEqual([]);
+    expect((await bevindingen(id)).map((b) => b.sleutel)).not.toContain('plan_gewijzigd:corporatie');
+    await wijzig('Twee regentonnen');
+    expect((await bevindingen(id)).map((b) => b.sleutel)).toContain('plan_gewijzigd:corporatie');
+  });
+
+  it('hides the geen dak melding for a beheerder only, and refuses a melding that is not showing', async () => {
+    const id = await nieuwDossier();
+    expect((await verberg(id, ['geen_dak', 'geen_tuin'])).dossier.verborgen).toEqual(['geen_dak', 'geen_tuin']);
+    await verberg(id, ['koop_met_akkoord'], 409);
+    await verberg(id, [], 400);
+    await verberg(id, 'geen_dak', 400);
+    await klusser.json('POST', `/api/dossiers/${id}/verbergen`, { sleutels: ['geen_dak'] }, 403);
+  });
+});
+
 describe('e-mail', () => {
   it('sends the prefilled subsidiemail and records it on the dossier', async () => {
     const id = await nieuwDossier();

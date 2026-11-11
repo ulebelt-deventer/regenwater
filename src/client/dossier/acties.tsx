@@ -8,7 +8,7 @@ import { type Dossier, type Gebruiker, type Mijlpaal, type Ontvanger, SLUIT_REDE
 import { del, post } from '../api.ts';
 import { GebruikerForm } from '../gebruikerform.tsx';
 import { nu } from '../sessie.ts';
-import { Dropdown, Modal, bevestig, melding, probeer } from '../ui.tsx';
+import { Dropdown, Modal, bevestig, melding, probeer, tip } from '../ui.tsx';
 import { MailModal } from './mail.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 
@@ -21,6 +21,18 @@ export function actie(s: DossierStaat, pad: string, inhoud: unknown = {}): Promi
 }
 
 export const zetMijlpaal = (s: DossierStaat, mijlpaal: Mijlpaal) => actie(s, 'mijlpaal', { mijlpaal });
+
+export const verbergMeldingen = (s: DossierStaat, sleutels: string[]) => actie(s, 'verbergen', { sleutels });
+
+// The red X behind a melding, for beheerders: hides it on this dossier for good (a Plan gewijzigd until the next change).
+export function VerbergKnop(props: { sleutel: string }) {
+  const s = useDossier();
+  return (
+    <Show when={s.beheerder()}>
+      <button type="button" class="btn btn-link link-danger p-0 ms-1 align-baseline qa-verberg" ref={tip('Hoeft niet: verbergen')} aria-label="Verbergen" onClick={() => void verbergMeldingen(s, [props.sleutel])}><i class="bi bi-x-lg" aria-hidden="true" /></button>
+    </Show>
+  );
+}
 
 // A pop-up with a form whose submit runs one action and closes on success.
 function ActieModal(props: { titel: string; knop: string; knopClass?: string; klaar: boolean; onSluit: () => void; verstuur: () => Promise<boolean>; children: JSX.Element; class?: string; extra?: JSX.Element }) {

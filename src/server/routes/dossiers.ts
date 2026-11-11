@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import type { Hono } from 'hono';
-import { aandacht, klusserHerinnering, ligtStil } from '../../shared/aandacht.ts';
+import { KAART_MELDINGEN, aandacht, klusserHerinnering, ligtStil } from '../../shared/aandacht.ts';
+import { kaartItems } from '../../shared/kaart.ts';
 import { DOSSIERS_PER_PAGINA } from '../../shared/constants.ts';
 import { isBeheerder, magBewerken, magMijlpaal, magZien } from '../../shared/rechten.ts';
 import { STATUS_FILTERS, adresRegel, huidigeStap } from '../../shared/status.ts';
@@ -384,6 +385,34 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!notitie) fout(400, 'Schrijf een notitie.');
     ctx.db.prepare('INSERT INTO plan_acks (dossier_id, ontvanger, notitie, created_at, created_by) VALUES (?, ?, ?, ?, ?)').run(d.id, ontvanger, notitie, ctx.klok.iso(), c.get('ik').id);
     audit(ctx, actorVan(c), d.id, 'opnieuw_versturen_niet_nodig', { ontvanger, notitie });
+    return c.json({ dossier: laadDossier(ctx.db, d.id)! });
+  });
+
+  // The red X: hides meldingen on this dossier for good, also on a closed one. A Plan gewijzigd finding is accepted
+  // as "Opnieuw versturen niet nodig" instead, so the next plan change warns again.
+  app.post('/api/dossiers/:id/verbergen', async (c) => {
+    alleenBeheerder(c);
+    const d = haalDossier(ctx, c);
+    const { sleutels } = await body<{ sleutels: unknown }>(c);
+    if (!Array.isArray(sleutels) || sleutels.length === 0 || !sleutels.every((x) => typeof x === 'string')) fout(400, 'Ongeldige meldingen');
+    const zichtbaar = new Map(aandacht(d, gebruikersMap(ctx.db), ctx.klok.nu()).bevindingen.map((b) => [b.sleutel, { tekst: b.tekst, ontvanger: b.ontvanger }]));
+    const items = kaartItems(d);
+    if (!items.daken.length) zichtbaar.set('geen_dak', { tekst: KAART_MELDINGEN.geen_dak, ontvanger: undefined });
+    if (!items.tuinen.length) zichtbaar.set('geen_tuin', { tekst: KAART_MELDINGEN.geen_tuin, ontvanger: undefined });
+    const nieuw = [...new Set(sleutels as string[])].filter((s) => !d.verborgen.includes(s));
+    if (nieuw.some((s) => !zichtbaar.has(s))) fout(409, 'Deze melding staat er niet meer. Herlaad de pagina.');
+    if (nieuw.length) {
+      const nu = ctx.klok.iso();
+      const ik = c.get('ik').id;
+      ctx.db.transaction(() => {
+        for (const s of nieuw) {
+          const { ontvanger } = zichtbaar.get(s)!;
+          if (ontvanger) ctx.db.prepare("INSERT INTO plan_acks (dossier_id, ontvanger, notitie, created_at, created_by) VALUES (?, ?, '', ?, ?)").run(d.id, ontvanger, nu, ik);
+          else ctx.db.prepare('INSERT INTO verborgen_meldingen (dossier_id, sleutel, created_at, created_by) VALUES (?, ?, ?, ?)').run(d.id, s, nu, ik);
+        }
+        audit(ctx, actorVan(c), d.id, 'meldingen_verborgen', { meldingen: nieuw.map((s) => zichtbaar.get(s)!.tekst) });
+      })();
+    }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });
 

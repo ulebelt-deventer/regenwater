@@ -56,7 +56,7 @@ function normafvoerVan(r: Rij, adres: Adres | null, normen: NormafvoerRij[]): No
   return { mm: n.mm, gemeente: n.gemeente, vast_at: null, reden: null };
 }
 
-function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; f: Foto[]; n: NormafvoerRij[] }): Dossier {
+function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; h: string[]; f: Foto[]; n: NormafvoerRij[] }): Dossier {
   const d: Record<string, unknown> = { id: r.id, created_at: r.created_at, created_by: r.created_by };
   for (const k of DOSSIER_KOLOMMEN) d[k] = r[k];
   const adres = r.adres_json ? (JSON.parse(r.adres_json) as Adres) : null;
@@ -67,6 +67,7 @@ function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; f: Fot
   d.verzendingen = rel.v;
   d.uitstellen = rel.u;
   d.plan_acks = rel.a;
+  d.verborgen = rel.h;
   d.fotos = rel.f;
   d.laatste_activiteit_at = r.laatste_activiteit_at;
   return d as unknown as Dossier;
@@ -79,6 +80,7 @@ export function laadDossier(db: DB, id: number): Dossier | null {
     v: (db.prepare('SELECT * FROM verzendingen WHERE dossier_id = ? ORDER BY id').all(id) as Record<string, unknown>[]).map(verzendingVan),
     u: db.prepare('SELECT * FROM uitstellen WHERE dossier_id = ? ORDER BY id').all(id) as Uitstel[],
     a: db.prepare('SELECT * FROM plan_acks WHERE dossier_id = ? ORDER BY id').all(id) as PlanAck[],
+    h: (db.prepare('SELECT sleutel FROM verborgen_meldingen WHERE dossier_id = ? ORDER BY id').all(id) as { sleutel: string }[]).map((x) => x.sleutel),
     f: (db.prepare('SELECT * FROM fotos WHERE dossier_id = ? AND verwijderd_at IS NULL ORDER BY created_at, rowid').all(id) as Record<string, unknown>[]).map(fotoVan),
     n: normafvoeren(db),
   });
@@ -91,12 +93,13 @@ export function laadDossiers(db: DB, waar = '1 = 1', params: unknown[] = []): Do
   const v = groepeer(db.prepare('SELECT * FROM verzendingen ORDER BY id').all() as Record<string, unknown>[], verzendingVan);
   const u = groepeer(db.prepare('SELECT * FROM uitstellen ORDER BY id').all() as Record<string, unknown>[], (r) => r as unknown as Uitstel);
   const a = groepeer(db.prepare('SELECT * FROM plan_acks ORDER BY id').all() as Record<string, unknown>[], (r) => r as unknown as PlanAck);
+  const h = groepeer(db.prepare('SELECT dossier_id, sleutel FROM verborgen_meldingen ORDER BY id').all() as Record<string, unknown>[], (r) => r.sleutel as string);
   const f = groepeer(
     db.prepare('SELECT id, dossier_id, slot, breedte, hoogte, m_per_px, created_at FROM fotos WHERE verwijderd_at IS NULL ORDER BY created_at, rowid').all() as Record<string, unknown>[],
     fotoVan,
   );
   const n = normafvoeren(db);
-  return rijen.map((r) => bouw(r, { v: v.get(r.id) ?? [], u: u.get(r.id) ?? [], a: a.get(r.id) ?? [], f: f.get(r.id) ?? [], n }));
+  return rijen.map((r) => bouw(r, { v: v.get(r.id) ?? [], u: u.get(r.id) ?? [], a: a.get(r.id) ?? [], h: h.get(r.id) ?? [], f: f.get(r.id) ?? [], n }));
 }
 
 export function gebruikersMap(db: DB): Map<number, Gebruiker> {

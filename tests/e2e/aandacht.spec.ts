@@ -1,6 +1,6 @@
 // Aandacht findings that the scenarios don't reach, and the one check that the printer produces a real PDF.
 import { expect, test } from '@playwright/test';
-import { afspraak, bezoek, geenAandacht, kies, mail, naarDossier, nieuwDossier, opslagKlaar, plan, start, status, subsidieMail, verschuifDagen, wijsToe } from './hulp.ts';
+import { afspraak, bezoek, geenAandacht, ja, kies, mail, naarDossier, nieuwDossier, opslagKlaar, plan, post, start, status, subsidieMail, verschuifDagen, wijsToe } from './hulp.ts';
 
 test('een afspraak in de toekomst is geen aandachtspunt, drie dagen erna zonder afgerond bezoek wel', async ({ page }) => {
   const { klusserId } = await start(page);
@@ -41,6 +41,37 @@ test('koopwoning met een goedkeuring van de woningcorporatie: Klopt niet', async
   await expect(page.locator('.qa-aandacht')).toContainText('De gegevens spreken elkaar tegen. Controleer:');
   await expect(page.locator('.qa-aandacht-uitleg')).toHaveAttribute('href', '/uitleg/aandacht');
   await expect(page.locator('.qa-klopt-niet')).toContainText('Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?');
+});
+
+test('een beheerder verbergt meldingen met het rode kruisje, en ze blijven weg na herladen', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.goto(`/dossiers/${id}/bezoek`);
+  await page.locator('.qa-geen-dak .qa-verberg').click();
+  await expect(page.locator('.qa-geen-dak')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.qa-veld-wensen')).toBeVisible();
+  await expect(page.locator('.qa-geen-dak')).toHaveCount(0);
+
+  await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
+  await naarDossier(page, id);
+  const regels = page.locator('.qa-klopt-niet .qa-bevinding');
+  const aantal = await regels.count();
+  expect(aantal).toBeGreaterThan(2);
+  await expect(regels.locator('button:not(.qa-verberg)')).toHaveCount(0);
+  const eerste = (await regels.first().textContent())!.replace('Bekijken', '').trim();
+  await regels.first().locator('.qa-verberg').click();
+  await expect(regels).toHaveCount(aantal - 1);
+  await page.reload();
+  await expect(regels).toHaveCount(aantal - 1);
+  await expect(page.locator('.qa-aandacht')).not.toContainText(eerste);
+
+  await page.locator('.qa-alles-verbergen').click();
+  await ja(page);
+  await geenAandacht(page);
+  await page.reload();
+  await expect(page.locator('.qa-status')).toBeVisible();
+  await geenAandacht(page);
 });
 
 test('een geprinte Plan van Aanpak is een echte PDF', async ({ page }) => {

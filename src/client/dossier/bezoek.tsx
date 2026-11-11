@@ -2,11 +2,12 @@
 import { A } from '@solidjs/router';
 import { For, Show, createSignal, onMount } from 'solid-js';
 import { AUTO_VERDELING_UITLEG, type Aandeel, KOPPEL_M, annotatiesSvg, autoGesplitst, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
+import { KAART_MELDINGEN } from '../../shared/aandacht.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { ontbrekend, veld } from '../../shared/velden.ts';
 import { isNetwerkFout, post } from '../api.ts';
 import { Dropdown, Modal, OnderdeelIcoon, bevestig, gaNaar, melding, scrollNaar, tip } from '../ui.tsx';
-import { MijlpaalRegel, actie, zetMijlpaal } from './acties.tsx';
+import { MijlpaalRegel, VerbergKnop, actie, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
 import { TerugLink } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
@@ -279,10 +280,13 @@ export function Bezoek() {
     );
   });
   const ulebeltSuggesties =() => veld('ulebelt_doet').suggesties!.filter(([k]) => k !== 'toestemming' || s.d.huur_koop === 'huur');
-  const geenDak = () => (
-    <div class="text-danger mb-2 qa-geen-dak">
-      Er is nog geen dak ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
-    </div>
+  const kaartMelding = (sleutel: keyof typeof KAART_MELDINGEN) => (
+    <Show when={!s.d.verborgen.includes(sleutel)}>
+      <div class={`text-danger mb-2 qa-${sleutel.replace('_', '-')}`}>
+        {KAART_MELDINGEN[sleutel]} <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
+        <VerbergKnop sleutel={sleutel} />
+      </div>
+    </Show>
   );
   const m2Cel = (id: string, soort: 'dak' | 'tuin' | 'steen', m2: number | null, berekend: boolean, breed = false) => (
     <Show when={berekend} fallback={<VeldInvoer k={`${soort}.${id}.m2`} kaal breed={breed} />}>
@@ -314,7 +318,7 @@ export function Bezoek() {
 
         <div id="veld-daken" class="mb-3 pt-3 qa-daken">
           <h3 class="mb-3"><OnderdeelIcoon soort="dak" class="me-1" />Dak</h3>
-          <Show when={items().daken.length} fallback={geenDak()}>
+          <Show when={items().daken.length} fallback={kaartMelding('geen_dak')}>
             <Show when={!items().opSchaal}>
               <div class="form-text mt-0 mb-1">De kaart is niet op schaal. Vul de m² zelf in.</div>
             </Show>
@@ -368,11 +372,7 @@ export function Bezoek() {
           <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="tuin" class="me-1" />Tuin</div>
           <Show
             when={items().tuinen.length}
-            fallback={
-              <div class="text-danger mb-2 qa-geen-tuin">
-                Er is nog geen tuin ingetekend op de kadasterkaart. <button type="button" class="btn btn-link link-danger p-0 align-baseline" onClick={() => gaNaar('veld-kaart')}>Naar de kaart</button>
-              </div>
-            }
+            fallback={kaartMelding('geen_tuin')}
           >
             <div class="border-top">
               <For each={items().tuinen}>{(tuin) => deelRij('tuin', tuin)}</For>

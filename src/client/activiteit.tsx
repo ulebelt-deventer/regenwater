@@ -37,6 +37,7 @@ export const TYPE_LABEL: Record<string, string> = {
   heropend: 'Dossier heropend',
   uitgesteld: 'Aandacht uitgesteld',
   opnieuw_versturen_niet_nodig: 'Opnieuw versturen niet nodig',
+  meldingen_verborgen: 'Melding verborgen',
   email_verstuurd: 'E-mail verstuurd',
   email_mislukt: 'E-mail niet afgeleverd',
   handmatig_verstuurd: 'Handmatig verstuurd',
@@ -145,6 +146,7 @@ function samenvatting(item: AuditItem): JSX.Element {
   if (t === 'heropend') return <>Was gesloten: {s(p().reden)}</>;
   if (t === 'uitgesteld') return <>Tot {s(p().tot)}: {s(p().notitie)}</>;
   if (t === 'opnieuw_versturen_niet_nodig') return <>Voor {s(p().ontvanger)}: {s(p().notitie)}</>;
+  if (t === 'meldingen_verborgen') return <>{(p().meldingen as string[]).map((m) => `“${m}”`).join(' ')}</>;
   if (t === 'email_verstuurd' || t === 'email_mislukt' || t === 'handmatig_verstuurd') return mail();
   if (t === 'melding_verstuurd') return <>Aan {s(p().aan)}: “{s(p().onderwerp)}”</>;
   if (t === 'dossier_verwijderd') return <>Dossier {s(p().dossier_id)}: {s(p().adres)}</>;

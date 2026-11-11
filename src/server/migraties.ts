@@ -253,4 +253,14 @@ export const MIGRATIES: string[] = [
   ALTER TABLE dossiers ADD COLUMN normafvoer_at TEXT;
   UPDATE dossiers SET normafvoer_mm = 20, normafvoer_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE bezoek_afgerond_at IS NOT NULL OR gesloten_at IS NOT NULL;
   `,
+  `
+  CREATE TABLE verborgen_meldingen (
+    id INTEGER PRIMARY KEY,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+    sleutel TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES gebruikers(id),
+    UNIQUE (dossier_id, sleutel)
+  );
+  `,
 ];

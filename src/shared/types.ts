@@ -175,6 +175,7 @@ export interface Dossier {
   verzendingen: Verzending[];
   uitstellen: Uitstel[];
   plan_acks: PlanAck[];
+  verborgen: string[]; // sleutels of the meldingen a beheerder hid for this dossier
   fotos: Foto[];
   laatste_activiteit_at: string | null;
 }

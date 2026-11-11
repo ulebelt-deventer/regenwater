@@ -39,6 +39,7 @@ export function dossier(over: Partial<Dossier> = {}): Dossier {
     verzendingen: [],
     uitstellen: [],
     plan_acks: [],
+    verborgen: [],
     fotos: [],
     laatste_activiteit_at: null,
     ...over,

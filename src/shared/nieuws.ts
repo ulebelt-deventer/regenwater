@@ -9,6 +9,13 @@ export const NIEUWS: NieuwsDatum[] = [
     datum: '2026-11-11',
     groepen: [
       {
+        kop: 'Aandacht',
+        punten: [
+          'Is een rode melding bij een dossier niet relevant? Tik dan op het rode kruisje erachter: hij komt bij dat dossier niet meer terug. Dat kan bij elke regel in de rode balk bovenaan het dossier en bij Er is nog geen dak (of tuin) ingetekend op de Bezoekpagina. Het kruisje rechtsboven in de rode balk verbergt alle regels tegelijk; nieuwe meldingen zie je daarna gewoon weer. Terugzetten kan niet.',
+          'Bij Plan gewijzigd werkt het kruisje als Opnieuw versturen niet nodig: wijzig je het Plan daarna weer, dan komt de melding terug.',
+        ],
+      },
+      {
         kop: 'Plan van Aanpak',
         punten: [
           'Bij koopwoningen zet de Kosteninschatting in het Plan van Aanpak nu Zelf uitvoeren en Met de Klussendienst naast elkaar, zodat de bewoner kan kiezen. De Klussendienst telt € 50 per regenpijp die wordt afgekoppeld. Beide tonen het totaal excl. en incl. btw, en eronder staat dat het een prijsinschatting is en geen garantie voor de uiteindelijke kosten.',

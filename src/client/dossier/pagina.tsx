@@ -1,7 +1,7 @@
 // The dossier route: loads one dossier for the details page and its sub-pages, with the shared title, menu and banners.
 import { A, type RouteSectionProps, useLocation, useNavigate, useParams } from '@solidjs/router';
 import { For, type JSX, Match, Show, Switch, createEffect, createResource, createSignal, onMount } from 'solid-js';
-import { KLOPT_NIET_KOP } from '../../shared/aandacht.ts';
+import { type Bevinding, KLOPT_NIET_KOP } from '../../shared/aandacht.ts';
 import { datum, datumTijd } from '../../shared/datum.ts';
 import { PLAN_BEWONER_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import { geenSpecificatie } from '../../shared/specificatie.ts';
@@ -9,7 +9,7 @@ import type { SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
 import { ApiFout, get } from '../api.ts';
 import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, tip, titel } from '../ui.tsx';
-import { MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerwijderModal, VerzendRegel, actie, verstuurdSinds, zetMijlpaal } from './acties.tsx';
+import { MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerbergKnop, VerwijderModal, VerzendRegel, actie, verbergMeldingen, verstuurdSinds, zetMijlpaal } from './acties.tsx';
 import { type Antwoord, DossierCtx, haalDossier, maakStaat, useDossier } from './staat.ts';
 import { BezoekSamenvatting, InschrijvingSamenvatting, PlanSamenvatting, UitvoeringSamenvatting } from './samenvatting.tsx';
 import { VeldInvoer } from './velden.tsx';
@@ -108,28 +108,41 @@ function Kop() {
           const kloptNiet = () => a().bevindingen.filter((b) => b.soort === 'klopt_niet');
           const overig = () => a().bevindingen.filter((b) => b.soort !== 'klopt_niet' && !b.uitgesteld);
           const uitgesteld = () => a().bevindingen.filter((b) => b.uitgesteld);
-          const regel = (b: { tekst: string; anker: string }) => (
-            <li>
-              {/* align-top: an inline-block's baseline is its last line, which would put the bullet beside a wrapped reason's last line. */}
-              <button type="button" class="btn btn-inline btn-link link-danger text-start align-top qa-bevinding" onClick={() => naarAnker(b.anker)}>{b.tekst}</button>
+          const allesVerbergen = async () => {
+            if (await bevestig('Alle meldingen verbergen?', 'Deze meldingen komen bij dit dossier niet meer terug. Nieuwe meldingen wel.', { ja: 'Verbergen' })) {
+              await verbergMeldingen(s, [...kloptNiet(), ...overig()].map((b) => b.sleutel));
+            }
+          };
+          // Plain text, not a button, so the reason can be selected and copied.
+          const regel = (b: Bevinding) => (
+            <li class="qa-bevinding">
+              {b.tekst}{' '}
+              <a href={`#${b.anker}`} class="link-danger qa-bevinding-link" onClick={(e) => { e.preventDefault(); naarAnker(b.anker); }}>Bekijken</a>
+              <VerbergKnop sleutel={b.sleutel} />
             </li>
           );
           const uitleg = () => <A href="/uitleg/aandacht" class="link-danger qa-aandacht-uitleg" ref={tip('Waarom zie ik dit?')} aria-label="Waarom zie ik dit?"><i class="bi bi-question-circle" aria-hidden="true" /></A>;
           return (
             <>
               <Show when={a().nodig}>
-                <div class="alert alert-danger qa-aandacht">
-                  <Show when={kloptNiet().length} fallback={<span class="float-end">{uitleg()}</span>}>
-                    <div class="fw-semibold">{KLOPT_NIET_KOP} {uitleg()}</div>
-                    <ul class={`${overig().length ? 'mb-2' : 'mb-0'} qa-klopt-niet`}>
-                      <For each={kloptNiet()}>{regel}</For>
-                    </ul>
-                  </Show>
-                  <Show when={overig().length}>
-                    <ul class="mb-0">
-                      <For each={overig()}>{regel}</For>
-                    </ul>
-                  </Show>
+                <div class="alert alert-danger d-flex align-items-start gap-2 qa-aandacht">
+                  <div class="flex-grow-1">
+                    <Show when={kloptNiet().length}>
+                      <div class="fw-semibold">{KLOPT_NIET_KOP}</div>
+                      <ul class={`${overig().length ? 'mb-2' : 'mb-0'} qa-klopt-niet`}>
+                        <For each={kloptNiet()}>{regel}</For>
+                      </ul>
+                    </Show>
+                    <Show when={overig().length}>
+                      <ul class="mb-0">
+                        <For each={overig()}>{regel}</For>
+                      </ul>
+                    </Show>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    {uitleg()}
+                    <button type="button" class="btn btn-link link-danger p-0 qa-alles-verbergen" ref={tip('Alles verbergen')} aria-label="Alles verbergen" onClick={() => void allesVerbergen()}><i class="bi bi-x-lg" aria-hidden="true" /></button>
+                  </div>
                 </div>
               </Show>
               <For each={uitgesteld()}>

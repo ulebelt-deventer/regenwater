@@ -150,3 +150,29 @@ describe('klusserHerinnering', () => {
     expect(klusserHerinnering(d, 3, geen, nu)).toBeNull();
   });
 });
+
+describe('verborgen meldingen', () => {
+  it('leaves out a hidden Klopt niet finding and keeps the others', () => {
+    const d = naInschrijving('koop', { corporatie_akkoord_at: T, bezoek_afgerond_at: T, afspraak: '2026-04-01T10:00' });
+    expect(kloptNiet(d, geen, nu).map((b) => b.sleutel)).toContain('koop_met_akkoord');
+    d.verborgen = ['koop_met_akkoord'];
+    const sleutels = kloptNiet(d, geen, nu).map((b) => b.sleutel);
+    expect(sleutels).not.toContain('koop_met_akkoord');
+    expect(sleutels).toContain('bezoek_voor_afspraak');
+  });
+
+  it('keeps a finding hidden when a date in its text changes', () => {
+    const d = naInschrijving('koop', { bezoek_afgerond_at: T, afspraak: '2026-04-01T10:00', verborgen: ['bezoek_voor_afspraak'] });
+    expect(kloptNiet(d, geen, nu).map((b) => b.sleutel)).not.toContain('bezoek_voor_afspraak');
+    d.afspraak = '2026-05-01T10:00';
+    expect(kloptNiet(d, geen, nu).map((b) => b.sleutel)).not.toContain('bezoek_voor_afspraak');
+  });
+
+  it('hides Ligt stil only for the step it was hidden at, and out of the Aandacht count', () => {
+    const d = dossier({ created_at: '2026-03-16T09:00:00.000Z', verborgen: ['ligt_stil:inschrijving'] });
+    expect(ligtStil(d, geen, nu)).toBeNull();
+    expect(aandacht(d, geen, nu).nodig).toBe(false);
+    const volgende = naInschrijving('koop', { inschrijving_afgerond_at: '2026-03-10T09:00:00.000Z', verborgen: ['ligt_stil:inschrijving'] });
+    expect(ligtStil(volgende, geen, nu)?.sleutel).toBe('ligt_stil:bezoeker');
+  });
+});

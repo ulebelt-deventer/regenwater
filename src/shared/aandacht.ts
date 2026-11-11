@@ -9,6 +9,7 @@ export type Soort = 'klopt_niet' | 'plan_gewijzigd' | 'ligt_stil';
 
 export interface Bevinding {
   soort: Soort;
+  sleutel: string; // names the rule, not its wording, so a hidden finding stays hidden when a date in its text changes
   tekst: string;
   anker: string;
   stap?: string;
@@ -17,6 +18,14 @@ export interface Bevinding {
 }
 
 export const KLOPT_NIET_KOP = 'De gegevens spreken elkaar tegen. Controleer:';
+
+// Warnings on the Bezoek page that a beheerder can hide per dossier, like a finding.
+export const KAART_MELDINGEN = {
+  geen_dak: 'Er is nog geen dak ingetekend op de kadasterkaart.',
+  geen_tuin: 'Er is nog geen tuin ingetekend op de kadasterkaart.',
+} as const;
+
+const zichtbaar = (d: Dossier, b: Bevinding) => !d.verborgen.includes(b.sleutel);
 
 // Ligt stil thresholds in days, per step. Shown on the Aandacht-criteria page.
 export const DREMPELS = {
@@ -67,50 +76,50 @@ export const KLOPT_NIET_REGELS: [string, string][] = [
 
 export function kloptNiet(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Date): Bevinding[] {
   const uit: Bevinding[] = [];
-  const k = (tekst: string, anker: string) => uit.push({ soort: 'klopt_niet', tekst, anker });
+  const k = (sleutel: string, tekst: string, anker: string) => uit.push({ soort: 'klopt_niet', sleutel, tekst, anker });
   const geldend = STAPPEN.filter((s) => s.nr <= 10 && s.geldt(d));
   const laatsteGedaan = [...geldend].reverse().find((s) => s.gedaan(d) !== null);
   if (laatsteGedaan) {
     for (const s of geldend) {
       if (s.nr >= laatsteGedaan.nr) break;
       if (s.gedaan(d) === null) {
-        k(`Stap ${laatsteGedaan.nr} (${laatsteGedaan.label}) is gedaan, maar stap ${s.nr} (${s.label}) nog niet.`, s.anker);
+        k(`stap_overgeslagen:${s.key}`, `Stap ${laatsteGedaan.nr} (${laatsteGedaan.label}) is gedaan, maar stap ${s.nr} (${s.label}) nog niet.`, s.anker);
       }
     }
   }
   if (d.huur_koop === 'koop' && d.corporatie_akkoord_at) {
-    k('Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?', 'sectie-inschrijving');
+    k('koop_met_akkoord', 'Koopwoning, maar met goedkeuring van de woningcorporatie. Klopt huur/koop?', 'sectie-inschrijving');
   }
   if (d.huur_koop === 'huur' && d.klussendienst_gekozen_at) {
-    k('Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?', 'sectie-inschrijving');
+    k('huur_met_keuze', 'Huurwoning, maar met een keuze voor Klussendienst of zelf. Klopt huur/koop?', 'sectie-inschrijving');
   }
   const huidig = huidigeStap(d);
   const riool = str(d, 'rioolstelsel');
   if (riool === 'gescheiden' && !d.gesloten_at && huidig.nr > 1) {
-    k('Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?', 'sectie-inschrijving');
+    k('riool_gescheiden', 'Riool gescheiden, maar het dossier loopt nog. Sluiten, of riool corrigeren?', 'sectie-inschrijving');
   }
   if (d.gesloten_reden === 'Niet subsidiabel' && riool === 'gemengd') {
-    k('Gesloten als niet subsidiabel, maar het riool is gemengd.', 'sectie-inschrijving');
+    k('gesloten_gemengd', 'Gesloten als niet subsidiabel, maar het riool is gemengd.', 'sectie-inschrijving');
   }
   const afspraak = afspraakDatum(d);
   if (d.bezoek_afgerond_at && afspraak && afspraak > nu) {
-    k(`Bezoek afgerond, maar de afspraak is pas op ${datum(afspraak)}.`, 'sectie-bezoek');
+    k('bezoek_voor_afspraak', `Bezoek afgerond, maar de afspraak is pas op ${datum(afspraak)}.`, 'sectie-bezoek');
   }
   if (d.werk_opgeleverd_at && d.uitvoering_gepland && lokaal(d.uitvoering_gepland) > nu) {
-    k(`Werk opgeleverd, maar de uitvoering is pas gepland op ${datum(d.uitvoering_gepland)}.`, 'sectie-uitvoering');
+    k('opgeleverd_voor_uitvoering', `Werk opgeleverd, maar de uitvoering is pas gepland op ${datum(d.uitvoering_gepland)}.`, 'sectie-uitvoering');
   }
   if (!d.gesloten_at) {
     const gearchiveerd = (id: number | null) => (id !== null ? gebruikers.get(id) : undefined);
     const b = gearchiveerd(d.bezoeker_id);
     if (b && b.archived_at && huidig.nr >= 3 && huidig.nr <= 5) {
-      k(`${b.naam} is gearchiveerd, maar nog bezoeker. Wijs iemand anders toe.`, 'sectie-bezoeker');
+      k(`bezoeker_gearchiveerd:${b.id}`, `${b.naam} is gearchiveerd, maar nog bezoeker. Wijs iemand anders toe.`, 'sectie-bezoeker');
     }
     const u = gearchiveerd(d.uitvoerder_id);
     if (u && u.archived_at && huidig.nr === 10) {
-      k(`${u.naam} is gearchiveerd, maar nog uitvoerder. Wijs iemand anders toe.`, 'sectie-uitvoerder');
+      k(`uitvoerder_gearchiveerd:${u.id}`, `${u.naam} is gearchiveerd, maar nog uitvoerder. Wijs iemand anders toe.`, 'sectie-uitvoerder');
     }
   }
-  return uit;
+  return uit.filter((b) => zichtbaar(d, b));
 }
 
 // When the current step began, for the Ligt stil clock.
@@ -182,7 +191,8 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
       break;
   }
   if (tekst === null) return null;
-  const bevinding: Bevinding = { soort: 'ligt_stil', tekst, anker: s.anker, stap: s.key };
+  const bevinding: Bevinding = { soort: 'ligt_stil', sleutel: `ligt_stil:${s.key}`, tekst, anker: s.anker, stap: s.key };
+  if (!zichtbaar(d, bevinding)) return null;
   const vandaag = isoDatum(nu);
   const uitstel = [...d.uitstellen].reverse().find((u) => u.stap === s.key && u.tot > vandaag);
   if (uitstel) bevinding.uitgesteld = { tot: uitstel.tot, notitie: uitstel.notitie };
@@ -214,6 +224,7 @@ export function planGewijzigd(d: Dossier): Bevinding[] {
     if (s && s.gewijzigd) {
       uit.push({
         soort: 'plan_gewijzigd',
+        sleutel: `plan_gewijzigd:${o}`,
         tekst: `Plan gewijzigd op ${datum(s.gewijzigd)}, na versturen naar ${ONTVANGER_NAAM[o]}. Opnieuw sturen?`,
         anker: o === 'uitvoerder' ? 'sectie-uitvoerder' : 'sectie-versturen',
         ontvanger: o,
