@@ -246,7 +246,7 @@ function Notities() {
       when={open()}
       fallback={
         <div class="qa-notities">
-          <span class="fw-semibold me-2">Notities</span>
+          <span class="fw-semibold me-2">Notities:</span>
           <Show when={tekst()} fallback={<span class="text-muted">--</span>}>{(t) => <span class="pre-wrap">{t()}</span>}</Show>
           <Show when={s.mag(veld('notities').bewerkers)}>
             <button type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline qa-notities-bewerken" onClick={() => setOpen(true)}>
@@ -320,17 +320,19 @@ export function Details() {
     <>
       <Sectie id="sectie-status" titel="Status">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-          <span class="text-muted">Volgende stap</span>
-          <A href="/uitleg/statussen" class="small qa-uitleg-statussen" aria-label="Hoe wordt de status bepaald?" ref={tip('Hoe wordt de status bepaald?')}>?</A>
+          <span class="text-muted">Volgende stap:</span>
+          <A href="/uitleg/statussen" class="me-2 qa-uitleg-statussen" aria-label="Hoe wordt de status bepaald?" ref={tip('Hoe wordt de status bepaald?')}>
+            <i class="bi bi-question-circle" aria-hidden="true" />
+          </A>
           <StatusLabel label={s.status().label} ligtBij={s.status().ligtBij} />
           <Show when={toonActie()}>
             <Show
               when={stapActie().sub}
-              fallback={<button type="button" class="btn btn-sm btn-outline-primary qa-stap-actie" onClick={() => naarAnker(stapActie().st.key === 'afspraak' ? 'veld-afspraak' : stapActie().st.anker)}>Naar {stapActie().st.label.toLowerCase()}</button>}
+              fallback={<button type="button" class="btn btn-link p-0 qa-stap-actie" onClick={() => naarAnker(stapActie().st.key === 'afspraak' ? 'veld-afspraak' : stapActie().st.anker)}>Naar {stapActie().st.label.toLowerCase()}</button>}
             >
               {(sub) => (
                 <Show when={sub()[0] !== 'inschrijving' || s.beheerder()}>
-                  <A href={`/dossiers/${s.id}/${sub()[0]}`} class="btn btn-sm btn-primary qa-stap-actie">{sub()[1]}</A>
+                  <A href={`/dossiers/${s.id}/${sub()[0]}`} class="qa-stap-actie">{sub()[1]}</A>
                 </Show>
               )}
             </Show>
@@ -338,7 +340,16 @@ export function Details() {
         </div>
         <Show when={s.beheerder()}>
           <div class="d-flex flex-wrap align-items-center gap-2 mb-3 qa-eigenaar">
-            <span class="text-muted">Eigenaar</span>
+            <span class="text-muted qa-eigenaar-label">Eigenaar:</span>
+            <span
+              class="text-muted me-2 qa-eigenaar-uitleg"
+              tabindex="0"
+              role="img"
+              aria-label="Wat is de eigenaar?"
+              ref={tip('Standaard de beheerder die het dossier heeft aangemaakt. De eigenaar is verantwoordelijk voor het dossier en krijgt de e-mailmeldingen over wat erin gebeurt.')}
+            >
+              <i class="bi bi-question-circle" aria-hidden="true" />
+            </span>
             <Show when={open()} fallback={<span class="qa-eigenaar-naam">{naam(s.d.eigenaar_id)}</span>}>
               <EigenaarKiezer />
             </Show>

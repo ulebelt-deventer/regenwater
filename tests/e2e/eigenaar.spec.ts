@@ -24,3 +24,19 @@ test('een beheerder kiest een andere eigenaar in Status, en die krijgt dan Klaar
   await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
   expect((await emails(page)).at(-1)).toMatchObject({ aan: 'tessa@ulebelt.test', onderwerp: expect.stringContaining('Plan van Aanpak klaar voor controle') });
 });
+
+test('het vraagteken achter Eigenaar legt bij muis-hover uit wie de eigenaar is en wat die doet', async ({ page }) => {
+  await start(page);
+  const { id } = await post<{ id: number }>(page.request, '/api/dossiers');
+  await naarDossier(page, id);
+  const label = page.locator('.qa-eigenaar-label');
+  await expect(label).toBeVisible();
+  await label.hover();
+  await expect(page.locator('.qa-tip')).toHaveCount(0);
+  const vraag = page.locator('.qa-eigenaar-uitleg');
+  await expect(vraag).toBeVisible();
+  await vraag.hover();
+  await expect(page.locator('.qa-tip')).toBeVisible();
+  await expect(page.locator('.qa-tip')).toContainText('die het dossier heeft aangemaakt');
+  await expect(page.locator('.qa-tip')).toContainText('meldingen');
+});
