@@ -105,7 +105,7 @@
     - On its own line below "Annuleren"/"Versturen", at the left, a link "Handmatig verstuurd...": for when the admin downloaded the PDF and emailed it themselves. Since it sends nothing, it first asks for confirmation that the app won't send this email and that they sent it themselves. It records a send at the current time exactly like "Versturen" does (it counts for the status, the aandacht clocks and Plan gewijzigd), shown as "Handmatig verstuurd op {datum}".
   - Title: this address
   - If the dossier is closed: a prominent gray banner directly under the title, "Gesloten op {datum}: {reden}" (green for Uitgevoerd).
-  - If the dossier needs aandacht (closed ones included, for Klopt niet): one .alert.alert-danger banner directly under the title, one bullet per finding (Klopt niet findings first), each plain selectable text with a "Bekijken" link to the relevant field or section (see the Aandacht-criteria page). For admins each bullet ends in a red X that hides it, and an X in the banner's top right corner hides all of them after a confirmation (see "Hidden findings" under the Aandacht-criteria page).
+  - If the dossier needs aandacht (closed ones included, for Klopt niet): one .alert.alert-danger banner directly under the title, one bullet per finding (Klopt niet findings first), each a link to the relevant field or section whose text can still be drag-selected (see the Aandacht-criteria page). For admins each bullet ends in a red X that hides it, and an X in the banner's top right corner hides all of them after a confirmation (see "Hidden findings" under the Aandacht-criteria page).
   - Top-right corner (next to title): a wordless caret dropdown menu with actions available for this property.
     - (admin, if closed) Dossier heropenen. Clears the closed state; the status returns to whatever step the dossier's data implies.
     - (admin, if open) Dossier sluiten (eg if the huurder moved), in amber (text-warning) below the divider, right above Verwijderen. Pops up a reden choice (Bewoner afgehaakt, Bewoner doet het zelf, Plan afgewezen, Niet subsidiabel, Anders, and last "Toch uitgevoerd", which stores reden Uitgevoerd for work finished outside the normal flow) and a Toelichting field, stored with the closing and shown in the gray banner, with an encouragement to add a note about why it's getting shelved. For "Toch uitgevoerd" the toelichting is required: explain what happened.
@@ -116,6 +116,8 @@
     - Volgende stap
       - To the right of this label, a "?" link to the Statussen page, so the app documents its own rules.
       - Displays the calculated current next step for this record, with one action: a button that opens the step's sub-page ("Inschrijving invullen", "Start bezoek", "Plan van Aanpak invullen", "Uitvoering invullen"), or else a tap that scrolls to the inline section where the step happens (Bezoeker, the afspraak field, Plan versturen & goedkeuring, Uitvoerder, Oplevering).
+    - Eigenaar (admin only)
+      - The beheerder who gets this dossier's meldingen (see Meldingen aan beheerders). Starts as the admin who created the dossier. A dropdown of the active beheerders, like the Bezoeker dropdown; once the dossier is closed, just the name. Each change is logged in Alle activiteit.
     - Notities
       - free-form notes the admin & klusser can write whatever is relevant in. Shown as one line of text ("--" if empty) with a pencil "Bewerken" link for whoever may edit; that link opens an autofocused textarea, which closes back to text when it loses focus.
   - **Inschrijving** (sub-page, admin)
@@ -444,7 +446,7 @@
     - "Inloggen als" first asks for confirmation, warning that it's meant for troubleshooting and that actions are recorded as yours on their behalf. It then shows the app as that klusser sees it, with exactly their permissions (the server checks every request as them), and a red banner below the navbar: "Je bekijkt de app als {naam}. {Terug naar {mijn naam}}". Offered only for active klussers: another admin's view is the same as your own.
       - Everything done meanwhile is attributed to the admin: audit entries name the admin as actor plus the klusser being viewed (shown as "{admin} (als {klusser})"), milestones store the admin as `_by`, and no melding is sent, as when an admin acts themselves. The klusser's Laatst actief doesn't change.
       - Starting and stopping are audit events. It ends on "Terug naar {mijn naam}", on Uitloggen, when the admin's session expires, or when the klusser is archived (the next request returns the admin to their own view).
-    - Admins can't archive themselves or change their own role, so they can't lock themselves out.
+    - Admins can't archive themselves or change their own role, so they can't lock themselves out. An admin who is still eigenaar of an open dossier can't be archived or made klusser until those dossiers get another eigenaar; the error names how many.
 - "Beheer" (navbar dropdown of further less-used links, all of these links & pages are admin-only)
   - "Materialen"
     - Lets admins manage the default list of materials (Materiaal, Prijs) and its order, set by dragging a row by its grip (or arrow keys on the grip). It's only the prefill for new dossiers' Materialen tables (see Plan van Aanpak).
@@ -476,7 +478,7 @@
   - Then: open the app from the new icon and log in once more with your e-mail and code. *The home-screen app keeps its own login, separate from the browser's.*
   - On a desktop browser: a big amber banner on top, "Open deze pagina op je telefoon", without hiding the steps.
 - Meldingen aan beheerders (automatic emails, no page)
-  - The app's only automatic emails. Each type goes to its own list of one or more recipients, set per environment: the weekly digest, feedback, and the per-dossier meldingen below. They never go to bewoners, corporaties or klussers, and change nothing in the data; each send is logged in Alle activiteit. Each links to the dossier.
+  - The app's only automatic emails. The weekly digest and feedback each go to their own list of one or more recipients, set per environment; the per-dossier meldingen below go only to the dossier's eigenaar. They never go to bewoners, corporaties or klussers, and change nothing in the data; each send is logged in Alle activiteit. Each links to the dossier.
   - Immediately, when a klusser hands the ball back to the admins:
     - "Klaar voor controle" tapped: "Plan van Aanpak klaar voor controle: {adres} ({klusser})".
     - "Werk opgeleverd" tapped: "Werk opgeleverd: {adres} ({klusser})".

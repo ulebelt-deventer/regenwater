@@ -144,6 +144,7 @@ export interface Dossier {
   created_by: number;
   adres: Adres | null;
   huur_koop: HuurKoop | null;
+  eigenaar_id: number; // the beheerder who gets this dossier's meldingen
   bezoeker_id: number | null;
   uitvoerder_id: number | null;
   afspraak: string | null; // YYYY-MM-DDTHH:MM, local time

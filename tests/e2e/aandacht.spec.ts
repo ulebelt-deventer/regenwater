@@ -58,8 +58,8 @@ test('een beheerder verbergt meldingen met het rode kruisje, en ze blijven weg n
   const regels = page.locator('.qa-klopt-niet .qa-bevinding');
   const aantal = await regels.count();
   expect(aantal).toBeGreaterThan(2);
-  await expect(regels.locator('button:not(.qa-verberg)')).toHaveCount(0);
-  const eerste = (await regels.first().textContent())!.replace('Bekijken', '').trim();
+  await expect(regels.locator('button')).toHaveCount(0);
+  const eerste = (await regels.first().locator('.qa-bevinding-link').textContent())!;
   await regels.first().locator('.qa-verberg').click();
   await expect(regels).toHaveCount(aantal - 1);
   await page.reload();

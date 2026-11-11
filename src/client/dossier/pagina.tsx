@@ -9,7 +9,7 @@ import type { SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
 import { ApiFout, get } from '../api.ts';
 import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, tip, titel } from '../ui.tsx';
-import { MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerbergKnop, VerwijderModal, VerzendRegel, actie, verbergMeldingen, verstuurdSinds, zetMijlpaal } from './acties.tsx';
+import { EigenaarKiezer, MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerbergKnop, VerwijderModal, VerzendRegel, actie, verbergMeldingen, verstuurdSinds, zetMijlpaal } from './acties.tsx';
 import { type Antwoord, DossierCtx, haalDossier, maakStaat, useDossier } from './staat.ts';
 import { BezoekSamenvatting, InschrijvingSamenvatting, PlanSamenvatting, UitvoeringSamenvatting } from './samenvatting.tsx';
 import { VeldInvoer } from './velden.tsx';
@@ -113,11 +113,10 @@ function Kop() {
               await verbergMeldingen(s, [...kloptNiet(), ...overig()].map((b) => b.sleutel));
             }
           };
-          // Plain text, not a button, so the reason can be selected and copied.
+          // A link, not a button, so the reason can be selected and copied; draggable={false} lets a drag select text instead of dragging the link.
           const regel = (b: Bevinding) => (
             <li class="qa-bevinding">
-              {b.tekst}{' '}
-              <a href={`#${b.anker}`} class="link-danger qa-bevinding-link" onClick={(e) => { e.preventDefault(); naarAnker(b.anker); }}>Bekijken</a>
+              <a href={`#${b.anker}`} class="text-reset text-decoration-none qa-bevinding-link" draggable={false} onClick={(e) => { e.preventDefault(); naarAnker(b.anker); }}>{b.tekst}</a>
               <VerbergKnop sleutel={b.sleutel} />
             </li>
           );
@@ -129,7 +128,7 @@ function Kop() {
                   <div class="flex-grow-1">
                     <Show when={kloptNiet().length}>
                       <div class="fw-semibold">{KLOPT_NIET_KOP}</div>
-                      <ul class={`${overig().length ? 'mb-2' : 'mb-0'} qa-klopt-niet`}>
+                      <ul class="mb-0 qa-klopt-niet">
                         <For each={kloptNiet()}>{regel}</For>
                       </ul>
                     </Show>
@@ -337,6 +336,14 @@ export function Details() {
             </Show>
           </Show>
         </div>
+        <Show when={s.beheerder()}>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3 qa-eigenaar">
+            <span class="text-muted">Eigenaar</span>
+            <Show when={open()} fallback={<span class="qa-eigenaar-naam">{naam(s.d.eigenaar_id)}</span>}>
+              <EigenaarKiezer />
+            </Show>
+          </div>
+        </Show>
         <Notities />
       </Sectie>
 

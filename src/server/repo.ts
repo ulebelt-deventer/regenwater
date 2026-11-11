@@ -5,7 +5,7 @@ import type { DB } from './db.ts';
 const NORM_MAX_MM = 100;
 
 export const DOSSIER_KOLOMMEN = [
-  'huur_koop', 'bezoeker_id', 'uitvoerder_id', 'afspraak', 'uitvoering_gepland',
+  'huur_koop', 'eigenaar_id', 'bezoeker_id', 'uitvoerder_id', 'afspraak', 'uitvoering_gepland',
   'inschrijving_afgerond_at', 'inschrijving_afgerond_by', 'bezoeker_toegewezen_at', 'bezoeker_toegewezen_by', 'bezoek_afgerond_at', 'bezoek_afgerond_by',
   'klaar_voor_controle_at', 'klaar_voor_controle_by', 'corporatie_akkoord_at', 'corporatie_akkoord_by',
   'klussendienst_gekozen_at', 'klussendienst_gekozen_by', 'uitvoerder_toegewezen_at', 'uitvoerder_toegewezen_by',
@@ -57,6 +57,7 @@ function normafvoerVan(r: Rij, adres: Adres | null, normen: NormafvoerRij[]): No
 }
 
 function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; h: string[]; f: Foto[]; n: NormafvoerRij[] }): Dossier {
+  if (r.eigenaar_id === null) throw new Error(`Dossier ${r.id} heeft geen eigenaar`);
   const d: Record<string, unknown> = { id: r.id, created_at: r.created_at, created_by: r.created_by };
   for (const k of DOSSIER_KOLOMMEN) d[k] = r[k];
   const adres = r.adres_json ? (JSON.parse(r.adres_json) as Adres) : null;

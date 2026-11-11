@@ -263,4 +263,9 @@ export const MIGRATIES: string[] = [
     UNIQUE (dossier_id, sleutel)
   );
   `,
+  // The beheerder who gets this dossier's meldingen. SQLite can't add a NOT NULL reference column, so laadDossier enforces it.
+  `
+  ALTER TABLE dossiers ADD COLUMN eigenaar_id INTEGER REFERENCES gebruikers(id);
+  UPDATE dossiers SET eigenaar_id = created_by;
+  `,
 ];

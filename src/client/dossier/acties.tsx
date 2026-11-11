@@ -25,11 +25,16 @@ export const zetMijlpaal = (s: DossierStaat, mijlpaal: Mijlpaal) => actie(s, 'mi
 export const verbergMeldingen = (s: DossierStaat, sleutels: string[]) => actie(s, 'verbergen', { sleutels });
 
 // The red X behind a melding, for beheerders: hides it on this dossier for good (a Plan gewijzigd until the next change).
+// A link, not a <button>: a button is always laid out as an inline-block, which can make its line taller than the text beside it.
 export function VerbergKnop(props: { sleutel: string }) {
   const s = useDossier();
+  const verberg = (e: Event) => {
+    e.preventDefault();
+    void verbergMeldingen(s, [props.sleutel]);
+  };
   return (
     <Show when={s.beheerder()}>
-      <button type="button" class="btn btn-link link-danger p-0 ms-1 align-baseline qa-verberg" ref={tip('Hoeft niet: verbergen')} aria-label="Verbergen" onClick={() => void verbergMeldingen(s, [props.sleutel])}><i class="bi bi-x-lg" aria-hidden="true" /></button>
+      <a href="#" role="button" class="link-danger text-decoration-none ms-1 qa-verberg" ref={tip('Hoeft niet: verbergen')} aria-label="Verbergen" onClick={verberg} onKeyDown={(e) => { if (e.key === ' ') verberg(e); }}><i class="bi bi-x-lg" aria-hidden="true" /></a>
     </Show>
   );
 }
@@ -334,5 +339,23 @@ export function Toewijzen(props: { rol: 'bezoeker' | 'uitvoerder' }) {
         <MailModal sjabloon={`${props.rol}_toegewezen`} onSluit={() => setMail(false)} />
       </Show>
     </div>
+  );
+}
+
+// The beheerder who gets this dossier's meldingen.
+export function EigenaarKiezer() {
+  const s = useDossier();
+  const beheerders = () => s.gebruikers().filter((g) => g.rol === 'beheerder' && !g.archived_at).sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
+  const kies = (g: Gebruiker) => {
+    if (g.id !== s.d.eigenaar_id) void actie(s, 'eigenaar', { gebruiker_id: g.id });
+  };
+  return (
+    <Dropdown knop={s.naam(s.d.eigenaar_id)} knopClass="form-select text-start qa-eigenaar-knop" kiezer>
+      <For each={beheerders()}>
+        {(g) => (
+          <button type="button" class={`dropdown-item qa-eigenaar-${g.id}`} classList={{ active: g.id === s.d.eigenaar_id }} onClick={() => kies(g)}>{g.naam}</button>
+        )}
+      </For>
+    </Dropdown>
   );
 }

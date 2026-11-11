@@ -8,6 +8,7 @@ export function dossier(over: Partial<Dossier> = {}): Dossier {
     created_by: 1,
     adres: null,
     huur_koop: null,
+    eigenaar_id: 1,
     bezoeker_id: null,
     uitvoerder_id: null,
     afspraak: null,

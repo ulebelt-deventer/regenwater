@@ -12,6 +12,12 @@ export interface GebruikerRij extends Gebruiker {
   gesloten: number;
 }
 
+// Dossier meldingen go to the eigenaar, so an open dossier's eigenaar must stay an active beheerder.
+function nogEigenaar(ctx: Ctx, g: Gebruiker): void {
+  const n = (ctx.db.prepare('SELECT COUNT(*) AS n FROM dossiers WHERE eigenaar_id = ? AND gesloten_at IS NULL').get(g.id) as { n: number }).n;
+  if (n > 0) fout(409, `${g.naam} is nog eigenaar van ${n} open ${n === 1 ? 'dossier' : 'dossiers'}. Kies daar eerst een andere eigenaar.`);
+}
+
 // Beheerders first, then by name; with their open and closed dossier counts as bezoeker or uitvoerder.
 export function gebruikerRijen(ctx: Ctx, metGearchiveerd: boolean): GebruikerRij[] {
   const rijen = ctx.db
@@ -85,6 +91,7 @@ export function gebruikerRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!g) fout(404, 'Gebruiker niet gevonden');
     const inv = leesInvoer(await body(c));
     if (g.id === c.get('actor').id && inv.rol !== g.rol) fout(400, 'Je kunt je eigen rol niet wijzigen.');
+    if (inv.rol !== 'beheerder') nogEigenaar(ctx, g);
     controleerUniek(ctx, inv.email, g.id);
     const changes: Record<string, [string | null, string | null]> = {};
     for (const k of ['naam', 'email', 'telefoon', 'rol'] as const) if (g[k] !== inv[k]) changes[k] = [g[k], inv[k]];
@@ -100,6 +107,7 @@ export function gebruikerRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!g) fout(404, 'Gebruiker niet gevonden');
     if (g.id === c.get('actor').id) fout(400, 'Je kunt jezelf niet archiveren.');
     if (g.archived_at) return c.json({ gebruiker: g });
+    nogEigenaar(ctx, g);
     ctx.db.transaction(() => {
       ctx.db.prepare('UPDATE gebruikers SET archived_at = ? WHERE id = ?').run(ctx.klok.iso(), g.id);
       ctx.db.prepare('DELETE FROM sessies WHERE gebruiker_id = ?').run(g.id);

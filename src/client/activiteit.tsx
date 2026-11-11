@@ -33,6 +33,7 @@ export const TYPE_LABEL: Record<string, string> = {
   dossier_verwijderd: 'Dossier verwijderd',
   mijlpaal: 'Stap geregistreerd',
   toegewezen: 'Toegewezen',
+  eigenaar_gewijzigd: 'Eigenaar gewijzigd',
   gesloten: 'Dossier gesloten',
   heropend: 'Dossier heropend',
   uitgesteld: 'Aandacht uitgesteld',
@@ -141,6 +142,7 @@ function samenvatting(item: AuditItem): JSX.Element {
   const t = item.type;
   if (t === 'dossier_gewijzigd') return <Wijzigingen changes={p().changes as Record<string, [Json, Json]>} />;
   if (t === 'mijlpaal') return <>{MIJLPAAL_LABEL[s(p().mijlpaal)]}{p().aan === false ? ' (teruggedraaid)' : ''}</>;
+  if (t === 'eigenaar_gewijzigd') return <>{s(p().van)} → {s(p().naar)}</>;
   if (t === 'toegewezen') return <>{p().rol === 'bezoeker' ? 'Bezoeker' : 'Uitvoerder'}: {p().van === null ? 'niemand' : s(p().van)} → {p().naar === null ? 'niemand' : s(p().naar)}</>;
   if (t === 'gesloten') return <>Reden: {s(p().reden)}{p().toelichting ? `. ${s(p().toelichting)}` : ''}</>;
   if (t === 'heropend') return <>Was gesloten: {s(p().reden)}</>;

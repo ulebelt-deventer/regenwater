@@ -2,7 +2,7 @@ import path from 'node:path';
 import { EMAIL_RE } from './mail.ts';
 
 export type Modus = 'production' | 'development' | 'test';
-export type MeldingSoort = 'digest' | 'feedback' | 'dossier';
+export type MeldingSoort = 'digest' | 'feedback';
 
 export interface Config {
   modus: Modus;
@@ -12,7 +12,7 @@ export interface Config {
   emailDir: string;
   mailgun: { sleutel: string; domein: string; api: string } | null;
   afzender: string; // From address
-  meldingen: Record<MeldingSoort, string[]>; // recipients of the automatic admin emails
+  meldingen: Record<MeldingSoort, string[]>; // recipients of the automatic admin emails not about one dossier
   healthcheckUrl: string | null;
   staging: boolean; // A test or demo install; the navbar says TEST.
 }
@@ -52,7 +52,7 @@ export function leesConfig(): Config {
     emailDir: path.resolve('tmp/emails'),
     mailgun: productie ? { sleutel: verplicht('MAILGUN_API_KEY'), domein: verplicht('MAILGUN_DOMEIN'), api: mailgunApi() } : null,
     afzender: productie ? verplicht('MAIL_AFZENDER') : 'Ulebelt Regenwater <regenwater@example.org>',
-    meldingen: { digest: meldingAdressen('MELDINGEN_DIGEST'), feedback: meldingAdressen('MELDINGEN_FEEDBACK'), dossier: meldingAdressen('MELDINGEN_DOSSIER') },
+    meldingen: { digest: meldingAdressen('MELDINGEN_DIGEST'), feedback: meldingAdressen('MELDINGEN_FEEDBACK') },
     healthcheckUrl: process.env.HEALTHCHECK_URL ?? null,
     staging: (process.env.STAGING ?? '').trim() !== '',
   };

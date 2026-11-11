@@ -92,14 +92,50 @@ describe('dossiers', () => {
     expect((await beheerder.json('GET', `/api/dossiers/${id}`)).dossier.data.wensen).toBe('Regenton bij de schuur');
   });
 
-  it("mails the dossier recipients when a klusser taps Klaar voor controle, but not when an admin does", async () => {
+  it("mails the dossier's eigenaar when a klusser taps Klaar voor controle, but not when an admin does", async () => {
     const id = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
     await klusser.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
-    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['dossier@example.org', 'Plan van Aanpak klaar voor controle: Walstraat 74, Deventer (Kees Klus)']]);
+    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['bea.beheer@example.org', 'Plan van Aanpak klaar voor controle: Walstraat 74, Deventer (Kees Klus)']]);
     const id2 = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id2}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
     expect(t.mailer.verstuurd).toHaveLength(1);
+  });
+
+  describe('eigenaar', () => {
+    let annaId: number;
+    beforeEach(() => {
+      annaId = maakGebruiker(t, 'Anna Admin', 'beheerder');
+    });
+
+    it('starts as the creator, and once changed the next melding goes to the new eigenaar, logged in Alle activiteit', async () => {
+      const id = await nieuwDossier();
+      const { dossier } = await beheerder.json('GET', `/api/dossiers/${id}`);
+      expect(dossier.eigenaar_id).toBe(dossier.created_by);
+      expect((await beheerder.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: annaId })).dossier.eigenaar_id).toBe(annaId);
+      await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
+      await klusser.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
+      expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['anna.admin@example.org']);
+      const { items } = await beheerder.json('GET', `/api/dossiers/${id}/activiteit`);
+      expect(items.find((i: { type: string }) => i.type === 'eigenaar_gewijzigd').payload).toEqual({ van: 'Bea Beheer', naar: 'Anna Admin' });
+    });
+
+    it('accepts only an active beheerder, and only from a beheerder', async () => {
+      const id = await nieuwDossier();
+      expect((await beheerder.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: klusserId }, 400)).fout).toBe('Kies een actieve beheerder.');
+      await beheerder.json('POST', `/api/gebruikers/${annaId}/archiveren`);
+      expect((await beheerder.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: annaId }, 400)).fout).toBe('Kies een actieve beheerder.');
+      await klusser.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: klusserId }, 403);
+    });
+
+    it('refuses to archive or demote an admin who is still eigenaar of an open dossier, and allows it once the dossier is closed', async () => {
+      const id = await nieuwDossier();
+      await beheerder.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: annaId });
+      expect((await beheerder.json('POST', `/api/gebruikers/${annaId}/archiveren`, undefined, 409)).fout).toBe('Anna Admin is nog eigenaar van 1 open dossier. Kies daar eerst een andere eigenaar.');
+      await beheerder.json('PATCH', `/api/gebruikers/${annaId}`, { naam: 'Anna Admin', email: 'anna.admin@example.org', telefoon: '', rol: 'klusser' }, 409);
+      await beheerder.json('POST', `/api/dossiers/${id}/sluiten`, { reden: 'Bewoner afgehaakt', toelichting: '' });
+      expect((await beheerder.json('POST', `/api/gebruikers/${annaId}/archiveren`)).gebruiker.archived_at).not.toBeNull();
+    });
   });
 
   it('merges autosaves by the same person within the hour into one activity item, keeping the first old value', async () => {
@@ -194,14 +230,14 @@ describe('e-mail', () => {
     expect(t.pdfs[0]).toContain('Walstraat 74');
   });
 
-  it('records a failed send in red, alerts the admins and answers 502', async () => {
+  it("records a failed send in red, alerts the dossier's eigenaar and answers 502", async () => {
     const id = await nieuwDossier();
     t.mailer.faalVoor = 'anna@example.org';
     const res = await beheerder.json('POST', `/api/dossiers/${id}/mail/subsidie_huur`, { aan: 'anna@example.org', onderwerp: 'Subsidie', tekst: 'Hallo' }, 502);
     expect(res.fout).toMatch(/kon niet worden verstuurd/);
     const { dossier } = await beheerder.json('GET', `/api/dossiers/${id}`);
     expect(dossier.verzendingen[0].mislukt_at).not.toBeNull();
-    expect(t.mailer.verstuurd.map((m) => m.onderwerp)).toEqual(['E-mail niet afgeleverd: Subsidie aan anna@example.org']);
+    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['bea.beheer@example.org', 'E-mail niet afgeleverd: Subsidie aan anna@example.org']]);
   });
 });
 

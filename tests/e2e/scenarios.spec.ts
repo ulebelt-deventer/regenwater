@@ -134,7 +134,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await expect(page.locator(`table .qa-dossier-${id} .qa-opdracht-aan-zet`)).toHaveCount(1);
   await bezoek(page, id);
   await plan(page, id);
-  expect(await laatsteMail(page)).toMatchObject({ aan: 'meldingen@example.org' });
+  expect(await laatsteMail(page)).toMatchObject({ aan: BEHEERDER.email });
   await page.reload();
   await expect(page.locator('.qa-klaar-voor-controle')).toHaveCount(0);
   await expect(veld(page, 'beoordeling').locator('.qa-optie-uitvoerbaar')).toBeDisabled();

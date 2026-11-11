@@ -175,7 +175,7 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
     audit(ctx, actorVan(c), null, 'feedback', { id: Number(lastInsertRowid), scherm });
     const onderwerp = `Feedback van ${ik.naam}`;
     const inhoud = `${ik.naam} (${ik.email}) op ${ctx.config.basisUrl}${scherm}:\n\n${tekst}\n\nAlle feedback: ${ctx.config.basisUrl}/beheer/feedback`;
-    await melding(ctx, 'feedback', onderwerp, inhoud, null);
+    await melding(ctx, 'feedback', onderwerp, inhoud);
     return c.json({ ok: true }, 201);
   });
 

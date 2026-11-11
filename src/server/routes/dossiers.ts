@@ -13,7 +13,7 @@ import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../co
 import { SORTERINGEN, csvExport, filter, leesFilters, lijstRij, sorteer } from '../lijst.ts';
 import { fotoPad } from '../fotos.ts';
 import { log } from '../log.ts';
-import { dossierLink, melding } from '../meldingen.ts';
+import { dossierLink, dossierMelding } from '../meldingen.ts';
 import { suggesties, zoekAdres } from '../pdok.ts';
 import { gebruiker, gebruikersMap, laadDossier, laadDossiers, leesNormMm } from '../repo.ts';
 import { detecteerRiool } from '../riool.ts';
@@ -127,7 +127,8 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
       data[`materiaal.${id}.prijs`] = m.prijs;
     }
     if (ids.length) data.materialen = ids;
-    const r = ctx.db.prepare('INSERT INTO dossiers (created_at, created_by, data) VALUES (?, ?, ?)').run(ctx.klok.iso(), c.get('ik').id, JSON.stringify(data));
+    const ik = c.get('ik').id;
+    const r = ctx.db.prepare('INSERT INTO dossiers (created_at, created_by, eigenaar_id, data) VALUES (?, ?, ?, ?)').run(ctx.klok.iso(), ik, ik, JSON.stringify(data));
     const id = Number(r.lastInsertRowid);
     audit(ctx, actorVan(c), id, 'dossier_aangemaakt');
     return c.json({ id });
@@ -244,7 +245,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     // Only a klusser's own hand-off alerts the admins; an admin registering it (or acting as the klusser) already knows.
     if (c.get('actor').rol === 'klusser' && (m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
       const titel = m === 'klaar_voor_controle' ? 'Plan van Aanpak klaar voor controle' : 'Werk opgeleverd';
-      await melding(ctx, 'dossier', `${titel}: ${adresRegel(d)} (${ik.naam})`, `${ik.naam} heeft "${titel}" aangetikt voor ${adresRegel(d)}.\n\n${dossierLink(ctx, d.id)}`, d.id);
+      await dossierMelding(ctx, d, `${titel}: ${adresRegel(d)} (${ik.naam})`, `${ik.naam} heeft "${titel}" aangetikt voor ${adresRegel(d)}.\n\n${dossierLink(ctx, d.id)}`);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });
@@ -316,6 +317,19 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
       const gm = gebruikersMap(ctx.db);
       audit(ctx, actorVan(c), d.id, 'toegewezen', { rol, van: huidig === null ? null : gm.get(huidig)!.naam, naar: doel ? doel.naam : null });
     })();
+    return c.json({ dossier: laadDossier(ctx.db, d.id)! });
+  });
+
+  app.post('/api/dossiers/:id/eigenaar', async (c) => {
+    alleenBeheerder(c);
+    const d = haalDossier(ctx, c);
+    nietGesloten(d);
+    const b = await body<{ gebruiker_id: unknown }>(c);
+    const doel = typeof b.gebruiker_id === 'number' ? gebruiker(ctx.db, b.gebruiker_id) : null;
+    if (!doel || doel.archived_at || !isBeheerder(doel)) fout(400, 'Kies een actieve beheerder.');
+    if (doel.id === d.eigenaar_id) return c.json({ dossier: d });
+    ctx.db.prepare('UPDATE dossiers SET eigenaar_id = ? WHERE id = ?').run(doel.id, d.id);
+    audit(ctx, actorVan(c), d.id, 'eigenaar_gewijzigd', { van: gebruiker(ctx.db, d.eigenaar_id)!.naam, naar: doel.naam });
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });
 

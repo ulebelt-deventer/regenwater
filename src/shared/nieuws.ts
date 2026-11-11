@@ -9,6 +9,13 @@ export const NIEUWS: NieuwsDatum[] = [
     datum: '2026-11-11',
     groepen: [
       {
+        kop: 'Meldingen',
+        punten: [
+          'Elk dossier heeft nu een Eigenaar, onder Status. De e-mails over dat dossier (Klaar voor controle, Werk opgeleverd en E-mail niet afgeleverd) gaan alleen nog naar de eigenaar, niet meer naar een vaste lijst. Bestaande dossiers hebben als eigenaar de beheerder die ze heeft aangemaakt. Je kunt de eigenaar wijzigen in de keuzelijst.',
+          'Een beheerder die nog eigenaar is van open dossiers kun je niet archiveren of klusser maken. Kies bij die dossiers eerst een andere eigenaar.',
+        ],
+      },
+      {
         kop: 'Aandacht',
         punten: [
           'Is een rode melding bij een dossier niet relevant? Tik dan op het rode kruisje erachter: hij komt bij dat dossier niet meer terug. Dat kan bij elke regel in de rode balk bovenaan het dossier en bij Er is nog geen dak (of tuin) ingetekend op de Bezoekpagina. Het kruisje rechtsboven in de rode balk verbergt alle regels tegelijk; nieuwe meldingen zie je daarna gewoon weer. Terugzetten kan niet.',

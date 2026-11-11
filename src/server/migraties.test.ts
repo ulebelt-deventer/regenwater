@@ -186,3 +186,20 @@ describe('the normafvoeren table', () => {
     expect(db.prepare('SELECT normafvoer_at IS NOT NULL AS vast FROM dossiers ORDER BY id').pluck().all()).toEqual([0, 1, 1]);
   });
 });
+
+describe('the dossier eigenaar', () => {
+  it('starts as the beheerder who created the dossier', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes('ADD COLUMN eigenaar_id'));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (2, 'Bea', 'bea@example.org', 'beheerder', ?)").run(T);
+    db.prepare('INSERT INTO dossiers (id, created_at, created_by) VALUES (1, ?, 1)').run(T);
+    db.prepare('INSERT INTO dossiers (id, created_at, created_by) VALUES (2, ?, 2)').run(T);
+
+    migreer(db);
+
+    expect(db.prepare('SELECT id, eigenaar_id FROM dossiers ORDER BY id').all()).toEqual([{ id: 1, eigenaar_id: 1 }, { id: 2, eigenaar_id: 2 }]);
+  });
+});

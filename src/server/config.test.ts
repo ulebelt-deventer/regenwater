@@ -24,7 +24,6 @@ function stubProductie(): void {
   vi.stubEnv('MAIL_AFZENDER', 'Test <test@mg.example.org>');
   vi.stubEnv('MELDINGEN_DIGEST', 'a@example.org');
   vi.stubEnv('MELDINGEN_FEEDBACK', 'b@example.org');
-  vi.stubEnv('MELDINGEN_DOSSIER', 'c@example.org');
 }
 
 describe('MELDINGEN_*', () => {
@@ -33,7 +32,7 @@ describe('MELDINGEN_*', () => {
 
   it('reads a separate list per soort, trimming spaces around the commas', () => {
     vi.stubEnv('MELDINGEN_DIGEST', 'a@example.org, b@example.org ,c@example.org');
-    expect(leesConfig().meldingen).toEqual({ digest: ['a@example.org', 'b@example.org', 'c@example.org'], feedback: ['b@example.org'], dossier: ['c@example.org'] });
+    expect(leesConfig().meldingen).toEqual({ digest: ['a@example.org', 'b@example.org', 'c@example.org'], feedback: ['b@example.org'] });
   });
 
   it('refuses to start in production when a list is missing or holds an invalid address', () => {
