@@ -242,8 +242,8 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     audit(ctx, actorVan(c), d.id, 'mijlpaal', { mijlpaal: m, aan: true });
     // The opening's own request can get lost on a bad connection on site.
     if (m === 'bezoek_afgerond') zetNormVast(ctx, c, d);
-    // Only a klusser's own hand-off alerts the admins; an admin registering it (or acting as the klusser) already knows.
-    if (c.get('actor').rol === 'klusser' && (m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
+    // Only a klusser's hand-off alerts the admins; an admin registering it themselves already knows. "Inloggen als" counts as the klusser, so it can be tested.
+    if (ik.rol === 'klusser' &&(m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
       const titel = m === 'klaar_voor_controle' ? 'Plan van Aanpak klaar voor controle' : 'Werk opgeleverd';
       await dossierMelding(ctx, d, `${titel}: ${adresRegel(d)} (${ik.naam})`, `${ik.naam} heeft "${titel}" aangetikt voor ${adresRegel(d)}.\n\n${dossierLink(ctx, d.id)}`);
     }

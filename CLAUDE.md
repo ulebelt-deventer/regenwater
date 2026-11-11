@@ -1,5 +1,9 @@
 # Project instructions
 
+## Inloggen als
+
+"Inloggen als" exists to check that the app behaves for a klusser exactly as it does for that klusser. When deciding whether to send a melding or other standard alert email, decide on the impersonated user (`ik`), never on whether someone is impersonating (`actor`). Impersonation stays visible only in the audit trail.
+
 ## Wat is er nieuw
 
 When a change is a significant enough addition or change to the workflow to be worth calling attention to, add a bullet to `src/shared/nieuws.ts`, which feeds the admin-only "Wat is er nieuw" page (Beheer menu, `/beheer/nieuw`). The test is significance, not whether the change is noticeable when clicking around: a bullet is most necessary for invisible changes, but a visible change gets one too when it is significant enough, such as a new step, field group or photo slot. The admins' time is the cost; small changes get no bullet, and a short list gets read.
@@ -19,6 +23,7 @@ Leave out:
 - Changes to help and explanation pages: people read them when they need them.
 - Prompts and dialog options that explain themselves when they appear (a "vervangen?" question, an Annuleren button).
 - Reassurance that existing data was migrated or still shows. If nobody has to act, don't mention it.
+- Edge cases in the admins' day-to-day work and changes to troubleshooting tools such as Inloggen als, even when a rule changed. The test is whether it changes how the team works most days.
 
 When unsure, leave it out and name it in your summary so I can decide.
 

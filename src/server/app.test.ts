@@ -102,6 +102,14 @@ describe('dossiers', () => {
     expect(t.mailer.verstuurd).toHaveLength(1);
   });
 
+  it('mails the eigenaar just the same when an admin taps Klaar voor controle while "Inloggen als" the klusser', async () => {
+    const id = await nieuwDossier();
+    await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
+    await beheerder.json('POST', `/api/auth/als/${klusserId}`);
+    await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
+    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['bea.beheer@example.org', 'Plan van Aanpak klaar voor controle: Walstraat 74, Deventer (Kees Klus)']]);
+  });
+
   describe('eigenaar', () => {
     let annaId: number;
     beforeEach(() => {
