@@ -98,12 +98,17 @@ async function plaatje(ctx: Ctx, url: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
+// PDOK's kadastrale kaart comes back empty finer than about 0.028 m per pixel (1:100), although its capabilities say 1:50 and it ignores DPI hints.
+const KADASTER_MIN_M_PER_PX = 0.03;
+
 // The cadastral parcel lines, labels and buildings for exactly this RD box, drawn over the aerial photo, or on white for `kaart`.
 export async function luchtfoto(ctx: Ctx, bbox: Bbox, w: number, h: number, kaart: boolean): Promise<Buffer> {
   const { default: sharp } = await import('sharp');
-  const lijnen = wmsUrl(KADASTER_WMS, 'Perceel,KadastraleGrens,Bebouwing,Label', bbox, w, h, 'image/png', !kaart);
-  if (kaart) return sharp(await plaatje(ctx, lijnen)).flatten({ background: '#ffffff' }).jpeg({ quality: 85 }).toBuffer();
-  const [foto, kadaster] = await Promise.all([plaatje(ctx, wmsUrl(LUCHTFOTO_WMS, 'Actueel_orthoHR', bbox, w, h, 'image/jpeg', false)), plaatje(ctx, lijnen)]);
+  const f = Math.min(1, (bbox[2] - bbox[0]) / w / KADASTER_MIN_M_PER_PX);
+  const lijnenUrl = wmsUrl(KADASTER_WMS, 'Perceel,KadastraleGrens,Bebouwing,Label', bbox, Math.round(w * f), Math.round(h * f), 'image/png', !kaart);
+  const lijnen = async () => sharp(await plaatje(ctx, lijnenUrl)).resize(w, h, { fit: 'fill' }).png().toBuffer();
+  if (kaart) return sharp(await lijnen()).flatten({ background: '#ffffff' }).jpeg({ quality: 85 }).toBuffer();
+  const [foto, kadaster] = await Promise.all([plaatje(ctx, wmsUrl(LUCHTFOTO_WMS, 'Actueel_orthoHR', bbox, w, h, 'image/jpeg', false)), lijnen()]);
   return sharp(foto).composite([{ input: kadaster }]).jpeg({ quality: 85 }).toBuffer();
 }
 

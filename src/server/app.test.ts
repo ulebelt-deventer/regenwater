@@ -265,19 +265,41 @@ describe('documents', () => {
       return { id, m2 };
     };
 
-    it('totals the listed materials excl. btw with the caveat for a koopwoning, and is absent for a huurwoning', async () => {
+    const afkoppelen = async (id: number, waarden: string[]) => {
+      await zet(id, 'kaart_annotaties', waarden.map((_, i) => ({ id: `r${i}`, type: 'regenpijp', p: [[i, i]] })));
+      for (const [i, w] of waarden.entries()) await zet(id, `regenpijp.r${i}.afkoppelen`, w);
+    };
+    const totalen = (html: string) => [...html.matchAll(/qa-pdf-totaal-incl[^>]*>([^<]*)</g)].map((m) => m[1]);
+
+    it('totals the materials excl. and incl. btw with the no-guarantee caveat for a koopwoning, and is absent for a huurwoning', async () => {
       const koop = await plan((await metMaterialen('koop')).id);
-      expect(koop).toMatch(/qa-pdf-kosteninschatting.*Kosteninschatting.*€ 110,00.*excl\. btw/);
-      expect(koop).toContain('Dit is een inschatting; de werkelijke kosten kunnen afwijken.');
+      expect(koop).toMatch(/qa-pdf-kosteninschatting.*Kosteninschatting.*Zelf uitvoeren.*€ 110,00.*btw 21%.*€ 23,10/);
+      expect(totalen(koop)).toEqual(['€ 133,10']);
+      expect(koop).toContain('Dit is een prijsinschatting en geen garantie voor de uiteindelijke kosten.');
+      expect(koop).not.toContain('Met de Klussendienst');
       expect(koop).not.toContain('qa-pdf-zonder-prijs');
-      const huur = await plan((await metMaterialen('huur')).id);
+      const huurId = (await metMaterialen('huur')).id;
+      await afkoppelen(huurId, ['ja']);
+      const huur = await plan(huurId);
       expect(huur).toContain('Materialenlijst');
       expect(huur).not.toContain('Kosteninschatting');
-      expect(huur).not.toContain('€ 110,00');
+      expect(huur).not.toContain('€');
     });
 
-    it('leaves out a koopwoning without materials', async () => {
-      expect(await plan(await nieuwDossier('koop'))).not.toContain('Kosteninschatting');
+    it('sets the Klussendienst per regenpijp to afkoppelen beside doing it yourself', async () => {
+      const { id } = await metMaterialen('koop');
+      await afkoppelen(id, ['ja', 'nee', 'ja']);
+      const html = await plan(id);
+      expect(html).toMatch(/Zelf uitvoeren.*Met de Klussendienst/);
+      expect(html).toMatch(/qa-pdf-klussendienst.*Klussendienst: 2 regenpijpen afkoppelen × € 50,00.*--.*€ 100,00/);
+      expect(totalen(html)).toEqual(['€ 133,10', '€ 254,10']);
+    });
+
+    it('leaves out a koopwoning without materials or a regenpijp to afkoppelen, and shows the Klussendienst alone without materials', async () => {
+      const id = await nieuwDossier('koop');
+      expect(await plan(id)).not.toContain('Kosteninschatting');
+      await afkoppelen(id, ['ja']);
+      expect(totalen(await plan(id))).toEqual(['€ 0,00', '€ 60,50']);
     });
 
     it('names a listed material without a price, which the total leaves out', async () => {

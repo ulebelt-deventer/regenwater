@@ -1,7 +1,8 @@
 import { For, type JSX, Show } from 'solid-js';
-import { DOORLAATBAARHEID } from '../../shared/constants.ts';
+import { BTW_PROCENT, DOORLAATBAARHEID, KLUSSENDIENST_PER_REGENPIJP_CENT } from '../../shared/constants.ts';
 import { euro, kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, verdelingTekst, waterberging } from '../../shared/kaart.ts';
+import { btwOver, klussendienstKosten } from '../../shared/specificatie.ts';
 import { eigenaar, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { BEOORDELINGEN, materiaalRijen, materiaalTotaal, opsommingRegels, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
@@ -35,21 +36,58 @@ function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.
   );
 }
 
-// Only for a koopwoning: a huurwoning's plan carries no prices.
+// Only for a koopwoning: a huurwoning's plan carries no prices. The bewoner chooses between doing the work themselves
+// and the Klussendienst, so each gets its own column; without a regenpijp to afkoppelen there is no Klussendienst column.
 function Kosteninschatting(props: { doc: Doc }): JSX.Element {
   const rijen = () => getoondeMaterialen(props.doc.d, 'materialen');
   const zonderPrijs = () => rijen().filter((r) => r.prijs === null).map((r) => r.naam.trim());
+  const materiaal = () => materiaalTotaal(rijen());
+  const klussendienst = () => klussendienstKosten(props.doc.d);
+  const kolommen = () => {
+    const zelf = { kop: 'Zelf uitvoeren', klussendienst: null, excl: materiaal() };
+    const metKlussendienst = { kop: 'Met de Klussendienst', klussendienst: klussendienst().bedrag, excl: materiaal() + klussendienst().bedrag };
+    return klussendienst().pijpen > 0 ? [zelf, metKlussendienst] : [zelf];
+  };
   return (
-    <Show when={props.doc.d.huur_koop === 'koop' && rijen().length > 0}>
+    <Show when={props.doc.d.huur_koop === 'koop' && (rijen().length > 0 || klussendienst().pijpen > 0)}>
       <div class="qa-pdf-kosteninschatting">
         <h3>Kosteninschatting</h3>
-        <p>
-          Totaalprijs materiaal: <strong>{euro(materiaalTotaal(rijen()))}</strong> excl. btw
-        </p>
+        <table class="tabel">
+          <thead>
+            <tr>
+              <th />
+              <For each={kolommen()}>{(k) => <th class="getal">{k.kop}</th>}</For>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Materiaal</td>
+              <For each={kolommen()}>{() => <td class="getal">{euro(materiaal())}</td>}</For>
+            </tr>
+            <Show when={klussendienst().pijpen > 0}>
+              <tr class="qa-pdf-klussendienst">
+                <td>{`Klussendienst: ${klussendienst().pijpen} ${klussendienst().pijpen === 1 ? 'regenpijp' : 'regenpijpen'} afkoppelen × ${euro(KLUSSENDIENST_PER_REGENPIJP_CENT)}`}</td>
+                <For each={kolommen()}>{(k) => <td class="getal">{k.klussendienst === null ? '--' : euro(k.klussendienst)}</td>}</For>
+              </tr>
+            </Show>
+            <tr>
+              <td>Totaal excl. btw</td>
+              <For each={kolommen()}>{(k) => <td class="getal">{euro(k.excl)}</td>}</For>
+            </tr>
+            <tr>
+              <td>{`btw ${BTW_PROCENT}%`}</td>
+              <For each={kolommen()}>{(k) => <td class="getal">{euro(btwOver(k.excl))}</td>}</For>
+            </tr>
+            <tr>
+              <th>Totaal incl. btw</th>
+              <For each={kolommen()}>{(k) => <th class="getal qa-pdf-totaal-incl">{euro(k.excl + btwOver(k.excl))}</th>}</For>
+            </tr>
+          </tbody>
+        </table>
         <Show when={zonderPrijs().length > 0}>
           <p class="qa-pdf-zonder-prijs">{`Nog zonder prijs, dus niet meegeteld: ${zonderPrijs().join(', ')}.`}</p>
         </Show>
-        <p class="klein">Dit is een inschatting; de werkelijke kosten kunnen afwijken.</p>
+        <p class="klein qa-pdf-geen-garantie">Dit is een prijsinschatting en geen garantie voor de uiteindelijke kosten. De werkelijke kosten kunnen hoger of lager uitvallen.</p>
       </div>
     </Show>
   );

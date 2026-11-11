@@ -6,6 +6,17 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-11-11',
+    groepen: [
+      {
+        kop: 'Plan van Aanpak',
+        punten: [
+          'Bij koopwoningen zet de Kosteninschatting in het Plan van Aanpak nu Zelf uitvoeren en Met de Klussendienst naast elkaar, zodat de bewoner kan kiezen. De Klussendienst telt € 50 per regenpijp die wordt afgekoppeld. Beide tonen het totaal excl. en incl. btw, en eronder staat dat het een prijsinschatting is en geen garantie voor de uiteindelijke kosten.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-11-06',
     groepen: [
       {

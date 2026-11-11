@@ -349,7 +349,8 @@
     - Wensen van de bewoner, then Andere foto’s if there are any.
     - Voorstel Ulebelt: the Beoordeling sentence, Toelichting, fixed lead-in line, werkzaamheden bullets.
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.
-  - **5. Materialenlijst**: the rows with an Aantal, listing Materiaal and Aantal only. Prices are left out, as in the sample (see team question).
+  - **5. Materialenlijst**: the rows with an Aantal, listing Materiaal and Aantal only.
+    - Kosteninschatting, koopwoning only (a huurwoning's Plan carries no prices at all): a "Zelf uitvoeren" column with the materiaal total, and a "Met de Klussendienst" column adding "Klussendienst: {n} regenpijpen afkoppelen × € 50,00" (n as in the Uitvoeringsspecificatie, column left out when n is 0). Each gives Totaal excl. btw, btw 21% and Totaal incl. btw. Listed materials without a price are named as not counted, and a closing line says it is a prijsinschatting, not a guarantee of the final costs.
   - **Bijlage**: in two columns, the boorprofiel image (left) and the standard "Doorlaatbaarheid per grondsoort" table, rendered as text from a constant in code (transcribed from the sample):
 
     | Grondsoort | Doorlaatbaarheid |

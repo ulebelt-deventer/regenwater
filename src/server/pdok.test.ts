@@ -149,17 +149,17 @@ describe('dichtsteBoring', () => {
 });
 
 describe('luchtfoto', () => {
-  // Answers the luchtfoto with green and the kadaster lines with a transparent PNG, or a red one when not asked for transparency.
+  // Answers at the requested size: the luchtfoto in green, the kadaster lines as a transparent PNG, or a red one when not asked for transparency.
   async function wms() {
     const verzoeken: URL[] = [];
-    const groen = await sharp({ create: { width: 4, height: 4, channels: 3, background: '#00ff00' } }).jpeg().toBuffer();
-    const doorzichtig = await sharp({ create: { width: 4, height: 4, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).png().toBuffer();
-    const rood = await sharp({ create: { width: 4, height: 4, channels: 3, background: '#ff0000' } }).png().toBuffer();
     const haal = async (invoer: string | URL | Request) => {
       const u = new URL(String(invoer));
       verzoeken.push(u);
-      const beeld = u.pathname.includes('luchtfotorgb') ? groen : u.searchParams.get('TRANSPARENT') === 'true' ? doorzichtig : rood;
-      return new Response(new Uint8Array(beeld), { headers: { 'content-type': u.pathname.includes('luchtfotorgb') ? 'image/jpeg' : 'image/png' } });
+      const foto = u.pathname.includes('luchtfotorgb');
+      const background = foto ? '#00ff00' : u.searchParams.get('TRANSPARENT') === 'true' ? { r: 0, g: 0, b: 0, alpha: 0 } : '#ff0000';
+      const vlak = sharp({ create: { width: Number(u.searchParams.get('WIDTH')), height: Number(u.searchParams.get('HEIGHT')), channels: 4, background } });
+      const beeld = await (foto ? vlak.jpeg() : vlak.png()).toBuffer();
+      return new Response(new Uint8Array(beeld), { headers: { 'content-type': foto ? 'image/jpeg' : 'image/png' } });
     };
     return { ctx: { haal } as unknown as Ctx, verzoeken };
   }
@@ -176,5 +176,17 @@ describe('luchtfoto', () => {
     const { ctx, verzoeken } = await wms();
     expect(await kleur(await luchtfoto(ctx, BBOX, 4, 4, true))).toMatch(/^2\d\d,\d,\d$/);
     expect(diensten(verzoeken)).toEqual(['kadaster Perceel,KadastraleGrens,Bebouwing,Label transparent=null']);
+  });
+
+  it('asks for the kadaster lines no finer than PDOK draws them and scales them up to the full size', async () => {
+    const klein: [number, number, number, number] = [207900, 474100, 207945, 474145];
+    for (const kaart of [false, true]) {
+      const { ctx, verzoeken } = await wms();
+      const { width, height } = await sharp(await luchtfoto(ctx, klein, 2400, 2400, kaart)).metadata();
+      expect([width, height]).toEqual([2400, 2400]);
+      const lijnen = verzoeken.find((u) => u.pathname.includes('kadastralekaart'))!;
+      expect(45 / Number(lijnen.searchParams.get('WIDTH'))).toBeGreaterThanOrEqual(0.028);
+      expect(45 / Number(lijnen.searchParams.get('HEIGHT'))).toBeGreaterThanOrEqual(0.028);
+    }
   });
 });

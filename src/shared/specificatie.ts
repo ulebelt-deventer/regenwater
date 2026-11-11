@@ -42,13 +42,20 @@ export function specificatie(d: Dossier): Specificatie {
       return { naam, aantal: r.aantal!, prijs: r.prijs, bedrag: r.prijs === null ? null : Math.round(r.prijs * r.aantal!) };
     });
   // The Klussendienst counts for huur and koop alike.
-  const pijpen = kaartItems(d).regenpijpen.filter((p) => str(d, `regenpijp.${p.id}.afkoppelen`) === 'ja').length;
-  if (pijpen === 0) waarschuwingen.push('Geen enkele regenpijp staat op "Afkoppelen: Ja" bij het Bezoek, dus de Klussendienst telt als € 0.');
-  const klussendienst = { pijpen, bedrag: pijpen * KLUSSENDIENST_PER_REGENPIJP_CENT };
+  const klussendienst = klussendienstKosten(d);
+  if (klussendienst.pijpen === 0) waarschuwingen.push('Geen enkele regenpijp staat op "Afkoppelen: Ja" bij het Bezoek, dus de Klussendienst telt als € 0.');
   const subtotaal = regels.reduce((s, r) => s + (r.bedrag ?? 0), 0) + klussendienst.bedrag;
-  const btw = Math.round((subtotaal * BTW_PROCENT) / 100);
+  const btw = btwOver(subtotaal);
   return { regels, klussendienst, subtotaal, btw, totaal: subtotaal + btw, waarschuwingen };
 }
+
+// The Plan's Kosteninschatting uses this too, so both documents name the same Klussendienst price.
+export function klussendienstKosten(d: Dossier): { pijpen: number; bedrag: number } {
+  const pijpen = kaartItems(d).regenpijpen.filter((p) => str(d, `regenpijp.${p.id}.afkoppelen`) === 'ja').length;
+  return { pijpen, bedrag: pijpen * KLUSSENDIENST_PER_REGENPIJP_CENT };
+}
+
+export const btwOver = (cent: number): number => Math.round((cent * BTW_PROCENT) / 100);
 
 // Every detail labelled: the factuur may go to the gemeente for the subsidie rather than to the bewoner.
 export function specificatieKop(d: Dossier, uitvoerder: string | null): [string, string | null][] {
