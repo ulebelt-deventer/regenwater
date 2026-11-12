@@ -23,6 +23,7 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
   const def = sjabloonDef(untrack(() => props.sjabloon));
   const [data] = createResource(() => get<MailData>(`/api/dossiers/${s.id}/mail/${props.sjabloon}`));
   const [aan, setAan] = createSignal<string | null>(null);
+  const [cc, setCc] = createSignal('');
   const [onderwerp, setOnderwerp] = createSignal<string | null>(null);
   const [tekst, setTekst] = createSignal<string | null>(null);
   const [bezig, setBezig] = createSignal(false);
@@ -52,7 +53,7 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
     setBezig(true);
     setFout(null);
     try {
-      const r = await post<{ dossier: Dossier }>(`/api/dossiers/${s.id}/mail/${props.sjabloon}`, { aan: waarde(aan(), m.aan), onderwerp: waarde(onderwerp(), m.onderwerp), tekst: waarde(tekst(), m.tekst), handmatig });
+      const r = await post<{ dossier: Dossier }>(`/api/dossiers/${s.id}/mail/${props.sjabloon}`, { aan: waarde(aan(), m.aan), cc: cc(), onderwerp: waarde(onderwerp(), m.onderwerp), tekst: waarde(tekst(), m.tekst), handmatig });
       s.vervang(r.dossier);
       melding('success', handmatig ? 'Gemarkeerd als handmatig verstuurd.' : 'E-mail verstuurd.');
       props.onVerstuurd?.(r.dossier);
@@ -100,6 +101,10 @@ export function MailModal(props: { sjabloon: string; onSluit: () => void; onVers
             <div class="mb-2">
               <label class="form-label mb-0 small fw-semibold" for="mail-aan">Aan</label>
               <input id="mail-aan" type="email" class="form-control qa-mail-aan" value={waarde(aan(), m().aan)} onInput={(e) => setAan(e.currentTarget.value)} />
+              <Show when={def.ontvanger === 'corporatie'}>
+                <label class="form-label mb-0 mt-2 small fw-semibold" for="mail-cc">CC (optioneel)</label>
+                <input id="mail-cc" type="email" class="form-control qa-mail-cc" value={cc()} onInput={(e) => setCc(e.currentTarget.value)} />
+              </Show>
               <div class="form-text">Een kopie gaat naar jou ({m().cc}); antwoorden komen bij jou binnen.</div>
             </div>
             <div class="mb-2">

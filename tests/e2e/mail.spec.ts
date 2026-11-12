@@ -9,6 +9,7 @@ test('Handmatig verstuurd vraagt eerst bevestiging; annuleren markeert niets, be
   await page.locator('.qa-mail-subsidie_huur').click();
   const modal = page.locator('.qa-mail');
   await expect(modal.locator('.qa-mail-aan')).toBeVisible();
+  await expect(modal.locator('.qa-mail-cc')).toHaveCount(0);
 
   await modal.locator('.qa-mail-handmatig').click();
   await page.locator('.qa-bevestig .qa-nee').click();

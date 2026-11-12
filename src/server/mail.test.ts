@@ -88,6 +88,31 @@ describe('tags', () => {
   });
 });
 
+describe('extra CC', () => {
+  it('copies an extra address on both woningcorporatie mails, beside the sender, and records it', async () => {
+    const { dossier } = await stuur('plan_corporatie', { aan: 'ieder1@example.org', cc: ' wijk@example.org ' });
+    expect(t.mailer.verstuurd[0].cc).toBe('bea.beheer@example.org, wijk@example.org');
+    expect(dossier.verzendingen[0].cc).toBe('bea.beheer@example.org, wijk@example.org');
+    expect((await laatsteAudit()).payload).toMatchObject({ aan: 'ieder1@example.org', cc: 'wijk@example.org' });
+    await bea.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
+    await stuur('oplever_corporatie', { aan: 'ieder1@example.org', cc: 'wijk@example.org' });
+    expect(t.mailer.verstuurd[1].cc).toBe('bea.beheer@example.org, wijk@example.org');
+  });
+
+  it('copies only the sender when the CC is left empty', async () => {
+    await stuur('plan_corporatie', { aan: 'ieder1@example.org', cc: '  ' });
+    expect(t.mailer.verstuurd[0].cc).toBe('bea.beheer@example.org');
+    expect((await laatsteAudit()).payload).not.toHaveProperty('cc');
+  });
+
+  it('refuses an invalid CC, and any CC on a mail that is not to the woningcorporatie', async () => {
+    expect((await stuur('plan_corporatie', { cc: 'wijk@example' }, 400)).fout).toBe('Vul een geldig e-mailadres in bij CC.');
+    await stuur('plan_corporatie', { cc: 'a@b.nl, c@d.nl' }, 400);
+    expect((await stuur('plan_bewoner_huur', { cc: 'wijk@example.org' }, 400)).fout).toBe('Deze e-mail heeft geen CC.');
+    expect(t.mailer.verstuurd).toEqual([]);
+  });
+});
+
 describe('closed dossiers and the opleverrapport', () => {
   it('refuses ordinary mails on a closed dossier', async () => {
     await bea.json('POST', `/api/dossiers/${id}/sluiten`, { reden: 'Bewoner afgehaakt', toelichting: '' });

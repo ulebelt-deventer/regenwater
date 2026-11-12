@@ -67,8 +67,10 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
   await mail(page, 'plan_bewoner_huur');
   expect(await laatsteMail(page)).toMatchObject({ aan: 'bea@example.org', bijlagen: [PLAN_PDF] });
   await status(page, 'Plan controleren & versturen');
-  await mail(page, 'plan_corporatie');
-  expect(await laatsteMail(page)).toMatchObject({ aan: 'regenwater@ieder1.nl', onderwerp: `Verzoek toestemming afkoppeling ${ADRES}`, bijlagen: [PLAN_PDF] });
+  await page.locator('.qa-mail-plan_corporatie').click();
+  await page.locator('.qa-mail .qa-mail-cc').fill('wijkbeheer@ieder1.nl');
+  await verstuurMail(page);
+  expect(await laatsteMail(page)).toMatchObject({ aan: 'regenwater@ieder1.nl', cc: `${BEHEERDER.email}, wijkbeheer@ieder1.nl`, onderwerp: `Verzoek toestemming afkoppeling ${ADRES}`, bijlagen: [PLAN_PDF] });
   const pdf = await laatsteDocument(page);
   expect(pdf).toContain('Plan van Aanpak regenwater');
   expect(pdf).toContain('Bewoner: Bea Bewoner');

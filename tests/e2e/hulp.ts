@@ -48,6 +48,7 @@ export async function verschuifDagen(page: Page, dagen: number): Promise<void> {
 
 export interface Email {
   aan: string;
+  cc: string | null;
   onderwerp: string;
   tekst: string;
   bijlagen: string[];

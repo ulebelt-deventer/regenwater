@@ -136,7 +136,7 @@ function samenvatting(item: AuditItem): JSX.Element {
   };
   const mail = () => (
     <>
-      {sjabloonNaam(p().sjabloon)} aan {s(p().aan)}: “{s(p().onderwerp)}”{' '}
+      {sjabloonNaam(p().sjabloon)} aan {s(p().aan)}{p().cc ? `, cc ${s(p().cc)}` : ''}: “{s(p().onderwerp)}”{' '}
       <Inklapbaar label="Tekst tonen">
         <div class="small border rounded p-2 mt-1 pre-wrap bg-body-tertiary">{s(p().tekst)}</div>
       </Inklapbaar>

@@ -95,16 +95,20 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (def.bijlage === 'opleverrapport' && !d.werk_opgeleverd_at) fout(409, 'Het werk is nog niet opgeleverd.');
     const b = await body<Record<string, unknown>>(c);
     const aan = typeof b.aan === 'string' ? b.aan.trim() : '';
+    // An extra CC beside the sender's own copy, for the woningcorporatie mails only.
+    const extraCc = typeof b.cc === 'string' ? b.cc.trim() : '';
     const onderwerp = typeof b.onderwerp === 'string' ? b.onderwerp.trim() : '';
     const tekst = typeof b.tekst === 'string' ? b.tekst : '';
     const handmatig = b.handmatig === true;
     if (!EMAIL_RE.test(aan)) fout(400, 'Vul een geldig e-mailadres in bij Aan.');
+    if (extraCc && def.ontvanger !== 'corporatie') fout(400, 'Deze e-mail heeft geen CC.');
+    if (extraCc && !EMAIL_RE.test(extraCc)) fout(400, 'Vul een geldig e-mailadres in bij CC.');
     if (!onderwerp || !tekst.trim()) fout(400, 'Onderwerp en tekst mogen niet leeg zijn.');
     const afzender = c.get('actor');
     const waarden = tagWaarden(ctx, d, afzender);
     // A klusser's dossier link carries their address in the href only, so a logged-out tap prefills the login form.
     const html = def.ontvanger === 'bezoeker' || def.ontvanger === 'uitvoerder' ? tekstNaarHtml(tekst, { [waarden.link]: `${waarden.link}?email=${encodeURIComponent(aan)}` }) : undefined;
-    const bericht = { aan, cc: afzender.email, replyTo: afzender.email, onderwerp, tekst, html };
+    const bericht = { aan, cc: extraCc ? `${afzender.email}, ${extraCc}` : afzender.email, replyTo: afzender.email, onderwerp, tekst, html };
     const ontbrekend = ontbrekendeWaarden(def, waarden, onderwerp, tekst);
     const nu = ctx.klok.iso();
     const opslaan = ctx.db.prepare(
@@ -120,9 +124,9 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
         log.warn(`e-mail niet afgeleverd: ${bericht.onderwerp} aan ${aan}: ${mislukt}`);
       }
     }
-    opslaan.run(d.id, def.key, def.ontvanger, aan, handmatig ? null : afzender.email, bericht.onderwerp, bericht.tekst, handmatig ? 1 : 0, mislukt ? nu : null, mislukt, nu, afzender.id);
+    opslaan.run(d.id, def.key, def.ontvanger, aan, handmatig ? null : bericht.cc, bericht.onderwerp, bericht.tekst, handmatig ? 1 : 0, mislukt ? nu : null, mislukt, nu, afzender.id);
     audit(ctx, actorVan(c), d.id, handmatig ? 'handmatig_verstuurd' : mislukt ? 'email_mislukt' : 'email_verstuurd', {
-      sjabloon: def.key, aan, onderwerp: bericht.onderwerp, tekst: bericht.tekst, tag_problemen: ontbrekend.length > 0,
+      sjabloon: def.key, aan, ...(extraCc && !handmatig ? { cc: extraCc } : {}), onderwerp: bericht.onderwerp, tekst: bericht.tekst, tag_problemen: ontbrekend.length > 0,
     });
     if (mislukt) {
       dossierMelding(ctx, d, 'mail_mislukt', `E-mail niet afgeleverd aan ${aan}. Foutmelding: ${foutmelding(mislukt)}`);
