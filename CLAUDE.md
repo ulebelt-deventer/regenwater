@@ -1,5 +1,9 @@
 # Project instructions
 
+## No real names
+
+This repo will be public. Never put a real person's name or contact details (team members, bewoners, klussers, corporatie staff) in tracked files or commit messages, including `nieuws.ts`, tests, docs and comments: refer to them by role ("de beheerders", "de bewoner"). Test fixtures use invented names and `example.org` addresses. Real names belong only in gitignored files (`devops/*.env`, `TODO.md`, `_files/`).
+
 ## Inloggen als
 
 "Inloggen als" exists to check that the app behaves for a klusser exactly as it does for that klusser. When deciding whether to send a melding or other standard alert email, decide on the impersonated user (`ik`), never on whether someone is impersonating (`actor`). Impersonation stays visible only in the audit trail.
