@@ -4,7 +4,7 @@ import { datum, euro } from '../../shared/datum.ts';
 import { type Regenpijp, bronnenTekst, getal, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { materiaalRijen, materiaalTotaal, opsommingRegels, veldTekst, veldVoor, veldZichtbaar } from '../../shared/velden.ts';
+import { materiaalRijen, materiaalTotaal, nietOpRiool, opsommingRegels, veldTekst, veldVoor, veldZichtbaar } from '../../shared/velden.ts';
 import { FotoDuimen } from './fotos.tsx';
 import { useDossier } from './staat.ts';
 import { Regel } from './velden.tsx';
@@ -122,14 +122,16 @@ function RegenpijpRegel(props: { pijp: Regenpijp }) {
   const k = (veld: string) => `regenpijp.${props.pijp.id}.${veld}`;
   const items = () => kaartItems(s.d);
   const kort = () => {
+    const afkoppelen = veldTekst(s.d, k('afkoppelen')) && `Afkoppelen: ${veldTekst(s.d, k('afkoppelen'))}`;
+    if (!nietOpRiool(s.d, props.pijp.id)) return afkoppelen;
     const w = waterberging(props.pijp, items().daken, s.d.normafvoer.mm);
     const delen = [
+      afkoppelen,
       props.pijp.bronnen.length ? `van ${bronnenTekst(props.pijp, items().labels)}` : 'aan geen dak gekoppeld',
       w && `${w.liter} liter waterberging`,
       veldTekst(s.d, k('soort')),
       veldTekst(s.d, k('diameter')),
       veldTekst(s.d, k('regenton')) && `Regenton: ${veldTekst(s.d, k('regenton'))}`,
-      veldTekst(s.d, k('afkoppelen')) && `Afkoppelen: ${veldTekst(s.d, k('afkoppelen'))}`,
     ];
     return delen.filter(Boolean).join(' · ');
   };

@@ -161,6 +161,13 @@ $container-max-widths: (lg: 1200px);
 .topbar .dropdown-menu::before, .topbar .dropdown-menu::after { content: ''; position: absolute; right: .6rem; border: .5rem solid transparent; border-top: 0; }
 .topbar .dropdown-menu::before { top: -.5rem; border-bottom-color: var(--bs-dropdown-border-color); }
 .topbar .dropdown-menu::after { top: calc(-.5rem + 1px); border-bottom-color: var(--bs-dropdown-bg); }
+.bel .dropdown-menu { width: 22rem; }
+.bel-lijst { max-height: 70vh; overflow-y: auto; }
+// On a phone the bell's menu spans the screen, so its arrow would point past the bell.
+@include media-breakpoint-down(sm) {
+  .bel .dropdown-menu { left: .5rem !important; right: .5rem !important; width: auto; }
+  .bel .dropdown-menu::before, .bel .dropdown-menu::after { display: none; }
+}
 
 // Below md, each table row becomes a compact card; a cell's data-label shows as its caption. Child selectors, so a table
 // nested in a cell (eg in a dropdown) stays a table.

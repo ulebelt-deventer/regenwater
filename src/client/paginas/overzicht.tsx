@@ -1,7 +1,8 @@
 import { A, Navigate, useNavigate } from '@solidjs/router';
 import { For, Show, createResource } from 'solid-js';
 import { datum } from '../../shared/datum.ts';
-import type { Gebruiker } from '../../shared/types.ts';
+import { NORM_STANDAARD_LABEL } from '../../shared/constants.ts';
+import type { Gebruiker, NormafvoerRij } from '../../shared/types.ts';
 import { get } from '../api.ts';
 import { sessie } from '../sessie.ts';
 import { Laden, titel } from '../ui.tsx';
@@ -28,13 +29,21 @@ export function Overzicht() {
 function OverzichtInhoud() {
   titel('Overzicht');
   const navigate = useNavigate();
-  const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[] }>('/api/overzicht'));
+  const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[]; normNakijken: NormafvoerRij[] }>('/api/overzicht'));
   return (
     <>
       <h1 class="mb-3">Overzicht</h1>
       <Show when={data()} fallback={<Laden />}>
         {(d) => (
           <>
+            <Show when={d().normNakijken.length > 0}>
+              <div class="alert alert-warning qa-norm-nakijken">
+                <A href="/beheer/normafvoer" class="alert-link">Normafvoer nakijken</A>: een jaar of langer niet nagekeken.
+                <ul class="mb-0 mt-1">
+                  <For each={d().normNakijken}>{(n) => <li>{n.gemeente ?? NORM_STANDAARD_LABEL}: {n.mm} mm, laatst nagekeken op {datum(n.gecontroleerd_at)}</li>}</For>
+                </ul>
+              </div>
+            </Show>
             <table class="table w-auto mb-4 qa-tellingen">
               <tbody>
                 <For each={d().tellingen}>

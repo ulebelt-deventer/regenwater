@@ -192,11 +192,9 @@ test('Materialen verplaats je door een rij aan de greep te slepen, of met de pij
   await expect.poll(namen).toEqual(getoetst);
 });
 
-test('Uitleg: rechten staat in het Beheer-menu en toont per onderdeel wat bezoeker en uitvoerder mogen wijzigen', async ({ page }) => {
+test('Uitleg: rechten toont per onderdeel wat bezoeker en uitvoerder mogen wijzigen', async ({ page }) => {
   await start(page);
-  await page.goto('/');
-  await page.locator('.qa-nav-beheer').click();
-  await page.locator('a[href="/uitleg/rechten"]').click();
+  await page.goto('/uitleg/rechten');
   await expect(page.locator('.qa-rechten-inschrijving td').nth(1)).toHaveText('Niets');
   await expect(page.locator('.qa-rechten-bezoek td').nth(1)).toHaveText('Alles');
   await expect(page.locator('.qa-rechten-bezoek td').nth(2)).toHaveText('Niets');
@@ -214,39 +212,94 @@ test('Uitleg: statussen zegt per stap of die bij de bezoeker of de uitvoerder li
   await expect(page.locator('.qa-statussen')).not.toContainText('Klusser');
 });
 
-test('Wat is er nieuw toont een rode stip tot de beheerder de pagina opent, met de nieuwste datum bovenaan', async ({ page }) => {
+test('Wat is er nieuw staat in het Uitleg-menu met een rode stip tot de beheerder de pagina opent, met de nieuwste datum bovenaan', async ({ page }) => {
   await start(page);
   await page.goto('/');
-  await expect(page.locator('.qa-nav-beheer .qa-nieuw-stip')).toBeVisible();
-  await page.locator('.qa-nav-beheer').click();
+  await expect(page.locator('.qa-nav-uitleg .qa-nieuw-stip')).toBeVisible();
+  await expect(page.locator('.qa-nav-beheer .qa-nieuw-stip')).toHaveCount(0);
+  await expect(page.locator('.qa-nav-beheer + .dropdown-menu .qa-nav-nieuws')).toHaveCount(0);
+  await page.locator('.qa-nav-uitleg').click();
   await expect(page.locator('.qa-nav-nieuws .qa-nieuw-stip')).toBeVisible();
   await page.locator('.qa-nav-nieuws').click();
 
   await expect(page).toHaveURL(/\/beheer\/nieuw$/);
   await expect(page.locator('.qa-nieuws-datum').first().locator('.qa-nieuws-kop')).toHaveText(datum(NIEUWS[0].datum));
   await expect(page.locator('.qa-nieuws-datum').first().locator('li').first()).toHaveText(NIEUWS[0].groepen[0].punten[0]);
-  await expect(page.locator('.qa-nav-beheer')).toBeVisible();
+  await expect(page.locator('.qa-nav-uitleg')).toBeVisible();
   await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
   await page.goto('/');
-  await expect(page.locator('.qa-nav-beheer')).toBeVisible();
+  await expect(page.locator('.qa-nav-uitleg')).toBeVisible();
   await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
 });
 
-test('Uitleg: databeleid staat in het Beheer-menu, legt de procedures uit en is alleen voor beheerders', async ({ page }) => {
+test('op een telefoon leidt de rode stip via het accountmenu en het Uitleg-overzicht naar Wat is er nieuw', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await start(page);
   await page.goto('/');
-  await page.locator('.qa-nav-beheer').click();
-  await page.locator('a[href="/uitleg/databeleid"]').click();
+  await expect(page.locator('.qa-nav-account .qa-nieuw-stip')).toBeVisible();
+  await page.locator('.qa-nav-account').click();
+  await expect(page.locator('.qa-account-uitleg .qa-nieuw-stip')).toBeVisible();
+  await page.locator('.qa-account-uitleg').click();
+  await expect(page.locator('.qa-uitleg-nieuws .qa-nieuw-stip')).toBeVisible();
+  await page.locator('.qa-uitleg-nieuws').click();
+  await expect(page).toHaveURL(/\/beheer\/nieuw$/);
+  await expect(page.locator('.qa-nieuws-datum').first()).toBeVisible();
+  await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
+});
+
+test('Uitleg: databeleid legt de procedures uit', async ({ page }) => {
+  await start(page);
+  await page.goto('/uitleg/databeleid');
   await expect(page.locator('.qa-databeleid-titel')).toBeVisible();
   await expect(page.locator('.qa-databeleid-verzoek li')).toHaveCount(6);
   await expect(page.locator('.qa-databeleid-datalek ol li')).toHaveCount(4);
   await expect(page.locator('.qa-datalek-voorbeelden li')).toHaveCount(4);
   await expect(page.locator('main a[href="/privacy"]')).toBeVisible();
+});
+
+const UITLEG = ['/uitleg/statussen', '/uitleg/aandacht', '/uitleg/rechten', '/uitleg/databeleid'];
+
+test('een klusser vindt de vier uitlegpagina\'s in het Uitleg-menu en kan ze lezen; het Beheer-menu heeft ze niet', async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 800 });
+  await start(page);
+  await page.goto('/');
+  const [beheer, uitleg, account] = await Promise.all(['.qa-nav-beheer', '.qa-nav-uitleg', '.qa-nav-account'].map(async (k) => (await page.locator(k).boundingBox())!.x));
+  expect(beheer).toBeLessThan(uitleg);
+  expect(uitleg).toBeLessThan(account);
+  await page.locator('.qa-nav-beheer').click();
+  await expect(page.locator('.qa-nav-gebruikers')).toBeVisible();
+  for (const pad of UITLEG) await expect(page.locator(`.qa-nav-beheer + .dropdown-menu a[href="${pad}"]`)).toHaveCount(0);
 
   await login(page, KLUSSER.email);
-  await page.goto('/uitleg/databeleid');
-  await expect(page.locator('.qa-alleen-beheerder')).toBeVisible();
-  await expect(page.locator('.qa-databeleid-titel')).toHaveCount(0);
+  await page.goto('/');
+  await expect(page.locator('.qa-nav-beheer')).toHaveCount(0);
+  await expect(page.locator('.qa-account-uitleg')).toBeHidden();
+  await expect(page.locator('.qa-nav-nieuws')).toHaveCount(0);
+  await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
+  for (const pad of UITLEG) {
+    await page.locator('.qa-nav-uitleg').click();
+    await page.locator(`.qa-nav-uitleg + .dropdown-menu a[href="${pad}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`${pad}$`));
+    await expect(page.locator('main h1')).toBeVisible();
+    await expect(page.locator('.qa-alleen-beheerder')).toHaveCount(0);
+  }
+});
+
+test('op een telefoon staat Uitleg als één link in het accountmenu, naar een overzicht van de vier uitlegpagina\'s', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await start(page);
+  await login(page, KLUSSER.email);
+  await page.goto('/');
+  await expect(page.locator('.qa-nav-account')).toBeVisible();
+  await expect(page.locator('.qa-nav-uitleg')).toBeHidden();
+  await page.locator('.qa-nav-account').click();
+  await page.locator('.qa-account-uitleg').click();
+  await expect(page).toHaveURL(/\/uitleg$/);
+  const links = page.locator('.qa-uitleg-overzicht a');
+  await expect(links.first()).toBeVisible();
+  expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual(UITLEG);
+  await links.nth(3).click();
+  await expect(page.locator('.qa-databeleid-titel')).toBeVisible();
 });
 
 test('Wat is er nieuw is alleen voor beheerders', async ({ page }) => {

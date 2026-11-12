@@ -14,7 +14,7 @@ import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../co
 import { SORTERINGEN, csvExport, filter, leesFilters, lijstRij, sorteer } from '../lijst.ts';
 import { fotoPad } from '../fotos.ts';
 import { log } from '../log.ts';
-import { dossierLink, dossierMelding } from '../meldingen.ts';
+import { dossierMelding } from '../meldingen.ts';
 import { suggesties, zoekAdres } from '../pdok.ts';
 import { gebruiker, gebruikersMap, laadDossier, laadDossiers, leesNormMm } from '../repo.ts';
 import { detecteerRiool } from '../riool.ts';
@@ -244,10 +244,9 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     audit(ctx, actorVan(c), d.id, 'mijlpaal', { mijlpaal: m, aan: true });
     // The opening's own request can get lost on a bad connection on site.
     if (m === 'bezoek_afgerond') zetNormVast(ctx, c, d);
-    // Only a klusser's hand-off alerts the admins; an admin registering it themselves already knows. "Inloggen als" counts as the klusser, so it can be tested.
-    if (ik.rol === 'klusser' &&(m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
-      const titel = m === 'klaar_voor_controle' ? 'Plan van Aanpak klaar voor controle' : 'Werk opgeleverd';
-      await dossierMelding(ctx, d, `${titel}: ${adresRegel(d)} (${ik.naam})`, `${ik.naam} heeft "${titel}" aangetikt voor ${adresRegel(d)}.\n\n${dossierLink(ctx, d.id)}`);
+    // Only a klusser's hand-off alerts the eigenaar; an admin registering it themselves already knows. "Inloggen als" counts as the klusser, so it can be tested.
+    if (ik.rol === 'klusser' && (m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
+      dossierMelding(ctx, d, `${m === 'klaar_voor_controle' ? 'Plan van Aanpak klaar voor controle' : 'Werk opgeleverd'} (${ik.naam})`, null);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });

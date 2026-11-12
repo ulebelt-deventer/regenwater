@@ -8,7 +8,7 @@ A web portal for the Ulebelt rainwater project (Regenwater / Regenton). Voluntee
 - **Inschrijving**: address lookup through PDOK, kadastrale kaart, luchtfoto, and a boorprofiel auto-filled from the nearest boring (BRO / DINOloket).
 - **On-site visit and plan**: field forms with autosave, photos with drawn annotations, daken / tuinen / regenpijpen, and a materials list with cost estimate.
 - **Documents**: PDFs (plan, opleverrapport), a concept-Plan preview, paper bezoekformulieren and a materials print page, all rendered on the server and printed with Chromium.
-- **E-mail**: login links, notices to klussers, bewoners and corporaties from editable templates (sjablonen), admin alerts (meldingen), and a weekly digest.
+- **E-mail**: login links, notices to klussers, bewoners and corporaties from editable templates (sjablonen), and feedback to the developer. Admins get their dossier alerts (meldingen) in the app, under the navbar bell.
 - **Lists and overview**: an Overzicht with counts for admins, and a filterable, sortable Dossiers list with CSV export.
 - **Users**: beheerder and klusser roles, passwordless login (an e-mailed link plus a 6-digit code), archiving, "Inloggen als" impersonation, and an audit log (Activiteit).
 - **Offline-friendly**: photos queue in IndexedDB and upload when the connection comes back. The app can be installed to the home screen.

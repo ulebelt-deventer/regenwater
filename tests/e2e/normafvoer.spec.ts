@@ -1,6 +1,6 @@
 // The norm per gemeente: managed under Beheer, fixed when the Bezoek first opens, and named wherever the waterberging shows.
 import { expect, test, type Page } from '@playwright/test';
-import { ja, nieuwDossier, naarDossier, planTekst, start, zet } from './hulp.ts';
+import { BEHEERDER, ja, login, nieuwDossier, naarDossier, planTekst, post, start, zet } from './hulp.ts';
 
 const KAART = {
   kaart_annotaties: [
@@ -126,4 +126,20 @@ test('het Beheer-menu heeft een link naar Normafvoer', async ({ page }) => {
   await page.locator('.qa-nav-beheer').click();
   await page.locator('.qa-nav-normafvoer').click();
   await expect(page.locator('.qa-normen')).toBeVisible();
+});
+
+test('het Overzicht vraagt om een normafvoer na te kijken die een jaar niet is nagekeken, met een link naar Normafvoer', async ({ page }) => {
+  await start(page);
+  const { normafvoeren } = (await (await page.request.get('/api/normafvoeren')).json()) as { normafvoeren: { id: number }[] };
+  await post(page.request, `/api/normafvoeren/${normafvoeren[0].id}/nagekeken`);
+  await page.goto('/');
+  await expect(page.locator('.qa-tellingen')).toBeVisible();
+  await expect(page.locator('.qa-norm-nakijken')).toHaveCount(0);
+  await post(page.request, '/api/test/klok', { verschuifDagen: 365 });
+  await login(page, BEHEERDER.email);
+  await page.reload();
+  const banner = page.locator('.qa-norm-nakijken');
+  await expect(banner).toContainText('Standaard (overige gemeenten): 20 mm, laatst nagekeken op 2 maart 2026');
+  await banner.locator('a').click();
+  await expect(page).toHaveURL(/\/beheer\/normafvoer$/);
 });

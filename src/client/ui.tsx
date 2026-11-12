@@ -7,6 +7,15 @@ import type { LigtBij } from '../shared/status.ts';
 import { isBeheerderNu } from './sessie.ts';
 import { nieuweVersie, verbergNieuweVersie } from './versie.ts';
 
+// The red dot on the way to Wat is er nieuw, until the beheerder opens that page.
+export function NieuwStip() {
+  return (
+    <span class="d-inline-block p-1 bg-danger rounded-circle ms-1 align-middle qa-nieuw-stip">
+      <span class="visually-hidden">Nieuw</span>
+    </span>
+  );
+}
+
 // ---- Pop-up messages ----
 
 interface Melding {

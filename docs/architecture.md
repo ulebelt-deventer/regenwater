@@ -28,8 +28,8 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 
 ## Email
 
-- Mailgun, EU region, sends the login emails, the klusser/bewoner/corporatie emails and the admin meldingen.
-- Melding recipients are comma-separated lists in the environment: `MELDINGEN_DIGEST` and `MELDINGEN_FEEDBACK`. Meldingen about one dossier go to its eigenaar instead. The app refuses to start in production if one is missing or holds an invalid address. Each recipient gets a separate email, so one refusal doesn't block the others.
+- Mailgun, EU region, sends the login emails, the klusser/bewoner/corporatie emails and the feedback emails. Admin meldingen about a dossier are in-app only (the `notificaties` table, under the navbar bell).
+- Feedback recipients are a comma-separated list in the environment, `MELDINGEN_FEEDBACK`. The app refuses to start in production if it is missing or holds an invalid address. Each recipient gets a separate email, so one refusal doesn't block the others.
 - Sender domain: the domain admin adds Mailgun's SPF and DKIM records and a DMARC policy before launch. Every email sets Reply-To explicitly, so replies reach a person.
 - Bounces: a Mailgun webhook (`/webhooks/mailgun`, signature-verified) marks failed sends and triggers the "E-mail niet afgeleverd" melding. It's a later addition, not part of the first milestones; until then a rejection at send time is the only failure the app sees.
 - Keep attachments under about 10 MB, since many corporatie mail servers reject larger messages; the PDF renderer downsizes embedded images if needed.
@@ -71,7 +71,6 @@ Bash scripts adapted from `tmp/devops-SAMPLE`, run from the maintainer's machine
 
 Scheduled jobs are systemd timers, defined in `provision.sh`, each running a small Node script as the app user with the same environment file. Timers rather than crontab entries because the sample scripts already use them, `Persistent=true` catches up on a run missed during a reboot, and output lands in journald next to the app's logs.
 
-- Weekly digest: `OnCalendar=Mon 08:00`.
 - Daily backup check (see Backups).
 
 ## Monitoring
@@ -96,6 +95,6 @@ Stop after each milestone with a summary, so the maintainer can review, commit a
 3. Bezoek sub-page and the kaart editor; the printable and Leeg bezoekformulier PDFs.
 4. Plan van Aanpak sub-page and Materialen beheer, the concept-Plan and Plan PDF, Plan versturen & goedkeuring, assigning the uitvoerder.
 5. Uitvoering and Oplevering: the opleverrapport and the Uitvoeringsspecificatie page.
-6. Aandacht rules and the Aandacht-criteria page, snoozes, Plan gewijzigd, admin meldingen and the weekly digest.
+6. Aandacht rules and the Aandacht-criteria page, snoozes, Plan gewijzigd, admin meldingen.
 7. Deployment scripts, monitoring and backups; restore test.
 8. Later: the Mailgun bounce webhook; the one-off import of the Ulebelt admin's spreadsheet, if the team wants it.

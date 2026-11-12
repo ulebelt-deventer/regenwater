@@ -5,7 +5,7 @@ import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, k
 import { btwOver, klussendienstKosten } from '../../shared/specificatie.ts';
 import { eigenaar, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { BEOORDELINGEN, materiaalRijen, materiaalTotaal, opsommingRegels, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
+import { BEOORDELINGEN, materiaalRijen, materiaalTotaal, opsommingRegels, nietOpRiool, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
 const getoondeMaterialen = (d: Dossier, lijst: 'materialen' | 'gebruikt') => materiaalRijen(d, lijst).filter((r) => r.naam.trim() && r.aantal !== null && r.aantal > 0);
@@ -96,6 +96,7 @@ function Kosteninschatting(props: { doc: Doc }): JSX.Element {
 function Regenwatervolume(props: { doc: Doc }): JSX.Element {
   const d = () => props.doc.d;
   const items = () => kaartItems(d());
+  const nietOpRioolPijpen = () => items().regenpijpen.filter((r) => nietOpRiool(d(), r.id));
   const kaart = () => kaartFoto(d());
   const huurKoop = () => {
     const hk = optieLabel(veld('huur_koop'), d(), 'huur_koop');
@@ -166,7 +167,7 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
             </For>
           </tbody>
         </table>
-        <Show when={items().regenpijpen.length > 0}>
+        <Show when={nietOpRioolPijpen().length > 0}>
           <table class="tabel qa-pdf-waterberging">
             <thead>
               <tr>
@@ -179,7 +180,7 @@ function Regenwatervolume(props: { doc: Doc }): JSX.Element {
               </tr>
             </thead>
             <tbody>
-              <For each={items().regenpijpen}>
+              <For each={nietOpRioolPijpen()}>
                 {(r) => {
                   const wb = waterberging(r, items().daken, d().normafvoer.mm);
                   return (
@@ -316,11 +317,11 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
           <thead>
             <tr>
               <th>Pijp</th>
+              <th>Afkoppelen</th>
               <th>Dak</th>
               <th>Soort</th>
               <th>Diameter</th>
               <th>Regenton</th>
-              <th>Afkoppelen</th>
               <th>Waar & hoe gaat het water naartoe</th>
             </tr>
           </thead>
@@ -329,24 +330,24 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
               {(r) => (
                 <tr>
                   <td>{r.label}</td>
-                  <td>{r.bronnen.length ? bronnenTekst(r, labels()) : '--'}</td>
-                  <td><Of doc={props.doc} v={kies(r.id, 'soort')} /></td>
-                  <td><Of doc={props.doc} v={kies(r.id, 'diameter')} /></td>
-                  <td><Of doc={props.doc} v={kies(r.id, 'regenton')} /></td>
                   <td><Of doc={props.doc} v={kies(r.id, 'afkoppelen')} /></td>
-                  <td>
-                    <Show when={getoond(r.id, 'waar')} fallback="--">
+                  <Show when={nietOpRiool(d(), r.id)} fallback={<td colspan={5} class="qa-pdf-op-riool" />}>
+                    <td>{r.bronnen.length ? bronnenTekst(r, labels()) : '--'}</td>
+                    <td><Of doc={props.doc} v={kies(r.id, 'soort')} /></td>
+                    <td><Of doc={props.doc} v={kies(r.id, 'diameter')} /></td>
+                    <td><Of doc={props.doc} v={kies(r.id, 'regenton')} /></td>
+                    <td>
                       <Of doc={props.doc} v={str(d(), k(r.id, 'waar'))} />
                       <Show when={kies(r.id, 'hoe')}>
                         <br />
                         <span class="klein">Via: {kies(r.id, 'hoe')}</span>
                       </Show>
-                    </Show>
-                    <Show when={getoond(r.id, 'ondergrond') && str(d(), k(r.id, 'ondergrond'))}>
-                      <br />
-                      <span class="klein">Ondergrond: {str(d(), k(r.id, 'ondergrond'))}</span>
-                    </Show>
-                  </td>
+                      <Show when={getoond(r.id, 'ondergrond') && str(d(), k(r.id, 'ondergrond'))}>
+                        <br />
+                        <span class="klein">Ondergrond: {str(d(), k(r.id, 'ondergrond'))}</span>
+                      </Show>
+                    </td>
+                  </Show>
                 </tr>
               )}
             </For>

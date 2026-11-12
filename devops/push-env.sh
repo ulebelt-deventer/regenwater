@@ -4,7 +4,7 @@
 require_host
 SRC="${_config_dir}/${ENVIRONMENT}.env"
 [ -f "${SRC}" ] || { echo "ERROR: ${SRC} not found. Copy staging.env.example and fill it in." >&2; exit 1; }
-required="BASIS_URL MAILGUN_API_KEY MAILGUN_DOMEIN MAIL_AFZENDER MELDINGEN_DIGEST MELDINGEN_FEEDBACK"
+required="BASIS_URL MAILGUN_API_KEY MAILGUN_DOMEIN MAIL_AFZENDER MELDINGEN_FEEDBACK"
 if [ "${BACKUPS}" = s3 ]; then required="${required} S3_ENDPOINT S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY"; fi
 for var in ${required}; do
   grep -Eq "^${var}=.+" "${SRC}" || { echo "ERROR: ${var} is empty in ${SRC}." >&2; exit 1; }

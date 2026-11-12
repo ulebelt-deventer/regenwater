@@ -9,6 +9,13 @@ export const NIEUWS: NieuwsDatum[] = [
     datum: '2026-11-12',
     groepen: [
       {
+        kop: 'Meldingen',
+        punten: [
+          'Meldingen over je dossiers (Klaar voor controle, Werk opgeleverd, E-mail niet afgeleverd en Uit de ijskast) krijg je niet meer per e-mail, maar onder het nieuwe belletje bovenaan, naast Beheer. Het rode getal telt de ongelezen meldingen. Tik op een melding om naar het dossier te gaan; dan zijn alle meldingen over dat dossier gelezen.',
+          'De wekelijkse mail Aandacht nodig is gestopt: kijk zelf in de dossierlijst. Een normafvoer die een jaar niet is nagekeken, staat nu bovenaan het Overzicht. Ook feedback komt niet meer per mail; je vindt die onder Beheer, Feedback.',
+        ],
+      },
+      {
         kop: 'Dossierlijst',
         punten: [
           'Ligt bij Klusser bestaat niet meer: Bezoek plannen, Bezoek uitvoeren en Plan van Aanpak afronden liggen nu bij de Bezoeker, en Werk uitvoeren bij de Uitvoerder. Kies in het filter Ligt bij dus Bezoeker of Uitvoerder.',
@@ -17,7 +24,19 @@ export const NIEUWS: NieuwsDatum[] = [
       {
         kop: 'Aandacht',
         punten: [
-          'Je kunt een dossier nu in de ijskast doen (Dossier in ijskast doen, in het menu rechtsboven het dossier), met een reden en een datum. Tot die dag vraagt het geen aandacht, krijgt de bezoeker of uitvoerder geen herinnering en staat het niet in de standaardlijst (Status-filter In de ijskast). Op die dag krijgt de eigenaar een mail met de vraag wat je ermee wilt doen. Aandacht uitstellen is daarmee vervangen; een uitstel dat nog liep, staat nu tot die datum in de ijskast.',
+          'Je kunt een dossier nu in de ijskast doen (Dossier in ijskast doen, in het menu rechtsboven het dossier), met een reden en een datum. Tot die dag vraagt het geen aandacht, krijgt de bezoeker of uitvoerder geen herinnering en staat het niet in de standaardlijst (Status-filter In de ijskast). Op die dag krijgt de eigenaar een melding onder het belletje bovenaan. Aandacht uitstellen is daarmee vervangen; een uitstel dat nog liep, staat nu tot die datum in de ijskast.',
+        ],
+      },
+      {
+        kop: 'Menu',
+        punten: [
+          'De uitlegpagina’s (Statussen, Aandacht, Rechten en Databeleid) en Wat is er nieuw staan niet meer onder Beheer, maar in het nieuwe menu Uitleg bovenaan, en daar staat nu ook de rode stip. Op een telefoon vind je Uitleg in het menu achter het poppetje rechtsboven. Klussers kunnen de uitlegpagina’s nu ook lezen.',
+        ],
+      },
+      {
+        kop: 'Bezoek',
+        punten: [
+          'Elk regenpijp-blok begint nu met Afkoppelen?. Kies je Nee, dan verdwijnt de rest van dat blok (Voert af van, Waterberging, Soort, Diameter, Regenton, Ondergrond, Waar en Hoe), ook uit de samenvatting en het Plan van Aanpak, en vraagt de Controle er niet meer om.',
         ],
       },
     ],

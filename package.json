@@ -14,7 +14,6 @@
     "test": "npm run test:vite && npm run test:e2e",
     "test:vite": "vitest run",
     "test:e2e": "npm run build && playwright test",
-    "digest": "node dist/server/jobs.js digest",
     "beheerder": "vite build -c vite.server.config.ts --logLevel warn && node dist/server/jobs.js beheerder"
   },
   "dependencies": {

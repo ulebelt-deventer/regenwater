@@ -152,7 +152,7 @@ export function IJskastModal(props: { onSluit: () => void }) {
       onSluit={() => props.onSluit()}
       verstuur={() => actie(s, 'ijskast', { tot: tot(), reden: reden() })}
     >
-      <p>Tot die dag vraagt het dossier geen aandacht en staat het niet in de standaardlijst. Op die dag krijgt {s.naam(s.d.eigenaar_id)} (eigenaar) een mail.</p>
+      <p>Tot die dag vraagt het dossier geen aandacht en staat het niet in de standaardlijst. Op die dag krijgt {s.naam(s.d.eigenaar_id)} (eigenaar) een melding onder het belletje bovenaan.</p>
       <label class="form-label fw-semibold mb-0" for="ijskast-reden">Reden</label>
       <textarea id="ijskast-reden" class="form-control mb-3 qa-ijskast-reden" rows="3" placeholder="Bijvoorbeeld: bewoner wil pas na de verbouwing verder" value={reden()} onInput={(e) => setReden(e.currentTarget.value)} />
       <label class="form-label fw-semibold mb-0" for="ijskast-tot">Weer tevoorschijn op</label>

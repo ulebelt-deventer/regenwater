@@ -1,21 +1,18 @@
 import Database from 'better-sqlite3';
 import { controleerBackup } from './backupcheck.ts';
 import { leesConfig } from './config.ts';
-import { verstuurDigest } from './digest.ts';
 import { log, stelHealthcheckIn } from './log.ts';
 import { EMAIL_RE } from './mail.ts';
 import { maakCtx } from './opstart.ts';
 
-// Usage: node dist/server/jobs.js digest | beheerder <naam> <email> | backupcheck <restored-db>
+// Usage: node dist/server/jobs.js beheerder <naam> <email> | backupcheck <restored-db>
 const [taak, ...args] = process.argv.slice(2);
 const config = leesConfig();
 stelHealthcheckIn(config.healthcheckUrl);
 const ctx = maakCtx(config);
 
 try {
-  if (taak === 'digest') {
-    log.info((await verstuurDigest(ctx)) ? 'digest verstuurd' : 'digest: niets te melden');
-  } else if (taak === 'beheerder') {
+  if (taak === 'beheerder') {
     // Bootstraps the first admin on a fresh database; later admins are added in the app.
     const [naam, email] = args;
     if (!naam || !email || !EMAIL_RE.test(email)) throw new Error('Gebruik: beheerder <naam> <email>');

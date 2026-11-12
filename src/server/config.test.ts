@@ -22,20 +22,19 @@ function stubProductie(): void {
   vi.stubEnv('MAILGUN_API_KEY', 'sleutel');
   vi.stubEnv('MAILGUN_DOMEIN', 'mg.example.org');
   vi.stubEnv('MAIL_AFZENDER', 'Test <test@mg.example.org>');
-  vi.stubEnv('MELDINGEN_DIGEST', 'a@example.org');
   vi.stubEnv('MELDINGEN_FEEDBACK', 'b@example.org');
 }
 
-describe('MELDINGEN_*', () => {
+describe('MELDINGEN_FEEDBACK', () => {
   beforeEach(stubProductie);
   afterEach(() => vi.unstubAllEnvs());
 
-  it('reads a separate list per soort, trimming spaces around the commas', () => {
-    vi.stubEnv('MELDINGEN_DIGEST', 'a@example.org, b@example.org ,c@example.org');
-    expect(leesConfig().meldingen).toEqual({ digest: ['a@example.org', 'b@example.org', 'c@example.org'], feedback: ['b@example.org'] });
+  it('reads a list, trimming spaces around the commas', () => {
+    vi.stubEnv('MELDINGEN_FEEDBACK', 'a@example.org, b@example.org ,c@example.org');
+    expect(leesConfig().feedbackAan).toEqual(['a@example.org', 'b@example.org', 'c@example.org']);
   });
 
-  it('refuses to start in production when a list is missing or holds an invalid address', () => {
+  it('refuses to start in production when the list is missing or holds an invalid address', () => {
     vi.stubEnv('MELDINGEN_FEEDBACK', '');
     expect(() => leesConfig()).toThrow('Omgevingsvariabele MELDINGEN_FEEDBACK ontbreekt');
     vi.stubEnv('MELDINGEN_FEEDBACK', 'a@example.org,,b@example.org');
@@ -44,9 +43,9 @@ describe('MELDINGEN_*', () => {
     expect(() => leesConfig()).toThrow('Ongeldig e-mailadres in MELDINGEN_FEEDBACK: "a@example.org;b@example.org"');
   });
 
-  it('needs no lists outside production', () => {
+  it('needs no list outside production', () => {
     vi.unstubAllEnvs();
-    expect(leesConfig().meldingen.digest).toEqual(['meldingen@example.org']);
+    expect(leesConfig().feedbackAan).toEqual(['feedback@example.org']);
   });
 });
 

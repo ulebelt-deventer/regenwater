@@ -218,13 +218,12 @@ describe('autosave values', () => {
 });
 
 describe('milestones', () => {
-  it('registers a double-tapped Klaar voor controle once, with one mail to the admins', async () => {
-    t.mailer.verstuurd = [];
+  it('registers a double-tapped Klaar voor controle once, with one melding for the eigenaar', async () => {
     const vanaf = laatsteId();
     const tik = () => kees.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
     await Promise.all([tik(), tik()]);
-    expect((await items(vanaf)).map((i) => i.type)).toEqual(['mijlpaal', 'melding_verstuurd']);
-    expect(t.mailer.verstuurd).toHaveLength(1);
+    expect((await items(vanaf)).map((i) => i.type)).toEqual(['mijlpaal']);
+    expect((await bea.json('GET', '/api/notificaties')).items).toHaveLength(1);
   });
 });
 

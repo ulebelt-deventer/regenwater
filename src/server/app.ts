@@ -14,6 +14,7 @@ import { dossierRoutes } from './routes/dossiers.ts';
 import { fotoRoutes } from './routes/fotos.ts';
 import { gebruikerRoutes } from './routes/gebruikers.ts';
 import { mailRoutes } from './routes/mail.ts';
+import { notificatieRoutes } from './routes/notificaties.ts';
 import { verzoekLog } from './verzoeklog.ts';
 
 export function createApp(ctx: Ctx): Hono<Env> {
@@ -35,6 +36,7 @@ export function createApp(ctx: Ctx): Hono<Env> {
   mailRoutes(app, ctx);
   fotoRoutes(app, ctx);
   beheerRoutes(app, ctx);
+  notificatieRoutes(app, ctx);
   documentRoutes(app, ctx);
 
   app.notFound((c) => c.json({ fout: 'Niet gevonden' }, 404));

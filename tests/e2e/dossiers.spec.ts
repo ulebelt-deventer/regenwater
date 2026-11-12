@@ -36,6 +36,30 @@ test('het eigenaar-filter toont alleen de dossiers van de gekozen beheerder', as
   await expect(eigenaar).toHaveValue(String(beheerderId));
 });
 
+test('na een dossier openen en de terugknop van de browser staan de filters er nog', async ({ page }) => {
+  await start(page);
+  const { id: tweedeId } = await post<{ id: number }>(page.request, '/api/test/gebruiker', { naam: 'Tessa Tweede', email: 'tessa@ulebelt.test', rol: 'beheerder' });
+  const { id: vanMij } = await post<{ id: number }>(page.request, '/api/dossiers');
+  const { id: vanTessa } = await post<{ id: number }>(page.request, '/api/dossiers');
+  await post(page.request, `/api/dossiers/${vanTessa}/eigenaar`, { gebruiker_id: tweedeId });
+  await page.goto('/dossiers');
+  await page.locator('.qa-filter-eigenaar').selectOption(String(tweedeId));
+  await page.locator('.qa-sorteer').click();
+  await page.locator('.qa-sorteer-oud').click();
+  await expect(page).toHaveURL(/sorteer=oud/);
+  await expect(page.locator('.qa-dossiers .qa-dossier')).toHaveCount(1);
+  const gefilterd = page.url();
+
+  await page.locator(`.qa-dossiers .qa-dossier-${vanTessa} .qa-adres`).click();
+  await expect(page).toHaveURL(new RegExp(`/dossiers/${vanTessa}$`));
+  await page.goBack();
+
+  await expect(page).toHaveURL(gefilterd);
+  await expect(page.locator('.qa-filter-eigenaar')).toHaveValue(String(tweedeId));
+  await expect(page.locator(`.qa-dossiers .qa-dossier-${vanTessa}`)).toBeVisible();
+  await expect(page.locator(`.qa-dossiers .qa-dossier-${vanMij}`)).toHaveCount(0);
+});
+
 test('de lijst toont bezoeker en uitvoerder elk apart (grijze -- als er geen is), zonder kolom Laatste activiteit, ook op de kaart op een telefoon', async ({ page }) => {
   const { klusserId } = await start(page);
   const { id: uitvoerderId } = await post<{ id: number }>(page.request, '/api/test/gebruiker', { naam: 'Ria Uitvoer', email: 'ria@ulebelt.test', rol: 'klusser' });

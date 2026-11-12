@@ -1,4 +1,4 @@
-// Wat is er nieuw (admin): user-visible changes from shared/nieuws.ts. Opening it clears the red dot in the Beheer menu.
+// Wat is er nieuw (admin): user-visible changes from shared/nieuws.ts. Opening it clears the red dot in the Uitleg menu.
 import { For, onMount } from 'solid-js';
 import { datum } from '../../shared/datum.ts';
 import { NIEUWS } from '../../shared/nieuws.ts';

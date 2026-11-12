@@ -289,4 +289,17 @@ export const MIGRATIES: string[] = [
   UPDATE audit SET type = 'ijskast_in', payload = json_object('tot', json_extract(payload, '$.tot'), 'reden', json_extract(payload, '$.notitie')) WHERE type = 'uitgesteld';
   DROP TABLE uitstellen;
   `,
+  // In-app meldingen for a beheerder about one dossier, shown under the bell in the navbar.
+  `
+  CREATE TABLE notificaties (
+    id INTEGER PRIMARY KEY,
+    gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id),
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+    titel TEXT NOT NULL,
+    detail TEXT,
+    created_at TEXT NOT NULL,
+    gelezen_at TEXT
+  );
+  CREATE INDEX notificaties_gebruiker ON notificaties (gebruiker_id, gelezen_at);
+  `,
 ];

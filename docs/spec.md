@@ -30,7 +30,7 @@
     - A code and link stay valid for 15 minutes and for one use; requesting a new one invalidates the old. After 5 wrong codes the code is void and you request a new one. At most 5 login emails per address per hour, and at most 20 login requests or code attempts per IP address per hour. (All constants in code.)
     - Hitting any of these limits, a voided code included, records a "login geblokkeerd" audit event (e-mail address, IP address, which limit) and logs a warning, which trips the Healthchecks error alert to the maintainer (see Monitoring in `architecture.md`). A single wrong code doesn't.
 - "Overzicht" (admins only)
-  - Reached by clicking the logo (no navbar link). Admin landing page. Just a table of overall counts:
+  - Reached by clicking the logo (no navbar link). Admin landing page. While any Normafvoer row hasn't been checked for 12 months, a yellow banner on top lists those rows and links to the Normafvoer page. Below it, a table of overall counts:
     - Open dossiers
     - Aandacht nodig (red text)
     - Wacht op bezoek (steps 3-4)
@@ -112,7 +112,7 @@
     - (admin, if closed) Dossier heropenen. Clears the closed state; the status returns to whatever step the dossier's data implies.
     - (admin, if open) Dossier sluiten (eg if the huurder moved), in amber (text-warning) below the divider, right above Verwijderen. Pops up a reden choice (Bewoner afgehaakt, Bewoner doet het zelf, Plan afgewezen, Niet subsidiabel, Anders, and last "Toch uitgevoerd", which stores reden Uitgevoerd for work finished outside the normal flow) and a Toelichting field, stored with the closing and shown in the gray banner, with an encouragement to add a note about why it's getting shelved. For "Toch uitgevoerd" the toelichting is required: explain what happened.
     - (admin) Dossier verwijderen. Pops up a warning that this permanently deletes the dossier with all its data, photos and audit entries, and can't be undone; for anything but a duplicate or a privacy request, close the dossier instead. Buttons: "Dossier sluiten" (primary, opens the close pop-up) and a red "Definitief verwijderen". One "dossier verwijderd" audit event remains, naming the adres and who deleted it.
-    - (admin, if open) Dossier in ijskast doen, for a dossier that waits on something until a known day. Pops up a required Reden and a "Weer tevoorschijn op" date (tomorrow at the earliest). Until that day the dossier stays open and editable but has no aandacht at all (no banner, badge, counts, digest or klusser reminder), is left out of the default list (Status filter "In de ijskast") and shows "In de ijskast tot {datum}" as its status in lists, as a light-blue label with a snowflake; on that day from 08:00 the eigenaar gets a melding (see Meldingen aan beheerders). While in the ijskast the item reads "Uit de ijskast halen", which ends it at once without a mail. Closing the dossier also ends it.
+    - (admin, if open) Dossier in ijskast doen, for a dossier that waits on something until a known day. Pops up a required Reden and a "Weer tevoorschijn op" date (tomorrow at the earliest). Until that day the dossier stays open and editable but has no aandacht at all (no banner, badge, counts or klusser reminder), is left out of the default list (Status filter "In de ijskast") and shows "In de ijskast tot {datum}" as its status in lists, as a light-blue label with a snowflake; on that day from 08:00 the eigenaar gets a melding (see Meldingen aan beheerders). While in the ijskast the item reads "Uit de ijskast halen", which ends it at once without a mail. Closing the dossier also ends it.
     - (admin) "Alle activiteit" => leads to a subpage with an audit trail of all events on this dossier (title bar has N events & info about the last update, by whom & what fields/content were changed)
   - **Status**
     - Volgende stap
@@ -393,7 +393,7 @@
   - Each step's milestone is stored as a timestamp + who (eg `bezoek_afgerond_at/_by`), never as a boolean; the aandacht rules depend on those timestamps.
 - Aandacht-criteria page (admins only)
   - Linked from the Beheer dropdown and from each dossier's aandacht banner. Like the Statussen page, generated from the same rules and threshold constants the app uses.
-  - A dossier needs aandacht if it has any finding of the three kinds below. Each finding is one bullet in the dossier's aandacht banner (linking to the field or section to fix), and the dossier gets the red "aandacht" badge in lists and counts. Findings are computed from the data on every page load, just like the status, never cached; nothing is stored except hidden findings and "Opnieuw versturen niet nodig" notes. A dossier in the ijskast has no findings at all. The Overzicht and stats counts and the weekly digest cover open dossiers; the dossier page and the list's Aandacht filter cover closed ones too.
+  - A dossier needs aandacht if it has any finding of the three kinds below. Each finding is one bullet in the dossier's aandacht banner (linking to the field or section to fix), and the dossier gets the red "aandacht" badge in lists and counts. Findings are computed from the data on every page load, just like the status, never cached; nothing is stored except hidden findings and "Opnieuw versturen niet nodig" notes. A dossier in the ijskast has no findings at all. The Overzicht and stats counts cover open dossiers; the dossier page and the list's Aandacht filter cover closed ones too.
   - **Klopt niet** (admins only). Listed first in the banner, under the headline "De gegevens spreken elkaar tegen. Controleer:" followed by a question-circle icon linking to this page. Checked on open and closed dossiers; cannot be snoozed.
 
     | Rule | Banner line |
@@ -426,7 +426,7 @@
     - Thresholds are constants in code, shown in this table.
     - Klussers see Ligt stil findings only for their own steps (3, 4, 5, 10), as a reminder, without the aandacht badge.
   - **Plan gewijzigd** (admins only). For open dossiers: `plan_gewijzigd_at` is later than a plan send to the bewoner or corporatie, or than the uitvoerder's assignment email, and later than the last "Opnieuw versturen niet nodig". One line per affected recipient: "Plan gewijzigd op {datum}, na versturen naar {ontvanger}. Opnieuw sturen?" Cleared by resending to that recipient or by "Opnieuw versturen niet nodig" (its red X is that, with an empty note, so the next plan change warns again).
-  - **Hidden findings.** An admin's red X hides a Klopt niet or Ligt stil finding on that dossier for good, open or closed, with no way back in the app; it no longer counts as aandacht anywhere (badge, counts, digest, klusser reminder). A finding is identified by its rule (per step for Ligt stil, per klusser for an archived one), not its text, so a changed date in the text doesn't bring it back, while a finding from another rule still shows. Each hide is logged in Alle activiteit with the hidden text.
+  - **Hidden findings.** An admin's red X hides a Klopt niet or Ligt stil finding on that dossier for good, open or closed, with no way back in the app; it no longer counts as aandacht anywhere (badge, counts, klusser reminder). A finding is identified by its rule (per step for Ligt stil, per klusser for an archived one), not its text, so a changed date in the text doesn't bring it back, while a finding from another rule still shows. Each hide is logged in Alle activiteit with the hidden text.
 - "Gebruikers" list (admins only)
   - Linked in the navbar.
   - Button, top right: "+ Nieuwe gebruiker". Opens a form: Naam, E-mail, Telefoon (optional), Rol (Beheerder or Klusser). An e-mail address that already exists shows an error naming that user. The new user logs in the usual way with their e-mail address; nothing is sent automatically.
@@ -452,7 +452,7 @@
   - "Normafvoer"
     - The norm per gemeente in whole mm, starting with one undeletable row "Standaard (overige gemeenten)" at 20 mm for every gemeente without its own row. Admins add a gemeente (suggestions from existing dossiers and the riool detection; an unknown name asks for confirmation, since it must match the address spelling), change a value, delete a row, or tap Nagekeken. Changing a value counts as nagekeken. All of it is in the activity log.
     - A dossier keeps the norm from the first time its Bezoek opens, so a change only reaches dossiers whose Bezoek hasn't opened yet.
-    - A row not checked for 12 months appears in the weekly digest until it's marked Nagekeken.
+    - A row not checked for 12 months is listed on the Overzicht until it's marked Nagekeken.
   - "E-mailsjablonen"
     - The templates: Subsidie: subsidiabel, huurwoning / subsidiabel, koopwoning / niet subsidiabel; Bezoeker toegewezen; Plan naar bewoner (huur); Plan naar bewoner (koop, asks Klussendienst of zelf); Plan naar woningcorporatie; Uitvoerder toegewezen; Opleverrapport naar woningcorporatie; Opleverrapport naar bewoner; Oproep Signal-groep (copied to the clipboard, no onderwerp). The login email is fixed in code.
     - Seeded at launch from the prototype's drafts, with texts written for the ones it lacks; admins edit them from then on.
@@ -476,16 +476,16 @@
   - Android (Chrome): open the page in Chrome, not Firefox or another browser, since only a Chrome-installed app receives the links in emails; tap the ⋮ menu; "App installeren" (or "Toevoegen aan startscherm").
   - Then: open the app from the new icon and log in once more with your e-mail and code. *The home-screen app keeps its own login, separate from the browser's.*
   - On a desktop browser: a big amber banner on top, "Open deze pagina op je telefoon", without hiding the steps.
-- Meldingen aan beheerders (automatic emails, no page)
-  - The app's only automatic emails. The weekly digest and feedback each go to their own list of one or more recipients, set per environment; the per-dossier meldingen below go only to the dossier's eigenaar. They never go to bewoners, corporaties or klussers, and change nothing in the data; each send is logged in Alle activiteit. Each links to the dossier.
+- Meldingen aan beheerders (the bell in the navbar, after Beheer; admins only)
+  - A bell with a red rounded count of unread meldingen. It opens a scrollable list of the 50 most recent, unread above read and newest first within each, showing the dossier's current adres, the melding, any detail and when. Tapping one opens that dossier and marks every melding about it read. Read state is per admin. The bell refreshes every minute and when the app comes back to the foreground.
+  - Each melding goes only to the dossier's eigenaar, changes nothing in the data and disappears with the dossier. Admins get no email about dossiers. *At hundreds of open dossiers, per-dossier mails would get filtered and ignored; the admins go through the dossier list daily instead.*
   - Immediately, when a klusser hands the ball back to the admins:
-    - "Klaar voor controle" tapped: "Plan van Aanpak klaar voor controle: {adres} ({klusser})".
-    - "Werk opgeleverd" tapped: "Werk opgeleverd: {adres} ({klusser})".
+    - "Klaar voor controle" tapped: "Plan van Aanpak klaar voor controle ({klusser})".
+    - "Werk opgeleverd" tapped: "Werk opgeleverd ({klusser})".
     - Not when an admin does it themselves (eg typing up a paper visit), though an admin using "Inloggen als" counts as the klusser; and not for "Bezoek afronden": the ball stays with the klusser until "Klaar voor controle".
-  - Weekly, Monday at 08:00: "Aandacht nodig: {n} dossiers", listing every open dossier with a finding, grouped Klopt niet / Plan gewijzigd / Ligt stil, each with its banner line, then any norm due for its yearly check under Normafvoer nakijken (with no dossiers to report the subject is "Aandacht nodig: normafvoer nakijken"). A dossier with no activity in the past 7 days also gets "geen activiteit sinds {datum}". Not sent if the list is empty. *A weekly digest rather than one email per dossier, because at hundreds of open dossiers per-dossier mails would get filtered and ignored.*
-  - On the day a dossier comes out of the ijskast, from 08:00 (the server checks every 15 minutes, and mails each one once): "Uit de ijskast: {adres}", asking what to do with it, with the reden and who put it in. Not when it was taken out early or closed.
-  - Immediately, when an outbound email fails to send: "E-mail niet afgeleverd: {onderwerp} aan {adres}". The send is then shown in red on the dossier ("Niet afgeleverd op {datum}") and doesn't count as sent. *(At launch this covers only a rejection by the provider at send time. Bounces after sending are detected from a later milestone, via the Mailgun webhook.)*
-  - Server errors, PDF render failures and failed backups go to the maintainer, not to these lists.
+  - On the day a dossier comes out of the ijskast, from 08:00 (the server checks every 15 minutes, once per dossier): "Uit de ijskast", with when, by whom and why it was put in. Not when it was taken out early or closed.
+  - Immediately, when an outbound email fails to send: "E-mail niet afgeleverd: {onderwerp} aan {adres}", with the provider's error. The send is then shown in red on the dossier ("Niet afgeleverd op {datum}") and doesn't count as sent. *(At launch this covers only a rejection by the provider at send time. Bounces after sending are detected from a later milestone, via the Mailgun webhook.)*
+  - The one automatic admin email is feedback (see Footer), which goes to its own list of recipients set per environment, each send logged in Alle activiteit. Server errors, PDF render failures and failed backups go to the maintainer, not to the bell.
 
 ## Footer & other UI
 
@@ -494,7 +494,7 @@
 - Footer needs a couple links:
   - Data privacy (page that details the privacy policy, data handling, subprocessors, and other GDPR requirements)
   - Give Feedback
-    - opens a pop-up where you can fill in feedback similar to what the prototype had, with the cursor already in the text box. The feedback recipients are notified via email on each feedback. Admin nav dropdown has a "Feedback" page that lists all feedback; each can be marked as "Handled" to hide it from the default list (toggle at the top to show all vs default of showing just unhandled)
+    - opens a pop-up where you can fill in feedback similar to what the prototype had, with the cursor already in the text box. Each feedback item is emailed to the feedback recipients (see Meldingen aan beheerders). Admin nav dropdown has a "Feedback" page that lists all feedback; each can be marked as "Handled" to hide it from the default list (toggle at the top to show all vs default of showing just unhandled)
 
 ## Scenario tests
 

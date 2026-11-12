@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Idempotent; rerun whenever the units change. System user, directories, the app service, the digest and log-archive timers, Litestream and the backup-check timer (BACKUPS=s3), the Caddy site in /etc/caddy/sites, and the host's app registry if it has one.
+# Idempotent; rerun whenever the units change. System user, directories, the app service, the log-archive timer, Litestream and the backup-check timer (BACKUPS=s3), the Caddy site in /etc/caddy/sites, and the host's app registry if it has one.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
 echo "==> Provisioning ${SERVICE_NAME}: ${DOMAIN} -> 127.0.0.1:${APP_PORT}, ${REMOTE_DIR}"
@@ -90,31 +90,6 @@ WantedBy=multi-user.target
 UNIT
 fi
 
-cat > "/etc/systemd/system/${SERVICE_NAME}-digest.service" <<UNIT
-[Unit]
-Description=${SERVICE_NAME} weekly digest to the admins
-
-[Service]
-Type=oneshot
-User=${SERVICE_USER}
-Group=${SERVICE_USER}
-WorkingDirectory=${APP_DIR}
-${APP_ENV}
-ExecStart=${NODE_BIN} dist/server/jobs.js digest
-${HARDENING}
-UNIT
-cat > "/etc/systemd/system/${SERVICE_NAME}-digest.timer" <<UNIT
-[Unit]
-Description=Weekly ${SERVICE_NAME} digest
-
-[Timer]
-OnCalendar=Mon 08:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-UNIT
-
 if [ "${BACKUPS}" = s3 ]; then
 # Proves the backup works: syncs the photos, restores the latest replica and checks it against the live database. Pings Healthchecks check 2 either way.
 install -m 755 /dev/stdin "/usr/local/sbin/${SERVICE_NAME}-backup-check" <<SCRIPT
@@ -204,9 +179,14 @@ Persistent=true
 WantedBy=timers.target
 UNIT
 
+# Hosts provisioned while the app still had a weekly digest carry its units; the job no longer exists.
+if [ -e "/etc/systemd/system/${SERVICE_NAME}-digest.timer" ]; then
+  systemctl disable --now "${SERVICE_NAME}-digest.timer"
+  rm -f "/etc/systemd/system/${SERVICE_NAME}-digest.timer" "/etc/systemd/system/${SERVICE_NAME}-digest.service"
+fi
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}.service"
-systemctl enable --now "${SERVICE_NAME}-digest.timer" "${SERVICE_NAME}-archive-logs.timer"
+systemctl enable --now "${SERVICE_NAME}-archive-logs.timer"
 if [ "${BACKUPS}" = s3 ]; then
   systemctl enable "${SERVICE_NAME}-litestream.service"
   systemctl enable --now "${SERVICE_NAME}-backup-check.timer"

@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js';
+import { nieuwsOngezien } from '../shared/nieuws.ts';
 import type { Gebruiker, Omgeving } from '../shared/types.ts';
 import { ApiFout, get } from './api.ts';
 
@@ -44,3 +45,5 @@ export function ik(): Gebruiker {
 }
 
 export const isBeheerderNu = () => ik().rol === 'beheerder';
+// Lights the red dot that leads a beheerder to Wat is er nieuw.
+export const nieuwsOngezienNu = () => isBeheerderNu() && nieuwsOngezien(ik().nieuws_gezien);

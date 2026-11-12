@@ -1,11 +1,13 @@
 import type { Hono } from 'hono';
+import { NORM_CONTROLE_DAGEN } from '../../shared/constants.ts';
+import { dagenSinds } from '../../shared/datum.ts';
 import type { Gebruiker, Rol } from '../../shared/types.ts';
 import { audit } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
 import { lijstRij } from '../lijst.ts';
 import { EMAIL_RE } from '../mail.ts';
-import { gebruiker, gebruikersMap, laadDossiers } from '../repo.ts';
+import { gebruiker, gebruikersMap, laadDossiers, normafvoeren } from '../repo.ts';
 
 export interface GebruikerRij extends Gebruiker {
   open: number;
@@ -142,6 +144,7 @@ export function gebruikerRoutes(app: Hono<Env>, ctx: Ctx): void {
       { key: 'gesloten', label: 'Gesloten', aantal: rijen.length - open.length, query: 's_gesloten=ja' },
       { key: 'uitgevoerd', label: 'Uitgevoerd', aantal: rijen.filter((r) => r.uitgevoerd).length, query: 's_gesloten=alle&s_uitgevoerd=ja' },
     ];
-    return c.json({ tellingen, gebruikers: gebruikerRijen(ctx, false) });
+    const normNakijken = normafvoeren(ctx.db).filter((n) => dagenSinds(n.gecontroleerd_at, nu) >= NORM_CONTROLE_DAGEN);
+    return c.json({ tellingen, gebruikers: gebruikerRijen(ctx, false), normNakijken });
   });
 }

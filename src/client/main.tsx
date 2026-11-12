@@ -20,7 +20,7 @@ import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
 import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Nieuws } from './paginas/nieuws.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
-import { AandachtUitleg, Databeleid, Installeren, Privacy, RechtenUitleg, Statussen } from './paginas/uitleg.tsx';
+import { AandachtUitleg, Databeleid, Installeren, Privacy, RechtenUitleg, Statussen, UitlegOverzicht } from './paginas/uitleg.tsx';
 import { startScrollHerstel } from './scrollherstel.ts';
 import { startVersieControle } from './versie.ts';
 
@@ -58,6 +58,7 @@ render(
       <Route path="/beheer/feedback" component={Feedback} />
       <Route path="/beheer/activiteit" component={Activiteit} />
       <Route path="/beheer/nieuw" component={Nieuws} />
+      <Route path="/uitleg" component={UitlegOverzicht} />
       <Route path="/uitleg/statussen" component={Statussen} />
       <Route path="/uitleg/aandacht" component={AandachtUitleg} />
       <Route path="/uitleg/rechten" component={RechtenUitleg} />

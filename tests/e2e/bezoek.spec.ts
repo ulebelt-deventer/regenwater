@@ -37,7 +37,7 @@ test('de kaartuitsnede van een regenpijp steekt ~11px buiten de linkerbovenhoek 
   expect(Number(await kop.evaluate((el) => getComputedStyle(el).fontWeight))).toBeLessThan(600);
   for (const breedte of [320, 390, 800, 1280]) {
     await page.setViewportSize({ width: breedte, height: 800 });
-    const [b, u, label, afkoppelen, waar] = await Promise.all([blok, uitsnede, blok.locator('.qa-veld-regenpijp-bronnen .form-label'), blok.locator('.qa-veld-regenpijp-afkoppelen'), blok.locator('.qa-veld-regenpijp-waar')].map(rechthoek));
+    const [b, u, label, regenton, waar] = await Promise.all([blok, uitsnede, blok.locator('.qa-veld-regenpijp-afkoppelen .form-label'), blok.locator('.qa-veld-regenpijp-regenton'), blok.locator('.qa-veld-regenpijp-waar')].map(rechthoek));
     // The fields sit .5rem inside the 1px border.
     const binnenLinks = b.left + 1 + 8;
     expect(u.width).toBeGreaterThan(40);
@@ -46,7 +46,7 @@ test('de kaartuitsnede van een regenpijp steekt ~11px buiten de linkerbovenhoek 
     expect(label.left).toBeCloseTo(binnenLinks, 0);
     expect(label.top).toBeGreaterThanOrEqual(u.bottom - 0.5);
     // The row's vertical gutter stays: Waar starts a row of its own, .5rem under the last short cell.
-    expect(waar.top - afkoppelen.bottom).toBeCloseTo(8, 0);
+    expect(waar.top - regenton.bottom).toBeCloseTo(8, 0);
   }
 });
 
@@ -342,29 +342,34 @@ test('Andere foto’s staat op het Bezoek tussen Wat wenst de bewoner en Afsprak
   await expect(page.locator('.qa-sectie-bezoek .qa-duimen-andere_fotos > *')).toHaveCount(2);
 });
 
-test('Afkoppelen op Nee verbergt Waar en Hoe alleen bij die regenpijp en ook in de samenvatting; terug op Ja staat het antwoord er nog', async ({ page }) => {
+test('Afkoppelen op Nee laat bij die regenpijp alleen Afkoppelen staan, ook in de samenvatting; terug op Ja staat alles er nog', async ({ page }) => {
   const id = await tweeRegenpijpen(page);
+  await zet(page, id, { 'regenpijp.r1.soort': 'zink', 'regenpijp.r1.regenton': 'gewenst' });
+  await page.reload();
   const [a, b] = [page.locator('.qa-regenpijp').first(), page.locator('.qa-regenpijp').nth(1)];
+  const overig = ['.qa-veld-regenpijp-bronnen', '.qa-waterberging', '.qa-veld-regenpijp-soort', '.qa-veld-regenpijp-diameter', '.qa-veld-regenpijp-regenton', '.qa-veld-regenpijp-ondergrond', '.qa-veld-regenpijp-waar', '.qa-veld-regenpijp-hoe'];
   const waar = a.locator('.qa-veld-regenpijp-waar textarea');
   await waar.fill('De border in');
   await waar.blur();
-  await expect(a.locator('.qa-veld-regenpijp-hoe')).toBeVisible();
+  for (const veld of overig) await expect(a.locator(veld)).toBeVisible();
 
   await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('nee');
-  await expect(a.locator('.qa-veld-regenpijp-waar')).toHaveCount(0);
-  await expect(a.locator('.qa-veld-regenpijp-hoe')).toHaveCount(0);
-  await expect(b.locator('.qa-veld-regenpijp-waar')).toBeVisible();
-  await expect(b.locator('.qa-veld-regenpijp-hoe')).toBeVisible();
+  await expect(a.locator('.qa-veld-regenpijp-afkoppelen')).toBeVisible();
+  for (const veld of overig) await expect(a.locator(veld)).toHaveCount(0);
+  for (const veld of overig.filter((v) => !v.endsWith('ondergrond'))) await expect(b.locator(veld)).toBeVisible();
+  await expect(page.locator('.qa-controle')).toContainText('Regenpijp B: Soort');
+  await expect(page.locator('.qa-controle')).not.toContainText('Regenpijp A');
   await opslagKlaar(page);
 
   await page.goto(`/dossiers/${id}`);
   const samenvatting = page.locator('.qa-sectie-bezoek .qa-sv-regenpijp').first();
-  await expect(samenvatting).toContainText('Afkoppelen: Nee');
-  await expect(samenvatting).not.toContainText('De border in');
+  await expect(samenvatting).toHaveText(/^\s*Regenpijp A\s*Afkoppelen: Nee \(blijft naar riool gaan\)\s*$/);
 
   await page.goto(`/dossiers/${id}/bezoek`);
   await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('ja');
   await expect(waar).toHaveValue('De border in');
+  await expect(a.locator('.qa-veld-regenpijp-soort select.qa-invoer')).toHaveValue('zink');
+  await expect(a.locator('.qa-veld-regenpijp-ondergrond')).toBeVisible();
 });
 
 test('Hoe moet het water komen is een keuzemenu met vinkjes; Anders maakt plaats voor een invulveld met de focus, en dat leeg verlaten zet het vinkje terug', async ({ page }) => {
@@ -411,10 +416,11 @@ test('de cellen van de regenpijpblokken staan in kolommen die van blok tot blok 
   const [a, b] = [page.locator('.qa-regenpijp').nth(0), page.locator('.qa-regenpijp').nth(1)];
   const links = (blok: Locator, v: string) => blok.locator(`.qa-veld-regenpijp-${v}`).evaluate((el) => el.getBoundingClientRect().left);
   for (const v of ['bronnen', 'soort', 'diameter', 'regenton', 'afkoppelen', 'waar', 'hoe']) expect(await links(a, v)).toBe(await links(b, v));
-  // Waar and Hoe each span half the row, starting under the 1st and 4th short cells; Ondergrond starts the next row.
-  expect(await links(a, 'waar')).toBe(await links(a, 'bronnen'));
-  expect(await links(a, 'hoe')).toBeCloseTo(await links(a, 'diameter'), 0); // col-md-6 and three col-lg-2 round differently
-  expect(await links(a, 'ondergrond')).toBe(await links(a, 'bronnen'));
+  // Afkoppelen is the 1st short cell. Waar and Hoe each span half the row, starting under the 1st and 4th short cells; Ondergrond starts the next row.
+  expect(await links(a, 'afkoppelen')).toBeLessThan(await links(a, 'bronnen'));
+  expect(await links(a, 'waar')).toBe(await links(a, 'afkoppelen'));
+  expect(await links(a, 'hoe')).toBeCloseTo(await links(a, 'soort'), 0); // col-md-6 and three col-lg-2 round differently
+  expect(await links(a, 'ondergrond')).toBe(await links(a, 'afkoppelen'));
 
   // Each input fills its column: the whole cell, or for Hoe the column left of its photos.
   for (const [v, invoer] of [['soort', 'select'], ['afkoppelen', 'select'], ['hoe', '.qa-invoer']]) {

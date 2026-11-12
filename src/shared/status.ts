@@ -219,7 +219,7 @@ export function corporatieEmail(d: Dossier): string {
   return e && e in CORPORATIE_EMAIL ? CORPORATIE_EMAIL[e] : '';
 }
 
-export function adresRegel(d: Dossier): string {
+export function adresRegel(d: Pick<Dossier, 'id' | 'adres'>): string {
   return d.adres ? adresTekst(d.adres) : `Dossier ${d.id} (nog geen adres)`;
 }
 

@@ -396,13 +396,16 @@ describe('ontbrekend (Controle)', () => {
     expect(labels).not.toContain('Regenpijp A: Regenton aanwezig?');
   });
 
-  it('only asks Waar and Hoe of a regenpijp that does not stay on the riool', () => {
-    const labels = (afkoppelen: string) => ontbrekend(dossier({ data: { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[5, 5]] }], 'regenpijp.r1.afkoppelen': afkoppelen } }), 'bezoek').map((o) => o.label);
-    for (const vraag of ['Regenpijp A: Waar moet het water naartoe?', 'Regenpijp A: Hoe moet het water daarnaartoe komen?']) {
-      expect(labels('ja')).toContain(vraag);
-      expect(labels('twijfel')).toContain(vraag);
-      expect(labels('nee')).not.toContain(vraag);
+  it('asks a regenpijp that stays on the riool only Afkoppelen, not its other fields nor a dak', () => {
+    const labels = (afkoppelen: string, regenton: string | null = null) =>
+      ontbrekend(dossier({ data: { kaart_annotaties: [{ id: 'r1', type: 'regenpijp', p: [[5, 5]] }], 'regenpijp.r1.afkoppelen': afkoppelen, 'regenpijp.r1.regenton': regenton } }), 'bezoek').map((o) => o.label).filter((l) => l.startsWith('Regenpijp A'));
+    const overig = ['Soort', 'Diameter', 'Waar moet het water naartoe?', 'Hoe moet het water daarnaartoe komen?', 'aan geen dak gekoppeld'].map((v) => `Regenpijp A: ${v}`);
+    for (const afkoppelen of ['ja', 'twijfel']) {
+      expect(labels(afkoppelen)).toEqual(expect.arrayContaining([...overig, 'Regenpijp A: Regenton aanwezig?']));
+      expect(labels(afkoppelen, 'gewenst')).toContain('Regenpijp A: Hoe is de ondergrond bij de pijp?');
     }
+    expect(labels('nee')).toEqual([]);
+    expect(labels('nee', 'gewenst')).toEqual([]);
   });
 
   it('lists a regenpijp that drains no dakdeel', () => {

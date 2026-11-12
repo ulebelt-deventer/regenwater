@@ -46,7 +46,8 @@ export interface FotoSlot {
 
 const isHuur = (d: Dossier) => d.huur_koop === 'huur';
 const regenpijpWaarde = (d: Dossier, id: string | null, veld: string) => d.data[`regenpijp.${id}.${veld}`];
-const nietOpRiool = (d: Dossier, id: string | null) => regenpijpWaarde(d, id, 'afkoppelen') !== 'nee';
+// A regenpijp on Afkoppelen: Nee keeps only that answer; its other fields and boxes are hidden everywhere.
+export const nietOpRiool = (d: Dossier, id: string | null) => regenpijpWaarde(d, id, 'afkoppelen') !== 'nee';
 
 export const BEOORDELINGEN: [string, string, string][] = [
   ['uitvoerbaar', 'Wensen uitvoerbaar', 'De Ulebelt is positief over de wensen van de bewoner en denkt dat ze uitvoerbaar zijn.'],
@@ -94,11 +95,11 @@ export const VELDEN: Veld[] = [
   { key: 'tuin.*.m2', label: 'Tuin m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'steen.*.m2', label: 'Steen m²', type: 'number', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'tuinsituatie', label: 'Tuinsituatie & infiltratie', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'tuinsituatie', hint: 'Is de tuin groot en groen genoeg om het water te laten infiltreren, ook bij piekafvoer? Welke obstakels zijn er (terras, pad, hoogteverschil)? Is er een wadi nodig?' },
-  { key: 'regenpijp.*.soort', label: 'Soort', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, opties: [['pvc', 'PVC'], ['zink', 'Zink'], ['anders', 'Anders, namelijk:']] },
-  { key: 'regenpijp.*.diameter', label: 'Diameter', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, opties: [['80', '80 mm'], ['100', '100 mm'], ['anders', 'Anders, namelijk:']] },
-  { key: 'regenpijp.*.regenton', label: 'Regenton aanwezig?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['aanwezig', 'Is al aanwezig'], ['gewenst', 'Niet aanwezig, wel gewenst'], ['niet', 'Niet gewenst']] },
-  { key: 'regenpijp.*.ondergrond', label: 'Hoe is de ondergrond bij de pijp?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.ondergrond', zichtbaar: (d, id) => regenpijpWaarde(d, id, 'regenton') === 'gewenst' },
   { key: 'regenpijp.*.afkoppelen', label: 'Afkoppelen?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, opties: [['ja', 'Ja'], ['nee', 'Nee (blijft naar riool gaan)'], ['twijfel', 'Twijfel']] },
+  { key: 'regenpijp.*.soort', label: 'Soort', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, zichtbaar: nietOpRiool, anders: true, opties: [['pvc', 'PVC'], ['zink', 'Zink'], ['anders', 'Anders, namelijk:']] },
+  { key: 'regenpijp.*.diameter', label: 'Diameter', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, zichtbaar: nietOpRiool, anders: true, opties: [['80', '80 mm'], ['100', '100 mm'], ['anders', 'Anders, namelijk:']] },
+  { key: 'regenpijp.*.regenton', label: 'Regenton aanwezig?', type: 'radio', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, zichtbaar: nietOpRiool, opties: [['aanwezig', 'Is al aanwezig'], ['gewenst', 'Niet aanwezig, wel gewenst'], ['niet', 'Niet gewenst']] },
+  { key: 'regenpijp.*.ondergrond', label: 'Hoe is de ondergrond bij de pijp?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.ondergrond', zichtbaar: (d, id) => nietOpRiool(d, id) && regenpijpWaarde(d, id, 'regenton') === 'gewenst' },
   { key: 'regenpijp.*.waar', label: 'Waar moet het water naartoe?', type: 'textarea', rijen: 2, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'regenpijp.*.waar', zichtbaar: nietOpRiool },
   { key: 'regenpijp.*.hoe', label: 'Hoe moet het water daarnaartoe komen?', type: 'checks', lijst: true, pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, anders: true, fotos: 'regenpijp.*.hoe', zichtbaar: nietOpRiool, opties: [['holie_molie', 'Holie Molie'], ['drainageslang', 'Drainageslang bovengronds'], ['ondergronds', 'Ondergronds'], ['anders', 'Anders, namelijk:']] },
   { key: 'hoosbuien', label: 'Wat gebeurt er bij hoosbuien?', type: 'textarea', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true, controle: true, fotos: 'hoosbuien', hint: 'Kijk en vraag. Waar loopt het dan naar toe? Kan het naar de straat waar een put zit? Of naar een gemeenteplantsoen dat aan de tuin grenst? Let goed op bij hoogteverschillen!' },
@@ -302,7 +303,7 @@ export function ontbrekend(d: Dossier, pagina: 'bezoek' | 'plan'): Ontbrekend[] 
       if (dak.verlopen) uit.push({ label: `${dak.label}: verdeling opnieuw controleren`, anker: `veld-dak.${dak.id}.verdeling` });
       else if (dak.verdeling.length === 0) uit.push({ label: `${dak.label}: geen regenpijp`, anker: `veld-dak.${dak.id}.verdeling` });
     }
-    for (const r of items.regenpijpen) if (r.bronnen.length === 0) uit.push({ label: `Regenpijp ${r.label}: aan geen dak gekoppeld`, anker: `veld-regenpijp.${r.id}.bronnen` });
+    for (const r of items.regenpijpen) if (r.bronnen.length === 0 && nietOpRiool(d, r.id)) uit.push({ label: `Regenpijp ${r.label}: aan geen dak gekoppeld`, anker: `veld-regenpijp.${r.id}.bronnen` });
     for (const tuin of items.tuinen) if (tuin.m2 === null) uit.push({ label: `${tuin.label}: m²`, anker: `veld-tuin.${tuin.id}.m2` });
     for (const steen of items.stenen) if (steen.m2 === null) uit.push({ label: `${steen.label}: m²`, anker: `veld-steen.${steen.id}.m2` });
   }

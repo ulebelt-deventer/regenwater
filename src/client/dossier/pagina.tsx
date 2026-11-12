@@ -377,7 +377,7 @@ export function Details() {
               tabindex="0"
               role="img"
               aria-label="Wat is de eigenaar?"
-              ref={tip('Standaard de beheerder die het dossier heeft aangemaakt. De eigenaar is verantwoordelijk voor het dossier en krijgt de e-mailmeldingen over wat erin gebeurt.')}
+              ref={tip('Standaard de beheerder die het dossier heeft aangemaakt. De eigenaar is verantwoordelijk voor het dossier en krijgt de meldingen over wat erin gebeurt onder het belletje bovenaan.')}
             >
               <i class="bi bi-question-circle" aria-hidden="true" />
             </span>

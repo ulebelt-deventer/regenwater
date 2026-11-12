@@ -5,7 +5,7 @@ import type { Adres, NormafvoerRij } from '../../shared/types.ts';
 import { audit, type AuditRij } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
-import { melding } from '../meldingen.ts';
+import { feedbackMail } from '../meldingen.ts';
 import { gebruikersMap, leesNormMm, normafvoeren } from '../repo.ts';
 import { DETECTIE_GEMEENTEN } from '../riool.ts';
 import { auditItem } from './dossiers.ts';
@@ -175,7 +175,7 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
     audit(ctx, actorVan(c), null, 'feedback', { id: Number(lastInsertRowid), scherm });
     const onderwerp = `Feedback van ${ik.naam}`;
     const inhoud = `${ik.naam} (${ik.email}) op ${ctx.config.basisUrl}${scherm}:\n\n${tekst}\n\nAlle feedback: ${ctx.config.basisUrl}/beheer/feedback`;
-    await melding(ctx, 'feedback', onderwerp, inhoud);
+    await feedbackMail(ctx, onderwerp, inhoud);
     return c.json({ ok: true }, 201);
   });
 

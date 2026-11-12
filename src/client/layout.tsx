@@ -1,10 +1,11 @@
 import { A, type RouteSectionProps, useLocation, useNavigate } from '@solidjs/router';
-import { type JSX, Show, createResource, createSignal } from 'solid-js';
-import { nieuwsOngezien } from '../shared/nieuws.ts';
+import { For, type JSX, Show, createResource, createSignal } from 'solid-js';
 import { isOpenbaar, post } from './api.ts';
+import { Bel } from './bel.tsx';
 import { opgeslagenOm, opslagStatus } from './opslag.ts';
-import { laadOmgeving, laadSessie, omgeving, sessie } from './sessie.ts';
-import { Dropdown, Meldingen, Modal, Opgeslagen, Vragen, melding, probeer } from './ui.tsx';
+import { UITLEG_PAGINAS } from './paginas/uitleg.tsx';
+import { laadOmgeving, laadSessie, nieuwsOngezienNu, omgeving, sessie } from './sessie.ts';
+import { Dropdown, Meldingen, Modal, NieuwStip, Opgeslagen, Vragen, melding, probeer } from './ui.tsx';
 
 function NavLink(props: { href: string; children: JSX.Element; class?: string }) {
   return (
@@ -24,15 +25,6 @@ function Merk() {
         <span class="d-none d-md-inline ms-1">Regenwater</span>
       </span>
     </>
-  );
-}
-
-// Shown on the Beheer menu and its "Wat is er nieuw" item until the beheerder opens that page.
-function NieuwStip() {
-  return (
-    <span class="d-inline-block p-1 bg-danger rounded-circle ms-1 align-middle qa-nieuw-stip">
-      <span class="visually-hidden">Nieuw</span>
-    </span>
   );
 }
 
@@ -80,43 +72,52 @@ function Navbar() {
           <OmgevingLabel />
         </div>
         <NavLink href="/dossiers" class="qa-nav-dossiers"><i class="bi bi-houses me-1" aria-hidden="true" />{beheerder() ? 'Dossiers' : 'Mijn dossiers'}</NavLink>
-        <Show when={beheerder()}>
-          <Dropdown knop={<>Beheer<Show when={nieuwsOngezien(s().ik.nieuws_gezien)}><NieuwStip /></Show></>} knopClass="btn btn-link nav-link qa-nav-beheer" class="ms-auto" rechts>
-            <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>
-            <A class="dropdown-item" href="/beheer/materialen"><i class="bi bi-hammer me-2" aria-hidden="true" />Materialen</A>
-            <A class="dropdown-item qa-nav-normafvoer" href="/beheer/normafvoer"><i class="bi bi-cloud-rain me-2" aria-hidden="true" />Normafvoer</A>
-            <A class="dropdown-item" href="/beheer/sjablonen"><i class="bi bi-envelope me-2" aria-hidden="true" />E-mailsjablonen</A>
-            <A class="dropdown-item" href="/beheer/feedback"><i class="bi bi-lightbulb me-2" aria-hidden="true" />Feedback</A>
-            <a class="dropdown-item" href="/docs/bezoekformulier-leeg.pdf" target="_blank"><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />Leeg bezoekformulier (PDF)</a>
-            <A class="dropdown-item" href="/beheer/activiteit"><i class="bi bi-clock-history me-2" aria-hidden="true" />Alle activiteit</A>
-            <div class="dropdown-divider" />
-            <A class="dropdown-item" href="/uitleg/statussen"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: statussen</A>
-            <A class="dropdown-item" href="/uitleg/aandacht"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: aandacht</A>
-            <A class="dropdown-item" href="/uitleg/rechten"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: rechten</A>
-            <A class="dropdown-item" href="/uitleg/databeleid"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg: databeleid</A>
-            <div class="dropdown-divider" />
-            <A class="dropdown-item qa-nav-nieuws" href="/beheer/nieuw">
-              <i class="bi bi-stars me-2" aria-hidden="true" />Wat is er nieuw
-              <Show when={nieuwsOngezien(s().ik.nieuws_gezien)}><NieuwStip /></Show>
-            </A>
-            {/* The build this page runs: after a reload, the deployed commit. */}
-            <div class="dropdown-item-text small text-muted qa-versie">Versie: {import.meta.env.VITE_APP_VERSIE}</div>
+        {/* One wrapper pushed right, so the menus stay together whichever of them a phone hides. */}
+        <div class="ms-auto d-flex align-items-center gap-2 gap-md-3">
+          <Show when={beheerder()}>
+            <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" rechts>
+              <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>
+              <A class="dropdown-item" href="/beheer/materialen"><i class="bi bi-hammer me-2" aria-hidden="true" />Materialen</A>
+              <A class="dropdown-item qa-nav-normafvoer" href="/beheer/normafvoer"><i class="bi bi-cloud-rain me-2" aria-hidden="true" />Normafvoer</A>
+              <A class="dropdown-item" href="/beheer/sjablonen"><i class="bi bi-envelope me-2" aria-hidden="true" />E-mailsjablonen</A>
+              <A class="dropdown-item" href="/beheer/feedback"><i class="bi bi-lightbulb me-2" aria-hidden="true" />Feedback</A>
+              <a class="dropdown-item" href="/docs/bezoekformulier-leeg.pdf" target="_blank"><i class="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />Leeg bezoekformulier (PDF)</a>
+              <A class="dropdown-item" href="/beheer/activiteit"><i class="bi bi-clock-history me-2" aria-hidden="true" />Alle activiteit</A>
+              <div class="dropdown-divider" />
+              {/* The build this page runs: after a reload, the deployed commit. */}
+              <div class="dropdown-item-text small text-muted qa-versie">Versie: {import.meta.env.VITE_APP_VERSIE}</div>
+            </Dropdown>
+            <Bel />
+          </Show>
+          {/* On phones the Account menu has a single Uitleg link instead, to save space; it carries the red dot there. */}
+          <Dropdown knop={<><i class="bi bi-question-circle me-1" aria-hidden="true" />Uitleg<Show when={nieuwsOngezienNu()}><NieuwStip /></Show></>} knopClass="btn btn-link nav-link qa-nav-uitleg" class="d-none d-md-block" rechts>
+            <For each={UITLEG_PAGINAS}>
+              {(u) => <A class="dropdown-item" href={u.href}><i class={`bi ${u.icoon} me-2`} aria-hidden="true" />{u.label}</A>}
+            </For>
+            <Show when={beheerder()}>
+              <div class="dropdown-divider" />
+              <A class="dropdown-item qa-nav-nieuws" href="/beheer/nieuw">
+                <i class="bi bi-stars me-2" aria-hidden="true" />Wat is er nieuw
+                <Show when={nieuwsOngezienNu()}><NieuwStip /></Show>
+              </A>
+            </Show>
           </Dropdown>
-        </Show>
-        <Dropdown
-          knop={
-            <>
-              <i class="bi bi-person-circle" role="img" aria-label={s().ik.naam} />
-              <span class="d-none d-md-inline ms-2 qa-account-naam">{s().ik.naam}</span>
-            </>
-          }
-          knopClass="btn btn-link nav-link qa-nav-account"
-          class={beheerder() ? '' : 'ms-auto'}
-          rechts
-        >
-          <A class="dropdown-item" href="/installeren"><i class="bi bi-phone me-2" aria-hidden="true" />App op je telefoon zetten</A>
-          <button type="button" class="dropdown-item text-danger qa-uitloggen" onClick={() => void uitloggen()}><i class="bi bi-box-arrow-right me-2" aria-hidden="true" />Uitloggen</button>
-        </Dropdown>
+          <Dropdown
+            knop={
+              <>
+                <i class="bi bi-person-circle" role="img" aria-label={s().ik.naam} />
+                <span class="d-none d-md-inline ms-2 qa-account-naam">{s().ik.naam}</span>
+                <Show when={nieuwsOngezienNu()}><span class="d-md-none"><NieuwStip /></span></Show>
+              </>
+            }
+            knopClass="btn btn-link nav-link qa-nav-account"
+            rechts
+          >
+            <A class="dropdown-item d-md-none qa-account-uitleg" href="/uitleg"><i class="bi bi-question-circle me-2" aria-hidden="true" />Uitleg<Show when={nieuwsOngezienNu()}><NieuwStip /></Show></A>
+            <A class="dropdown-item" href="/installeren"><i class="bi bi-phone me-2" aria-hidden="true" />App op je telefoon zetten</A>
+            <button type="button" class="dropdown-item text-danger qa-uitloggen" onClick={() => void uitloggen()}><i class="bi bi-box-arrow-right me-2" aria-hidden="true" />Uitloggen</button>
+          </Dropdown>
+        </div>
       </div>
     </nav>
   );

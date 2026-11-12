@@ -3,7 +3,7 @@ import { For, Show, createSignal, onMount } from 'solid-js';
 import { AUTO_VERDELING_UITLEG, type Aandeel, KOPPEL_M, annotatiesSvg, autoGesplitst, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
 import { KAART_MELDINGEN } from '../../shared/aandacht.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { ontbrekend, veld } from '../../shared/velden.ts';
+import { nietOpRiool, ontbrekend, veld } from '../../shared/velden.ts';
 import { isNetwerkFout, post } from '../api.ts';
 import { Dropdown, Modal, OnderdeelIcoon, bevestig, gaNaar, melding, scrollNaar, tip } from '../ui.tsx';
 import { MijlpaalRegel, VerbergKnop, actie, zetMijlpaal } from './acties.tsx';
@@ -119,39 +119,42 @@ function RegenpijpBlok(props: { id: string }) {
       <div ref={inhoud} class="qa-regenpijp-inhoud">
         <div class="p-2">
           <div class="row gx-3 gy-2">
-            <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
-              <div class="form-label fw-semibold mb-1">Voert af van</div>
-              <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
-                <span class="qa-bronnen">
-                  <For each={pijp().bronnen}>
-                    {(b, i) => (
-                      <>
-                        {i() > 0 && ', '}
-                        <span class="text-nowrap qa-bron">{bronLabel(b, items().labels)}</span>
-                      </>
-                    )}
-                  </For>
-                </span>
-              </Show>
-            </div>
-            <div class={KORT}>
-              <div class="form-label fw-semibold mb-1">
-                Waterberging<span class="cursor-help qa-waterberging-uitleg" ref={tip(() => normafvoerTekst(s.d.normafvoer))}>**</span>
-              </div>
-              <div class="qa-waterberging">
-                <Show when={waterberging(pijp(), items().daken, s.d.normafvoer.mm)} fallback="--">
-                  {(w) => (
-                    <>
-                      {w().liter} liter
-                      <div class="text-muted" style={{ 'font-size': '.8em' }}>{w().uitleg}</div>
-                    </>
-                  )}
+            <VeldInvoer k={k('afkoppelen')} class={KORT} breed />
+            <Show when={nietOpRiool(s.d, props.id)}>
+              <div id={`veld-${k('bronnen')}`} class={`${KORT} qa-veld qa-veld-regenpijp-bronnen`}>
+                <div class="form-label fw-semibold mb-1">Voert af van</div>
+                <Show when={pijp().bronnen.length} fallback={<span class="text-danger qa-geen-bron">Aan geen dak gekoppeld</span>}>
+                  <span class="qa-bronnen">
+                    <For each={pijp().bronnen}>
+                      {(b, i) => (
+                        <>
+                          {i() > 0 && ', '}
+                          <span class="text-nowrap qa-bron">{bronLabel(b, items().labels)}</span>
+                        </>
+                      )}
+                    </For>
+                  </span>
                 </Show>
               </div>
-            </div>
-            <For each={['soort', 'diameter', 'regenton', 'afkoppelen']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
-            <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
-            <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
+              <div class={KORT}>
+                <div class="form-label fw-semibold mb-1">
+                  Waterberging<span class="cursor-help qa-waterberging-uitleg" ref={tip(() => normafvoerTekst(s.d.normafvoer))}>**</span>
+                </div>
+                <div class="qa-waterberging">
+                  <Show when={waterberging(pijp(), items().daken, s.d.normafvoer.mm)} fallback="--">
+                    {(w) => (
+                      <>
+                        {w().liter} liter
+                        <div class="text-muted" style={{ 'font-size': '.8em' }}>{w().uitleg}</div>
+                      </>
+                    )}
+                  </Show>
+                </div>
+              </div>
+              <For each={['soort', 'diameter', 'regenton']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
+              <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
+              <VeldInvoer k={k('ondergrond')} class="col-12 col-md-4" fotoOnder breed />
+            </Show>
           </div>
         </div>
       </div>

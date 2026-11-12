@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-screen summary: service, socket, health (local + public), TLS, memory, errors, database, Litestream, backup check, digest, host.
+# One-screen summary: service, socket, health (local + public), TLS, memory, errors, database, Litestream, backup check, host.
 . "$(cd "$(dirname "$0")" && pwd)/config.sh"
 require_host
 
@@ -25,8 +25,6 @@ echo "LITESTREAM=$(prop "${SERVICE_NAME}-litestream" ActiveState)/$(prop "${SERV
 echo "CHECK_RESULT=$(prop "${SERVICE_NAME}-backup-check.service" Result)"
 echo "CHECK_LAST=$(epoch "$(prop "${SERVICE_NAME}-backup-check.service" ExecMainExitTimestamp)")"
 echo "CHECK_NEXT=$(epoch "$(prop "${SERVICE_NAME}-backup-check.timer" NextElapseUSecRealtime)")"
-echo "DIGEST_RESULT=$(prop "${SERVICE_NAME}-digest.service" Result)"
-echo "DIGEST_NEXT=$(epoch "$(prop "${SERVICE_NAME}-digest.timer" NextElapseUSecRealtime)")"
 free -m | awk '/^Mem:/ {print "HOST_MEM_AVAIL=" $7; print "HOST_MEM_TOTAL=" $2} /^Swap:/ {print "HOST_SWAP_USED=" $3}'
 echo "LOAD1=$(cut -d' ' -f1 /proc/loadavg)"
 echo "CORES=$(nproc)"
@@ -100,10 +98,6 @@ elif [ -z "${S_CHECK_LAST}" ]; then row WARN "Backup check" "never ran (${check_
 elif [ "${S_CHECK_RESULT}" != success ]; then row FAIL "Backup check" "${S_CHECK_RESULT}, ${check_val}"
 elif [ $(( S_NOW - S_CHECK_LAST )) -gt 180000 ]; then row FAIL "Backup check" "${check_val}"
 else row OK "Backup check" "${check_val}"; fi
-
-digest_val="next in $(( (${S_DIGEST_NEXT:-$S_NOW} - S_NOW) / 86400 ))d"
-if [ -n "${S_DIGEST_RESULT}" ] && [ "${S_DIGEST_RESULT}" != success ]; then row FAIL Digest "last run: ${S_DIGEST_RESULT}, ${digest_val}"
-else row OK Digest "${digest_val}"; fi
 
 host_mem="${S_HOST_MEM_AVAIL}MB free of ${S_HOST_MEM_TOTAL}MB, swap used ${S_HOST_SWAP_USED}MB"
 if [ "${S_HOST_MEM_AVAIL:-0}" -lt 150 ]; then row FAIL "Host memory" "${host_mem}"

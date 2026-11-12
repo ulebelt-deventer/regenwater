@@ -1,4 +1,4 @@
-// Explanation pages: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Databeleid, Installeren and Privacy.
+// Explanation pages, open to every user: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Databeleid, Installeren and Privacy.
 import { A } from '@solidjs/router';
 import { For, type JSX, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { KLOPT_NIET_KOP, KLOPT_NIET_REGELS, LIGT_STIL_REGELS } from '../../shared/aandacht.ts';
@@ -6,13 +6,47 @@ import { ULEBELT_CONTACT_EMAIL } from '../../shared/constants.ts';
 import { LIGT_BIJ_LABEL, STAPPEN } from '../../shared/status.ts';
 import { SLUIT_REDENEN } from '../../shared/types.ts';
 import { type Bewerker, FOTO_SLOTS, type Pagina, VELDEN } from '../../shared/velden.ts';
-import { AlleenBeheerder, StatusLabel, titel } from '../ui.tsx';
+import { isBeheerderNu, nieuwsOngezienNu } from '../sessie.ts';
+import { NieuwStip, StatusLabel, titel } from '../ui.tsx';
 
 const stapLabel = (key: string) => {
   const s = STAPPEN.find((x) => x.key === key);
   if (!s) throw new Error(`Onbekende stap ${key}`);
   return `${s.nr}. ${s.label}`;
 };
+
+// The Uitleg menu in the navbar, and the overview page that the Account menu links to on phones. Both add Wat is er nieuw for beheerders.
+export const UITLEG_PAGINAS = [
+  { href: '/uitleg/statussen', label: 'Statussen', icoon: 'bi-list-ol', tekst: 'Hoe de app de stap van een dossier bepaalt, en bij wie de bal ligt.' },
+  { href: '/uitleg/aandacht', label: 'Aandacht', icoon: 'bi-exclamation-circle', tekst: 'Wanneer een dossier aandacht nodig heeft, en wat de ijskast doet.' },
+  { href: '/uitleg/rechten', label: 'Rechten', icoon: 'bi-shield-lock', tekst: 'Wie wat mag zien en wijzigen.' },
+  { href: '/uitleg/databeleid', label: 'Databeleid', icoon: 'bi-file-earmark-lock', tekst: 'Wat we doen bij privacyverzoeken en datalekken, en hoe lang we gegevens bewaren.' },
+];
+
+export function UitlegOverzicht() {
+  titel('Uitleg');
+  return (
+    <>
+      <h1>Uitleg</h1>
+      <div class="list-group qa-uitleg-overzicht">
+        <For each={UITLEG_PAGINAS}>
+          {(u) => (
+            <A href={u.href} class="list-group-item list-group-item-action">
+              <div class="fw-semibold"><i class={`bi ${u.icoon} me-2`} aria-hidden="true" />{u.label}</div>
+              <div class="small text-muted">{u.tekst}</div>
+            </A>
+          )}
+        </For>
+        <Show when={isBeheerderNu()}>
+          <A href="/beheer/nieuw" class="list-group-item list-group-item-action qa-uitleg-nieuws">
+            <div class="fw-semibold"><i class="bi bi-stars me-2" aria-hidden="true" />Wat is er nieuw<Show when={nieuwsOngezienNu()}><NieuwStip /></Show></div>
+            <div class="small text-muted">De belangrijkste veranderingen in de app. Alleen voor beheerders.</div>
+          </A>
+        </Show>
+      </div>
+    </>
+  );
+}
 
 export function Statussen() {
   titel('Uitleg: statussen');
@@ -55,10 +89,10 @@ export function Statussen() {
 export function AandachtUitleg() {
   titel('Uitleg: aandacht');
   return (
-    <AlleenBeheerder>
+    <>
       <h1>Uitleg: aandacht</h1>
-      <p>Een dossier heeft aandacht nodig als er minstens één bevinding is van een van de drie soorten hieronder. Elke bevinding is een regel in de rode balk bovenaan het dossier, met een link naar wat je moet aanpassen, en het dossier krijgt het rode label “aandacht” in lijsten en tellingen. De app berekent dit bij elke pagina opnieuw uit de gegevens. De tellingen op het Overzicht en de wekelijkse mail gaan over open dossiers; het dossier zelf en het Aandacht-filter in de lijst tonen ook gesloten dossiers.</p>
-      <p>Een dossier in de ijskast (“Dossier in ijskast doen” in het menu van het dossier) heeft tot de gekozen dag geen enkele bevinding, ook geen herinnering voor de bezoeker of uitvoerder, en staat niet in de standaardlijst. Op die dag krijgt de eigenaar een mail en telt alles weer mee.</p>
+      <p>Een dossier heeft aandacht nodig als er minstens één bevinding is van een van de drie soorten hieronder. Elke bevinding is een regel in de rode balk bovenaan het dossier, met een link naar wat je moet aanpassen, en het dossier krijgt het rode label “aandacht” in lijsten en tellingen. De app berekent dit bij elke pagina opnieuw uit de gegevens. De tellingen op het Overzicht gaan over open dossiers; het dossier zelf en het Aandacht-filter in de lijst tonen ook gesloten dossiers.</p>
+      <p>Een dossier in de ijskast (“Dossier in ijskast doen” in het menu van het dossier) heeft tot de gekozen dag geen enkele bevinding, ook geen herinnering voor de bezoeker of uitvoerder, en staat niet in de standaardlijst. Op die dag krijgt de eigenaar een melding onder het belletje bovenaan en telt alles weer mee.</p>
       <p>Is een bevinding bij een dossier niet relevant, tik dan op het rode kruisje erachter: hij komt bij dat dossier niet meer terug, ook niet als hij later weer zou gelden. Het kruisje rechtsboven in de balk verbergt alle regels tegelijk; bevindingen die er later bij komen, zie je wel. Terugzetten kan niet. Dat geldt ook voor de rode meldingen dat er nog geen dak of tuin is ingetekend op de Bezoekpagina.</p>
 
       <section class="card card-body mb-3 qa-klopt-niet-regels">
@@ -119,7 +153,7 @@ export function AandachtUitleg() {
         <p>Met het rode kruisje verberg je een Ligt stil-bevinding voor die stap voorgoed, ook de herinnering voor de bezoeker of uitvoerder. Wacht het dossier tot een bepaalde dag, doe het dan in de ijskast.</p>
         <p class="mb-0">De bezoeker ziet Ligt stil alleen bij de eigen stappen ({['afspraak', 'bezoek', 'plan'].map(stapLabel).join(', ')}) en de uitvoerder alleen bij {stapLabel('uitvoering')}, als herinnering, zonder het aandacht-label.</p>
       </section>
-    </AlleenBeheerder>
+    </>
   );
 }
 
@@ -143,7 +177,7 @@ function rolMag(pagina: Pagina, rol: Bewerker): string {
 export function RechtenUitleg() {
   titel('Uitleg: rechten');
   return (
-    <AlleenBeheerder>
+    <>
       <h1>Uitleg: rechten</h1>
       <p>Wat iemand mag zien en wijzigen hangt af van twee dingen: of die beheerder of klusser is, en bij een klusser welke rol die op het dossier heeft en hoe ver het dossier is. De server controleert dit bij elk verzoek; de app zet velden die je niet mag wijzigen grijs.</p>
 
@@ -194,9 +228,9 @@ export function RechtenUitleg() {
 
       <section class="card card-body mb-3 qa-rechten-beheer">
         <h2>Het Beheer-menu</h2>
-        <p class="mb-0">Alles onder Beheer is alleen voor beheerders: gebruikers, materialen, e-mailsjablonen, feedback, het lege bezoekformulier, alle activiteit en deze uitlegpagina’s. Klussers zien het menu niet, en de server weigert deze gegevens aan hen. Een beheerder kan met “Inloggen als” de app bekijken zoals een klusser hem ziet, met precies diens rechten.</p>
+        <p class="mb-0">Alles onder Beheer is alleen voor beheerders: gebruikers, materialen, normafvoer, e-mailsjablonen, feedback, het lege bezoekformulier, alle activiteit. Klussers zien het menu niet, en de server weigert deze gegevens aan hen. Ook het belletje met meldingen is alleen voor beheerders. De uitlegpagina’s zijn voor iedereen; Wat is er nieuw in het Uitleg-menu is alleen voor beheerders. Een beheerder kan met “Inloggen als” de app bekijken zoals een klusser hem ziet, met precies diens rechten.</p>
       </section>
-    </AlleenBeheerder>
+    </>
   );
 }
 
@@ -204,7 +238,7 @@ export function RechtenUitleg() {
 export function Databeleid() {
   titel('Uitleg: databeleid');
   return (
-    <AlleenBeheerder>
+    <>
       <h1 class="qa-databeleid-titel">Uitleg: databeleid</h1>
       <p>
         Op de <A href="/privacy">Privacy-pagina</A> staat wat bewoners en gebruikers van ons mogen verwachten. Hier staat wat wij moeten doen om dat waar te maken.
@@ -269,7 +303,7 @@ export function Databeleid() {
         </ul>
         <p class="mb-0">Het logboek wordt vanzelf verwijderd. De rest verwijdert de app nog niet zelf; de eerste termijn loopt rond 2031 af en de technisch beheerder regelt dit voor die tijd.</p>
       </section>
-    </AlleenBeheerder>
+    </>
   );
 }
 

@@ -35,7 +35,11 @@ onderhoud();
 setInterval(onderhoud, 864e5).unref();
 
 function wekker(): void {
-  ijskastWekker(ctx).catch((e: unknown) => log.error('ijskast-wekker mislukt', e));
+  try {
+    ijskastWekker(ctx);
+  } catch (e) {
+    log.error('ijskast-wekker mislukt', e);
+  }
 }
 wekker();
 setInterval(wekker, 15 * 60e3).unref();

@@ -1,7 +1,6 @@
 import sharp from 'sharp';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NIEUWS } from '../shared/nieuws.ts';
-import { digestTekst, verstuurDigest } from './digest.ts';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier as maakDossier, testApp } from './testapp.ts';
 
 let t: TestApp;
@@ -92,22 +91,25 @@ describe('dossiers', () => {
     expect((await beheerder.json('GET', `/api/dossiers/${id}`)).dossier.data.wensen).toBe('Regenton bij de schuur');
   });
 
-  it("mails the dossier's eigenaar when a klusser taps Klaar voor controle, but not when an admin does", async () => {
+  it("gives the dossier's eigenaar a melding, not a mail, when a klusser taps Klaar voor controle, but not when an admin does", async () => {
     const id = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
     await klusser.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
-    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['bea.beheer@example.org', 'Plan van Aanpak klaar voor controle: Walstraat 74, Deventer (Kees Klus)']]);
     const id2 = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id2}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
-    expect(t.mailer.verstuurd).toHaveLength(1);
+    expect((await beheerder.json('GET', '/api/notificaties')).items).toEqual([
+      expect.objectContaining({ dossier_id: id, adres: 'Walstraat 74, Deventer', titel: 'Plan van Aanpak klaar voor controle (Kees Klus)', gelezen: false }),
+    ]);
+    expect(t.mailer.verstuurd).toEqual([]);
   });
 
-  it('mails the eigenaar just the same when an admin taps Klaar voor controle while "Inloggen als" the klusser', async () => {
+  it('gives the eigenaar the melding just the same when an admin taps Klaar voor controle while "Inloggen als" the klusser', async () => {
     const id = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
     await beheerder.json('POST', `/api/auth/als/${klusserId}`);
     await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
-    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['bea.beheer@example.org', 'Plan van Aanpak klaar voor controle: Walstraat 74, Deventer (Kees Klus)']]);
+    await beheerder.json('POST', '/api/auth/als/stop');
+    expect((await beheerder.json('GET', '/api/notificaties')).items.map((n: { titel: string }) => n.titel)).toEqual(['Plan van Aanpak klaar voor controle (Kees Klus)']);
   });
 
   describe('eigenaar', () => {
@@ -123,7 +125,9 @@ describe('dossiers', () => {
       expect((await beheerder.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: annaId })).dossier.eigenaar_id).toBe(annaId);
       await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: klusserId });
       await klusser.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
-      expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['anna.admin@example.org']);
+      const anna = await new Klant(t).login('anna.admin@example.org');
+      expect((await anna.json('GET', '/api/notificaties')).ongelezen).toBe(1);
+      expect((await beheerder.json('GET', '/api/notificaties')).ongelezen).toBe(0);
       const { items } = await beheerder.json('GET', `/api/dossiers/${id}/activiteit`);
       expect(items.find((i: { type: string }) => i.type === 'eigenaar_gewijzigd').payload).toEqual({ van: 'Bea Beheer', naar: 'Anna Admin' });
     });
@@ -238,14 +242,17 @@ describe('e-mail', () => {
     expect(t.pdfs[0]).toContain('Walstraat 74');
   });
 
-  it("records a failed send in red, alerts the dossier's eigenaar and answers 502", async () => {
+  it("records a failed send in red, gives the dossier's eigenaar a melding and answers 502", async () => {
     const id = await nieuwDossier();
     t.mailer.faalVoor = 'anna@example.org';
     const res = await beheerder.json('POST', `/api/dossiers/${id}/mail/subsidie_huur`, { aan: 'anna@example.org', onderwerp: 'Subsidie', tekst: 'Hallo' }, 502);
     expect(res.fout).toMatch(/kon niet worden verstuurd/);
     const { dossier } = await beheerder.json('GET', `/api/dossiers/${id}`);
     expect(dossier.verzendingen[0].mislukt_at).not.toBeNull();
-    expect(t.mailer.verstuurd.map((m) => [m.aan, m.onderwerp])).toEqual([['bea.beheer@example.org', 'E-mail niet afgeleverd: Subsidie aan anna@example.org']]);
+    expect((await beheerder.json('GET', '/api/notificaties')).items).toEqual([
+      expect.objectContaining({ dossier_id: id, titel: 'E-mail niet afgeleverd: Subsidie aan anna@example.org', detail: expect.stringMatching(/^Foutmelding: /) }),
+    ]);
+    expect(t.mailer.verstuurd).toEqual([]);
   });
 });
 
@@ -291,10 +298,14 @@ describe('documents', () => {
     expect(html).toContain('nog niet ingevuld');
   });
 
-  it('leaves Waar and Hoe with their photos out of the Plan for a regenpijp that stays on the riool, and keeps them for Twijfel', async () => {
+  it('shows only Afkoppelen in the Plan for a regenpijp that stays on the riool, without its other cells, waterberging row or photos, and keeps them all for Twijfel', async () => {
     const id = await nieuwDossier();
     const zet = (key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
-    await zet('kaart_annotaties', [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }]);
+    await zet('kaart_annotaties', [{ id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] }, { id: 'r1', type: 'regenpijp', p: [[1, 1]] }]);
+    await zet('regenpijp.r1.soort', 'zink');
+    await zet('regenpijp.r1.diameter', '80');
+    await zet('regenpijp.r1.regenton', 'gewenst');
+    await zet('regenpijp.r1.ondergrond', 'Tegels');
     await zet('regenpijp.r1.waar', 'De border in');
     await zet('regenpijp.r1.hoe', ['holie_molie']);
     await beheerder.json('POST', `/api/dossiers/${id}/fotos/regenpijp.r1.waar`, new Uint8Array(await png()), 201);
@@ -303,12 +314,13 @@ describe('documents', () => {
     await zet('regenpijp.r1.afkoppelen', 'nee');
     const nee = await plan();
     expect(nee).toContain('Nee (blijft naar riool gaan)');
-    expect(nee).not.toContain('De border in');
-    expect(nee).not.toContain('Via:');
-    expect(nee).not.toContain('>Regenpijp A</figcaption>');
+    expect(nee).toContain('qa-pdf-op-riool');
+    for (const tekst of ['Zink', '80 mm', 'Niet aanwezig, wel gewenst', 'Tegels', 'De border in', 'Via:', 'qa-pdf-waterberging', '>Regenpijp A</figcaption>']) expect(nee).not.toContain(tekst);
 
     await zet('regenpijp.r1.afkoppelen', 'twijfel');
     const twijfel = await plan();
+    for (const tekst of ['Zink', '80 mm', 'Niet aanwezig, wel gewenst', 'Tegels', 'qa-pdf-waterberging']) expect(twijfel).toContain(tekst);
+    expect(twijfel).not.toContain('qa-pdf-op-riool');
     expect(twijfel).toContain('De border in');
     expect(twijfel).toContain('Holie Molie');
     expect(twijfel).toContain('>Regenpijp A</figcaption>');
@@ -491,12 +503,24 @@ describe('beheer', () => {
     expect(sjablonen.find((s: { key: string }) => s.key === 'subsidie_huur').tekst).toBe('Beste {bewonr}');
   });
 
-  it('mails feedback to every feedback recipient and lists it for admins', async () => {
+  it('mails feedback to every feedback recipient, logging each in the audit trail, and lists it for admins', async () => {
     await klusser.json('POST', '/api/feedback', { scherm: '/dossiers/1', tekst: 'Knop te klein' }, 201);
     expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);
     expect(t.mailer.verstuurd[0].tekst).toContain('Knop te klein');
+    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
+    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);
     const { feedback } = await beheerder.json('GET', '/api/feedback');
     expect(feedback.map((f: { tekst: string }) => f.tekst)).toEqual(['Knop te klein']);
+  });
+
+  it('still mails the other feedback recipients when one is refused, and logs no send for the refused one', async () => {
+    t.mailer.faalVoor = 'feedback1@example.org';
+    const fout = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await klusser.json('POST', '/api/feedback', { scherm: '/', tekst: 'Hoi' }, 201);
+    fout.mockRestore();
+    expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['feedback2@example.org']);
+    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
+    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['feedback2@example.org']);
   });
 
   it("filters Alle activiteit by a klusser, including what an admin did as them", async () => {
@@ -507,41 +531,6 @@ describe('beheer', () => {
     await beheerder.json('POST', '/api/auth/als/stop');
     const { items } = await beheerder.json('GET', `/api/activiteit?actor=${klusserId}`);
     expect(items.map((i: { type: string }) => i.type)).toEqual(['dossier_gewijzigd']);
-  });
-});
-
-describe('weekly digest', () => {
-  it('lists a stalled inschrijving with its line and the no-activity note, and is empty when nothing needs aandacht', async () => {
-    expect(digestTekst(t.ctx)).toBeNull();
-    const { id } = await beheerder.json<{ id: number }>('POST', '/api/dossiers');
-    t.klok.verschuif(8 * 864e5);
-    const m = digestTekst(t.ctx)!;
-    expect(m.onderwerp).toBe('Aandacht nodig: 1 dossiers');
-    expect(m.tekst).toContain('Ligt stil');
-    expect(m.tekst).toContain(`https://regenton.test/dossiers/${id}`);
-    expect(m.tekst).toContain('Inschrijving al 8 dagen open');
-    expect(m.tekst).toContain('geen activiteit sinds 2 maart 2026');
-  });
-
-  it('mails every digest recipient, logging each in the audit trail', async () => {
-    await beheerder.json<{ id: number }>('POST', '/api/dossiers');
-    t.klok.verschuif(8 * 864e5);
-    expect(await verstuurDigest(t.ctx)).toBe(true);
-    expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['digest1@example.org', 'digest2@example.org']);
-    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
-    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['digest1@example.org', 'digest2@example.org']);
-  });
-
-  it('still mails the other recipients when one is refused, and logs no send for the refused one', async () => {
-    await beheerder.json<{ id: number }>('POST', '/api/dossiers');
-    t.klok.verschuif(8 * 864e5);
-    t.mailer.faalVoor = 'digest1@example.org';
-    const fout = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await verstuurDigest(t.ctx);
-    fout.mockRestore();
-    expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['digest2@example.org']);
-    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
-    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['digest2@example.org']);
   });
 });
 
@@ -699,28 +688,28 @@ describe('normafvoer', () => {
     expect(gemeenten).toEqual(expect.arrayContaining(['Deventer', 'Olst-Wijhe', 'Raalte']));
   });
 
-  it('asks in the weekly digest to recheck a norm unchecked for a year, also with no dossiers to report, until it is marked nagekeken', async () => {
+  // A fresh login each time: the session would not last the year.
+  const nakijken = async () => (await (await new Klant(t).login('bea.beheer@example.org')).json('GET', '/api/overzicht')).normNakijken as { gemeente: string | null; mm: number }[];
+
+  it('asks on the Overzicht to recheck a norm unchecked for a year, until it is marked nagekeken', async () => {
     const [standaard] = await normen();
     await beheerder.json('POST', `/api/normafvoeren/${standaard.id}/nagekeken`);
     t.klok.verschuif(364 * 864e5);
-    expect(digestTekst(t.ctx)).toBeNull();
+    expect(await nakijken()).toEqual([]);
     t.klok.verschuif(864e5);
-    const m = digestTekst(t.ctx)!;
-    expect(m.onderwerp).toBe('Aandacht nodig: normafvoer nakijken');
-    expect(m.tekst).toContain('Standaard (overige gemeenten): 20 mm');
-    expect(m.tekst).toContain('https://regenton.test/beheer/normafvoer');
+    expect(await nakijken()).toEqual([expect.objectContaining({ id: standaard.id, gemeente: null, mm: 20 })]);
     beheerder = await new Klant(t).login('bea.beheer@example.org');
     await beheerder.json('POST', `/api/normafvoeren/${standaard.id}/nagekeken`);
-    expect(digestTekst(t.ctx)).toBeNull();
+    expect(await nakijken()).toEqual([]);
   });
 
-  it('changing a value counts as nagekeken for the digest', async () => {
+  it('changing a value counts as nagekeken for the Overzicht', async () => {
     const [standaard] = await normen();
     await beheerder.json('PATCH', `/api/normafvoeren/${standaard.id}`, { mm: 20 });
     t.klok.verschuif(365 * 864e5);
-    expect(digestTekst(t.ctx)!.onderwerp).toContain('normafvoer');
+    expect(await nakijken()).toHaveLength(1);
     beheerder = await new Klant(t).login('bea.beheer@example.org');
     await beheerder.json('PATCH', `/api/normafvoeren/${standaard.id}`, { mm: 21 });
-    expect(digestTekst(t.ctx)).toBeNull();
+    expect(await nakijken()).toEqual([]);
   });
 });

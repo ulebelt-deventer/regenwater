@@ -25,7 +25,7 @@ export function kadastraleKaartUrl([x, y]: [number, number]): string {
 }
 export const SUBSIDIE_INFO_URL = 'https://www.ulebelt.nl/regenwater'; // PLACEHOLDER
 export const NORM_STANDAARD_LABEL = 'Standaard (overige gemeenten)';
-export const NORM_CONTROLE_DAGEN = 365; // the digest asks to recheck a norm unchecked for this long
+export const NORM_CONTROLE_DAGEN = 365; // the Overzicht asks to recheck a norm unchecked for this long
 export const KLUSSENDIENST_PER_REGENPIJP_CENT = 5000; // per afgekoppelde regenpijp, excl. btw
 export const BTW_PROCENT = 21;
 

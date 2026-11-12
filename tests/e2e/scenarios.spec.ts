@@ -135,7 +135,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await expect(page.locator(`table .qa-dossier-${id} .qa-opdracht-aan-zet`)).toHaveCount(1);
   await bezoek(page, id);
   await plan(page, id);
-  expect(await laatsteMail(page)).toMatchObject({ aan: BEHEERDER.email });
+  expect((await emails(page)).map((m) => m.aan)).not.toContain(BEHEERDER.email);
   await page.goto(`/dossiers/${id}/plan`);
   await expect(page.locator('.qa-klaar-voor-controle')).toHaveCount(0);
   await expect(veld(page, 'beoordeling').locator('.qa-optie-uitvoerbaar')).toBeDisabled();
@@ -147,6 +147,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
 
   await login(page, BEHEERDER.email);
   await naarDossier(page, id);
+  await expect(page.locator('.qa-bel-aantal')).toHaveText('1');
   await status(page, 'Plan controleren & versturen');
   await mail(page, 'plan_bewoner_koop');
   expect(await laatsteMail(page)).toMatchObject({ aan: 'bea@example.org', bijlagen: [PLAN_PDF] });

@@ -1,8 +1,8 @@
 // The dossier's eigenaar: the beheerder who gets its meldingen.
 import { expect, test } from '@playwright/test';
-import { BEHEERDER, KLUSSER, emails, login, naarDossier, post, start } from './hulp.ts';
+import { BEHEERDER, KLUSSER, login, naarDossier, post, start } from './hulp.ts';
 
-test('een beheerder kiest een andere eigenaar in Status, en die krijgt dan Klaar voor controle; een klusser ziet de eigenaar niet', async ({ page }) => {
+test('een beheerder kiest een andere eigenaar in Status, en die krijgt dan de melding Klaar voor controle; een klusser ziet de eigenaar niet', async ({ page }) => {
   const { klusserId } = await start(page);
   const { id: tweedeId } = await post<{ id: number }>(page.request, '/api/test/gebruiker', { naam: 'Tessa Tweede', email: 'tessa@ulebelt.test', rol: 'beheerder' });
   const { id } = await post<{ id: number }>(page.request, '/api/dossiers');
@@ -22,7 +22,13 @@ test('een beheerder kiest een andere eigenaar in Status, en die krijgt dan Klaar
   await naarDossier(page, id);
   await expect(page.locator('.qa-eigenaar')).toHaveCount(0);
   await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
-  expect((await emails(page)).at(-1)).toMatchObject({ aan: 'tessa@ulebelt.test', onderwerp: expect.stringContaining('Plan van Aanpak klaar voor controle') });
+  await login(page, 'tessa@ulebelt.test');
+  await page.goto('/');
+  await expect(page.locator('.qa-bel-aantal')).toHaveText('1');
+  await login(page, BEHEERDER.email);
+  await page.reload();
+  await expect(page.locator('.qa-nav-bel')).toBeVisible();
+  await expect(page.locator('.qa-bel-aantal')).toHaveCount(0);
 });
 
 test('het vraagteken achter Eigenaar legt bij muis-hover uit wie de eigenaar is en wat die doet', async ({ page }) => {

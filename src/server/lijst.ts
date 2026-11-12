@@ -4,7 +4,7 @@ import { kaartItems } from '../shared/kaart.ts';
 import {
   type LigtBij, PLAN_BEWONER_SJABLONEN, STATUS_FILTERS, SUBSIDIE_SJABLONEN, adresRegel, corporatieNaam, eersteVerzending, huidigeStap, ijskastLabel, inIjskast, opdracht, status, str,
 } from '../shared/status.ts';
-import { materiaalRijen, materiaalTotaal, optieLabel, veld } from '../shared/velden.ts';
+import { materiaalRijen, materiaalTotaal, optieLabel, veld, veldZichtbaar } from '../shared/velden.ts';
 import type { Dossier, Gebruiker } from '../shared/types.ts';
 
 // One row of the dossiers list, the Gebruiker page and the Overzicht, as the client renders it.
@@ -223,7 +223,7 @@ export function csvExport(dossiers: Dossier[], rijen: Map<number, LijstRij>): st
       eerste(d, SUBSIDIE_SJABLONEN), dag(d.bezoeker_toegewezen_at), dag(d.afspraak), dag(d.bezoek_afgerond_at), dag(d.klaar_voor_controle_at),
       eerste(d, PLAN_BEWONER_SJABLONEN), eerste(d, ['plan_corporatie']), dag(d.corporatie_akkoord_at ?? d.klussendienst_gekozen_at),
       dag(d.uitvoerder_toegewezen_at), dag(d.uitvoering_gepland), dag(d.werk_opgeleverd_at), eerste(d, ['oplever_corporatie', 'oplever_bewoner']), dag(d.gesloten_at),
-      d.gesloten_reden, dakTotaal(d), items.regenpijpen.length, items.regenpijpen.filter((p) => d.data[`regenpijp.${p.id}.regenton`] === 'gewenst').length,
+      d.gesloten_reden, dakTotaal(d), items.regenpijpen.length, items.regenpijpen.filter((p) => veldZichtbaar(d, `regenpijp.${p.id}.regenton`) && d.data[`regenpijp.${p.id}.regenton`] === 'gewenst').length,
       materiaalTotaal(materiaalRijen(d, 'materialen')) / 100, materiaalTotaal(materiaalRijen(d, 'gebruikt')) / 100,
     ];
   });

@@ -179,3 +179,19 @@ export interface Dossier {
   fotos: Foto[];
   laatste_activiteit_at: string | null;
 }
+
+// A melding under the navbar bell, for one beheerder about one dossier.
+export interface Notificatie {
+  id: number;
+  dossier_id: number;
+  adres: string;
+  titel: string;
+  detail: string | null;
+  created_at: string;
+  gelezen: boolean;
+}
+
+export interface Notificaties {
+  ongelezen: number;
+  items: Notificatie[];
+}
