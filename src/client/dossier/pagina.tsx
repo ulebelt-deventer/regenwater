@@ -5,9 +5,10 @@ import { type Bevinding, KLOPT_NIET_KOP } from '../../shared/aandacht.ts';
 import { datum, datumTijd } from '../../shared/datum.ts';
 import { PLAN_BEWONER_SJABLONEN, adresRegel, ijskastLabel, laatsteVerzending, sectieOpen, stap, str } from '../../shared/status.ts';
 import { geenSpecificatie } from '../../shared/specificatie.ts';
-import type { SluitReden } from '../../shared/types.ts';
+import type { Notificatie, SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
-import { ApiFout, get } from '../api.ts';
+import { ApiFout, get, post } from '../api.ts';
+import { leesDossier } from '../bel.tsx';
 import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, tip, titel } from '../ui.tsx';
 import { EigenaarKiezer, MailKnop, MijlpaalRegel, IJskastModal, SluitModal, Toewijzen, VerbergKnop, VerwijderModal, VerzendRegel, actie, verbergMeldingen, verstuurdSinds, zetMijlpaal } from './acties.tsx';
 import { type Antwoord, DossierCtx, haalDossier, maakStaat, useDossier } from './staat.ts';
@@ -100,6 +101,8 @@ function Kop() {
         </Show>
       </div>
 
+      <DossierMeldingen />
+
       <Show when={s.d.gesloten_at}>
         {(at) => (
           <div class={`alert ${s.d.gesloten_reden === 'Uitgevoerd' ? 'alert-success' : 'alert-secondary'} qa-gesloten`}>
@@ -184,6 +187,32 @@ function Kop() {
         </Match>
       </Switch>
     </>
+  );
+}
+
+// The beheerder's meldingen that nothing else on the page tells, in full until clicked away. Opening the dossier marks all its meldingen read.
+function DossierMeldingen() {
+  const s = useDossier();
+  const [lijst, setLijst] = createSignal<Notificatie[]>([]);
+  onMount(() => {
+    if (!s.beheerder()) return;
+    leesDossier(s.id);
+    void probeer(async () => setLijst(await get<Notificatie[]>(`/api/notificaties/dossier/${s.id}`)));
+  });
+  const wegklikken = (n: Notificatie) => void probeer(async () => setLijst(await post<Notificatie[]>(`/api/notificaties/${n.id}/wegklikken`)));
+  return (
+    <For each={lijst()}>
+      {(n) => (
+        <div class={`alert ${n.soort === 'ijskast' ? 'alert-info' : 'alert-warning'} d-flex align-items-start gap-2 qa-dossier-melding`}>
+          <i class={`bi ${n.soort === 'ijskast' ? 'bi-snow' : 'bi-envelope-exclamation'}`} aria-hidden="true" />
+          <div class="flex-grow-1 overflow-hidden">
+            <div class="pre-wrap text-break qa-dossier-melding-tekst">{n.titel}</div>
+            <div class="small text-muted mt-1">{datumTijd(n.created_at)}</div>
+          </div>
+          <button type="button" class="btn btn-link text-reset p-0 flex-shrink-0 qa-dossier-melding-weg" ref={tip('Wegklikken')} aria-label="Wegklikken" onClick={() => wegklikken(n)}><i class="bi bi-x-lg" aria-hidden="true" /></button>
+        </div>
+      )}
+    </For>
   );
 }
 

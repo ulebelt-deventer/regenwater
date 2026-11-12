@@ -67,7 +67,7 @@ describe('the ijskast wekker', () => {
     t.klok.zet(new Date('2026-03-10T07:00:00.000Z'));
     expect(ijskastWekker(t.ctx)).toBe(1);
     expect(ijskastWekker(t.ctx)).toBe(0);
-    expect(await meldingen()).toEqual([{ dossier_id: id, titel: 'Uit de ijskast: Bewoner verbouwt eerst', adres: expect.any(String), id: expect.any(Number), created_at: expect.any(String), gelezen: false }]);
+    expect(await meldingen()).toEqual([{ dossier_id: id, soort: 'ijskast', titel: 'Uit de ijskast: Bewoner verbouwt eerst', adres: expect.any(String), id: expect.any(Number), created_at: expect.any(String), gelezen: false }]);
     expect(t.mailer.verstuurd).toEqual([]);
     const { items } = await bea.json<{ items: { type: string }[] }>('GET', `/api/dossiers/${id}/activiteit`);
     expect(items.map((i) => i.type).slice(0, 2)).toEqual(['ijskast_voorbij', 'ijskast_in']);

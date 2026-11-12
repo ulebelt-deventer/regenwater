@@ -19,6 +19,14 @@ export function sjabloonTekst(ctx: Ctx, key: string): { onderwerp: string; tekst
   return r;
 }
 
+// A provider's error can be a whole HTML page; the full text stays in verzendingen.mislukt_reden.
+const FOUTMELDING_MAX = 300;
+
+function foutmelding(mislukt: string): string {
+  const kort = mislukt.replace(/\s+/g, ' ').trim();
+  return kort.length > FOUTMELDING_MAX ? `${kort.slice(0, FOUTMELDING_MAX)}…` : kort;
+}
+
 const naamVan = (ctx: Ctx, id: number | null) =>
   id === null ? '' : (ctx.db.prepare('SELECT naam FROM gebruikers WHERE id = ?').get(id) as { naam: string }).naam;
 
@@ -117,7 +125,7 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
       sjabloon: def.key, aan, onderwerp: bericht.onderwerp, tekst: bericht.tekst, tag_problemen: ontbrekend.length > 0,
     });
     if (mislukt) {
-      dossierMelding(ctx, d, `E-mail niet afgeleverd aan ${aan}`);
+      dossierMelding(ctx, d, 'mail_mislukt', `E-mail niet afgeleverd aan ${aan}. Foutmelding: ${foutmelding(mislukt)}`);
       fout(502, `De e-mail aan ${aan} kon niet worden verstuurd. Controleer het adres en probeer het opnieuw.`);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });

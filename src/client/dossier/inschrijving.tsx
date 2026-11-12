@@ -61,7 +61,7 @@ export function Inschrijving() {
               <div class="form-label fw-semibold mb-0">Rioolstelsel</div>
               <Show when={s.d.adres}>
                 {(a) => (
-                  <Show when={RIOOLKAARTEN[a().gemeente]} fallback={<span class="small text-danger qa-geen-rioolkaart">Voor {a().gemeente} is nog geen rioolkaart bekend. Vraag de ontwikkelaar om {a().gemeente} toe te voegen.</span>}>
+                  <Show when={RIOOLKAARTEN[a().gemeente]} fallback={<span class="small text-danger qa-geen-rioolkaart"><i class="bi bi-exclamation-triangle" /> Voor {a().gemeente} is nog geen rioolkaart bekend.</span>}>
                     {(url) => <a href={url()} target="_blank" rel="noopener" class="small qa-rioolkaart">Rioolkaart</a>}
                   </Show>
                 )}

@@ -13,28 +13,34 @@ function kop({ ongelezen, totaal }: Notificaties): string {
   return 'Meldingen';
 }
 
-// The navbar bell: meldingen about the beheerder's own dossiers. Opening one marks every melding about that dossier read.
-export function Bel() {
-  const [data, setData] = createSignal<Notificaties>({ ongelezen: 0, totaal: 0, items: [] });
-  // Bumped when marking starts and ends: a poll that overlaps a mark may predate it, so it is dropped and the mark's own answer stands.
-  let generatie = 0;
-  const laad = async () => {
-    const g = generatie;
-    const r = await get<Notificaties>('/api/notificaties').catch((e: unknown) => {
-      if (isNetwerkFout(e)) return null;
-      throw e;
-    });
-    if (r && g === generatie) setData(r);
-  };
-  const lees = (dossierId: number) =>
-    void probeer(async () => {
+// The bell's state lives here, so the dossier page can mark its meldingen read and the badge follows at once.
+const [data, setData] = createSignal<Notificaties>({ ongelezen: 0, totaal: 0, items: [] });
+// Bumped when marking starts and ends: a poll that overlaps a mark may predate it, so it is dropped and the mark's own answer stands.
+let generatie = 0;
+
+async function laad(): Promise<void> {
+  const g = generatie;
+  const r = await get<Notificaties>('/api/notificaties').catch((e: unknown) => {
+    if (isNetwerkFout(e)) return null;
+    throw e;
+  });
+  if (r && g === generatie) setData(r);
+}
+
+// Marks every melding about the dossier read. For beheerders only: a klusser has no bell.
+export function leesDossier(dossierId: number): void {
+  void probeer(async () => {
+    generatie++;
+    try {
+      setData(await post<Notificaties>('/api/notificaties/gelezen', { dossier_id: dossierId }));
+    } finally {
       generatie++;
-      try {
-        setData(await post<Notificaties>('/api/notificaties/gelezen', { dossier_id: dossierId }));
-      } finally {
-        generatie++;
-      }
-    });
+    }
+  });
+}
+
+// The navbar bell: meldingen about the beheerder's own dossiers. Opening the dossier marks its meldingen read; the click does that too, for the dossier already on screen.
+export function Bel() {
   const zichtbaar = () => document.visibilityState === 'visible' && void laad();
   onMount(() => {
     void laad();
@@ -65,7 +71,7 @@ export function Bel() {
         <For each={data().items} fallback={<div class="dropdown-item-text text-muted qa-bel-leeg">Nog geen meldingen.</div>}>
           {(n) => (
             // A plain <a>, which the router still navigates: <A> would mark the dossier on screen active, dark green on dark green.
-            <a href={`/dossiers/${n.dossier_id}`} class="dropdown-item small d-flex align-items-baseline gap-2 py-2 qa-notificatie" classList={{ 'qa-notificatie-ongelezen': !n.gelezen }} onClick={() => lees(n.dossier_id)}>
+            <a href={`/dossiers/${n.dossier_id}`} class="dropdown-item small d-flex align-items-baseline gap-2 py-2 qa-notificatie" classList={{ 'qa-notificatie-ongelezen': !n.gelezen }} onClick={() => leesDossier(n.dossier_id)}>
               {/* A read melding keeps an invisible dot, so every line starts at the same place. */}
               <span class="d-inline-block p-1 bg-danger rounded-circle flex-shrink-0" classList={{ invisible: n.gelezen }}>
                 <Show when={!n.gelezen}><span class="visually-hidden">Ongelezen</span></Show>

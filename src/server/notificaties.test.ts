@@ -1,6 +1,6 @@
 // The bell in the navbar: in-app meldingen for a dossier's eigenaar.
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Notificaties } from '../shared/types.ts';
+import type { Notificatie, Notificaties } from '../shared/types.ts';
 import { ijskastWekker } from './ijskast.ts';
 import { dossierMelding } from './meldingen.ts';
 import { laadDossier } from './repo.ts';
@@ -96,7 +96,7 @@ describe('the bell', () => {
     const { ongelezen, items } = await lijst(bea);
     expect(ongelezen).toBe(2);
     expect(items.map((n) => [n.dossier_id, n.titel, n.gelezen])).toEqual([
-      [a, 'E-mail niet afgeleverd aan anna@example.org', false],
+      [a, 'E-mail niet afgeleverd aan anna@example.org. Foutmelding: Geweigerd door de provider (test)', false],
       [b, 'Klaar voor controle (Kees Klus)', false],
       [a, 'Klaar voor controle (Kees Klus)', true],
     ]);
@@ -105,7 +105,7 @@ describe('the bell', () => {
   it('lists at most 50, unread before newer read ones, while the counts cover every melding', async () => {
     const [oud, druk] = [await nieuwDossier(bea), await nieuwDossier(bea)];
     const meld = (id: number) => {
-      dossierMelding(t.ctx, laadDossier(t.ctx.db, id)!, 'Test');
+      dossierMelding(t.ctx, laadDossier(t.ctx.db, id)!, 'overdracht', 'Test');
       t.klok.verschuif(1000);
     };
     meld(oud);
@@ -123,7 +123,7 @@ describe('the bell', () => {
 
   it('names a dossier without an address by its number', async () => {
     const { id } = await bea.json<{ id: number }>('POST', '/api/dossiers');
-    dossierMelding(t.ctx, laadDossier(t.ctx.db, id)!, 'Test');
+    dossierMelding(t.ctx, laadDossier(t.ctx.db, id)!, 'overdracht', 'Test');
     expect((await lijst(bea)).items[0].adres).toBe(`Dossier ${id} (nog geen adres)`);
   });
 
@@ -174,8 +174,81 @@ describe('what gives a melding', () => {
     bea = await new Klant(t).login('bea.beheer@example.org');
     bart = await new Klant(t).login('bart.beheer@example.org');
     expect((await lijst(bea)).items).toEqual([
-      expect.objectContaining({ dossier_id: id, titel: 'Uit de ijskast: Bewoner verbouwt eerst', created_at: '2026-03-10T07:00:00.000Z' }),
+      expect.objectContaining({ dossier_id: id, soort: 'ijskast', titel: 'Uit de ijskast: Bewoner verbouwt eerst', created_at: '2026-03-10T07:00:00.000Z' }),
     ]);
     expect(await titels(bart)).toEqual([]);
+  });
+});
+
+describe('E-mail niet afgeleverd', () => {
+  it("gives the provider's error on one line, cut off after 300 characters, while the send keeps it whole", async () => {
+    const id = await nieuwDossier(bea);
+    const fout = `Mailgun 502:\n<html>\n  <body>${'x'.repeat(400)}</body>\n</html>`;
+    t.mailer.verstuur = () => Promise.reject(new Error(fout));
+    await bea.json('POST', `/api/dossiers/${id}/mail/subsidie_huur`, { aan: 'anna@example.org', onderwerp: 'Subsidie', tekst: 'Hallo' }, 502);
+    const kort = `Mailgun 502: <html> <body>${'x'.repeat(400)}</body> </html>`.slice(0, 300);
+    expect((await lijst(bea)).items.map((n) => n.titel)).toEqual([`E-mail niet afgeleverd aan anna@example.org. Foutmelding: ${kort}…`]);
+    expect(t.ctx.db.prepare('SELECT mislukt_reden FROM verzendingen WHERE dossier_id = ?').pluck().get(id)).toBe(fout);
+  });
+});
+
+describe('on the dossier page', () => {
+  const opDossier = (k: Klant, id: number) => k.json<Notificatie[]>('GET', `/api/notificaties/dossier/${id}`);
+  const wegklikken = (k: Klant, n: Notificatie) => k.json<Notificatie[]>('POST', `/api/notificaties/${n.id}/wegklikken`);
+  async function mailMislukt(id: number, aan: string): Promise<void> {
+    t.mailer.faalVoor = aan;
+    await bea.json('POST', `/api/dossiers/${id}/mail/subsidie_huur`, { aan, onderwerp: 'Subsidie', tekst: 'Hallo' }, 502);
+    t.klok.verschuif(6e4);
+  }
+  const ijskast = (id: number, reden: string) => {
+    dossierMelding(t.ctx, laadDossier(t.ctx.db, id)!, 'ijskast', `Uit de ijskast: ${reden}`);
+    t.klok.verschuif(6e4);
+  };
+
+  it('shows the full ijskast and failed-mail meldingen of that dossier, newest first, but not a hand-off, which the status shows', async () => {
+    const [id, ander] = [await nieuwDossier(bea), await nieuwDossier(bea)];
+    const reden = 'Bewoner wil eerst de dakgoot laten vervangen, daarna pas de regenpijpen. Bel in april.';
+    ijskast(id, reden);
+    await klaarVoorControle(id);
+    await mailMislukt(id, 'anna@example.org');
+    await mailMislukt(ander, 'piet@example.org');
+    expect((await opDossier(bea, id)).map((n) => [n.soort, n.titel])).toEqual([
+      ['mail_mislukt', 'E-mail niet afgeleverd aan anna@example.org. Foutmelding: Geweigerd door de provider (test)'],
+      ['ijskast', `Uit de ijskast: ${reden}`],
+    ]);
+  });
+
+  it('stays after reading, and clicking one away takes only that one off the page while the bell keeps it', async () => {
+    const id = await nieuwDossier(bea);
+    ijskast(id, 'Nog een week');
+    await mailMislukt(id, 'anna@example.org');
+    await gelezen(bea, id);
+    const [mail, ijs] = await opDossier(bea, id);
+    expect(await wegklikken(bea, mail)).toEqual([ijs]);
+    expect(await opDossier(bea, id)).toEqual([ijs]);
+    expect(await wegklikken(bea, mail)).toEqual([ijs]);
+    expect(await lijst(bea)).toMatchObject({ ongelezen: 0, totaal: 2 });
+    expect((await lijst(bea)).items.map((n) => n.id).sort()).toEqual([mail.id, ijs.id].sort());
+  });
+
+  it("is the eigenaar's own: another beheerder sees none and can't click one away", async () => {
+    const id = await nieuwDossier(bea);
+    await mailMislukt(id, 'anna@example.org');
+    const [n] = await opDossier(bea, id);
+    expect(await opDossier(bart, id)).toEqual([]);
+    await bart.json('POST', `/api/notificaties/${n.id}/wegklikken`, {}, 404);
+    await bea.json('POST', `/api/notificaties/${n.id + 1}/wegklikken`, {}, 404);
+    expect(await opDossier(bea, id)).toEqual([n]);
+  });
+
+  it('is for beheerders only, also during Inloggen als', async () => {
+    const id = await nieuwDossier(bea);
+    await mailMislukt(id, 'anna@example.org');
+    const [n] = await opDossier(bea, id);
+    await kees.json('GET', `/api/notificaties/dossier/${id}`, undefined, 403);
+    await kees.json('POST', `/api/notificaties/${n.id}/wegklikken`, {}, 403);
+    await bea.json('POST', `/api/auth/als/${keesId}`);
+    await bea.json('GET', `/api/notificaties/dossier/${id}`, undefined, 403);
+    await bea.json('POST', `/api/notificaties/${n.id}/wegklikken`, {}, 403);
   });
 });

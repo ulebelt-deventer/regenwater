@@ -69,6 +69,15 @@ describe('huidigeStap', () => {
     expect(huidigeStap(d).key).toBe('uitvoerder');
   });
 
+  it('counts the plan as sent once the eigenaar decision is registered, even without a plan email', () => {
+    const klaar = { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-03-10T14:00', bezoek_afgerond_at: T, klaar_voor_controle_at: T };
+    expect(huidigeStap(naInschrijving('huur', { ...klaar, corporatie_akkoord_at: T })).key).toBe('uitvoerder');
+    expect(huidigeStap(naInschrijving('koop', { ...klaar, klussendienst_gekozen_at: T })).key).toBe('uitvoerder');
+    expect(huidigeStap(naInschrijving('huur', { ...klaar, gesloten_at: T, gesloten_reden: 'Plan afgewezen' })).key).toBe('akkoord_huur');
+    expect(huidigeStap(naInschrijving('koop', { ...klaar, gesloten_at: T, gesloten_reden: 'Bewoner doet het zelf' })).key).toBe('keuze_koop');
+    expect(huidigeStap(naInschrijving('huur', { ...klaar, gesloten_at: T, gesloten_reden: 'Bewoner afgehaakt' })).key).toBe('versturen');
+  });
+
   it('labels a closed dossier with its reden instead of a step', () => {
     const d = naInschrijving('koop', { gesloten_at: T, gesloten_reden: 'Bewoner afgehaakt' });
     expect(status(d).label).toBe('Gesloten: Bewoner afgehaakt');

@@ -16,7 +16,7 @@ export function ijskastWekker(ctx: Ctx): number {
     for (const k of voorbij) {
       ctx.db.prepare('UPDATE ijskast SET eind_at = ? WHERE id = ?').run(ctx.klok.iso(), k.id);
       audit(ctx, { id: null, als: null }, k.dossier_id, 'ijskast_voorbij', { tot: k.tot });
-      dossierMelding(ctx, laadDossier(ctx.db, k.dossier_id)!, `Uit de ijskast: ${k.reden}`);
+      dossierMelding(ctx, laadDossier(ctx.db, k.dossier_id)!, 'ijskast', `Uit de ijskast: ${k.reden}`);
     }
   })();
   return voorbij.length;

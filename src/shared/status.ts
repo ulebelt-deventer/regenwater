@@ -52,6 +52,13 @@ export function inschrijvingOntbreekt(d: Dossier): string[] {
   return uit;
 }
 
+// When the eigenaar decided on the plan: the corporatie's goedkeuring or afwijzing (huur), the bewoner's choice for the Klussendienst or zelf (koop).
+function besluit(d: Dossier): string | null {
+  if (d.huur_koop === 'huur') return d.corporatie_akkoord_at ?? (d.gesloten_reden === 'Plan afgewezen' ? d.gesloten_at : null);
+  if (d.huur_koop === 'koop') return d.klussendienst_gekozen_at ?? (d.gesloten_reden === 'Bewoner doet het zelf' ? d.gesloten_at : null);
+  return null;
+}
+
 export interface Stap {
   nr: number;
   key: string;
@@ -97,12 +104,13 @@ export const STAPPEN: Stap[] = [
   },
   {
     nr: 6, key: 'versturen', ligtBij: 'beheerder', label: 'Plan controleren & versturen', anker: 'sectie-versturen',
-    regel: 'Plan nog niet verstuurd (naar de woningcorporatie bij huur, naar de bewoner bij koop)',
+    regel: 'Plan nog niet verstuurd (naar de woningcorporatie bij huur, naar de bewoner bij koop) en nog geen besluit geregistreerd',
     geldt: () => true,
+    // A registered besluit means the plan reached the eigenaar, even if it went out outside the app.
     gedaan: (d) => {
       if (d.huur_koop === null) return null;
       const v = laatsteVerzending(d, d.huur_koop === 'huur' ? ['plan_corporatie'] : PLAN_BEWONER_SJABLONEN);
-      return v ? v.created_at : null;
+      return v ? v.created_at : besluit(d);
     },
   },
   {

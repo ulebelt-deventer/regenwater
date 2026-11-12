@@ -310,4 +310,11 @@ export const MIGRATIES: string[] = [
   ))
   WHERE bezoek_afgerond_at IS NOT NULL AND json_type(data, '$.klussendienst_kosten') IS NULL;
   `,
+  // What a melding is about, and when its eigenaar clicked it away from the dossier page (separate from reading it in the bell).
+  `
+  ALTER TABLE notificaties ADD COLUMN soort TEXT NOT NULL DEFAULT 'overdracht';
+  ALTER TABLE notificaties ADD COLUMN weggeklikt_at TEXT;
+  UPDATE notificaties SET soort = 'ijskast' WHERE titel LIKE 'Uit de ijskast:%';
+  UPDATE notificaties SET soort = 'mail_mislukt' WHERE titel LIKE 'E-mail niet afgeleverd%';
+  `,
 ];

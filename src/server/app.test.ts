@@ -250,7 +250,7 @@ describe('e-mail', () => {
     const { dossier } = await beheerder.json('GET', `/api/dossiers/${id}`);
     expect(dossier.verzendingen[0].mislukt_at).not.toBeNull();
     expect((await beheerder.json('GET', '/api/notificaties')).items).toEqual([
-      expect.objectContaining({ dossier_id: id, titel: 'E-mail niet afgeleverd aan anna@example.org' }),
+      expect.objectContaining({ dossier_id: id, titel: 'E-mail niet afgeleverd aan anna@example.org. Foutmelding: Geweigerd door de provider (test)' }),
     ]);
     expect(t.mailer.verstuurd).toEqual([]);
   });
@@ -455,14 +455,23 @@ describe('documents', () => {
       expect(na > voor).toBe(true);
     });
 
-    it('stays out of the Opleverrapport', async () => {
-      const { id } = await metMaterialen('koop');
-      await zet(id, 'klussendienst_kosten', 5000);
-      await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
-      await beheerder.verzoek('GET', `/docs/dossiers/${id}/opleverrapport.pdf`);
-      expect(t.pdfs.at(-1)).toContain('Gebruikte materialen');
-      expect(t.pdfs.at(-1)).not.toContain('qa-pdf-kosteninschatting');
-      expect(t.pdfs.at(-1)).not.toContain('Klussendienst');
+    it('prices the Gebruikte materialen with the agreed Klussendienst amount in the Opleverrapport of a koopwoning, without the inschatting caveat, and shows no prices for a huurwoning', async () => {
+      const rapport = async (huurKoop: 'huur' | 'koop') => {
+        const { id } = await metMaterialen(huurKoop);
+        await beheerder.json('POST', `/api/dossiers/${id}/gebruikt-vullen`);
+        await zet(id, 'klussendienst_kosten', 12550);
+        await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
+        await beheerder.verzoek('GET', `/docs/dossiers/${id}/opleverrapport.pdf`);
+        return t.pdfs.at(-1)!;
+      };
+      const koop = await rapport('koop');
+      expect(koop).toMatch(/Gebruikte materialen.*qa-pdf-kosteninschatting.*€ 45,00.*€ 90,00.*€ 20,00.*qa-pdf-klussendienst.*Uitvoering door de Klussendienst.*€ 125,50.*Totaal excl. btw.*€ 235,50/);
+      expect(totalen(koop)).toEqual(['€ 284,96']);
+      expect(koop).not.toContain('qa-pdf-geen-garantie');
+      const huur = await rapport('huur');
+      expect(huur).toContain('Gebruikte materialen');
+      expect(huur).not.toContain('qa-pdf-kosteninschatting');
+      expect(huur).not.toContain('€');
     });
   });
 

@@ -272,6 +272,7 @@
       - The dossier's materials are plain text rows (materiaal, prijs, aantal) belonging to the dossier, not links to the default list: when the dossier is created, the table is prefilled with a copy of the default list (managed on the Materialen page), and from then on every row's Materiaal and Prijs can be edited, and rows deleted, to match what's actually needed on site. Later changes to the default list don't touch existing dossiers.
       - "+ Ander materiaal" adds an empty row.
       - Footer: "Geschatte materiaalkosten: € {totaal}", auto-calculated.
+    - Afgesproken kosten Klussendienst (euro input, excl. btw; huur and koop): the work cost agreed with the bewoner or corporatie, which the Plan and Opleverrapport (koop) and the Uitvoeringsspecificatie show. "Bezoek afronden" prefills it, once, with € 50 per regenpijp on "Afkoppelen: Ja"; the hint shows that calculation. A change marks the Plan as gewijzigd for a koopwoning only, as a huurwoning's Plan doesn't show it.
       - Default list (named as in the sample where it has the item; placeholder prices, for the team to correct on the Materialen page):
 
         | Materiaal | Prijs |
@@ -330,8 +331,8 @@
   - **Oplevering** (inline, admin; gray until "Werk opgeleverd" is tapped)
     - Link "Opleverrapport (PDF)"
     - Link "Uitvoeringsspecificatie (voor de factuur)": everything the administratie needs to make the factuur. The app never makes the factuur itself (no factuurnummer, no Ulebelt bedrijfsgegevens). Available for a huurwoning, and for a koopwoning only when the bewoner chose the Klussendienst; otherwise it's greyed out with the reason.
-      - Contents: project ("Klimaatadaptatie {gemeente}"), bewoner naam, adres with postcode, bewoner e-mail, woningeigenaar, uitvoerder and opleverdatum; then the Gebruikte materialen that have an Aantal (Prijs excl. btw, Aantal, Bedrag); a line "Klussendienst: {n} regenpijpen afgekoppeld × € 50,00" (huur and koop alike), where n counts the regenpijpen with "Afkoppelen: Ja" from the Bezoek; then Subtotaal, btw 21% (over the subtotaal, rounded to the cent) and Totaal. All prices are excl. btw.
-      - A used material without a prijs, or a Klussendienst with no afgekoppelde regenpijp, gets a "Let op" line on the page and in the text.
+      - Contents: project ("Klimaatadaptatie {gemeente}"), bewoner naam, adres with postcode, bewoner e-mail, woningeigenaar, uitvoerder and opleverdatum; then the Gebruikte materialen that have an Aantal (Prijs excl. btw, Aantal, Bedrag); a line "Klussendienst (afgesproken in het Plan van Aanpak)" with the Afgesproken kosten Klussendienst (huur and koop alike); then Subtotaal, btw 21% (over the subtotaal, rounded to the cent) and Totaal. All prices are excl. btw.
+      - A used material without a prijs, or empty Afgesproken kosten Klussendienst (counted as € 0), gets a "Let op" line on the page and in the text.
       - The link opens a print-friendly page that starts with the Ulebelt logo and the Regenwater wordmark (also when printed), with buttons "Afdrukken" (print or save as PDF from the browser) and "Kopieer als tekst": the same contents in plain lines, for pasting into a mail to the administratie. Each detail is labelled as on the page ("Bewoner: ...", "E-mail bewoner: ...", "--" when empty), since the factuur may go to the gemeente for the subsidie rather than to the bewoner. It's never sent from the app.
     - "Opleverrapport versturen naar woningcorporatie" (if huur)
       - Button opens a pop-up to preview the email to be sent to the woningcorporatie, with the opleverrapport PDF attached. Green text indicating if it was already sent.
@@ -351,8 +352,8 @@
     - Wensen van de bewoner, then Andere foto’s if there are any.
     - Voorstel Ulebelt: the Beoordeling sentence, Toelichting, fixed lead-in line, werkzaamheden bullets.
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.
-  - **5. Materialenlijst**: the rows with an Aantal, listing Materiaal and Aantal only.
-    - Kosteninschatting, koopwoning only (a huurwoning's Plan carries no prices at all): a "Zelf uitvoeren" column with the materiaal total, and a "Met de Klussendienst" column adding "Klussendienst: {n} regenpijpen afkoppelen × € 50,00" (n as in the Uitvoeringsspecificatie, column left out when n is 0). Each gives Totaal excl. btw, btw 21% and Totaal incl. btw. Listed materials without a price are named as not counted, and a closing line says it is a prijsinschatting, not a guarantee of the final costs.
+  - **5. Materialenlijst**: the rows with an Aantal. A huurwoning's Plan lists Materiaal and Aantal only and carries no prices at all.
+    - A koopwoning's Plan gives one priced list: Materiaal, Aantal, Prijs excl. btw and Bedrag per row, then "Uitvoering door de Klussendienst" with the Afgesproken kosten Klussendienst (left out at € 0), then Totaal excl. btw, btw 21% and Totaal incl. btw. Listed materials without a price show "--" and are named as not counted, and a closing line says it is a prijsinschatting, not a guarantee of the final costs.
   - **Bijlage**: in two columns, the boorprofiel image (left) and the standard "Doorlaatbaarheid per grondsoort" table, rendered as text from a constant in code (transcribed from the sample):
 
     | Grondsoort | Doorlaatbaarheid |
@@ -370,7 +371,7 @@
     | Zeer fijn (duin)zand | Matig |
     | Fijn en grof grind | Zeer goed |
     | Schelpen | Zeer goed |
-  - The completion report (opleverrapport) uses the same header, plus an Uitvoering section: description of the work, opleverfoto's, and Gebruikte materialen (Materiaal and Aantal only, like the plan).
+  - The completion report (opleverrapport) uses the same header, plus an Uitvoering section: description of the work, opleverfoto's, Gebruikte materialen: for a koopwoning the same priced list as the Plan's Materialenlijst, over the Gebruikte materialen and without the prijsinschatting line; for a huurwoning Materiaal and Aantal only, with no prices.
 - Statussen page
   - Linked from the "?" next to Volgende stap. Lists every status in order with its rule, generated from the same rule list the app uses, so docs and behavior can't drift apart.
   - Columns #, Status (bold), Ligt bij (a label colored by role, as everywhere the app shows who the ball lies with), Huidig zolang.
@@ -383,7 +384,7 @@
     | 3 | Klusser | Bezoek plannen | No afspraak date |
     | 4 | Klusser | Bezoek uitvoeren | "Bezoek afronden" not yet tapped |
     | 5 | Klusser | Plan van Aanpak afronden | "Klaar voor controle" not yet tapped |
-    | 6 | Beheerder | Plan controleren & versturen | Plan not yet sent (to the corporatie if huur, to the bewoner if koop) |
+    | 6 | Beheerder | Plan controleren & versturen | Plan not yet sent (to the corporatie if huur, to the bewoner if koop) and no besluit recorded (approval, rejection or the bewoner's choice) |
     | 7 | Woningcorporatie | Plan goedkeuren (huur) | Corporatie approval not yet recorded |
     | 8 | Bewoner | Klussendienst of zelf? (koop) | Bewoner's choice not yet recorded |
     | 9 | Beheerder | Uitvoerder toewijzen | No uitvoerder assigned |
@@ -477,14 +478,15 @@
   - Then: open the app from the new icon and log in once more with your e-mail and code. *The home-screen app keeps its own login, separate from the browser's.*
   - On a desktop browser: a big amber banner on top, "Open deze pagina op je telefoon", without hiding the steps.
 - Meldingen aan beheerders (the bell in the navbar, after Beheer; admins only)
-  - A bell with a small red rounded count of unread meldingen. It opens a scrollable list of the 50 most recent, unread above read and newest first within each, headed "{n} ongelezen meldingen" ("1 ongelezen melding"), or "{n} meldingen (alle gelezen)" ("1 melding (gelezen)") once all are read, counting all of them, not just the 50; with none, "Meldingen" and "Nog geen meldingen.". Each melding is in small text: a red dot for unread (read ones keep the space), then "{the dossier's current adres}: {melding}" on at most two lines, cut off with an ellipsis when longer, the adres bold while unread; below it, when. So each melding leads with what happened, and the details are on the dossier. Tapping one opens that dossier and marks every melding about it read. Read state is per admin. The bell refreshes every minute and when the app comes back to the foreground.
+  - A bell with a small red rounded count of unread meldingen. It opens a scrollable list of the 50 most recent, unread above read and newest first within each, headed "{n} ongelezen meldingen" ("1 ongelezen melding"), or "{n} meldingen (alle gelezen)" ("1 melding (gelezen)") once all are read, counting all of them, not just the 50; with none, "Meldingen" and "Nog geen meldingen.". Each melding is in small text: a red dot for unread (read ones keep the space), then "{the dossier's current adres}: {melding}" on at most two lines, cut off with an ellipsis when longer, the adres bold while unread; below it, when. So each melding leads with what happened. Opening the dossier, from the bell or anywhere else, marks every melding about it read. Read state is per admin. The bell refreshes every minute and when the app comes back to the foreground.
+  - The meldingen whose content the dossier page doesn't otherwise show (Uit de ijskast and E-mail niet afgeleverd, below) also stand in full at the top of that dossier for its eigenaar, newest first, each in its own banner (light blue with a snowflake for the ijskast, amber with an envelope for a failed email) with when below it and an X in the top-right corner. The X takes it off the dossier page only; it stays in the bell. A hand-off melding gets no banner, since the status shows it.
   - Each melding goes only to the dossier's eigenaar, changes nothing in the data and disappears with the dossier. Admins get no email about dossiers. *At hundreds of open dossiers, per-dossier mails would get filtered and ignored; the admins go through the dossier list daily instead.*
   - Immediately, when a klusser hands the ball back to the admins:
     - "Klaar voor controle" tapped: "Klaar voor controle ({klusser})".
     - "Werk opgeleverd" tapped: "Werk opgeleverd ({klusser})".
     - Not when an admin does it themselves (eg typing up a paper visit), though an admin using "Inloggen als" counts as the klusser; and not for "Bezoek afronden": the ball stays with the klusser until "Klaar voor controle".
   - On the day a dossier comes out of the ijskast, from 08:00 (the server checks every 15 minutes, once per dossier): "Uit de ijskast: {reden}" (when and by whom it was put in are in Alle activiteit). Not when it was taken out early or closed.
-  - Immediately, when an outbound email fails to send: "E-mail niet afgeleverd aan {adres}" (the onderwerp is in Alle activiteit; the provider's error is stored with the send but not shown). The send is then shown in red on the dossier ("Niet afgeleverd op {datum}") and doesn't count as sent. *(At launch this covers only a rejection by the provider at send time. Bounces after sending are detected from a later milestone, via the Mailgun webhook.)*
+  - Immediately, when an outbound email fails to send: "E-mail niet afgeleverd aan {adres}. Foutmelding: {error}", the error as the mail provider (or the connection to it) gave it, on one line and cut off after 300 characters, so the admin can pass it on to the developer; the full error is stored with the send, and the onderwerp is in Alle activiteit. The send is then shown in red on the dossier ("Niet afgeleverd op {datum}") and doesn't count as sent. *(At launch this covers only a rejection by the provider at send time. Bounces after sending are detected from a later milestone, via the Mailgun webhook.)*
   - The one automatic admin email is feedback (see Footer), which goes to its own list of recipients set per environment, each send logged in Alle activiteit. Server errors, PDF render failures and failed backups go to the maintainer, not to the bell.
 
 ## Footer & other UI

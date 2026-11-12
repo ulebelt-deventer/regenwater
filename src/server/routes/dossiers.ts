@@ -258,7 +258,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     }
     // Only a klusser's hand-off alerts the eigenaar; an admin registering it themselves already knows. "Inloggen als" counts as the klusser, so it can be tested.
     if (ik.rol === 'klusser' && (m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
-      dossierMelding(ctx, d, `${m === 'klaar_voor_controle' ? 'Klaar voor controle' : 'Werk opgeleverd'} (${ik.naam})`);
+      dossierMelding(ctx, d, 'overdracht', `${m === 'klaar_voor_controle' ? 'Klaar voor controle' : 'Werk opgeleverd'} (${ik.naam})`);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });

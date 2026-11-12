@@ -1,6 +1,6 @@
 // The navbar bell: in-app meldingen for a dossier's eigenaar.
 import { type Page, expect, test } from '@playwright/test';
-import { BEHEERDER, KLUSSER, login, post, start } from './hulp.ts';
+import { BEHEERDER, KLUSSER, login, naarDossier, post, start } from './hulp.ts';
 
 // Two dossiers of the admin, each handed off by the klusser with Klaar voor controle; the second is the newest melding.
 async function tweeMeldingen(page: Page, klusserId: number): Promise<[number, number]> {
@@ -42,6 +42,44 @@ test('de bel telt de ongelezen meldingen, ook in de kop; een melding openen gaat
   await expect(page.locator('.qa-bel-aantal')).toHaveCount(0);
   await page.locator('.qa-nav-bel').click();
   await expect(page.locator('.qa-bel-kop')).toHaveText('2 meldingen (alle gelezen)');
+});
+
+test('een niet afgeleverde e-mail staat voluit bovenaan het dossier tot je die wegklikt, een overdracht niet; het dossier openen telt als gelezen', async ({ page }) => {
+  const { klusserId } = await start(page);
+  const [eerste, tweede] = await tweeMeldingen(page, klusserId);
+  const aan = 'bewoner.met.een.lang.adres@example.org';
+  await post(page.request, '/api/test/mail-faalt', { aan });
+  const res = await page.request.post(`/api/dossiers/${eerste}/mail/subsidie_huur`, { data: { aan, onderwerp: 'Subsidie', tekst: 'Hallo' } });
+  expect(res.status()).toBe(502);
+
+  await page.goto('/');
+  await expect(page.locator('.qa-bel-aantal')).toHaveText('3');
+  // Straight to the dossier, not through the bell.
+  await naarDossier(page, eerste);
+  const banners = page.locator('.qa-dossier-melding');
+  await expect(banners).toHaveCount(1);
+  await expect(banners.locator('.qa-dossier-melding-tekst')).toHaveText(`E-mail niet afgeleverd aan ${aan}. Foutmelding: Geweigerd door de provider (test)`);
+  await expect(page.locator('.qa-bel-aantal')).toHaveText('1');
+  // On a phone the long address wraps and the X stays on screen.
+  await page.setViewportSize({ width: 360, height: 740 });
+  const weg = banners.locator('.qa-dossier-melding-weg');
+  await expect(weg).toBeVisible();
+  const box = (await weg.boundingBox())!;
+  expect(box.x + box.width).toBeLessThanOrEqual(360);
+
+  await weg.click();
+  await expect(banners).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.qa-status')).toBeVisible();
+  await expect(page.locator('.qa-bel-aantal')).toHaveText('1');
+  await expect(banners).toHaveCount(0);
+  await page.locator('.qa-nav-bel').click();
+  await expect(page.locator('.qa-notificatie')).toHaveCount(3);
+  await expect(page.locator(`.qa-notificatie[href="/dossiers/${eerste}"]`)).toHaveCount(2);
+
+  await naarDossier(page, tweede);
+  await expect(page.locator('.qa-bel-aantal')).toHaveCount(0);
+  await expect(banners).toHaveCount(0);
 });
 
 test('een klusser heeft geen bel, en zonder meldingen zegt de bel dat', async ({ page }) => {

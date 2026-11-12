@@ -70,6 +70,28 @@ describe('Aandacht uitstellen -> ijskast', () => {
   });
 });
 
+describe('the soort of a melding', () => {
+  it('names existing meldingen from their titel, and none is clicked away', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes('ADD COLUMN weggeklikt_at'));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    db.prepare('INSERT INTO dossiers (id, created_at, created_by) VALUES (7, ?, 1)').run(T);
+    const melding = db.prepare('INSERT INTO notificaties (gebruiker_id, dossier_id, titel, created_at) VALUES (1, 7, ?, ?)');
+    for (const titel of ['Klaar voor controle (Kees)', 'Werk opgeleverd (Kees)', 'Uit de ijskast: Bewoner verbouwt', 'E-mail niet afgeleverd aan a@example.org']) melding.run(titel, T);
+
+    db.exec(MIGRATIES[versie]);
+
+    expect(db.prepare('SELECT soort, weggeklikt_at FROM notificaties ORDER BY id').all()).toEqual([
+      { soort: 'overdracht', weggeklikt_at: null },
+      { soort: 'overdracht', weggeklikt_at: null },
+      { soort: 'ijskast', weggeklikt_at: null },
+      { soort: 'mail_mislukt', weggeklikt_at: null },
+    ]);
+  });
+});
+
 describe('the Terras -> Steen rename', () => {
   it('renames annotation types, steen fields and photo slots in dossiers, photos and audit, and leaves other text alone', () => {
     const versie = MIGRATIES.findIndex((m) => m.includes('"type":"terras"'));

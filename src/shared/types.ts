@@ -181,9 +181,13 @@ export interface Dossier {
 }
 
 // A melding under the navbar bell, for one beheerder about one dossier.
+// overdracht: a klusser's hand-off, which the dossier's status shows.
+export type NotificatieSoort = 'overdracht' | 'ijskast' | 'mail_mislukt';
+
 export interface Notificatie {
   id: number;
   dossier_id: number;
+  soort: NotificatieSoort;
   adres: string;
   titel: string;
   created_at: string;

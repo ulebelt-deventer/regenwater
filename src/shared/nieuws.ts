@@ -11,7 +11,8 @@ export const NIEUWS: NieuwsDatum[] = [
       {
         kop: 'Meldingen',
         punten: [
-          'Meldingen over je dossiers (Klaar voor controle, Werk opgeleverd, E-mail niet afgeleverd en Uit de ijskast) krijg je niet meer per e-mail, maar onder het nieuwe belletje bovenaan, naast Beheer. Het rode getal telt de ongelezen meldingen. Tik op een melding om naar het dossier te gaan; dan zijn alle meldingen over dat dossier gelezen.',
+          'Meldingen over je dossiers (Klaar voor controle, Werk opgeleverd, E-mail niet afgeleverd en Uit de ijskast) krijg je niet meer per e-mail, maar onder het nieuwe belletje bovenaan, naast Beheer. Het rode getal telt de ongelezen meldingen. Tik op een melding om naar het dossier te gaan. Zodra je een dossier opent, ook zonder het belletje, zijn alle meldingen over dat dossier gelezen.',
+          'Een melding over een niet afgeleverde e-mail of over een dossier dat uit de ijskast komt, staat ook voluit bovenaan dat dossier, met de hele reden. Bij een niet afgeleverde e-mail staat daar ook de foutmelding: weet je niet wat er mis is, stuur die dan door naar de ontwikkelaar. Tik op het kruisje rechtsboven om de melding daar weg te halen; onder het belletje blijft hij staan.',
           'De wekelijkse mail Aandacht nodig is gestopt: kijk zelf in de dossierlijst. Een normafvoer die een jaar niet is nagekeken, staat nu bovenaan het Overzicht. Ook feedback komt niet meer per mail; je vindt die onder Beheer, Feedback.',
         ],
       },
@@ -43,7 +44,7 @@ export const NIEUWS: NieuwsDatum[] = [
         kop: 'Plan van Aanpak',
         punten: [
           'Onder de Materialenlijst vul je nu de Afgesproken kosten Klussendienst in, bij huur- en koopwoningen. Bij Bezoek afronden staat daar al € 50 per regenpijp die wordt afgekoppeld; pas het bedrag aan als je iets anders afspreekt. Het Plan van Aanpak van een huurwoning toont het bedrag niet.',
-          'Bij een koopwoning staat in de Materialenlijst van het Plan van Aanpak nu per materiaal de prijs en het bedrag, met daaronder Uitvoering door de Klussendienst en het totaal excl. en incl. btw. Zelf uitvoeren en Met de Klussendienst staan niet meer naast elkaar.',
+          'Bij een koopwoning staat in de Materialenlijst van het Plan van Aanpak nu per materiaal de prijs en het bedrag, met daaronder Uitvoering door de Klussendienst en het totaal excl. en incl. btw. Zelf uitvoeren en Met de Klussendienst staan niet meer naast elkaar. De Gebruikte materialen in het Opleverrapport van een koopwoning staan in dezelfde tabel.',
           'De Uitvoeringsspecificatie rekent voor de Klussendienst nu de Afgesproken kosten uit het Plan van Aanpak, niet meer € 50 per afgekoppelde regenpijp.',
         ],
       },

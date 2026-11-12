@@ -36,9 +36,9 @@ function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.
   );
 }
 
-// Only for a koopwoning: a huurwoning's plan carries no prices. The Klussendienst row is the amount agreed in the Plan, not a calculation.
-function MaterialenMetPrijzen(props: { doc: Doc }): JSX.Element {
-  const rijen = () => getoondeMaterialen(props.doc.d, 'materialen');
+// Only for a koopwoning: a huurwoning's Plan and Opleverrapport carry no prices. The Klussendienst row is the amount agreed in the Plan, not a calculation.
+function MaterialenMetPrijzen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.Element {
+  const rijen = () => getoondeMaterialen(props.doc.d, props.lijst);
   const zonderPrijs = () => rijen().filter((r) => r.prijs === null).map((r) => r.naam.trim());
   const klussendienst = () => {
     const k = props.doc.d.data.klussendienst_kosten;
@@ -91,7 +91,9 @@ function MaterialenMetPrijzen(props: { doc: Doc }): JSX.Element {
         <Show when={zonderPrijs().length > 0}>
           <p class="qa-pdf-zonder-prijs">{`Nog zonder prijs, dus niet meegeteld: ${zonderPrijs().join(', ')}.`}</p>
         </Show>
-        <p class="klein qa-pdf-geen-garantie">Dit is een prijsinschatting en geen garantie voor de uiteindelijke kosten. De werkelijke kosten kunnen hoger of lager uitvallen.</p>
+        <Show when={props.lijst === 'materialen'}>
+          <p class="klein qa-pdf-geen-garantie">Dit is een prijsinschatting en geen garantie voor de uiteindelijke kosten. De werkelijke kosten kunnen hoger of lager uitvallen.</p>
+        </Show>
       </div>
     </Show>
   );
@@ -447,7 +449,7 @@ export function Plan(props: { doc: Doc }): JSX.Element {
       <PlanVanAanpak doc={props.doc} />
       <h2>5. Materialenlijst</h2>
       <Show when={props.doc.d.huur_koop === 'koop'} fallback={<Materialen doc={props.doc} lijst="materialen" />}>
-        <MaterialenMetPrijzen doc={props.doc} />
+        <MaterialenMetPrijzen doc={props.doc} lijst="materialen" />
       </Show>
       <Bijlage doc={props.doc} />
     </>
@@ -470,7 +472,9 @@ export function Opleverrapport(props: { doc: Doc }): JSX.Element {
       <Alinea doc={props.doc} key="uitgevoerd" />
       <Fotos doc={props.doc} slot="opleverfotos" />
       <h3>Gebruikte materialen</h3>
-      <Materialen doc={props.doc} lijst="gebruikt" />
+      <Show when={d().huur_koop === 'koop'} fallback={<Materialen doc={props.doc} lijst="gebruikt" />}>
+        <MaterialenMetPrijzen doc={props.doc} lijst="gebruikt" />
+      </Show>
     </>
   );
 }

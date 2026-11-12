@@ -225,7 +225,9 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   const rapporten = (await emails(page)).filter((m) => m.bijlagen.includes(OPLEVER_PDF));
   expect(rapporten).toHaveLength(2);
   expect(rapporten.every((m) => m.aan === 'bea@example.org')).toBe(true);
-  expect(await laatsteDocument(page)).toContain('Uitgevoerd door: Piet Uitvoerder');
+  const rapport = await laatsteDocument(page);
+  expect(rapport).toContain('Uitgevoerd door: Piet Uitvoerder');
+  expect(rapport).toMatch(/Uitvoering door de Klussendienst\s*€ 125,50/);
   await status(page, 'Gesloten: Uitgevoerd');
 });
 
