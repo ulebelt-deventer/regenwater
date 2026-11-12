@@ -75,6 +75,7 @@ function Navbar() {
         {/* One wrapper pushed right, so the menus stay together whichever of them a phone hides. */}
         <div class="ms-auto d-flex align-items-center gap-2 gap-md-3">
           <Show when={beheerder()}>
+            <Bel />
             <Dropdown knop="Beheer" knopClass="btn btn-link nav-link qa-nav-beheer" rechts>
               <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>
               <A class="dropdown-item" href="/beheer/materialen"><i class="bi bi-hammer me-2" aria-hidden="true" />Materialen</A>
@@ -87,7 +88,6 @@ function Navbar() {
               {/* The build this page runs: after a reload, the deployed commit. */}
               <div class="dropdown-item-text small text-muted qa-versie">Versie: {import.meta.env.VITE_APP_VERSIE}</div>
             </Dropdown>
-            <Bel />
           </Show>
           {/* On phones the Account menu has a single Uitleg link instead, to save space; it carries the red dot there. */}
           <Dropdown knop={<><i class="bi bi-question-circle me-1" aria-hidden="true" />Uitleg<Show when={nieuwsOngezienNu()}><NieuwStip /></Show></>} knopClass="btn btn-link nav-link qa-nav-uitleg" class="d-none d-md-block" rechts>
