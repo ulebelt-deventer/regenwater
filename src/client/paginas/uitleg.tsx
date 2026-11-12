@@ -58,7 +58,7 @@ export function AandachtUitleg() {
     <AlleenBeheerder>
       <h1>Uitleg: aandacht</h1>
       <p>Een dossier heeft aandacht nodig als er minstens één bevinding is van een van de drie soorten hieronder. Elke bevinding is een regel in de rode balk bovenaan het dossier, met een link naar wat je moet aanpassen, en het dossier krijgt het rode label “aandacht” in lijsten en tellingen. De app berekent dit bij elke pagina opnieuw uit de gegevens. De tellingen op het Overzicht en de wekelijkse mail gaan over open dossiers; het dossier zelf en het Aandacht-filter in de lijst tonen ook gesloten dossiers.</p>
-      <p>Een dossier in de ijskast (“Dossier in ijskast doen” in het menu van het dossier) heeft tot de gekozen dag geen enkele bevinding, ook geen herinnering voor de klusser, en staat niet in de standaardlijst. Op die dag krijgt de eigenaar een mail en telt alles weer mee.</p>
+      <p>Een dossier in de ijskast (“Dossier in ijskast doen” in het menu van het dossier) heeft tot de gekozen dag geen enkele bevinding, ook geen herinnering voor de bezoeker of uitvoerder, en staat niet in de standaardlijst. Op die dag krijgt de eigenaar een mail en telt alles weer mee.</p>
       <p>Is een bevinding bij een dossier niet relevant, tik dan op het rode kruisje erachter: hij komt bij dat dossier niet meer terug, ook niet als hij later weer zou gelden. Het kruisje rechtsboven in de balk verbergt alle regels tegelijk; bevindingen die er later bij komen, zie je wel. Terugzetten kan niet. Dat geldt ook voor de rode meldingen dat er nog geen dak of tuin is ingetekend op de Bezoekpagina.</p>
 
       <section class="card card-body mb-3 qa-klopt-niet-regels">
@@ -116,8 +116,8 @@ export function AandachtUitleg() {
             </tbody>
           </table>
         </div>
-        <p>Met het rode kruisje verberg je een Ligt stil-bevinding voor die stap voorgoed, ook de herinnering voor de klusser. Wacht het dossier tot een bepaalde dag, doe het dan in de ijskast.</p>
-        <p class="mb-0">Klussers zien Ligt stil alleen voor hun eigen stappen ({['afspraak', 'bezoek', 'plan', 'uitvoering'].map(stapLabel).join(', ')}), als herinnering, zonder het aandacht-label.</p>
+        <p>Met het rode kruisje verberg je een Ligt stil-bevinding voor die stap voorgoed, ook de herinnering voor de bezoeker of uitvoerder. Wacht het dossier tot een bepaalde dag, doe het dan in de ijskast.</p>
+        <p class="mb-0">De bezoeker ziet Ligt stil alleen bij de eigen stappen ({['afspraak', 'bezoek', 'plan'].map(stapLabel).join(', ')}) en de uitvoerder alleen bij {stapLabel('uitvoering')}, als herinnering, zonder het aandacht-label.</p>
       </section>
     </AlleenBeheerder>
   );
