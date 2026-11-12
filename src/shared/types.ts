@@ -85,11 +85,10 @@ export interface Verzending {
   created_by: number;
 }
 
-export interface Uitstel {
+export interface IJskast {
   id: number;
-  stap: string;
-  tot: string; // YYYY-MM-DD
-  notitie: string;
+  tot: string; // YYYY-MM-DD, the day it comes out
+  reden: string;
   created_at: string;
   created_by: number;
 }
@@ -174,7 +173,7 @@ export interface Dossier {
   data: Record<string, Json>;
   extra: Extra;
   verzendingen: Verzending[];
-  uitstellen: Uitstel[];
+  ijskast: IJskast | null; // the one not yet ended; use inIjskast, since its date may have passed before the eigenaar is mailed
   plan_acks: PlanAck[];
   verborgen: string[]; // sleutels of the meldingen a beheerder hid for this dossier
   fotos: Foto[];

@@ -6,6 +6,17 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-11-12',
+    groepen: [
+      {
+        kop: 'Aandacht',
+        punten: [
+          'Je kunt een dossier nu in de ijskast doen (Dossier in ijskast doen, in het menu rechtsboven het dossier), met een reden en een datum. Tot die dag vraagt het geen aandacht, krijgt de klusser geen herinnering en staat het niet in de standaardlijst (Status-filter In de ijskast). Op die dag krijgt de eigenaar een mail met de vraag wat je ermee wilt doen. Aandacht uitstellen is daarmee vervangen; een uitstel dat nog liep, staat nu tot die datum in de ijskast.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-11-11',
     groepen: [
       {

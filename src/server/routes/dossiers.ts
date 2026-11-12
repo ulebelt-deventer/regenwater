@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import type { Hono } from 'hono';
-import { KAART_MELDINGEN, aandacht, klusserHerinnering, ligtStil } from '../../shared/aandacht.ts';
+import { KAART_MELDINGEN, aandacht, klusserHerinnering } from '../../shared/aandacht.ts';
+import { isoDatum } from '../../shared/datum.ts';
 import { kaartItems } from '../../shared/kaart.ts';
 import { DOSSIERS_PER_PAGINA } from '../../shared/constants.ts';
 import { isBeheerder, magBewerken, magMijlpaal, magZien } from '../../shared/rechten.ts';
-import { STATUS_FILTERS, adresRegel, huidigeStap } from '../../shared/status.ts';
+import { STATUS_FILTERS, adresRegel, inIjskast } from '../../shared/status.ts';
 import { MIJLPALEN, type Dossier, type Gebruiker, type Json, type Mijlpaal, type Ontvanger, type RioolDetectie, SLUIT_REDENEN, type SluitReden } from '../../shared/types.ts';
 import { materiaalRijen, nieuwId, veldVoor, waarde } from '../../shared/velden.ts';
 import { audit, auditWijzigingen, type AuditRij } from '../audit.ts';
@@ -77,7 +78,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     const alle = beheerder ? laadDossiers(ctx.db) : laadDossiers(ctx.db, 'd.bezoeker_id = ? OR d.uitvoerder_id = ?', [ik.id, ik.id]);
     const rijen = new Map(alle.map((d) => [d.id, lijstRij(d, gm, nu, ik)]));
     const f = leesFilters(c.req.query());
-    let gesorteerd = sorteer(filter(alle, rijen, f).map((d) => rijen.get(d.id)!), f.sorteer, nu);
+    let gesorteerd = sorteer(filter(alle, rijen, f, nu).map((d) => rijen.get(d.id)!), f.sorteer, nu);
     // A klusser's own turn comes first, keeping the chosen order within each group.
     if (!beheerder) gesorteerd = [...gesorteerd.filter((r) => r.opdracht!.aanZet), ...gesorteerd.filter((r) => !r.opdracht!.aanZet)];
     const paginas = Math.max(1, Math.ceil(gesorteerd.length / DOSSIERS_PER_PAGINA));
@@ -93,6 +94,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
       opties: {
         plaatsen,
         klussers: beheerder ? [...gm.values()].filter((g) => !g.archived_at).map((g) => ({ id: g.id, naam: g.naam })) : [],
+        beheerders: beheerder ? [...gm.values()].filter((g) => !g.archived_at && isBeheerder(g)).map((g) => ({ id: g.id, naam: g.naam })) : [],
         statusFilters: STATUS_FILTERS.map((s) => ({ key: s.key, label: s.label, standaard: s.standaard })),
         sorteringen: SORTERINGEN,
       },
@@ -107,7 +109,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     const alle = laadDossiers(ctx.db);
     const rijen = new Map(alle.map((d) => [d.id, lijstRij(d, gm, nu, ik)]));
     const f = leesFilters(c.req.query());
-    const volgorde = sorteer(filter(alle, rijen, f).map((d) => rijen.get(d.id)!), f.sorteer, nu);
+    const volgorde = sorteer(filter(alle, rijen, f, nu).map((d) => rijen.get(d.id)!), f.sorteer, nu);
     const perId = new Map(alle.map((d) => [d.id, d]));
     const naam = `dossiers-${nu.toISOString().slice(0, 10)}.csv`;
     return c.body(csvExport(volgorde.map((r) => perId.get(r.id)!), rijen), 200, {
@@ -342,10 +344,14 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!SLUIT_REDENEN.includes(reden)) fout(400, 'Kies een reden.');
     const toelichting = tekstVeld(b, 'toelichting');
     if (reden === 'Uitgevoerd' && !d.werk_opgeleverd_at && !toelichting) fout(400, 'Licht toe wat er is gebeurd.');
-    ctx.db
-      .prepare('UPDATE dossiers SET gesloten_at = ?, gesloten_by = ?, gesloten_reden = ?, gesloten_toelichting = ? WHERE id = ?')
-      .run(ctx.klok.iso(), c.get('ik').id, reden, toelichting || null, d.id);
-    audit(ctx, actorVan(c), d.id, 'gesloten', { reden, toelichting: toelichting || null });
+    ctx.db.transaction(() => {
+      ctx.db
+        .prepare('UPDATE dossiers SET gesloten_at = ?, gesloten_by = ?, gesloten_reden = ?, gesloten_toelichting = ? WHERE id = ?')
+        .run(ctx.klok.iso(), c.get('ik').id, reden, toelichting || null, d.id);
+      // Closing ends the ijskast, so nobody is mailed about a closed dossier.
+      ctx.db.prepare('UPDATE ijskast SET eind_at = ? WHERE dossier_id = ? AND eind_at IS NULL').run(ctx.klok.iso(), d.id);
+      audit(ctx, actorVan(c), d.id, 'gesloten', { reden, toelichting: toelichting || null });
+    })();
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });
 
@@ -371,19 +377,32 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     return c.json({ ok: true });
   });
 
-  app.post('/api/dossiers/:id/uitstellen', async (c) => {
+  app.post('/api/dossiers/:id/ijskast', async (c) => {
     alleenBeheerder(c);
     const d = haalDossier(ctx, c);
     nietGesloten(d);
+    if (inIjskast(d, ctx.klok.nu())) fout(409, 'Dit dossier staat al in de ijskast.');
     const b = await body<Record<string, unknown>>(c);
     const tot = tekstVeld(b, 'tot');
-    const notitie = tekstVeld(b, 'notitie');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(tot) || tot <= ctx.klok.iso().slice(0, 10)) fout(400, 'Kies een datum in de toekomst.');
-    if (!notitie) fout(400, 'Schrijf een notitie.');
-    if (!ligtStil(d, gebruikersMap(ctx.db), ctx.klok.nu())) fout(409, 'Dit dossier ligt niet stil.');
-    const stap = huidigeStap(d).key;
-    ctx.db.prepare('INSERT INTO uitstellen (dossier_id, stap, tot, notitie, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?)').run(d.id, stap, tot, notitie, ctx.klok.iso(), c.get('ik').id);
-    audit(ctx, actorVan(c), d.id, 'uitgesteld', { stap, tot, notitie });
+    const reden = tekstVeld(b, 'reden');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tot) || tot <= isoDatum(ctx.klok.nu())) fout(400, 'Kies een datum in de toekomst.');
+    if (!reden) fout(400, 'Schrijf de reden op.');
+    ctx.db.transaction(() => {
+      // One whose day came before the eigenaar was mailed: putting the dossier back in answers that mail.
+      ctx.db.prepare('UPDATE ijskast SET eind_at = ? WHERE dossier_id = ? AND eind_at IS NULL').run(ctx.klok.iso(), d.id);
+      ctx.db.prepare('INSERT INTO ijskast (dossier_id, tot, reden, created_at, created_by) VALUES (?, ?, ?, ?, ?)').run(d.id, tot, reden, ctx.klok.iso(), c.get('ik').id);
+      audit(ctx, actorVan(c), d.id, 'ijskast_in', { tot, reden });
+    })();
+    return c.json({ dossier: laadDossier(ctx.db, d.id)! });
+  });
+
+  app.post('/api/dossiers/:id/ijskast-uit', (c) => {
+    alleenBeheerder(c);
+    const d = haalDossier(ctx, c);
+    const k = inIjskast(d, ctx.klok.nu());
+    if (!k) return c.json({ dossier: d });
+    ctx.db.prepare('UPDATE ijskast SET eind_at = ? WHERE id = ?').run(ctx.klok.iso(), k.id);
+    audit(ctx, actorVan(c), d.id, 'ijskast_uit', { tot: k.tot });
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });
 

@@ -3,13 +3,13 @@ import { A, type RouteSectionProps, useLocation, useNavigate, useParams } from '
 import { For, type JSX, Match, Show, Switch, createEffect, createResource, createSignal, onMount } from 'solid-js';
 import { type Bevinding, KLOPT_NIET_KOP } from '../../shared/aandacht.ts';
 import { datum, datumTijd } from '../../shared/datum.ts';
-import { PLAN_BEWONER_SJABLONEN, adresRegel, laatsteVerzending, sectieOpen, stap, str } from '../../shared/status.ts';
+import { PLAN_BEWONER_SJABLONEN, adresRegel, ijskastLabel, laatsteVerzending, sectieOpen, stap, str } from '../../shared/status.ts';
 import { geenSpecificatie } from '../../shared/specificatie.ts';
 import type { SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
 import { ApiFout, get } from '../api.ts';
 import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, tip, titel } from '../ui.tsx';
-import { EigenaarKiezer, MailKnop, MijlpaalRegel, SluitModal, Toewijzen, UitstelModal, VerbergKnop, VerwijderModal, VerzendRegel, actie, verbergMeldingen, verstuurdSinds, zetMijlpaal } from './acties.tsx';
+import { EigenaarKiezer, MailKnop, MijlpaalRegel, IJskastModal, SluitModal, Toewijzen, VerbergKnop, VerwijderModal, VerzendRegel, actie, verbergMeldingen, verstuurdSinds, zetMijlpaal } from './acties.tsx';
 import { type Antwoord, DossierCtx, haalDossier, maakStaat, useDossier } from './staat.ts';
 import { BezoekSamenvatting, InschrijvingSamenvatting, PlanSamenvatting, UitvoeringSamenvatting } from './samenvatting.tsx';
 import { VeldInvoer } from './velden.tsx';
@@ -69,13 +69,12 @@ export function useNaarSectie() {
 function Kop() {
   const s = useDossier();
   const naarAnker = useGaNaarAnker();
-  const [modal, setModal] = createSignal<'sluiten' | 'verwijderen' | 'uitstellen' | null>(null);
-  const stil = () => {
-    const a = s.aandacht();
-    return a ? a.bevindingen.find((b) => b.soort === 'ligt_stil' && !b.uitgesteld) : undefined;
-  };
+  const [modal, setModal] = createSignal<'sluiten' | 'verwijderen' | 'ijskast' | null>(null);
   const heropenen = async () => {
     if (await actie(s, 'heropenen')) melding('success', 'Dossier heropend.');
+  };
+  const uitIjskast = async () => {
+    if (await actie(s, 'ijskast-uit')) melding('success', 'Dossier uit de ijskast gehaald.');
   };
   return (
     <>
@@ -86,8 +85,10 @@ function Kop() {
             <Show when={s.d.gesloten_at}>
               <button type="button" class="dropdown-item qa-heropenen" onClick={() => void heropenen()}><i class="bi bi-unlock me-2" aria-hidden="true" />Dossier heropenen</button>
             </Show>
-            <Show when={stil()}>
-              <button type="button" class="dropdown-item qa-menu-uitstellen" onClick={() => setModal('uitstellen')}><i class="bi bi-alarm me-2" aria-hidden="true" />Aandacht uitstellen</button>
+            <Show when={!s.d.gesloten_at}>
+              <Show when={s.ijskast()} fallback={<button type="button" class="dropdown-item qa-menu-ijskast" onClick={() => setModal('ijskast')}><i class="bi bi-snow me-2" aria-hidden="true" />Dossier in ijskast doen</button>}>
+                <button type="button" class="dropdown-item qa-menu-ijskast-uit" onClick={() => void uitIjskast()}><i class="bi bi-snow me-2" aria-hidden="true" />Uit de ijskast halen</button>
+              </Show>
             </Show>
             <A class="dropdown-item qa-menu-activiteit" href={`/dossiers/${s.id}/activiteit`}><i class="bi bi-clock-history me-2" aria-hidden="true" />Alle activiteit</A>
             <div class="dropdown-divider" />
@@ -110,11 +111,20 @@ function Kop() {
         )}
       </Show>
 
+      <Show when={s.ijskast()}>
+        {(k) => (
+          <div class="alert alert-info qa-ijskast">
+            <div class="fw-semibold"><i class="bi bi-snow me-2" aria-hidden="true" />{ijskastLabel(k())}</div>
+            <div class="pre-wrap mt-1">{k().reden}</div>
+            <div class="small text-muted mt-1">In de ijskast gedaan op {datum(k().created_at)} door {s.naam(k().created_by)}</div>
+          </div>
+        )}
+      </Show>
+
       <Show when={s.aandacht()}>
         {(a) => {
           const kloptNiet = () => a().bevindingen.filter((b) => b.soort === 'klopt_niet');
-          const overig = () => a().bevindingen.filter((b) => b.soort !== 'klopt_niet' && !b.uitgesteld);
-          const uitgesteld = () => a().bevindingen.filter((b) => b.uitgesteld);
+          const overig = () => a().bevindingen.filter((b) => b.soort !== 'klopt_niet');
           const allesVerbergen = async () => {
             if (await bevestig('Alle meldingen verbergen?', 'Deze meldingen komen bij dit dossier niet meer terug. Nieuwe meldingen wel.', { ja: 'Verbergen' })) {
               await verbergMeldingen(s, [...kloptNiet(), ...overig()].map((b) => b.sleutel));
@@ -129,32 +139,27 @@ function Kop() {
           );
           const uitleg = () => <A href="/uitleg/aandacht" class="link-danger qa-aandacht-uitleg" ref={tip('Waarom zie ik dit?')} aria-label="Waarom zie ik dit?"><i class="bi bi-question-circle" aria-hidden="true" /></A>;
           return (
-            <>
-              <Show when={a().nodig}>
-                <div class="alert alert-danger d-flex align-items-start gap-2 qa-aandacht">
-                  <div class="flex-grow-1">
-                    <Show when={kloptNiet().length}>
-                      <div class="fw-semibold">{KLOPT_NIET_KOP}</div>
-                      <ul class="mb-0 qa-klopt-niet">
-                        <For each={kloptNiet()}>{regel}</For>
-                      </ul>
-                    </Show>
-                    <Show when={overig().length}>
-                      <ul class="mb-0">
-                        <For each={overig()}>{regel}</For>
-                      </ul>
-                    </Show>
-                  </div>
-                  <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                    {uitleg()}
-                    <button type="button" class="btn btn-link link-danger p-0 qa-alles-verbergen" ref={tip('Alles verbergen')} aria-label="Alles verbergen" onClick={() => void allesVerbergen()}><i class="bi bi-x-lg" aria-hidden="true" /></button>
-                  </div>
+            <Show when={a().nodig}>
+              <div class="alert alert-danger d-flex align-items-start gap-2 qa-aandacht">
+                <div class="flex-grow-1">
+                  <Show when={kloptNiet().length}>
+                    <div class="fw-semibold">{KLOPT_NIET_KOP}</div>
+                    <ul class="mb-0 qa-klopt-niet">
+                      <For each={kloptNiet()}>{regel}</For>
+                    </ul>
+                  </Show>
+                  <Show when={overig().length}>
+                    <ul class="mb-0">
+                      <For each={overig()}>{regel}</For>
+                    </ul>
+                  </Show>
                 </div>
-              </Show>
-              <For each={uitgesteld()}>
-                {(b) => <div class="small text-muted mb-2 qa-uitgesteld">Uitgesteld tot {datum(b.uitgesteld!.tot)}: {b.uitgesteld!.notitie}</div>}
-              </For>
-            </>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                  {uitleg()}
+                  <button type="button" class="btn btn-link link-danger p-0 qa-alles-verbergen" ref={tip('Alles verbergen')} aria-label="Alles verbergen" onClick={() => void allesVerbergen()}><i class="bi bi-x-lg" aria-hidden="true" /></button>
+                </div>
+              </div>
+            </Show>
           );
         }}
       </Show>
@@ -174,8 +179,8 @@ function Kop() {
         <Match when={modal() === 'verwijderen'}>
           <VerwijderModal onSluit={() => setModal(null)} onSluiten={() => setModal('sluiten')} />
         </Match>
-        <Match when={modal() === 'uitstellen'}>
-          <UitstelModal onSluit={() => setModal(null)} />
+        <Match when={modal() === 'ijskast'}>
+          <IJskastModal onSluit={() => setModal(null)} />
         </Match>
       </Switch>
     </>

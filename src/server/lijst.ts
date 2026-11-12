@@ -2,7 +2,7 @@ import { aandacht, klusserHerinnering } from '../shared/aandacht.ts';
 import { isoDatum, lokaal } from '../shared/datum.ts';
 import { kaartItems } from '../shared/kaart.ts';
 import {
-  type LigtBij, PLAN_BEWONER_SJABLONEN, STATUS_FILTERS, SUBSIDIE_SJABLONEN, adresRegel, corporatieNaam, eersteVerzending, huidigeStap, opdracht, status, str,
+  type LigtBij, PLAN_BEWONER_SJABLONEN, STATUS_FILTERS, SUBSIDIE_SJABLONEN, adresRegel, corporatieNaam, eersteVerzending, huidigeStap, ijskastLabel, inIjskast, opdracht, status, str,
 } from '../shared/status.ts';
 import { materiaalRijen, materiaalTotaal, optieLabel, veld } from '../shared/velden.ts';
 import type { Dossier, Gebruiker } from '../shared/types.ts';
@@ -15,7 +15,6 @@ export interface LijstRij {
   huur_koop: string | null;
   bezoeker: string | null;
   uitvoerder: string | null;
-  klusser: string | null;
   stapNr: number;
   status: string;
   ligtBij: LigtBij | null;
@@ -62,6 +61,7 @@ function volgendeTekst(d: Dossier, g: Map<number, Gebruiker>): string {
 
 export function lijstRij(d: Dossier, g: Map<number, Gebruiker>, nu: Date, ik: Gebruiker): LijstRij {
   const st = status(d);
+  const ijskast = inIjskast(d, nu);
   const notities = d.data.notities;
   const rij: LijstRij = {
     id: d.id,
@@ -70,9 +70,8 @@ export function lijstRij(d: Dossier, g: Map<number, Gebruiker>, nu: Date, ik: Ge
     huur_koop: d.huur_koop,
     bezoeker: naam(g, d.bezoeker_id),
     uitvoerder: naam(g, d.uitvoerder_id),
-    klusser: naam(g, d.uitvoerder_id ?? d.bezoeker_id),
     stapNr: st.stap.nr,
-    status: st.label,
+    status: ijskast ? ijskastLabel(ijskast) : st.label,
     ligtBij: st.ligtBij,
     gesloten: st.gesloten,
     uitgevoerd: d.gesloten_reden === 'Uitgevoerd',
@@ -84,7 +83,7 @@ export function lijstRij(d: Dossier, g: Map<number, Gebruiker>, nu: Date, ik: Ge
   };
   if (ik.rol === 'klusser') {
     rij.opdracht = opdracht(d, ik.id);
-    rij.volgende = volgendeTekst(d, g);
+    rij.volgende = ijskast ? ijskastLabel(ijskast) : volgendeTekst(d, g);
     const h = klusserHerinnering(d, ik.id, g, nu);
     rij.herinnering = h ? h.tekst : null;
   }
@@ -96,6 +95,7 @@ export interface Filters {
   plaats?: string;
   bezoeker?: number;
   uitvoerder?: number;
+  eigenaar?: number;
   ligtBij?: string;
   aandacht?: boolean;
   stap?: [number, number]; // step range, only linked from the Overzicht
@@ -126,6 +126,7 @@ export function leesFilters(q: Record<string, string>): Filters {
     plaats: q.plaats?.trim() || undefined,
     bezoeker: getal(q.bezoeker),
     uitvoerder: getal(q.uitvoerder),
+    eigenaar: getal(q.eigenaar),
     ligtBij: q.ligt_bij || undefined,
     aandacht: q.aandacht === '1',
     status,
@@ -135,7 +136,7 @@ export function leesFilters(q: Record<string, string>): Filters {
 
 const normaal = (s: string) => s.toLowerCase().replace(/\s+/g, '');
 
-export function filter(dossiers: Dossier[], rijen: Map<number, LijstRij>, f: Filters): Dossier[] {
+export function filter(dossiers: Dossier[], rijen: Map<number, LijstRij>, f: Filters, nu: Date): Dossier[] {
   return dossiers.filter((d) => {
     const r = rijen.get(d.id)!;
     if (f.adres) {
@@ -146,12 +147,13 @@ export function filter(dossiers: Dossier[], rijen: Map<number, LijstRij>, f: Fil
     if (f.plaats && (!d.adres || d.adres.plaats.toLowerCase() !== f.plaats.toLowerCase())) return false;
     if (f.bezoeker !== undefined && d.bezoeker_id !== f.bezoeker) return false;
     if (f.uitvoerder !== undefined && d.uitvoerder_id !== f.uitvoerder) return false;
+    if (f.eigenaar !== undefined && d.eigenaar_id !== f.eigenaar) return false;
     if (f.ligtBij && r.ligtBij !== f.ligtBij) return false;
     if (f.aandacht && !r.aandacht) return false;
     if (f.stap && (r.stapNr < f.stap[0] || r.stapNr > f.stap[1])) return false;
     for (const sf of STATUS_FILTERS) {
       const want = f.status[sf.key];
-      if (want !== null && sf.test(d) !== (want === 'ja')) return false;
+      if (want !== null && sf.test(d, nu) !== (want === 'ja')) return false;
     }
     return true;
   });

@@ -20,12 +20,12 @@ function normBlok(ctx: Ctx, nu: Date): string | null {
   return `Normafvoer nakijken\n\nKijk na of deze normen nog kloppen: ${ctx.config.basisUrl}/beheer/normafvoer\n\n${regels.join('\n')}`;
 }
 
-// The weekly "Aandacht nodig" mail: every open dossier with a finding that isn't snoozed, and any norm due for a yearly check. Returns the text, or null when there is nothing to report.
+// The weekly "Aandacht nodig" mail: every open dossier with a finding (none while in the ijskast), and any norm due for a yearly check. Returns the text, or null when there is nothing to report.
 export function digestTekst(ctx: Ctx): { onderwerp: string; tekst: string } | null {
   const nu = ctx.klok.nu();
   const gm = gebruikersMap(ctx.db);
   const lijst = laadDossiers(ctx.db, 'd.gesloten_at IS NULL')
-    .map((d) => ({ d, bevindingen: aandacht(d, gm, nu).bevindingen.filter((b) => !b.uitgesteld) }))
+    .map((d) => ({ d, bevindingen: aandacht(d, gm, nu).bevindingen }))
     .filter((x) => x.bevindingen.length > 0);
   const norm = normBlok(ctx, nu);
   if (lijst.length === 0 && norm === null) return null;

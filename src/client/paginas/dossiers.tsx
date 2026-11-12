@@ -1,6 +1,6 @@
 import { A, useNavigate, useSearchParams } from '@solidjs/router';
 import { For, Show, createResource, createSignal } from 'solid-js';
-import { datum, kortDatum, lokaal } from '../../shared/datum.ts';
+import { datum, lokaal } from '../../shared/datum.ts';
 import { LIGT_BIJ_LABEL, type LigtBij } from '../../shared/status.ts';
 import { get, post, query } from '../api.ts';
 import { nu, sessie } from '../sessie.ts';
@@ -13,7 +13,6 @@ export interface LijstRij {
   huur_koop: string | null;
   bezoeker: string | null;
   uitvoerder: string | null;
-  klusser: string | null;
   stapNr: number;
   status: string;
   ligtBij: LigtBij | null;
@@ -38,6 +37,7 @@ interface Lijst {
   opties: {
     plaatsen: string[];
     klussers: { id: number; naam: string }[];
+    beheerders: { id: number; naam: string }[];
     statusFilters: { key: string; label: string; standaard: 'ja' | 'nee' | null }[];
     sorteringen: [string, string][];
   };
@@ -54,7 +54,7 @@ export function OpdrachtBadge(props: { opdracht: NonNullable<LijstRij['opdracht'
 
 const komendeAfspraak = (r: LijstRij) => (r.afspraak && lokaal(r.afspraak) >= nu() ? r.afspraak : null);
 
-const FILTER_KEYS = ['adres', 'plaats', 'bezoeker', 'uitvoerder', 'ligt_bij', 'aandacht', 'stap', 'sorteer', 'pagina'];
+const FILTER_KEYS = ['adres', 'plaats', 'eigenaar', 'bezoeker', 'uitvoerder', 'ligt_bij', 'aandacht', 'stap', 'sorteer', 'pagina'];
 
 export function Dossiers() {
   const beheerder = () => sessie()!.ik.rol === 'beheerder';
@@ -114,7 +114,7 @@ export function Dossiers() {
           <div class="row g-2 align-items-center mb-3 qa-filters">
             <div class="col-12 col-md-auto">
               <input
-                class="form-control form-control-sm placeholder-icoon w-md-9rem qa-filter-adres"
+                class="form-control form-control-sm placeholder-icoon w-md-8rem qa-filter-adres"
                 placeholder={'\uF52A Adres'}
                 value={adres()}
                 onInput={(e) => {
@@ -125,12 +125,18 @@ export function Dossiers() {
               />
             </div>
             <div class="col-6 col-md-auto">
-              <select class="form-select form-select-sm w-md-9rem qa-filter-plaats" onChange={(e) => zet('plaats', e.currentTarget.value)}>
+              <select class="form-select form-select-sm w-md-8rem qa-filter-plaats" onChange={(e) => zet('plaats', e.currentTarget.value)}>
                 <option value="">Plaats: alle</option>
                 <For each={l().opties.plaatsen}>{(p) => <option value={p} selected={params.plaats === p}>{p}</option>}</For>
               </select>
             </div>
             <Show when={beheerder()}>
+              <div class="col-6 col-md-auto">
+                <select class="form-select form-select-sm w-md-9rem qa-filter-eigenaar" onChange={(e) => zet('eigenaar', e.currentTarget.value)}>
+                  <option value="">Eigenaar: alle</option>
+                  <For each={l().opties.beheerders}>{(b) => <option value={b.id} selected={params.eigenaar === String(b.id)}>{b.naam}</option>}</For>
+                </select>
+              </div>
               <div class="col-6 col-md-auto">
                 <select class="form-select form-select-sm w-md-9rem qa-filter-bezoeker" onChange={(e) => zet('bezoeker', e.currentTarget.value)}>
                   <option value="">Bezoeker: alle</option>
@@ -236,9 +242,9 @@ function BeheerderTabel(props: { rijen: LijstRij[] }) {
             <tr>
               <th>Adres</th>
               <th>Huur/koop</th>
-              <th>Klusser</th>
+              <th>Bezoeker</th>
+              <th>Uitvoerder</th>
               <th>Status</th>
-              <th>Laatste activiteit</th>
               <th>Notities</th>
             </tr>
           </thead>
@@ -251,9 +257,9 @@ function BeheerderTabel(props: { rijen: LijstRij[] }) {
                     <Show when={r.aandacht}> <AandachtBadge /></Show>
                   </td>
                   <td>{r.huur_koop ?? ''}</td>
-                  <td>{r.klusser ?? ''}</td>
+                  <td class="qa-bezoeker">{r.bezoeker ?? <span class="text-body-tertiary">--</span>}</td>
+                  <td class="qa-uitvoerder">{r.uitvoerder ?? <span class="text-body-tertiary">--</span>}</td>
                   <td><StatusLabel label={r.status} ligtBij={r.ligtBij} /></td>
-                  <td class="text-nowrap">{r.laatste_activiteit_at ? kortDatum(r.laatste_activiteit_at) : ''}</td>
                   <td class="small text-muted text-truncate" style={{ 'max-width': '16rem' }}>{r.notities ?? ''}</td>
                 </tr>
               )}
@@ -284,7 +290,7 @@ function DossierKaart(props: { rij: LijstRij; klusser?: boolean }) {
           </Show>
         </div>
         <div class="small text-muted">
-          {[r().klusser, komendeAfspraak(r()) ? `afspraak ${datum(komendeAfspraak(r())!)}` : null].filter(Boolean).join(' · ')}
+          {[r().bezoeker ? `Bezoeker: ${r().bezoeker}` : null, r().uitvoerder ? `Uitvoerder: ${r().uitvoerder}` : null, komendeAfspraak(r()) ? `afspraak ${datum(komendeAfspraak(r())!)}` : null].filter(Boolean).join(' · ')}
           <Show when={r().aandacht}> <AandachtBadge /></Show>
         </div>
         <Show when={r().herinnering}>
@@ -307,7 +313,6 @@ function KlusserTabel(props: { rijen: LijstRij[] }) {
               <th>Opdracht</th>
               <th>Volgende stap</th>
               <th>Afspraak</th>
-              <th>Laatste activiteit</th>
             </tr>
           </thead>
           <tbody>
@@ -327,7 +332,6 @@ function KlusserTabel(props: { rijen: LijstRij[] }) {
                     </Show>
                   </td>
                   <td class="text-nowrap">{komendeAfspraak(r) ? datum(komendeAfspraak(r)!) : ''}</td>
-                  <td class="text-nowrap">{r.laatste_activiteit_at ? kortDatum(r.laatste_activiteit_at) : ''}</td>
                 </tr>
               )}
             </For>

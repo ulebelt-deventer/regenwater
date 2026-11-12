@@ -99,22 +99,31 @@ describe('ligtStil', () => {
     expect(ligtStil(d, g, nu)?.tekst).toBe('Uitvoering was gepland op 16 maart 2026, maar niet opgeleverd.');
   });
 
-  it('marks a finding as snoozed until its date, which no longer counts as aandacht', () => {
-    const d = dossier({ created_at: '2026-03-01T09:00:00.000Z' });
-    d.uitstellen.push({ id: 1, stap: 'inschrijving', tot: '2026-03-25', notitie: 'Bewoner op vakantie', created_at: T, created_by: 1 });
-    expect(ligtStil(d, geen, nu)?.uitgesteld).toEqual({ tot: '2026-03-25', notitie: 'Bewoner op vakantie' });
-    expect(aandacht(d, geen, nu).nodig).toBe(false);
-    expect(aandacht(d, geen, new Date('2026-03-25T08:00:00.000Z')).nodig).toBe(true);
-  });
-
-  it('ignores a snooze for another step', () => {
-    const d = dossier({ created_at: '2026-03-01T09:00:00.000Z' });
-    d.uitstellen.push({ id: 1, stap: 'bezoeker', tot: '2026-03-25', notitie: 'x', created_at: T, created_by: 1 });
-    expect(aandacht(d, geen, nu).nodig).toBe(true);
-  });
-
   it('never flags a closed dossier', () => {
     expect(ligtStil(dossier({ gesloten_at: T, gesloten_reden: 'Anders' }), geen, nu)).toBeNull();
+  });
+});
+
+describe('ijskast', () => {
+  const ijskast = { id: 1, tot: '2026-03-25', reden: 'Bewoner op vakantie', created_at: T, created_by: 1 };
+
+  it('has no findings at all until its day, then counts again', () => {
+    const d = naInschrijving('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, bezoek_afgerond_at: T, ijskast });
+    expect(aandacht({ ...d, ijskast: null }, geen, nu).bevindingen.length).toBeGreaterThan(0);
+    expect(aandacht(d, geen, nu)).toEqual({ bevindingen: [], nodig: false });
+    expect(aandacht(d, geen, new Date('2026-03-24T22:59:00.000Z')).nodig).toBe(false);
+    expect(aandacht(d, geen, new Date('2026-03-24T23:00:00.000Z')).nodig).toBe(true);
+  });
+
+  it('gives the klusser no reminder', () => {
+    const d = naInschrijving('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T });
+    expect(klusserHerinnering(d, 2, geen, nu)?.stap).toBe('afspraak');
+    expect(klusserHerinnering({ ...d, ijskast }, 2, geen, nu)).toBeNull();
+  });
+
+  it('no longer applies once the dossier is closed', () => {
+    const d = naInschrijving('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, bezoek_afgerond_at: T, gesloten_at: T, gesloten_reden: 'Anders', ijskast });
+    expect(aandacht(d, geen, nu).nodig).toBe(true);
   });
 });
 

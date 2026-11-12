@@ -1,6 +1,6 @@
 export const DAG_MS = 864e5;
 
-// Local-time strings (afspraak, uitvoering gepland, uitstel tot) are read in the runtime's timezone, Europe/Amsterdam on the server.
+// Local-time strings (afspraak, uitvoering gepland, ijskast tot) are read in the runtime's timezone, Europe/Amsterdam on the server.
 export function lokaal(s: string): Date {
   const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(s);
   if (!m) throw new Error(`Ongeldige datum: ${s}`);

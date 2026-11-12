@@ -68,7 +68,7 @@ $container-max-widths: (lg: 1200px);
 .w-3-6rem { width: 3.6rem; }
 .w-4-5rem { width: 4.5rem; }
 @include media-breakpoint-up(sm) { .w-sm-auto { width: auto !important; } .w-sm-6rem { width: 6rem; } .w-sm-7-5rem { width: 7.5rem; } }
-@include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } .w-md-9rem { width: 9rem; } .fw-md-normal { font-weight: normal !important; } }
+@include media-breakpoint-up(md) { .w-md-auto { width: auto !important; } .w-md-8rem { width: 8rem; } .w-md-9rem { width: 9rem; } .fw-md-normal { font-weight: normal !important; } }
 
 .topbar { background: $ub-creme; border-bottom: 1px solid $ub-rand; }
 .topbar .nav-link { color: $ub-zwart; padding: .25rem 0; }

@@ -268,4 +268,25 @@ export const MIGRATIES: string[] = [
   ALTER TABLE dossiers ADD COLUMN eigenaar_id INTEGER REFERENCES gebruikers(id);
   UPDATE dossiers SET eigenaar_id = created_by;
   `,
+  // The ijskast replaces Aandacht uitstellen. eind_at: taken out early, the dossier closed, or the eigenaar mailed on the day. Each uitstel becomes an ijskast; per open dossier only its newest one still running stays open, so its eigenaar is mailed on its date.
+  `
+  CREATE TABLE ijskast (
+    id INTEGER PRIMARY KEY,
+    dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+    tot TEXT NOT NULL,
+    reden TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    created_by INTEGER NOT NULL REFERENCES gebruikers(id),
+    eind_at TEXT
+  );
+  CREATE UNIQUE INDEX ijskast_open ON ijskast (dossier_id) WHERE eind_at IS NULL;
+  INSERT INTO ijskast (dossier_id, tot, reden, created_at, created_by, eind_at)
+    SELECT u.dossier_id, u.tot, u.notitie, u.created_at, u.created_by,
+      CASE WHEN u.tot > date('now', 'localtime') AND d.gesloten_at IS NULL
+        AND u.id = (SELECT max(x.id) FROM uitstellen x WHERE x.dossier_id = u.dossier_id AND x.tot > date('now', 'localtime'))
+      THEN NULL ELSE strftime('%Y-%m-%dT%H:%M:%fZ', 'now') END
+    FROM uitstellen u JOIN dossiers d ON d.id = u.dossier_id ORDER BY u.id;
+  UPDATE audit SET type = 'ijskast_in', payload = json_object('tot', json_extract(payload, '$.tot'), 'reden', json_extract(payload, '$.notitie')) WHERE type = 'uitgesteld';
+  DROP TABLE uitstellen;
+  `,
 ];

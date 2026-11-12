@@ -2,7 +2,7 @@
 import { A } from '@solidjs/router';
 import { For, type JSX, Show, createSignal } from 'solid-js';
 import { NORM_STANDAARD_LABEL } from '../shared/constants.ts';
-import { datumTijd, euro } from '../shared/datum.ts';
+import { datum, datumTijd, euro } from '../shared/datum.ts';
 import { SJABLONEN } from '../shared/sjablonen.ts';
 import type { Json } from '../shared/types.ts';
 import { fotoSlotVoor, veldVoor } from '../shared/velden.ts';
@@ -36,7 +36,9 @@ export const TYPE_LABEL: Record<string, string> = {
   eigenaar_gewijzigd: 'Eigenaar gewijzigd',
   gesloten: 'Dossier gesloten',
   heropend: 'Dossier heropend',
-  uitgesteld: 'Aandacht uitgesteld',
+  ijskast_in: 'In de ijskast gedaan',
+  ijskast_uit: 'Uit de ijskast gehaald',
+  ijskast_voorbij: 'Uit de ijskast gekomen',
   opnieuw_versturen_niet_nodig: 'Opnieuw versturen niet nodig',
   meldingen_verborgen: 'Melding verborgen',
   email_verstuurd: 'E-mail verstuurd',
@@ -146,7 +148,9 @@ function samenvatting(item: AuditItem): JSX.Element {
   if (t === 'toegewezen') return <>{p().rol === 'bezoeker' ? 'Bezoeker' : 'Uitvoerder'}: {p().van === null ? 'niemand' : s(p().van)} → {p().naar === null ? 'niemand' : s(p().naar)}</>;
   if (t === 'gesloten') return <>Reden: {s(p().reden)}{p().toelichting ? `. ${s(p().toelichting)}` : ''}</>;
   if (t === 'heropend') return <>Was gesloten: {s(p().reden)}</>;
-  if (t === 'uitgesteld') return <>Tot {s(p().tot)}: {s(p().notitie)}</>;
+  if (t === 'ijskast_in') return <>Tot {datum(s(p().tot))}: {s(p().reden)}</>;
+  if (t === 'ijskast_uit') return <>Stond erin tot {datum(s(p().tot))}</>;
+  if (t === 'ijskast_voorbij') return <>Eigenaar gemaild</>;
   if (t === 'opnieuw_versturen_niet_nodig') return <>Voor {s(p().ontvanger)}: {s(p().notitie)}</>;
   if (t === 'meldingen_verborgen') return <>{(p().meldingen as string[]).map((m) => `“${m}”`).join(' ')}</>;
   if (t === 'email_verstuurd' || t === 'email_mislukt' || t === 'handmatig_verstuurd') return mail();

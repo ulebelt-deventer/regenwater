@@ -257,7 +257,7 @@ test('niet subsidiabel: gescheiden riool, subsidiemail en gesloten bij de inschr
   await geenAandacht(page);
 });
 
-test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw versturen herstart de wachttijd, uitstellen, dan akkoord', async ({ page }) => {
+test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw versturen herstart de wachttijd, ijskast, dan akkoord', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await totPlanKlaar(page, klusserId, 'huur');
   await mail(page, 'plan_corporatie');
@@ -294,12 +294,13 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
   await expect(page.locator('.qa-aandacht')).toContainText('Ieder1 reageert al 15 dagen niet op het plan. Nabellen?');
 
   await page.locator('.qa-dossier-menu').click();
-  await page.locator('.qa-menu-uitstellen').click();
-  await page.locator('.qa-uitstel-tot').fill('2026-04-01');
-  await page.locator('.qa-uitstel-notitie').fill('Ieder1 gebeld, reageren na de vergadering');
-  await page.locator('.qa-uitstel-modal .qa-actie-ok').click();
+  await page.locator('.qa-menu-ijskast').click();
+  await page.locator('.qa-ijskast-reden').fill('Ieder1 gebeld, reageren na de vergadering');
+  await page.locator('.qa-ijskast-tot').fill('2026-04-01');
+  await page.locator('.qa-ijskast-modal .qa-actie-ok').click();
   await geenAandacht(page);
-  await expect(page.locator('.qa-uitgesteld')).toHaveText('Uitgesteld tot 1 april 2026: Ieder1 gebeld, reageren na de vergadering');
+  await expect(page.locator('.qa-ijskast')).toContainText('In de ijskast tot 1 april 2026');
+  await expect(page.locator('.qa-ijskast')).toContainText('Ieder1 gebeld, reageren na de vergadering');
   // Sessions last 30 days and the next shift reaches day 30.
   await login(page, BEHEERDER.email);
   await verschuifDagen(page, 4);

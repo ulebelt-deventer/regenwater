@@ -58,11 +58,12 @@ export function AandachtUitleg() {
     <AlleenBeheerder>
       <h1>Uitleg: aandacht</h1>
       <p>Een dossier heeft aandacht nodig als er minstens één bevinding is van een van de drie soorten hieronder. Elke bevinding is een regel in de rode balk bovenaan het dossier, met een link naar wat je moet aanpassen, en het dossier krijgt het rode label “aandacht” in lijsten en tellingen. De app berekent dit bij elke pagina opnieuw uit de gegevens. De tellingen op het Overzicht en de wekelijkse mail gaan over open dossiers; het dossier zelf en het Aandacht-filter in de lijst tonen ook gesloten dossiers.</p>
+      <p>Een dossier in de ijskast (“Dossier in ijskast doen” in het menu van het dossier) heeft tot de gekozen dag geen enkele bevinding, ook geen herinnering voor de klusser, en staat niet in de standaardlijst. Op die dag krijgt de eigenaar een mail en telt alles weer mee.</p>
       <p>Is een bevinding bij een dossier niet relevant, tik dan op het rode kruisje erachter: hij komt bij dat dossier niet meer terug, ook niet als hij later weer zou gelden. Het kruisje rechtsboven in de balk verbergt alle regels tegelijk; bevindingen die er later bij komen, zie je wel. Terugzetten kan niet. Dat geldt ook voor de rode meldingen dat er nog geen dak of tuin is ingetekend op de Bezoekpagina.</p>
 
       <section class="card card-body mb-3 qa-klopt-niet-regels">
         <h2>Klopt niet</h2>
-        <p>Staat bovenaan de balk, onder de kop “{KLOPT_NIET_KOP}” Geldt voor open en gesloten dossiers en kan niet worden uitgesteld, wel verborgen.</p>
+        <p>Staat bovenaan de balk, onder de kop “{KLOPT_NIET_KOP}” Geldt voor open en gesloten dossiers.</p>
         <div class="table-responsive">
           <table class="table table-sm mb-0 tabel-kaarten">
             <thead>
@@ -87,7 +88,7 @@ export function AandachtUitleg() {
 
       <section class="card card-body mb-3 qa-plan-gewijzigd-regels">
         <h2>Plan gewijzigd</h2>
-        <p class="mb-0">Voor open dossiers: het Plan van Aanpak is gewijzigd nadat het naar de bewoner, de woningcorporatie of de uitvoerder is gestuurd, en na de laatste “Opnieuw versturen niet nodig”. Eén regel per ontvanger: <span class="fst-italic">“Plan gewijzigd op {'{datum}'}, na versturen naar {'{ontvanger}'}. Opnieuw sturen?”</span> Verdwijnt door opnieuw te versturen, door “Opnieuw versturen niet nodig” of door het rode kruisje; kan niet worden uitgesteld. Na een volgende wijziging van het Plan komt hij terug.</p>
+        <p class="mb-0">Voor open dossiers: het Plan van Aanpak is gewijzigd nadat het naar de bewoner, de woningcorporatie of de uitvoerder is gestuurd, en na de laatste “Opnieuw versturen niet nodig”. Eén regel per ontvanger: <span class="fst-italic">“Plan gewijzigd op {'{datum}'}, na versturen naar {'{ontvanger}'}. Opnieuw sturen?”</span> Verdwijnt door opnieuw te versturen, door “Opnieuw versturen niet nodig” of door het rode kruisje. Na een volgende wijziging van het Plan komt hij terug.</p>
       </section>
 
       <section class="card card-body mb-3 qa-ligt-stil-regels">
@@ -115,7 +116,7 @@ export function AandachtUitleg() {
             </tbody>
           </table>
         </div>
-        <p>Je kunt een Ligt stil-bevinding uitstellen tot een datum, met een notitie (“Aandacht uitstellen” in het menu van het dossier). Zolang hij is uitgesteld staat er een grijze regel en telt hij niet als aandacht. Het uitstel stopt op de datum of zodra de stap verandert. Met het rode kruisje verberg je hem voor die stap voorgoed, ook de herinnering voor de klusser.</p>
+        <p>Met het rode kruisje verberg je een Ligt stil-bevinding voor die stap voorgoed, ook de herinnering voor de klusser. Wacht het dossier tot een bepaalde dag, doe het dan in de ijskast.</p>
         <p class="mb-0">Klussers zien Ligt stil alleen voor hun eigen stappen ({['afspraak', 'bezoek', 'plan', 'uitvoering'].map(stapLabel).join(', ')}), als herinnering, zonder het aandacht-label.</p>
       </section>
     </AlleenBeheerder>
@@ -148,13 +149,12 @@ export function RechtenUitleg() {
 
       <section class="card card-body mb-3 qa-rechten-beheerder">
         <h2>Beheerders</h2>
-        <p>Beheerders zien alle dossiers en mogen alles wijzigen. Alleen beheerders kunnen dossiers aanmaken, het adres en de inschrijving invullen, bezoekers en uitvoerders toewijzen, e-mails versturen, een stap terugdraaien, aandacht uitstellen, dossiers sluiten, heropenen en verwijderen, en de activiteit van een dossier bekijken.</p>
+        <p>Beheerders zien alle dossiers en mogen alles wijzigen. Alleen beheerders kunnen dossiers aanmaken, het adres en de inschrijving invullen, bezoekers en uitvoerders toewijzen, e-mails versturen, een stap terugdraaien, dossiers in de ijskast doen, dossiers sluiten, heropenen en verwijderen, en de activiteit van een dossier bekijken.</p>
         <p class="mb-2">Ook een beheerder wordt soms tegengehouden:</p>
         <ul class="mb-0">
           <li>Een gesloten dossier is voor iedereen alleen-lezen. Heropen het eerst om iets te wijzigen. Alleen de opleverrapport-mails kun je dan nog versturen.</li>
           <li>Het opleverrapport (de PDF en de mails) bestaat pas als “Werk opgeleverd” is aangetikt.</li>
           <li>“Woningcorporatie heeft het plan goedgekeurd” hoort alleen bij een huurwoning en “Bewoner kiest voor de Klussendienst” alleen bij een koopwoning.</li>
-          <li>Aandacht uitstellen kan alleen als het dossier stilligt.</li>
           <li>Je kunt jezelf niet archiveren en je eigen rol niet wijzigen, zodat je jezelf niet kunt buitensluiten.</li>
         </ul>
       </section>

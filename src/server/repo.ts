@@ -1,4 +1,4 @@
-import type { Adres, Annotatie, Dossier, Extra, Foto, Gebruiker, Json, Normafvoer, NormafvoerRij, PlanAck, Uitstel, Verzending } from '../shared/types.ts';
+import type { Adres, Annotatie, Dossier, Extra, Foto, Gebruiker, IJskast, Json, Normafvoer, NormafvoerRij, PlanAck, Verzending } from '../shared/types.ts';
 import { fout } from './context.ts';
 import type { DB } from './db.ts';
 
@@ -13,6 +13,9 @@ export const DOSSIER_KOLOMMEN = [
 ] as const;
 
 type Rij = Record<string, unknown> & { id: number; data: string; extra_json: string; adres_json: string | null; laatste_activiteit_at: string | null };
+
+// The unique index ijskast_open allows one per dossier.
+const IJSKAST_OPEN = 'SELECT id, dossier_id, tot, reden, created_at, created_by FROM ijskast WHERE eind_at IS NULL';
 
 const SELECT = `SELECT d.*, (SELECT MAX(a.updated_at) FROM audit a WHERE a.dossier_id = d.id) AS laatste_activiteit_at FROM dossiers d`;
 
@@ -56,7 +59,7 @@ function normafvoerVan(r: Rij, adres: Adres | null, normen: NormafvoerRij[]): No
   return { mm: n.mm, gemeente: n.gemeente, vast_at: null, reden: null };
 }
 
-function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; h: string[]; f: Foto[]; n: NormafvoerRij[] }): Dossier {
+function bouw(r: Rij, rel: { v: Verzending[]; ijs: IJskast | undefined; a: PlanAck[]; h: string[]; f: Foto[]; n: NormafvoerRij[] }): Dossier {
   if (r.eigenaar_id === null) throw new Error(`Dossier ${r.id} heeft geen eigenaar`);
   const d: Record<string, unknown> = { id: r.id, created_at: r.created_at, created_by: r.created_by };
   for (const k of DOSSIER_KOLOMMEN) d[k] = r[k];
@@ -66,7 +69,7 @@ function bouw(r: Rij, rel: { v: Verzending[]; u: Uitstel[]; a: PlanAck[]; h: str
   d.data = JSON.parse(r.data) as Record<string, Json>;
   d.extra = JSON.parse(r.extra_json) as Extra;
   d.verzendingen = rel.v;
-  d.uitstellen = rel.u;
+  d.ijskast = rel.ijs ?? null;
   d.plan_acks = rel.a;
   d.verborgen = rel.h;
   d.fotos = rel.f;
@@ -79,7 +82,7 @@ export function laadDossier(db: DB, id: number): Dossier | null {
   if (!r) return null;
   return bouw(r, {
     v: (db.prepare('SELECT * FROM verzendingen WHERE dossier_id = ? ORDER BY id').all(id) as Record<string, unknown>[]).map(verzendingVan),
-    u: db.prepare('SELECT * FROM uitstellen WHERE dossier_id = ? ORDER BY id').all(id) as Uitstel[],
+    ijs: db.prepare(IJSKAST_OPEN + ' AND dossier_id = ?').get(id) as IJskast | undefined,
     a: db.prepare('SELECT * FROM plan_acks WHERE dossier_id = ? ORDER BY id').all(id) as PlanAck[],
     h: (db.prepare('SELECT sleutel FROM verborgen_meldingen WHERE dossier_id = ? ORDER BY id').all(id) as { sleutel: string }[]).map((x) => x.sleutel),
     f: (db.prepare('SELECT * FROM fotos WHERE dossier_id = ? AND verwijderd_at IS NULL ORDER BY created_at, rowid').all(id) as Record<string, unknown>[]).map(fotoVan),
@@ -92,7 +95,7 @@ export function laadDossiers(db: DB, waar = '1 = 1', params: unknown[] = []): Do
   const rijen = db.prepare(`${SELECT} WHERE ${waar}`).all(...params) as Rij[];
   if (rijen.length === 0) return [];
   const v = groepeer(db.prepare('SELECT * FROM verzendingen ORDER BY id').all() as Record<string, unknown>[], verzendingVan);
-  const u = groepeer(db.prepare('SELECT * FROM uitstellen ORDER BY id').all() as Record<string, unknown>[], (r) => r as unknown as Uitstel);
+  const ijs = new Map((db.prepare(IJSKAST_OPEN).all() as (IJskast & { dossier_id: number })[]).map((r) => [r.dossier_id, r]));
   const a = groepeer(db.prepare('SELECT * FROM plan_acks ORDER BY id').all() as Record<string, unknown>[], (r) => r as unknown as PlanAck);
   const h = groepeer(db.prepare('SELECT dossier_id, sleutel FROM verborgen_meldingen ORDER BY id').all() as Record<string, unknown>[], (r) => r.sleutel as string);
   const f = groepeer(
@@ -100,7 +103,7 @@ export function laadDossiers(db: DB, waar = '1 = 1', params: unknown[] = []): Do
     fotoVan,
   );
   const n = normafvoeren(db);
-  return rijen.map((r) => bouw(r, { v: v.get(r.id) ?? [], u: u.get(r.id) ?? [], a: a.get(r.id) ?? [], h: h.get(r.id) ?? [], f: f.get(r.id) ?? [], n }));
+  return rijen.map((r) => bouw(r, { v: v.get(r.id) ?? [], ijs: ijs.get(r.id), a: a.get(r.id) ?? [], h: h.get(r.id) ?? [], f: f.get(r.id) ?? [], n }));
 }
 
 export function gebruikersMap(db: DB): Map<number, Gebruiker> {

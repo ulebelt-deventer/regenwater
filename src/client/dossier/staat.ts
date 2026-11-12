@@ -3,7 +3,7 @@ import { createContext, createMemo, createSignal, onCleanup, useContext } from '
 import { createStore, produce, reconcile } from 'solid-js/store';
 import { aandacht, klusserHerinnering } from '../../shared/aandacht.ts';
 import { isBeheerder, magBewerken } from '../../shared/rechten.ts';
-import { status } from '../../shared/status.ts';
+import { inIjskast, status } from '../../shared/status.ts';
 import type { Dossier, Gebruiker, Json } from '../../shared/types.ts';
 import type { Bewerker } from '../../shared/velden.ts';
 import { get } from '../api.ts';
@@ -85,6 +85,7 @@ export function maakStaat(id: number, eerste: Antwoord) {
     status: createMemo(() => status(d)),
     aandacht: createMemo(() => (beheerder() ? aandacht(d, gm(), klok()) : null)),
     herinnering: createMemo(() => (beheerder() ? null : klusserHerinnering(d, ik().id, gm(), klok()))),
+    ijskast: createMemo(() => inIjskast(d, klok())),
     beheerder,
     mag: (bewerkers: Bewerker[]) => magBewerken(ik(), d, bewerkers),
     naam: (gid: number | null) => (gid === null ? null : gm().get(gid)!.naam),

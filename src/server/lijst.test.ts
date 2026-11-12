@@ -238,3 +238,23 @@ describe('GET /api/dossiers.csv', () => {
     expect(rijen[0][0]).toBe('Dossier-ID');
   });
 });
+
+describe('GET /api/dossiers eigenaar filter', () => {
+  it('offers the active beheerders and lists only the dossiers the chosen one owns', async () => {
+    const t = testApp();
+    const bea = maakGebruiker(t, 'Bea Beheer', 'beheerder');
+    const bob = maakGebruiker(t, 'Bob Beheer', 'beheerder');
+    maakGebruiker(t, 'Kees Klus', 'klusser');
+    const oud = maakGebruiker(t, 'Oud Beheer', 'beheerder');
+    t.ctx.db.prepare('UPDATE gebruikers SET archived_at = ? WHERE id = ?').run(t.ctx.klok.iso(), oud);
+    const beaKlant = await new Klant(t).login('bea.beheer@example.org');
+    const vanBea = await nieuwDossier(beaKlant);
+    const vanBob = await nieuwDossier(await new Klant(t, '10.0.0.2').login('bob.beheer@example.org'));
+    const lijst = (q: string) => beaKlant.json<{ rijen: { id: number }[]; opties: { beheerders: { id: number; naam: string }[] } }>('GET', `/api/dossiers${q}`);
+
+    expect((await lijst('')).opties.beheerders).toEqual([{ id: bea, naam: 'Bea Beheer' }, { id: bob, naam: 'Bob Beheer' }]);
+    expect((await lijst('')).rijen.map((r) => r.id).sort()).toEqual([vanBea, vanBob].sort());
+    expect((await lijst(`?eigenaar=${bob}`)).rijen.map((r) => r.id)).toEqual([vanBob]);
+    expect((await lijst(`?eigenaar=${bea}`)).rijen.map((r) => r.id)).toEqual([vanBea]);
+  });
+});

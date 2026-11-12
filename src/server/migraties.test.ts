@@ -27,7 +27,7 @@ describe('the Intake -> Inschrijving rename', () => {
     audit.run(T, T, 'mijlpaal', JSON.stringify({ mijlpaal: 'bezoek_afgerond', aan: true }));
     audit.run(T, T, 'uitgesteld', JSON.stringify({ stap: 'intake', tot: '2026-03-25', notitie: 'vakantie' }));
 
-    migreer(db);
+    db.exec(MIGRATIES[versie]);
 
     expect(db.prepare('SELECT inschrijving_afgerond_at, inschrijving_afgerond_by FROM dossiers WHERE id = 7').get()).toEqual({ inschrijving_afgerond_at: T, inschrijving_afgerond_by: 1 });
     expect(db.prepare('SELECT stap FROM uitstellen ORDER BY id').pluck().all()).toEqual(['inschrijving', 'bezoeker']);
@@ -36,6 +36,37 @@ describe('the Intake -> Inschrijving rename', () => {
       { mijlpaal: 'bezoek_afgerond', aan: true },
       { stap: 'inschrijving', tot: '2026-03-25', notitie: 'vakantie' },
     ]);
+  });
+});
+
+describe('Aandacht uitstellen -> ijskast', () => {
+  it('keeps the latest running snooze of each open dossier in the ijskast, ends the rest, and converts the audit entries', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes('CREATE TABLE ijskast'));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    const dossier = db.prepare('INSERT INTO dossiers (id, created_at, created_by, gesloten_at) VALUES (?, ?, 1, ?)');
+    dossier.run(1, T, null);
+    dossier.run(2, T, null);
+    dossier.run(3, T, T);
+    const uitstel = db.prepare("INSERT INTO uitstellen (dossier_id, stap, tot, notitie, created_at, created_by) VALUES (?, 'bezoeker', ?, ?, ?, 1)");
+    uitstel.run(1, '2099-01-01', 'eerste', T);
+    uitstel.run(1, '2099-02-01', 'tweede', T);
+    uitstel.run(2, '2020-01-01', 'verlopen', T);
+    uitstel.run(3, '2099-01-01', 'gesloten', T);
+    db.prepare("INSERT INTO audit (created_at, updated_at, actor_id, dossier_id, type, payload) VALUES (?, ?, 1, 1, 'uitgesteld', ?)").run(T, T, JSON.stringify({ stap: 'bezoeker', tot: '2099-01-01', notitie: 'eerste' }));
+
+    db.exec(MIGRATIES[versie]);
+
+    expect(db.prepare('SELECT dossier_id, tot, reden, eind_at IS NULL AS open FROM ijskast ORDER BY id').all()).toEqual([
+      { dossier_id: 1, tot: '2099-01-01', reden: 'eerste', open: 0 },
+      { dossier_id: 1, tot: '2099-02-01', reden: 'tweede', open: 1 },
+      { dossier_id: 2, tot: '2020-01-01', reden: 'verlopen', open: 0 },
+      { dossier_id: 3, tot: '2099-01-01', reden: 'gesloten', open: 0 },
+    ]);
+    expect(db.prepare('SELECT type, payload FROM audit').get()).toEqual({ type: 'ijskast_in', payload: JSON.stringify({ tot: '2099-01-01', reden: 'eerste' }) });
+    expect(db.prepare("SELECT count(*) FROM sqlite_master WHERE name = 'uitstellen'").pluck().get()).toBe(0);
   });
 });
 

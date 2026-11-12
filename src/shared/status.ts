@@ -1,6 +1,6 @@
 import { CORPORATIE_EMAIL } from './constants.ts';
-import { lokaal } from './datum.ts';
-import type { Adres, Dossier, Ontvanger, Verzending } from './types.ts';
+import { datum, isoDatum, lokaal } from './datum.ts';
+import type { Adres, Dossier, IJskast, Ontvanger, Verzending } from './types.ts';
 
 export type LigtBij = 'beheerder' | 'klusser' | 'corporatie' | 'bewoner';
 
@@ -177,14 +177,22 @@ export function status(d: Dossier): Status {
   return { gesloten: false, stap: s, label: s.label, ligtBij: s.ligtBij };
 }
 
+// Until the day `tot` an open dossier in the ijskast has no Aandacht and is left out of the default list.
+export function inIjskast(d: Dossier, nu: Date): IJskast | null {
+  return d.ijskast && !d.gesloten_at && d.ijskast.tot > isoDatum(nu) ? d.ijskast : null;
+}
+
+export const ijskastLabel = (k: IJskast) => `In de ijskast tot ${datum(k.tot)}`;
+
 // Status filter on the dossiers list: "is this milestone recorded".
-export const STATUS_FILTERS: { key: string; label: string; standaard: 'ja' | 'nee' | null; test: (d: Dossier) => boolean }[] = [
+export const STATUS_FILTERS: { key: string; label: string; standaard: 'ja' | 'nee' | null; test: (d: Dossier, nu: Date) => boolean }[] = [
   { key: 'bezoeker', label: 'Bezoeker toegewezen', standaard: null, test: (d) => d.bezoeker_id !== null },
   { key: 'bezoek', label: 'Bezoek gedaan', standaard: null, test: (d) => d.bezoek_afgerond_at !== null },
   { key: 'verstuurd', label: 'Plan verstuurd', standaard: null, test: (d) => stap('versturen').gedaan(d) !== null },
   { key: 'akkoord', label: 'Akkoord', standaard: null, test: (d) => d.corporatie_akkoord_at !== null || d.klussendienst_gekozen_at !== null },
   { key: 'uitvoerder', label: 'Uitvoerder toegewezen', standaard: null, test: (d) => d.uitvoerder_id !== null },
   { key: 'opgeleverd', label: 'Werk opgeleverd', standaard: null, test: (d) => d.werk_opgeleverd_at !== null },
+  { key: 'ijskast', label: 'In de ijskast', standaard: 'nee', test: (d, nu) => inIjskast(d, nu) !== null },
   { key: 'gesloten', label: 'Gesloten', standaard: 'nee', test: (d) => d.gesloten_at !== null },
   { key: 'uitgevoerd', label: 'Uitgevoerd', standaard: null, test: (d) => d.gesloten_reden === 'Uitgevoerd' },
 ];

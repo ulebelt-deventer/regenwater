@@ -138,24 +138,25 @@ export function VerwijderModal(props: { onSluit: () => void; onSluiten: () => vo
   );
 }
 
-export function UitstelModal(props: { onSluit: () => void }) {
+export function IJskastModal(props: { onSluit: () => void }) {
   const s = useDossier();
   const morgen = isoDatum(new Date(nu().getTime() + DAG_MS));
-  const [tot, setTot] = createSignal(morgen);
-  const [notitie, setNotitie] = createSignal('');
+  const [reden, setReden] = createSignal('');
+  const [tot, setTot] = createSignal('');
   return (
     <ActieModal
-      titel="Aandacht uitstellen"
-      knop="Uitstellen"
-      class="qa-uitstel-modal"
-      klaar={tot() >= morgen && notitie().trim() !== ''}
+      titel="Dossier in ijskast doen"
+      knop="In de ijskast"
+      class="qa-ijskast-modal"
+      klaar={reden().trim() !== '' && tot() >= morgen}
       onSluit={() => props.onSluit()}
-      verstuur={() => actie(s, 'uitstellen', { tot: tot(), notitie: notitie() })}
+      verstuur={() => actie(s, 'ijskast', { tot: tot(), reden: reden() })}
     >
-      <label class="form-label fw-semibold mb-0" for="uitstel-tot">Tot</label>
-      <input id="uitstel-tot" type="date" class="form-control w-auto mb-3 qa-uitstel-tot" min={morgen} value={tot()} onInput={(e) => setTot(e.currentTarget.value)} />
-      <label class="form-label fw-semibold mb-0" for="uitstel-notitie">Notitie</label>
-      <textarea id="uitstel-notitie" class="form-control qa-uitstel-notitie" rows="2" placeholder="Bijvoorbeeld: Ieder1 gebeld, reageren volgende week" value={notitie()} onInput={(e) => setNotitie(e.currentTarget.value)} />
+      <p>Tot die dag vraagt het dossier geen aandacht en staat het niet in de standaardlijst. Op die dag krijgt {s.naam(s.d.eigenaar_id)} (eigenaar) een mail.</p>
+      <label class="form-label fw-semibold mb-0" for="ijskast-reden">Reden</label>
+      <textarea id="ijskast-reden" class="form-control mb-3 qa-ijskast-reden" rows="3" placeholder="Bijvoorbeeld: bewoner wil pas na de verbouwing verder" value={reden()} onInput={(e) => setReden(e.currentTarget.value)} />
+      <label class="form-label fw-semibold mb-0" for="ijskast-tot">Weer tevoorschijn op</label>
+      <input id="ijskast-tot" type="date" class="form-control w-auto qa-ijskast-tot" min={morgen} value={tot()} onInput={(e) => setTot(e.currentTarget.value)} />
     </ActieModal>
   );
 }

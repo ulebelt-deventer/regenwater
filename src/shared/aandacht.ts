@@ -1,6 +1,6 @@
-import { datum, dagenSinds, lokaal, isoDatum } from './datum.ts';
+import { datum, dagenSinds, lokaal } from './datum.ts';
 import {
-  STAPPEN, PLAN_SJABLONEN, afspraakDatum, corporatieNaam, huidigeStap, inschrijvingOntbreekt,
+  STAPPEN, PLAN_SJABLONEN, afspraakDatum, corporatieNaam, huidigeStap, inIjskast, inschrijvingOntbreekt,
   laatsteVerzending, str, type Stap,
 } from './status.ts';
 import type { Dossier, Gebruiker, Ontvanger } from './types.ts';
@@ -14,7 +14,6 @@ export interface Bevinding {
   anker: string;
   stap?: string;
   ontvanger?: Ontvanger;
-  uitgesteld?: { tot: string; notitie: string };
 }
 
 export const KLOPT_NIET_KOP = 'De gegevens spreken elkaar tegen. Controleer:';
@@ -192,11 +191,7 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
   }
   if (tekst === null) return null;
   const bevinding: Bevinding = { soort: 'ligt_stil', sleutel: `ligt_stil:${s.key}`, tekst, anker: s.anker, stap: s.key };
-  if (!zichtbaar(d, bevinding)) return null;
-  const vandaag = isoDatum(nu);
-  const uitstel = [...d.uitstellen].reverse().find((u) => u.stap === s.key && u.tot > vandaag);
-  if (uitstel) bevinding.uitgesteld = { tot: uitstel.tot, notitie: uitstel.notitie };
-  return bevinding;
+  return zichtbaar(d, bevinding) ? bevinding : null;
 }
 
 const ONTVANGER_NAAM: Partial<Record<Ontvanger, string>> = { bewoner: 'de bewoner', corporatie: 'de woningcorporatie', uitvoerder: 'de uitvoerder' };
@@ -235,19 +230,21 @@ export function planGewijzigd(d: Dossier): Bevinding[] {
 }
 
 export interface Aandacht {
-  bevindingen: Bevinding[]; // Klopt niet first; snoozed Ligt stil included but marked
-  nodig: boolean; // any finding that isn't snoozed
+  bevindingen: Bevinding[]; // Klopt niet first
+  nodig: boolean;
 }
 
-// Admin view. Klussers get `klusserHerinnering` instead.
+// Admin view. Klussers get `klusserHerinnering` instead. Nothing while the dossier is in the ijskast.
 export function aandacht(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Date): Aandacht {
+  if (inIjskast(d, nu)) return { bevindingen: [], nodig: false };
   const bevindingen = [...kloptNiet(d, gebruikers, nu), ...planGewijzigd(d)];
   const stil = ligtStil(d, gebruikers, nu);
   if (stil) bevindingen.push(stil);
-  return { bevindingen, nodig: bevindingen.some((b) => !b.uitgesteld) };
+  return { bevindingen, nodig: bevindingen.length > 0 };
 }
 
 export function klusserHerinnering(d: Dossier, userId: number, gebruikers: Map<number, Gebruiker>, nu: Date): Bevinding | null {
+  if (inIjskast(d, nu)) return null;
   const stil = ligtStil(d, gebruikers, nu);
   if (!stil) return null;
   const eigen = (['afspraak', 'bezoek', 'plan'].includes(stil.stap!) && d.bezoeker_id === userId) || (stil.stap === 'uitvoering' && d.uitvoerder_id === userId);

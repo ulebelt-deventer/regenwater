@@ -4,6 +4,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { createApp } from './app.ts';
 import { leesConfig } from './config.ts';
+import { ijskastWekker } from './ijskast.ts';
 import { dagelijksePing, log, stelHealthcheckIn } from './log.ts';
 import { maakCtx } from './opstart.ts';
 
@@ -32,6 +33,12 @@ function onderhoud(): void {
 }
 onderhoud();
 setInterval(onderhoud, 864e5).unref();
+
+function wekker(): void {
+  ijskastWekker(ctx).catch((e: unknown) => log.error('ijskast-wekker mislukt', e));
+}
+wekker();
+setInterval(wekker, 15 * 60e3).unref();
 
 const poort = Number(process.env.PORT ?? 3000);
 // HOST is set to 127.0.0.1 in production, behind Caddy; unset listens on every interface.
