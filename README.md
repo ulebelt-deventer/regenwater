@@ -57,3 +57,7 @@ npm test            # both
 - `docs/berekening.md`: how the waterberging per regenpijp is calculated.
 - `docs/privacy.md`: personal data, processors and AVG compliance.
 - `devops/README.md`: VPS provisioning, deploys and operations.
+
+## License
+
+Copyright 2026 De Ulebelt (https://ulebelt.nl/, Deventer, NL). Licensed under the EUPL-1.2; see `LICENSE`.
