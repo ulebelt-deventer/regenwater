@@ -11,6 +11,14 @@ export function isNetwerkFout(e: unknown): boolean {
   return !(e instanceof ApiFout) || e.status >= 500;
 }
 
+// For calls made in the background: a dropped connection is left to the next poll or visit, other errors throw.
+export function zonderNetwerkFout<T>(p: Promise<T>): Promise<T | null> {
+  return p.catch((e: unknown) => {
+    if (isNetwerkFout(e)) return null;
+    throw e;
+  });
+}
+
 export async function api<T = any>(methode: string, pad: string, inhoud?: unknown): Promise<T> {
   const init: RequestInit = { method: methode, headers: {} };
   if (inhoud instanceof Blob) {

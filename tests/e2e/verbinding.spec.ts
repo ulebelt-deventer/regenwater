@@ -15,6 +15,8 @@ async function bezoekPagina(page: Page): Promise<number> {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}/bezoek`);
+  // The page's own calls on opening (meldingen, bezoek-geopend) must be done before a test cuts the connection or the session, or they hit it first.
+  await page.waitForLoadState('networkidle');
   return id;
 }
 
@@ -100,6 +102,18 @@ test('weggaan als alles is opgeslagen vraagt niets', async ({ page }) => {
   await page.goto('/dossiers');
   await expect(page.locator('.qa-dossiers')).toBeVisible();
   expect(gevraagd).toBe(false);
+});
+
+test('zonder verbinding toont een dossier geen foutmelding voor zijn meldingen op de achtergrond, en het opslaan werkt nog', async ({ page }) => {
+  await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await page.route('**/api/notificaties/**', (r) => r.abort('internetdisconnected'));
+  await page.goto(`/dossiers/${id}/bezoek`);
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('.qa-melding-danger')).toHaveCount(0);
+  await vul(page, 'wensen', 'Toch opgeslagen');
+  await opslagKlaar(page);
+  expect((await serverData(page, id)).wensen).toBe('Toch opgeslagen');
 });
 
 test('bij een verlopen sessie blijven de wijzigingen bewaard en gaan ze mee na opnieuw inloggen', async ({ page, context }) => {

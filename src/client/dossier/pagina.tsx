@@ -7,7 +7,7 @@ import { PLAN_BEWONER_SJABLONEN, adresRegel, ijskastLabel, laatsteVerzending, se
 import { geenSpecificatie } from '../../shared/specificatie.ts';
 import type { Notificatie, SluitReden } from '../../shared/types.ts';
 import { veld } from '../../shared/velden.ts';
-import { ApiFout, get, post } from '../api.ts';
+import { ApiFout, get, post, zonderNetwerkFout } from '../api.ts';
 import { leesDossier } from '../bel.tsx';
 import { Dropdown, Laden, StatusLabel, bevestig, gaNaar, melding, probeer, tip, titel } from '../ui.tsx';
 import { EigenaarKiezer, MailKnop, MijlpaalRegel, IJskastModal, SluitModal, Toewijzen, VerbergKnop, VerwijderModal, VerzendRegel, actie, verbergMeldingen, verstuurdSinds, zetMijlpaal } from './acties.tsx';
@@ -197,7 +197,10 @@ function DossierMeldingen() {
   onMount(() => {
     if (!s.beheerder()) return;
     leesDossier(s.id);
-    void probeer(async () => setLijst(await get<Notificatie[]>(`/api/notificaties/dossier/${s.id}`)));
+    void probeer(async () => {
+      const r = await zonderNetwerkFout(get<Notificatie[]>(`/api/notificaties/dossier/${s.id}`));
+      if (r) setLijst(r);
+    });
   });
   const wegklikken = (n: Notificatie) => void probeer(async () => setLijst(await post<Notificatie[]>(`/api/notificaties/${n.id}/wegklikken`)));
   return (

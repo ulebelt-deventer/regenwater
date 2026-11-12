@@ -1,7 +1,7 @@
 import { For, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { datumTijd } from '../shared/datum.ts';
 import type { Notificaties } from '../shared/types.ts';
-import { get, isNetwerkFout, post } from './api.ts';
+import { get, post, zonderNetwerkFout } from './api.ts';
 import { Dropdown, probeer } from './ui.tsx';
 
 const INTERVAL_MS = 60_000;
@@ -20,10 +20,7 @@ let generatie = 0;
 
 async function laad(): Promise<void> {
   const g = generatie;
-  const r = await get<Notificaties>('/api/notificaties').catch((e: unknown) => {
-    if (isNetwerkFout(e)) return null;
-    throw e;
-  });
+  const r = await zonderNetwerkFout(get<Notificaties>('/api/notificaties'));
   if (r && g === generatie) setData(r);
 }
 
@@ -32,7 +29,8 @@ export function leesDossier(dossierId: number): void {
   void probeer(async () => {
     generatie++;
     try {
-      setData(await post<Notificaties>('/api/notificaties/gelezen', { dossier_id: dossierId }));
+      const r = await zonderNetwerkFout(post<Notificaties>('/api/notificaties/gelezen', { dossier_id: dossierId }));
+      if (r) setData(r);
     } finally {
       generatie++;
     }
