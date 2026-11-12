@@ -1,5 +1,4 @@
 // Bezoek sub-page (bezoeker, on-site): the kaart with daken, tuinen, stenen and regenpijpen, then what was found.
-import { A } from '@solidjs/router';
 import { For, Show, createSignal, onMount } from 'solid-js';
 import { AUTO_VERDELING_UITLEG, type Aandeel, KOPPEL_M, annotatiesSvg, autoGesplitst, bronLabel, getal, herverdeel, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, regenpijpUitsnede, verdelingVoor, verdelingWaarde, waterberging } from '../../shared/kaart.ts';
 import { KAART_MELDINGEN } from '../../shared/aandacht.ts';
@@ -9,7 +8,7 @@ import { isNetwerkFout, post } from '../api.ts';
 import { Dropdown, Modal, OnderdeelIcoon, bevestig, gaNaar, melding, scrollNaar, tip } from '../ui.tsx';
 import { MijlpaalRegel, VerbergKnop, actie, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
-import { TerugLink } from './pagina.tsx';
+import { TerugLink, useNaarSectie } from './pagina.tsx';
 import { type DossierStaat, useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
@@ -267,6 +266,7 @@ function VerdelingKeuze(props: { id: string }) {
 
 export function Bezoek() {
   const s = useDossier();
+  const naarSectie = useNaarSectie();
   const items = () => kaartItems(s.d);
   const [normOpen, setNormOpen] = createSignal(false);
   // A lost request isn't reported: Bezoek afgerond fixes the norm as well, and the bezoeker can't act on it on site.
@@ -406,11 +406,8 @@ export function Bezoek() {
         <Controle s={s} pagina="bezoek" />
         <MijlpaalRegel mijlpaal="bezoek_afgerond" label="Bezoek afgerond" />
         <Show when={!s.d.bezoek_afgerond_at && s.mag(['bezoeker'])}>
-          <button type="button" class="btn btn-success btn-lg qa-bezoek-afronden" onClick={() => void afronden(s, 'bezoek', 'bezoek_afgerond')}>Bezoek afronden</button>
+          <button type="button" class="btn btn-success btn-lg qa-bezoek-afronden" onClick={async () => (await afronden(s, 'bezoek', 'bezoek_afgerond')) && naarSectie('sectie-bezoek')}>Bezoek afronden</button>
         </Show>
-        <div class="mt-3 text-end">
-          <A href={`/dossiers/${s.id}/plan`} class="qa-naar-plan">Verder met het Plan van Aanpak →</A>
-        </div>
         <div class="mt-3 text-center">
           <TerugLink sectie="sectie-bezoek" class="" />
         </div>
@@ -420,11 +417,11 @@ export function Bezoek() {
 }
 
 // Missing fields only warn; the hand-off stays possible, since some answers can't be known on-site.
-export async function afronden(s: DossierStaat, pagina: 'bezoek' | 'plan', mijlpaal: 'bezoek_afgerond' | 'klaar_voor_controle', bevestiging?: string) {
+export async function afronden(s: DossierStaat, pagina: 'bezoek' | 'plan', mijlpaal: 'bezoek_afgerond' | 'klaar_voor_controle', bevestiging?: string): Promise<boolean> {
   const mist = ontbrekend(s.d, pagina);
   const vraag = [mist.length ? `Er ontbreekt nog: ${mist.map((m) => m.label).join(', ')}.` : '', bevestiging ?? ''].filter(Boolean).join(' ');
-  if (vraag && !(await bevestig('Weet je het zeker?', vraag, { ja: 'Ja, afronden' }))) return;
-  await zetMijlpaal(s, mijlpaal);
+  if (vraag && !(await bevestig('Weet je het zeker?', vraag, { ja: 'Ja, afronden' }))) return false;
+  return zetMijlpaal(s, mijlpaal);
 }
 
 export function Controle(props: { s: DossierStaat; pagina: 'bezoek' | 'plan' }) {

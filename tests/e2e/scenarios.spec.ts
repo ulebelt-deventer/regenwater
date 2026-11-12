@@ -58,6 +58,7 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
   const veldBreedte = (await page.locator('.qa-veld-materialen').locator('xpath=..').boundingBox())!.width;
   expect(tabelBreedte).toBeLessThan(veldBreedte * 0.9);
   await plan(page, id);
+  await page.goto(`/dossiers/${id}/plan`);
   await expect(page.locator('.qa-materiaal-totaal')).toContainText('€ 90,00');
 
   await naarDossier(page, id);
@@ -86,8 +87,8 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
   await wijsToe(page, 'uitvoerder', klusserId, true);
   expect(await laatsteMail(page)).toMatchObject({ aan: KLUSSER.email, onderwerp: `Uitvoering regenwater: ${ADRES}`, bijlagen: [PLAN_PDF] });
   await status(page, 'Werk uitvoeren');
-  await expect(page.locator('.qa-opleverrapport')).toHaveCount(0);
-  await expect(page.locator('.qa-mail-oplever_bewoner')).toBeDisabled();
+  await expect(page.locator('.qa-dicht-sectie-oplevering')).toBeVisible();
+  await expect(page.locator('.qa-mail-oplever_bewoner')).toHaveCount(0);
 
   await page.goto(`/dossiers/${id}/uitvoering`);
   const gebruikt = page.locator('.qa-materialen-gebruikt .qa-materiaal-rij');
@@ -135,7 +136,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await bezoek(page, id);
   await plan(page, id);
   expect(await laatsteMail(page)).toMatchObject({ aan: BEHEERDER.email });
-  await page.reload();
+  await page.goto(`/dossiers/${id}/plan`);
   await expect(page.locator('.qa-klaar-voor-controle')).toHaveCount(0);
   await expect(veld(page, 'beoordeling').locator('.qa-optie-uitvoerbaar')).toBeDisabled();
   await expect(veld(page, 'voorstel').locator('textarea')).toBeDisabled();
@@ -181,7 +182,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
 
   await login(page, 'piet@ulebelt.test');
   await uitvoering(page, id);
-  await page.reload();
+  await page.goto(`/dossiers/${id}/uitvoering`);
   await expect(page.locator('.qa-werk-opgeleverd')).toHaveCount(0);
   await expect(veld(page, 'uitgevoerd').locator('.qa-invoer')).toBeDisabled();
   await expect(page.locator('.qa-materialen-gebruikt .qa-materiaal-naam')).toBeDisabled();

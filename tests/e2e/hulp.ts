@@ -167,13 +167,22 @@ export async function nieuwDossier(page: Page, opts: { huurKoop: 'huur' | 'koop'
   return id;
 }
 
+// Ticks milestones through the API, so the details page opens the sections behind them; with a bezoeker, assigns that user first after the inschrijving.
+export async function tikAan(page: Page, id: number, mijlpalen: string[], bezoeker?: number): Promise<void> {
+  for (const mijlpaal of mijlpalen) {
+    await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal, aan: true });
+    if (mijlpaal === 'inschrijving_afgerond' && bezoeker !== undefined) await post(page.request, `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: bezoeker });
+  }
+}
+
 // The rest of the inschrijving: the subsidie mail, then "Inschrijving is compleet", which lands on the dossier.
 export async function subsidieMail(page: Page, huurKoop: 'huur' | 'koop'): Promise<void> {
   await mail(page, `subsidie_${huurKoop}`);
   await expect(page.locator('.qa-subsidiemail .qa-subsidie-verstuurd')).toBeVisible();
   await expect(page.locator('.qa-inschrijving-ontbreekt')).toHaveCount(0);
   await page.locator('.qa-inschrijving-klaar').click();
-  await expect(page).toHaveURL(/\/dossiers\/\d+#sectie-bezoeker$/);
+  await expect(page).toHaveURL(/\/dossiers\/\d+$/);
+  await expect(page.locator('.qa-sectie-inschrijving .qa-mijlpaal-inschrijving_afgerond')).toBeVisible();
 }
 
 // Picks a user in the bezoeker/uitvoerder dropdown (whose search field gets the focus on opening); the mail pop-up that follows is sent or cancelled.
@@ -195,17 +204,18 @@ export async function afspraak(page: Page, dag: string, tijd = '10:00'): Promise
   await opslagKlaar(page);
 }
 
-// Fills a few Bezoek answers and taps "Bezoek afronden", confirming the warning about what's still missing.
+// Fills a few Bezoek answers and taps "Bezoek afronden", confirming the warning about what's still missing; lands back on the dossier.
 export async function bezoek(page: Page, id: number, wensen = 'Regenton bij de achtergevel.'): Promise<void> {
   await page.goto(`/dossiers/${id}/bezoek`);
   await vul(page, 'wensen', wensen);
   await opslagKlaar(page);
   await page.locator('.qa-bezoek-afronden').click();
   await ja(page);
-  await expect(page.locator('.qa-mijlpaal-bezoek_afgerond')).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
+  await expect(page.locator('.qa-sectie-bezoek .qa-mijlpaal-bezoek_afgerond')).toBeVisible();
 }
 
-// A minimal Plan van Aanpak: beoordeling, one voorstel, an Aantal for the first material; then "Klaar voor controle", confirming if asked (a klusser always is, an admin only when something is missing).
+// A minimal Plan van Aanpak: beoordeling, one voorstel, an Aantal for the first material; then "Klaar voor controle", confirming if asked (a klusser always is, an admin only when something is missing); lands back on the dossier.
 export async function plan(page: Page, id: number, opts: { voorstel?: string; aantal?: string } = {}): Promise<void> {
   await page.goto(`/dossiers/${id}/plan`);
   await kies(page, 'beoordeling', 'uitvoerbaar');
@@ -216,10 +226,11 @@ export async function plan(page: Page, id: number, opts: { voorstel?: string; aa
   const mijlpaal = page.locator('.qa-mijlpaal-klaar_voor_controle');
   await expect(page.locator('.qa-bevestig').or(mijlpaal)).toBeVisible();
   if (await page.locator('.qa-bevestig').isVisible()) await ja(page);
-  await expect(mijlpaal).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
+  await expect(page.locator('.qa-sectie-plan .qa-mijlpaal-klaar_voor_controle')).toBeVisible();
 }
 
-// The uitvoerder's page: what was done, then "Werk opgeleverd".
+// The uitvoerder's page: what was done, then "Werk opgeleverd"; lands back on the dossier.
 export async function uitvoering(page: Page, id: number, uitgevoerd = 'Regenton geplaatst en pijp afgekoppeld.'): Promise<void> {
   await page.goto(`/dossiers/${id}/uitvoering`);
   await expect(page.locator('.qa-materialen-gebruikt .qa-materiaal-rij')).toHaveCount(1);
@@ -227,7 +238,8 @@ export async function uitvoering(page: Page, id: number, uitgevoerd = 'Regenton 
   await opslagKlaar(page);
   await page.locator('.qa-werk-opgeleverd').click();
   await ja(page);
-  await expect(page.locator('.qa-mijlpaal-werk_opgeleverd')).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
+  await expect(page.locator('.qa-sectie-uitvoering .qa-mijlpaal-werk_opgeleverd')).toBeVisible();
 }
 
 // Closes via the header menu with a reden and optional toelichting.

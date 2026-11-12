@@ -9,6 +9,14 @@ export const NIEUWS: NieuwsDatum[] = [
     datum: '2026-11-11',
     groepen: [
       {
+        kop: 'Dossierpagina',
+        punten: [
+          'De onderdelen van een dossier gaan nu strikt op volgorde open: elk blijft grijs tot de stap ervoor is afgevinkt, ook als er al iets is ingevuld. Bezoek gaat pas open als er een bezoeker is toegewezen; ga je zelf, wijs dan jezelf toe. Oplevering gaat pas open na Werk opgeleverd.',
+          'Is Inschrijving is compleet, Bezoek afronden, Klaar voor controle of Werk opgeleverd nog niet aangetikt, dan staat dat in oranje onderaan dat onderdeel, met een link ernaartoe.',
+          'Na Inschrijving is compleet, Bezoek afronden, Klaar voor controle en Werk opgeleverd kom je terug op het dossier, bij dat onderdeel. Het volgende onderdeel staat er direct onder. De link Verder met het Plan van Aanpak onderaan het Bezoek is weg.',
+        ],
+      },
+      {
         kop: 'Meldingen',
         punten: [
           'Elk dossier heeft nu een Eigenaar, onder Status. De e-mails over dat dossier (Klaar voor controle, Werk opgeleverd en E-mail niet afgeleverd) gaan alleen nog naar de eigenaar, niet meer naar een vaste lijst. Bestaande dossiers hebben als eigenaar de beheerder die ze heeft aangemaakt. Je kunt de eigenaar wijzigen in de keuzelijst.',

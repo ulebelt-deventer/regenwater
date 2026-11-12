@@ -1,5 +1,5 @@
 // Inschrijving sub-page (admin, at the desk): address, bewoner, woning, subsidie mail, straatfoto, kaart and bodem.
-import { A, useNavigate } from '@solidjs/router';
+import { A } from '@solidjs/router';
 import { For, Show, createSignal, onCleanup } from 'solid-js';
 import { BORING_MAX_KM, DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/constants.ts';
 import { datum } from '../../shared/datum.ts';
@@ -9,7 +9,7 @@ import { get, post } from '../api.ts';
 import { Modal, bevestig, melding, probeer, tip } from '../ui.tsx';
 import { MailKnop, MijlpaalRegel, zetMijlpaal } from './acties.tsx';
 import { FotoSlot, KaartVeld } from './fotos.tsx';
-import { SluitKnop, TerugLink } from './pagina.tsx';
+import { SluitKnop, TerugLink, useNaarSectie } from './pagina.tsx';
 import { useDossier } from './staat.ts';
 import { VeldInvoer } from './velden.tsx';
 
@@ -30,12 +30,11 @@ export function Inschrijving() {
   const verstuurd = () => laatsteVerzending(s.d, SUBSIDIE_SJABLONEN);
   const nietSubsidiabel = () => str(s.d, 'rioolstelsel') === 'gescheiden';
   const ontbreekt = () => inschrijvingOntbreekt(s.d);
-  const navigate = useNavigate();
-  const naarBezoeker = () => navigate(`/dossiers/${s.id}#sectie-bezoeker`);
+  const naarSectie = useNaarSectie();
   const afronden = async () => {
     const mist = ontbreekt();
     if (mist.length && !(await bevestig('Inschrijving afronden?', `Nog niet ingevuld: ${mist.join(', ')}. Toch als compleet markeren?`, { ja: 'Toch afronden' }))) return;
-    if (await zetMijlpaal(s, 'inschrijving_afgerond')) naarBezoeker();
+    if (await zetMijlpaal(s, 'inschrijving_afgerond')) naarSectie('sectie-inschrijving');
   };
 
   return (

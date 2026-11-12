@@ -1,12 +1,12 @@
 // The details page summarises every sub-page field as text, and a done step's Bewerken sits in its section's top right corner.
 import { expect, test } from '@playwright/test';
 import sharp from 'sharp';
-import { nieuwDossier, opslagKlaar, post, start, subsidieMail, veld, wijsToe, zet } from './hulp.ts';
+import { bezoek, nieuwDossier, opslagKlaar, post, start, subsidieMail, tikAan, veld, wijsToe, zet } from './hulp.ts';
 
 const PNG = await sharp({ create: { width: 400, height: 300, channels: 3, background: '#88d356' } }).png().toBuffer();
 
 test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, plan en uitvoering', async ({ page }) => {
-  await start(page);
+  const { beheerderId, klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'huur', corporatie: 'Ieder1' });
   await zet(page, id, {
     bewoner_telefoon: '0612345678',
@@ -41,8 +41,8 @@ test('de samenvattingen tonen alle ingevulde velden van inschrijving, bezoek, pl
     voorstel: 'Regenton plaatsen\nWadi graven',
     uitgevoerd: 'Regenton geplaatst',
   });
-  // The Uitvoering section only shows once the plan is approved.
-  await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'corporatie_akkoord', aan: true });
+  await tikAan(page, id, ['inschrijving_afgerond', 'bezoek_afgerond', 'klaar_voor_controle', 'corporatie_akkoord'], beheerderId);
+  await post(page.request, `/api/dossiers/${id}/toewijzen`, { rol: 'uitvoerder', gebruiker_id: klusserId });
   await page.goto(`/dossiers/${id}`);
 
   const inschrijving = page.locator('.qa-sectie-inschrijving');
@@ -151,8 +151,9 @@ test('de samenvatting zet labels als smalle kolom naast de waarden, en op een te
 });
 
 test('zonder ingevulde aantallen toont Materialen alleen --', async ({ page }) => {
-  await start(page);
+  const { beheerderId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await tikAan(page, id, ['inschrijving_afgerond', 'bezoek_afgerond'], beheerderId);
   await page.goto(`/dossiers/${id}/plan`);
   await expect(page.locator('.qa-materialen-materialen .qa-materiaal-rij').first()).toBeVisible();
   await page.goto(`/dossiers/${id}`);
@@ -223,8 +224,9 @@ test('Notities is tekst tot je op Bewerken tikt; dan krijgt het tekstvak de focu
 });
 
 test('elke sectie op de dossierpagina heeft een kleine schaduw', async ({ page }) => {
-  await start(page);
+  const { beheerderId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await tikAan(page, id, ['inschrijving_afgerond', 'bezoek_afgerond'], beheerderId);
   await page.goto(`/dossiers/${id}`);
   const secties = page.locator('section.sectie');
   await expect(secties.first()).toBeVisible();
@@ -264,24 +266,60 @@ test('kaart, straatfoto en boorprofiel staan in die volgorde als vierkante fotoâ
   expect(smal[0].width).toBeLessThanOrEqual(inschrijving + 1);
 });
 
-test('nog niet geopende stappen staan grijs onderaan, met waarom ze nog niet beschikbaar zijn', async ({ page }) => {
+test('na een niet aangetikte mijlpaal staan alle volgende stappen grijs, met waarom ze nog niet beschikbaar zijn', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}`);
   const dicht = page.locator('.qa-dicht');
-  await expect(dicht).toHaveCount(3);
-  for (const [i, titel] of ['Uitvoerder', 'Uitvoering', 'Oplevering'].entries()) {
+  const titels = ['Bezoeker', 'Bezoek', 'Plan van Aanpak', 'Plan versturen & goedkeuring', 'Uitvoerder', 'Uitvoering', 'Oplevering'];
+  await expect(dicht).toHaveCount(titels.length);
+  for (const [i, titel] of titels.entries()) {
     await expect(dicht.nth(i).locator('h2')).toHaveText(titel);
     await expect(dicht.nth(i).locator('.qa-dicht-reden')).toHaveText('Nog niet beschikbaar. Rond eerst de eerdere stappen af.');
   }
-  await expect(page.locator('.qa-sectie-uitvoering')).toHaveCount(0);
+  await expect(page.locator('.qa-sectie-bezoeker')).toHaveCount(0);
   const kleur = (sel: string) => page.locator(sel).first().evaluate((e) => getComputedStyle(e).backgroundColor);
-  expect(await kleur('.qa-dicht')).not.toBe(await kleur('.qa-sectie-plan'));
-  expect((await dicht.last().boundingBox())!.y).toBeGreaterThan((await page.locator('.qa-sectie-plan').boundingBox())!.y);
+  expect(await kleur('.qa-dicht')).not.toBe(await kleur('.qa-sectie-inschrijving'));
+  expect((await dicht.first().boundingBox())!.y).toBeGreaterThan((await page.locator('.qa-sectie-inschrijving').boundingBox())!.y);
 
   await zet(page, id, { rioolstelsel: 'gescheiden' });
   await page.reload();
   await expect(dicht.first().locator('.qa-dicht-reden')).toHaveText('Niet van toepassing: dit adres is niet subsidiabel.');
+});
+
+test('een open stap zonder aangetikte mijlpaal zegt dat in oranje, met een link naar de stap-pagina; daarna opent de volgende stap', async ({ page }) => {
+  const { beheerderId } = await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  const nogNiet = (sectie: string) => page.locator(`.qa-sectie-${sectie} .qa-nog-niet`);
+  const stappen: [string, string, () => Promise<unknown>][] = [
+    ['inschrijving', '"Inschrijving is compleet" is nog niet aangetikt.', () => post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'inschrijving_afgerond', aan: true })],
+    ['bezoek', '"Bezoek afronden" is nog niet aangetikt.', () => post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'bezoek_afgerond', aan: true })],
+    ['plan', '"Klaar voor controle" is nog niet aangetikt.', () => post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle', aan: true })],
+  ];
+  const volgende: Record<string, string> = { inschrijving: 'bezoeker', bezoek: 'plan', plan: 'versturen' };
+  for (const [sectie, tekst, aantikken] of stappen) {
+    if (sectie === 'bezoek') {
+      await expect(page.locator('.qa-dicht-sectie-bezoek')).toBeVisible();
+      await post(page.request, `/api/dossiers/${id}/toewijzen`, { rol: 'bezoeker', gebruiker_id: beheerderId });
+    }
+    await page.goto(`/dossiers/${id}`);
+    await expect(nogNiet(sectie)).toContainText(tekst);
+    await expect(nogNiet(sectie).locator('.qa-nog-niet-link')).toHaveAttribute('href', `/dossiers/${id}/${sectie}`);
+    await expect(page.locator(`.qa-dicht-sectie-${volgende[sectie]}`)).toBeVisible();
+    await aantikken();
+    await page.reload();
+    await expect(nogNiet(sectie)).toHaveCount(0);
+    await expect(page.locator(`.qa-sectie-${volgende[sectie]}`)).toBeVisible();
+  }
+});
+
+test('Bezoek afronden brengt je terug naar het dossier, met de Bezoek-sectie bovenaan', async ({ page }) => {
+  const { beheerderId } = await start(page);
+  const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await tikAan(page, id, ['inschrijving_afgerond'], beheerderId);
+  await bezoek(page, id);
+  await expect.poll(async () => Math.round((await page.locator('.qa-sectie-bezoek').boundingBox())!.y)).toBe(16);
+  await expect(page.locator('.qa-sectie-plan .qa-naar-plan')).toBeVisible();
 });
 
 test('elke stap-pagina heeft onderaan ook een link terug naar het dossier', async ({ page }) => {
@@ -305,8 +343,9 @@ test('elke stap-pagina heeft onderaan ook een link terug naar het dossier', asyn
 });
 
 test('de terug-link van een stap-pagina zet het dossier op de sectie van die stap', async ({ page }) => {
-  await start(page);
+  const { beheerderId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await tikAan(page, id, ['inschrijving_afgerond', 'bezoek_afgerond'], beheerderId);
   for (const stap of ['inschrijving', 'bezoek', 'plan']) {
     await page.goto(`/dossiers/${id}/${stap}`);
     await page.locator('.qa-terug').last().click();

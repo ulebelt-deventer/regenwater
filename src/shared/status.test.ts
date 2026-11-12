@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STAPPEN, huidigeStap, inschrijvingOntbreekt, opdracht, status } from './status.ts';
+import { STAPPEN, huidigeStap, inschrijvingOntbreekt, opdracht, sectieOpen, status } from './status.ts';
 import { dossier, naInschrijving, verzending } from './testhulp.ts';
 
 const T = '2026-03-05T10:00:00.000Z';
@@ -98,5 +98,36 @@ describe('opdracht', () => {
 
   it('returns nothing for someone not on the dossier', () => {
     expect(opdracht(basis, 9)).toBeNull();
+  });
+});
+
+describe('sectieOpen', () => {
+  const open = (d: Parameters<typeof sectieOpen>[0]) =>
+    ['sectie-bezoeker', 'sectie-bezoek', 'sectie-plan', 'sectie-versturen', 'sectie-uitvoerder', 'sectie-uitvoering', 'sectie-oplevering'].filter((s) => sectieOpen(d, s));
+  const klaar = naInschrijving('huur', { bezoeker_id: 2, bezoek_afgerond_at: T, klaar_voor_controle_at: T, corporatie_akkoord_at: T, uitvoerder_id: 3, werk_opgeleverd_at: T });
+
+  it('keeps every section after Inschrijving closed until it is marked complete', () => {
+    expect(open(naInschrijving('huur', { inschrijving_afgerond_at: null }))).toEqual([]);
+  });
+
+  it('opens one section per ticked milestone, in order', () => {
+    expect(open(naInschrijving('huur'))).toEqual(['sectie-bezoeker']);
+    expect(open(naInschrijving('huur', { bezoeker_id: 2 }))).toEqual(['sectie-bezoeker', 'sectie-bezoek']);
+    expect(open(naInschrijving('huur', { bezoeker_id: 2, bezoek_afgerond_at: T, klaar_voor_controle_at: T }))).toEqual(['sectie-bezoeker', 'sectie-bezoek', 'sectie-plan', 'sectie-versturen']);
+    expect(open(klaar)).toHaveLength(7);
+  });
+
+  it('keeps later sections closed when an earlier milestone is missing, even if later ones are ticked', () => {
+    expect(open({ ...klaar, bezoek_afgerond_at: null })).toEqual(['sectie-bezoeker', 'sectie-bezoek']);
+  });
+
+  it('opens Uitvoerder on the akkoord for huur and on the Klussendienst choice for koop', () => {
+    expect(sectieOpen({ ...klaar, corporatie_akkoord_at: null, klussendienst_gekozen_at: T }, 'sectie-uitvoerder')).toBe(false);
+    expect(sectieOpen({ ...klaar, huur_koop: 'koop', corporatie_akkoord_at: null, klussendienst_gekozen_at: T }, 'sectie-uitvoerder')).toBe(true);
+    expect(sectieOpen({ ...klaar, huur_koop: 'koop' }, 'sectie-uitvoerder')).toBe(false);
+  });
+
+  it('throws on a section it does not know', () => {
+    expect(() => sectieOpen(klaar, 'sectie-status')).toThrow('Onbekende sectie');
   });
 });

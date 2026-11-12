@@ -3,19 +3,20 @@ import { Show, onMount } from 'solid-js';
 import { bevestig } from '../ui.tsx';
 import { MijlpaalRegel, actie, zetMijlpaal } from './acties.tsx';
 import { FotoSlot } from './fotos.tsx';
-import { TerugLink } from './pagina.tsx';
+import { TerugLink, useNaarSectie } from './pagina.tsx';
 import { useDossier } from './staat.ts';
 import { MateriaalTabel, VeldInvoer } from './velden.tsx';
 
 export function Uitvoering() {
   const s = useDossier();
+  const naarSectie = useNaarSectie();
   // The server copies the planned rows with an Aantal the first time; afterwards it's a no-op.
   onMount(() => {
     if (s.d.data.gebruikt === undefined && s.mag(['uitvoerder'])) void actie(s, 'gebruikt-vullen');
   });
   const opleveren = async () => {
     const vraag = s.beheerder() ? 'Het werk wordt als opgeleverd geregistreerd.' : 'Hierna kunnen alleen de beheerders het dossier nog wijzigen.';
-    if (await bevestig('Werk opgeleverd?', vraag, { ja: 'Werk opgeleverd' })) await zetMijlpaal(s, 'werk_opgeleverd');
+    if ((await bevestig('Werk opgeleverd?', vraag, { ja: 'Werk opgeleverd' })) && (await zetMijlpaal(s, 'werk_opgeleverd'))) naarSectie('sectie-uitvoering');
   };
 
   return (

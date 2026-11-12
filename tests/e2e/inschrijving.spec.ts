@@ -25,10 +25,11 @@ test('met nog ontbrekende velden vraagt Inschrijving is compleet eerst bevestigi
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}`);
-  await expect(page.locator('.qa-bezoeker-na-inschrijving')).toBeVisible();
+  await expect(page.locator('.qa-dicht-sectie-bezoeker')).toBeVisible();
   await expect(page.locator('.qa-toewijzen-bezoeker')).toHaveCount(0);
 
-  await page.goto(`/dossiers/${id}/inschrijving`);
+  await page.locator('.qa-sectie-inschrijving .qa-nog-niet-link').click();
+  await expect(page).toHaveURL(/\/inschrijving$/);
   await expect(page.locator('.qa-inschrijving-ontbreekt')).toContainText('subsidiemail');
   await page.locator('.qa-inschrijving-klaar').click();
   await page.locator('.qa-bevestig .qa-nee').click();
@@ -36,9 +37,9 @@ test('met nog ontbrekende velden vraagt Inschrijving is compleet eerst bevestigi
 
   await page.locator('.qa-inschrijving-klaar').click();
   await page.locator('.qa-bevestig .qa-ja').click();
-  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}#sectie-bezoeker$`));
+  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
   await expect(page.locator('.qa-toewijzen-bezoeker')).toBeVisible();
-  await expect(page.locator('.qa-bezoeker-na-inschrijving')).toHaveCount(0);
+  await expect(page.locator('.qa-sectie-inschrijving .qa-nog-niet')).toHaveCount(0);
 });
 
 test('de link Kadastrale kaart opent de PDOK-viewer op het adres', async ({ page }) => {
@@ -183,7 +184,7 @@ test('na Inschrijving is compleet staat onderaan alleen de terug-link, geen apar
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.locator('.qa-inschrijving-klaar').click();
   await page.locator('.qa-bevestig .qa-ja').click();
-  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}#sectie-bezoeker$`));
+  await expect(page).toHaveURL(new RegExp(`/dossiers/${id}$`));
   await page.goto(`/dossiers/${id}/inschrijving`);
   await expect(page.locator('.qa-controle')).toContainText('Inschrijving is compleet');
   await expect(page.locator('.qa-controle .qa-terugdraaien')).toBeVisible();

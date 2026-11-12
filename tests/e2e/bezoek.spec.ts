@@ -1,13 +1,14 @@
 // The Bezoek sub-page: the Dak table with each dakdeel's verdeling over the regenpijpen, then one block per regenpijp.
 import { type Locator, type Page, expect, test } from '@playwright/test';
 import sharp from 'sharp';
-import { nieuwDossier, opslagKlaar, planTekst, start, veld, zet } from './hulp.ts';
+import { nieuwDossier, opslagKlaar, planTekst, start, tikAan, veld, zet } from './hulp.ts';
 
 const vak = (l: Locator) => l.evaluate((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, midden: r.top + r.height / 2 }; });
 
 async function tweeRegenpijpen(page: Page): Promise<number> {
-  await start(page);
+  const { beheerderId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await tikAan(page, id, ['inschrijving_afgerond'], beheerderId);
   await zet(page, id, {
     kaart_annotaties: [
       { id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] },
@@ -781,8 +782,9 @@ test('de afspraken staan op de Bezoek-pagina onder de wensen, niet bij het Plan 
 });
 
 test('een afspraak is een tekstvak met een • voor elke regel; de links erboven voegen een gangbare regel toe, en lege regels verdwijnen', async ({ page }) => {
-  await start(page);
+  const { beheerderId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await tikAan(page, id, ['inschrijving_afgerond'], beheerderId);
   await page.goto(`/dossiers/${id}/bezoek`);
   const v = veld(page, 'bewoner_doet');
   const vak = v.locator('textarea');
@@ -813,8 +815,9 @@ test('een afspraak is een tekstvak met een • voor elke regel; de links erboven
 });
 
 test('de voorgestelde werkzaamheden zijn een tekstvak met een • per regel en suggesties erboven, en het Plan van Aanpak heeft geen apart veld Werkzaamheden meer', async ({ page }) => {
-  await start(page);
+  const { beheerderId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
+  await tikAan(page, id, ['inschrijving_afgerond', 'bezoek_afgerond'], beheerderId);
   await page.goto(`/dossiers/${id}/plan`);
   const v = veld(page, 'voorstel');
   const vak = v.locator('textarea');

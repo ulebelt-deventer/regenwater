@@ -147,6 +147,23 @@ export function huidigeStap(d: Dossier): Stap {
   return STAPPEN.find((s) => s.geldt(d) && s.gedaan(d) === null) ?? STAPPEN[STAPPEN.length - 1];
 }
 
+// The details page opens its sections in order, each only once every milestone before it is ticked, so the team ticks steps off in order.
+const SECTIE_POORTEN: [string, (d: Dossier) => boolean][] = [
+  ['sectie-bezoeker', (d) => d.inschrijving_afgerond_at !== null],
+  ['sectie-bezoek', (d) => d.bezoeker_id !== null],
+  ['sectie-plan', (d) => d.bezoek_afgerond_at !== null],
+  ['sectie-versturen', (d) => d.klaar_voor_controle_at !== null],
+  ['sectie-uitvoerder', (d) => (d.huur_koop === 'huur' ? d.corporatie_akkoord_at : d.huur_koop === 'koop' ? d.klussendienst_gekozen_at : null) !== null],
+  ['sectie-uitvoering', (d) => d.uitvoerder_id !== null],
+  ['sectie-oplevering', (d) => d.werk_opgeleverd_at !== null],
+];
+
+export function sectieOpen(d: Dossier, sectie: string): boolean {
+  const i = SECTIE_POORTEN.findIndex(([id]) => id === sectie);
+  if (i < 0) throw new Error(`Onbekende sectie: ${sectie}`);
+  return SECTIE_POORTEN.slice(0, i + 1).every(([, open]) => open(d));
+}
+
 export interface Status {
   gesloten: boolean;
   stap: Stap;

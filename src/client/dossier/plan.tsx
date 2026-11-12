@@ -2,12 +2,13 @@
 import { Show } from 'solid-js';
 import { MijlpaalRegel } from './acties.tsx';
 import { Controle, afronden } from './bezoek.tsx';
-import { TerugLink } from './pagina.tsx';
+import { TerugLink, useNaarSectie } from './pagina.tsx';
 import { useDossier } from './staat.ts';
 import { MateriaalTabel, VeldInvoer } from './velden.tsx';
 
 export function Plan() {
   const s = useDossier();
+  const naarSectie = useNaarSectie();
   const toelichtingNodig = () => {
     const b = s.d.data.beoordeling;
     return typeof b === 'string' && b !== 'uitvoerbaar' && !s.d.data.beoordeling_toelichting;
@@ -38,7 +39,7 @@ export function Plan() {
           <button
             type="button"
             class="btn btn-success btn-lg qa-klaar-voor-controle"
-            onClick={() => void afronden(s, 'plan', 'klaar_voor_controle', s.beheerder() ? undefined : 'Hierna kunnen alleen de beheerders het dossier nog wijzigen.')}
+            onClick={async () => (await afronden(s, 'plan', 'klaar_voor_controle', s.beheerder() ? undefined : 'Hierna kunnen alleen de beheerders het dossier nog wijzigen.')) && naarSectie('sectie-plan')}
           >
             Klaar voor controle
           </button>
