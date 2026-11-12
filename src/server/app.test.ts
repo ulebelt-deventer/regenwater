@@ -326,6 +326,25 @@ describe('documents', () => {
     expect(twijfel).toContain('>Regenpijp A</figcaption>');
   });
 
+  it('shows a regenpijp’s Opmerking with its photos in the Plan, in the empty cells on Nee and under Waar & hoe otherwise', async () => {
+    const id = await nieuwDossier();
+    const zet = (key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
+    await zet('kaart_annotaties', [{ id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] }, { id: 'r1', type: 'regenpijp', p: [[1, 1]] }]);
+    await zet('regenpijp.r1.opmerking', 'Wordt aangesloten op pijp B');
+    await beheerder.json('POST', `/api/dossiers/${id}/fotos/regenpijp.r1.opmerking`, new Uint8Array(await png()), 201);
+    const plan = async () => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
+
+    await zet('regenpijp.r1.afkoppelen', 'nee');
+    const nee = await plan();
+    expect(nee).toMatch(/class="qa-pdf-op-riool"[^>]*>Wordt aangesloten op pijp B</);
+    expect(nee).toContain('>Regenpijp A</figcaption>');
+
+    await zet('regenpijp.r1.afkoppelen', 'ja');
+    const ja = await plan();
+    expect(ja).toMatch(/Opmerking: (<!--\$-->)?Wordt aangesloten op pijp B/);
+    expect(ja).toContain('>Regenpijp A</figcaption>');
+  });
+
   it('leaves Ondergrond with its photos out of the Plan unless the regenton is gewenst', async () => {
     const id = await nieuwDossier();
     const zet = (key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
@@ -502,7 +521,7 @@ describe('documents', () => {
     const html = await (await beheerder.verzoek('GET', pad(koop))).text();
     expect(html).toContain('Klimaatadaptatie Deventer');
     expect(html).toContain('anna@example.org');
-    expect(html).toMatch(/qa-klussendienst.*afgesproken in het Plan van Aanpak.*€ 75,00/);
+    expect(html).toMatch(/qa-klussendienst.*afgesproken in het Plan van Aanpak.*€ 75,00.*Totaal excl. btw.*qa-subtotaal.*€ 75,00.*qa-btw.*€ 15,75.*Totaal incl. btw.*qa-totaal.*€ 90,75/);
     expect((await klusser.verzoek('GET', pad(koop))).status).toBe(403);
   });
 

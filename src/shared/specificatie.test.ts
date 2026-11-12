@@ -71,7 +71,7 @@ describe('uitvoeringsspecificatie', () => {
     expect(t).toContain('3 × Rubberen ring à € 1,95: € 5,85');
     expect(t).toContain('0,5 × Flexibele buis 50 mm blind, per meter à € 2,50: € 1,25');
     expect(t).toContain('Klussendienst (afgesproken in het Plan van Aanpak): € 50,00');
-    expect(t).toContain('Subtotaal: € 101,54\nbtw 21%: € 21,32\nTotaal: € 122,86');
+    expect(t).toContain('Totaal excl. btw: € 101,54\nbtw 21%: € 21,32\nTotaal incl. btw: € 122,86');
     expect(t).not.toContain('Regenton');
     expect(t).not.toContain('LET OP');
   });

@@ -213,7 +213,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   const geplakt = await page.evaluate(() => navigator.clipboard.readText());
   expect(geplakt).toContain('Project: Klimaatadaptatie Deventer');
   expect(geplakt).toContain('E-mail bewoner: bea@example.org');
-  expect(geplakt).toMatch(/Totaal: € [\d.,]+/);
+  expect(geplakt).toMatch(/Totaal incl. btw: € [\d.,]+/);
   await naarDossier(page, id);
 
   await mail(page, 'oplever_bewoner');

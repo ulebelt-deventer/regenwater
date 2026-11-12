@@ -372,6 +372,38 @@ test('Afkoppelen op Nee laat bij die regenpijp alleen Afkoppelen staan, ook in d
   await expect(a.locator('.qa-veld-regenpijp-ondergrond')).toBeVisible();
 });
 
+test('Opmerking met foto’s staat bij elke regenpijp, ook op Afkoppelen Nee, met één foto rechts ernaast en meer eronder, komt in de samenvatting en blijft staan als je terug naar Ja gaat', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const id = await tweeRegenpijpen(page);
+  const a = page.locator('.qa-regenpijp').first();
+  await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('nee');
+  const opmerking = a.locator('.qa-veld-regenpijp-opmerking textarea');
+  await expect(opmerking).toBeVisible();
+  await opmerking.fill('Wordt aangesloten op pijp B');
+  await opmerking.blur();
+  const slot = a.locator('.qa-fotoslot-regenpijp-opmerking');
+  const png = await kaartPng();
+  await slot.locator('.qa-foto-invoer').setInputFiles([{ name: 'een.png', mimeType: 'image/png', buffer: png }]);
+  await expect(slot.locator('.qa-foto')).toHaveCount(1);
+  const [tekst, vak, foto] = await Promise.all([opmerking, slot, slot.locator('.qa-foto')].map(rechthoek));
+  expect(vak.top).toBe(tekst.top);
+  expect(vak.left).toBeGreaterThan(tekst.right);
+  expect(vak.width).toBeCloseTo(foto.width, 0);
+  await slot.locator('.qa-foto-invoer').setInputFiles([{ name: 'twee.png', mimeType: 'image/png', buffer: png }, { name: 'drie.png', mimeType: 'image/png', buffer: png }]);
+  await expect(slot.locator('.qa-foto')).toHaveCount(3);
+  expect((await rechthoek(slot)).top).toBeGreaterThan((await rechthoek(opmerking)).bottom);
+  await expect(page.locator('.qa-controle')).not.toContainText('Opmerking');
+  await opslagKlaar(page);
+
+  await page.goto(`/dossiers/${id}`);
+  await expect(page.locator('.qa-sectie-bezoek .qa-sv-regenpijp').first()).toContainText('Opmerking: Wordt aangesloten op pijp B');
+
+  await page.goto(`/dossiers/${id}/bezoek`);
+  await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('ja');
+  await expect(opmerking).toHaveValue('Wordt aangesloten op pijp B');
+  await expect(slot.locator('.qa-foto')).toHaveCount(3);
+});
+
 test('Hoe moet het water komen is een keuzemenu met vinkjes; Anders maakt plaats voor een invulveld met de focus, en dat leeg verlaten zet het vinkje terug', async ({ page }) => {
   const id = await tweeRegenpijpen(page);
   const veld = page.locator('.qa-regenpijp').first().locator('.qa-veld-regenpijp-hoe');
@@ -416,11 +448,15 @@ test('de cellen van de regenpijpblokken staan in kolommen die van blok tot blok 
   const [a, b] = [page.locator('.qa-regenpijp').nth(0), page.locator('.qa-regenpijp').nth(1)];
   const links = (blok: Locator, v: string) => blok.locator(`.qa-veld-regenpijp-${v}`).evaluate((el) => el.getBoundingClientRect().left);
   for (const v of ['bronnen', 'soort', 'diameter', 'regenton', 'afkoppelen', 'waar', 'hoe']) expect(await links(a, v)).toBe(await links(b, v));
-  // Afkoppelen is the 1st short cell. Waar and Hoe each span half the row, starting under the 1st and 4th short cells; Ondergrond starts the next row.
+  // Afkoppelen is the 1st short cell. Waar and Hoe each span half the row, starting under the 1st and 4th short cells; Ondergrond and Opmerking do the same on the next row.
   expect(await links(a, 'afkoppelen')).toBeLessThan(await links(a, 'bronnen'));
   expect(await links(a, 'waar')).toBe(await links(a, 'afkoppelen'));
   expect(await links(a, 'hoe')).toBeCloseTo(await links(a, 'soort'), 0); // col-md-6 and three col-lg-2 round differently
   expect(await links(a, 'ondergrond')).toBe(await links(a, 'afkoppelen'));
+  expect(await links(a, 'opmerking')).toBe(await links(a, 'hoe'));
+  const [ondergrond, ondergrondFotos] = await Promise.all([a.locator('.qa-veld-regenpijp-ondergrond textarea'), a.locator('.qa-fotoslot-regenpijp-ondergrond')].map(rechthoek));
+  expect(ondergrondFotos.top).toBe(ondergrond.top);
+  expect(ondergrondFotos.left).toBeGreaterThan(ondergrond.right);
 
   // Each input fills its column: the whole cell, or for Hoe the column left of its photos.
   for (const [v, invoer] of [['soort', 'select'], ['afkoppelen', 'select'], ['hoe', '.qa-invoer']]) {

@@ -37,7 +37,8 @@ export const NIEUWS: NieuwsDatum[] = [
       {
         kop: 'Bezoek',
         punten: [
-          'Elk regenpijp-blok begint nu met Afkoppelen?. Kies je Nee, dan verdwijnt de rest van dat blok (Voert af van, Waterberging, Soort, Diameter, Regenton, Ondergrond, Waar en Hoe), ook uit de samenvatting en het Plan van Aanpak, en vraagt de Controle er niet meer om.',
+          'Elk regenpijp-blok begint nu met Afkoppelen?. Kies je Nee, dan verdwijnen Voert af van, Waterberging, Soort, Diameter, Regenton, Ondergrond, Waar en Hoe uit dat blok, ook uit de samenvatting en het Plan van Aanpak, en vraagt de Controle er niet meer om.',
+          'Elk regenpijp-blok heeft nu onderaan een veld Opmerking met een plek voor foto’s, ook als je bij Afkoppelen? Nee kiest. Zo kun je toch iets over die pijp vastleggen, bijvoorbeeld dat je hem op een andere pijp aansluit. De opmerking komt in de samenvatting en het Plan van Aanpak; de Controle vraagt er niet om.',
         ],
       },
       {

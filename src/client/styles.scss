@@ -126,7 +126,10 @@ $container-max-widths: (lg: 1200px);
 // 3:2, the photo cropped to fit; a `heel` thumbnail sets its own aspect-ratio inline.
 .thumb { width: 11rem; aspect-ratio: 3 / 2; background: #eee; cursor: pointer; display: block; }
 .thumb.wacht { opacity: .5; }
-.thumb.thumb-klein { width: 7rem; }
+$thumb-klein: 7rem;
+.thumb.thumb-klein { width: $thumb-klein; }
+// A photo slot beside its input, exactly one small thumbnail wide.
+@include media-breakpoint-up(md) { .w-md-thumb-klein { width: $thumb-klein; } }
 .thumb.thumb-heel { width: 16.5rem; }
 .thumb.thumb-vierkant { width: 100%; max-width: 16.5rem; aspect-ratio: 1; }
 // A growing textarea (height set in JS) stops at 5.4 lines, then scrolls.

@@ -135,7 +135,7 @@ function RegenpijpRegel(props: { pijp: Regenpijp }) {
     ];
     return delen.filter(Boolean).join(' · ');
   };
-  const sub: [string, string][] = [['ondergrond', 'Ondergrond'], ['waar', 'Water naar'], ['hoe', 'Via']];
+  const sub: [string, string][] = [['ondergrond', 'Ondergrond'], ['waar', 'Water naar'], ['hoe', 'Via'], ['opmerking', 'Opmerking']];
   return (
     <Regel label={`Regenpijp ${props.pijp.label}`} class="qa-sv-regenpijp">
       <div>{kort() || <span class="text-muted">--</span>}</div>

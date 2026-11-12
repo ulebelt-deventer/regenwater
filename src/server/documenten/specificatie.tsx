@@ -74,7 +74,7 @@ export function Uitvoeringsspecificatie(props: { doc: Doc }): JSX.Element {
             <td class="getal">{euro(s().klussendienst.bedrag)}</td>
           </tr>
           <tr>
-            <td colSpan={3}>Subtotaal</td>
+            <td colSpan={3}>Totaal excl. btw</td>
             <td class="getal qa-subtotaal">{euro(s().subtotaal)}</td>
           </tr>
           <tr>
@@ -82,7 +82,7 @@ export function Uitvoeringsspecificatie(props: { doc: Doc }): JSX.Element {
             <td class="getal qa-btw">{euro(s().btw)}</td>
           </tr>
           <tr>
-            <th colSpan={3}>Totaal</th>
+            <th colSpan={3}>Totaal incl. btw</th>
             <th class="getal qa-totaal">{euro(s().totaal)}</th>
           </tr>
         </tbody>

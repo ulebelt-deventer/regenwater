@@ -20,8 +20,8 @@ function Hint(props: { tekst: string | undefined }) {
   );
 }
 
-// The label and hint span the field; under them the photo slot sits beside the input, or under it with `fotoOnder` or 2+ photos, so those lie side by side. `breed` stretches a dropdown or number input to its column.
-export function VeldInvoer(props: { k: string; label?: string; hint?: string; opties?: [string, string][]; suggesties?: [string, string][]; kaal?: boolean; class?: string; fotoOnder?: boolean; breed?: boolean; labelClass?: string }) {
+// The label and hint span the field; under them the photo slot sits beside the input, one thumbnail wide, or under it with 2+ photos, so those lie side by side. `breed` stretches a dropdown or number input to its column.
+export function VeldInvoer(props: { k: string; label?: string; hint?: string; opties?: [string, string][]; suggesties?: [string, string][]; kaal?: boolean; class?: string; breed?: boolean; labelClass?: string }) {
   const s = useDossier();
   const k = untrack(() => props.k); // a field's key is fixed for its life
   const def = veldVoor(k);
@@ -39,12 +39,14 @@ export function VeldInvoer(props: { k: string; label?: string; hint?: string; op
         </Show>
         <Show when={fotoSlot} fallback={invoer}>
           {(slot) => {
-            const onder = () => props.fotoOnder || s.d.fotos.filter((f) => f.slot === slot()).length > 1;
+            const onder = () => s.d.fotos.filter((f) => f.slot === slot()).length > 1;
             return (
               <div class="row g-2">
-                <div class={onder() ? 'col-12' : 'col-12 col-md-8'}>{invoer}</div>
-                <div class={onder() ? 'col-12' : 'col-12 col-md-4'}>
-                  <FotoSlot k={slot()} />
+                <div class={onder() ? 'col-12' : 'col-12 col-md'}>{invoer}</div>
+                <div class={onder() ? 'col-12' : 'col-12 col-md-auto'}>
+                  <div class={onder() ? '' : 'w-md-thumb-klein'}>
+                    <FotoSlot k={slot()} />
+                  </div>
                 </div>
               </div>
             );

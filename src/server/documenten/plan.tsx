@@ -337,7 +337,7 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
                 <tr>
                   <td>{r.label}</td>
                   <td><Of doc={props.doc} v={kies(r.id, 'afkoppelen')} /></td>
-                  <Show when={nietOpRiool(d(), r.id)} fallback={<td colspan={5} class="qa-pdf-op-riool" />}>
+                  <Show when={nietOpRiool(d(), r.id)} fallback={<td colspan={5} class="qa-pdf-op-riool">{str(d(), k(r.id, 'opmerking'))}</td>}>
                     <td>{r.bronnen.length ? bronnenTekst(r, labels()) : '--'}</td>
                     <td><Of doc={props.doc} v={kies(r.id, 'soort')} /></td>
                     <td><Of doc={props.doc} v={kies(r.id, 'diameter')} /></td>
@@ -352,6 +352,10 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
                         <br />
                         <span class="klein">Ondergrond: {str(d(), k(r.id, 'ondergrond'))}</span>
                       </Show>
+                      <Show when={str(d(), k(r.id, 'opmerking'))}>
+                        <br />
+                        <span class="klein">Opmerking: {str(d(), k(r.id, 'opmerking'))}</span>
+                      </Show>
                     </td>
                   </Show>
                 </tr>
@@ -361,7 +365,7 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
         </table>
         <For each={pijpen()}>
           {(r) => (
-            <For each={['ondergrond', 'waar', 'hoe'].filter((s) => getoond(r.id, s))}>
+            <For each={['ondergrond', 'waar', 'hoe', 'opmerking'].filter((s) => getoond(r.id, s))}>
               {(s) => <Fotos doc={props.doc} slot={k(r.id, s)} onderschrift={`Regenpijp ${r.label}`} />}
             </For>
           )}

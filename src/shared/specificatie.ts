@@ -80,7 +80,7 @@ export function specificatieTekst(d: Dossier, uitvoerder: string | null): string
     ['Uitvoeringsspecificatie'],
     specificatieKop(d, uitvoerder).map(([l, v]) => `${l}: ${v ?? '--'}`),
     [...s.regels.map(regel), `${s.klussendienst.regel}: ${euro(s.klussendienst.bedrag)}`],
-    [`Subtotaal: ${euro(s.subtotaal)}`, `btw ${BTW_PROCENT}%: ${euro(s.btw)}`, `Totaal: ${euro(s.totaal)}`],
+    [`Totaal excl. btw: ${euro(s.subtotaal)}`, `btw ${BTW_PROCENT}%: ${euro(s.btw)}`, `Totaal incl. btw: ${euro(s.totaal)}`],
     s.waarschuwingen.map((w) => `LET OP: ${w}`),
   ];
   return blokken.filter((b) => b.length > 0).map((b) => b.join('\n')).join('\n\n');

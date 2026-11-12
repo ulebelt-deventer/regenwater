@@ -450,6 +450,9 @@ test('bij een veld met foto’s staan label en hint over de volle breedte boven 
     if (ernaast) {
       expect(slot.top).toBe(invoer.top);
       expect(slot.left).toBeGreaterThan(invoer.right);
+      // One small thumbnail wide (.thumb-klein, 7rem), the input taking the rest of the cell.
+      expect(slot.width).toBeCloseTo(7 * 16, 0);
+      expect(slot.right - invoer.left).toBeGreaterThan(cel.width - 16);
     } else expect(slot.top).toBeGreaterThan(invoer.bottom);
   }
 });
