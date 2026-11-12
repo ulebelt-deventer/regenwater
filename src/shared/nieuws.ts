@@ -9,6 +9,12 @@ export const NIEUWS: NieuwsDatum[] = [
     datum: '2026-11-12',
     groepen: [
       {
+        kop: 'Dossierlijst',
+        punten: [
+          'Ligt bij Klusser bestaat niet meer: Bezoek plannen, Bezoek uitvoeren en Plan van Aanpak afronden liggen nu bij de Bezoeker, en Werk uitvoeren bij de Uitvoerder. Kies in het filter Ligt bij dus Bezoeker of Uitvoerder.',
+        ],
+      },
+      {
         kop: 'Aandacht',
         punten: [
           'Je kunt een dossier nu in de ijskast doen (Dossier in ijskast doen, in het menu rechtsboven het dossier), met een reden en een datum. Tot die dag vraagt het geen aandacht, krijgt de klusser geen herinnering en staat het niet in de standaardlijst (Status-filter In de ijskast). Op die dag krijgt de eigenaar een mail met de vraag wat je ermee wilt doen. Aandacht uitstellen is daarmee vervangen; een uitstel dat nog liep, staat nu tot die datum in de ijskast.',

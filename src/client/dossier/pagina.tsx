@@ -329,7 +329,7 @@ export function Details() {
     return { st, sub: st.key in sub ? sub[st.key] : null };
   };
   // Klussers only get the action for their own steps; the other sections are the admins' work.
-  const toonActie = () => open() && (s.beheerder() || s.status().ligtBij === 'klusser');
+  const toonActie = () => open() && (s.beheerder() || s.status().ligtBij === 'bezoeker' || s.status().ligtBij === 'uitvoerder');
 
   const oproep = async () => {
     await probeer(async () => {

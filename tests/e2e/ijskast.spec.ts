@@ -23,7 +23,10 @@ test('een dossier in de ijskast toont de reden voor iedereen, staat niet in de s
   await expect(page.locator('.qa-laden')).toHaveCount(0);
   await expect(page.locator(`.qa-dossiers .qa-dossier-${id}`)).toHaveCount(0);
   await page.goto('/dossiers?s_ijskast=ja');
-  await expect(page.locator(`.qa-dossiers .qa-dossier-${id}`)).toContainText('In de ijskast tot 1 april 2026');
+  const label = page.locator(`.qa-dossiers .qa-dossier-${id} .qa-status`);
+  await expect(label).toHaveText('In de ijskast tot 1 april 2026');
+  await expect(label.locator('.bi-snow')).toBeVisible();
+  await expect(label).toHaveCSS('background-color', 'rgb(219, 241, 250)');
 
   await login(page, KLUSSER.email);
   await naarDossier(page, id);

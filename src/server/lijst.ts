@@ -18,6 +18,7 @@ export interface LijstRij {
   stapNr: number;
   status: string;
   ligtBij: LigtBij | null;
+  ijskast: boolean;
   gesloten: boolean;
   uitgevoerd: boolean;
   aandacht: boolean;
@@ -73,6 +74,7 @@ export function lijstRij(d: Dossier, g: Map<number, Gebruiker>, nu: Date, ik: Ge
     stapNr: st.stap.nr,
     status: ijskast ? ijskastLabel(ijskast) : st.label,
     ligtBij: st.ligtBij,
+    ijskast: ijskast !== null,
     gesloten: st.gesloten,
     uitgevoerd: d.gesloten_reden === 'Uitgevoerd',
     aandacht: ik.rol === 'beheerder' ? aandacht(d, g, nu).nodig : false,

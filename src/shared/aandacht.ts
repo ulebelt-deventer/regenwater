@@ -145,7 +145,7 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
   const start = startVan(d, s);
   if (start === null) return null;
   const n = dagenSinds(start, nu);
-  const naam = (id: number | null) => (id !== null && gebruikers.has(id) ? gebruikers.get(id)!.naam : 'De klusser');
+  const naam = (id: number | null, rol: string) => (id !== null && gebruikers.has(id) ? gebruikers.get(id)!.naam : rol);
   let tekst: string | null = null;
   switch (s.key) {
     case 'inschrijving':
@@ -158,7 +158,7 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
       if (n > DREMPELS.bezoeker) tekst = `Al ${n} dagen geen bezoeker. Nieuwe oproep in de Signal-groep?`;
       break;
     case 'afspraak':
-      if (n > DREMPELS.afspraak) tekst = `${naam(d.bezoeker_id)} heeft na ${n} dagen nog geen afspraak gepland.`;
+      if (n > DREMPELS.afspraak) tekst = `${naam(d.bezoeker_id, 'De bezoeker')} heeft na ${n} dagen nog geen afspraak gepland.`;
       break;
     case 'bezoek':
       if (n > DREMPELS.bezoek) tekst = `Afspraak was op ${datum(start)}, maar het bezoek is niet afgerond. Doorgegaan?`;
@@ -182,7 +182,7 @@ export function ligtStil(d: Dossier, gebruikers: Map<number, Gebruiker>, nu: Dat
       if (d.uitvoering_gepland) {
         if (n > DREMPELS.uitvoering) tekst = `Uitvoering was gepland op ${datum(d.uitvoering_gepland)}, maar niet opgeleverd.`;
       } else if (n > DREMPELS.uitvoering_zonder_datum) {
-        tekst = `${naam(d.uitvoerder_id)} heeft na ${n} dagen nog geen uitvoering gepland.`;
+        tekst = `${naam(d.uitvoerder_id, 'De uitvoerder')} heeft na ${n} dagen nog geen uitvoering gepland.`;
       }
       break;
     case 'oplevering':

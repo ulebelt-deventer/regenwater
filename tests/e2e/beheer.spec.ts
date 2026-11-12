@@ -205,6 +205,15 @@ test('Uitleg: rechten staat in het Beheer-menu en toont per onderdeel wat bezoek
   await expect(page.locator('.qa-rechten-details td').nth(2)).toHaveText('Notities, Uitvoering gepland op');
 });
 
+test('Uitleg: statussen zegt per stap of die bij de bezoeker of de uitvoerder ligt, nergens bij "Klusser"', async ({ page }) => {
+  await start(page);
+  await page.goto('/uitleg/statussen');
+  for (const stap of ['afspraak', 'bezoek', 'plan']) await expect(page.locator(`.qa-stap-${stap} .bij-bezoeker`)).toHaveText('Bezoeker');
+  await expect(page.locator('.qa-stap-uitvoering .bij-uitvoerder')).toHaveText('Uitvoerder');
+  await expect(page.locator('.qa-statussen')).toBeVisible();
+  await expect(page.locator('.qa-statussen')).not.toContainText('Klusser');
+});
+
 test('Wat is er nieuw toont een rode stip tot de beheerder de pagina opent, met de nieuwste datum bovenaan', async ({ page }) => {
   await start(page);
   await page.goto('/');

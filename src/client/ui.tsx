@@ -305,8 +305,13 @@ export function Kruimels(props: { terug: { href: string; label: string }; huidig
 
 // ---- Status labels ----
 
-export function StatusLabel(props: { label: string; ligtBij: LigtBij | null }) {
-  return <span class={`bij bij-${props.ligtBij ?? 'gesloten'} qa-status`}>{props.label}</span>;
+export function StatusLabel(props: { label: string; ligtBij: LigtBij | null; ijskast?: boolean }) {
+  return (
+    <span class={`bij ${props.ijskast ? 'bij-ijskast qa-status-ijskast' : `bij-${props.ligtBij ?? 'gesloten'}`} qa-status`}>
+      <Show when={props.ijskast}><i class="bi bi-snow me-1" aria-hidden="true" /></Show>
+      {props.label}
+    </span>
+  );
 }
 
 export function AandachtBadge() {

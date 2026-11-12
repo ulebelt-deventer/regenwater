@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { aandacht } from '../shared/aandacht.ts';
 import { ADRES, dossier, gebruiker, naInschrijving, verzending } from '../shared/testhulp.ts';
-import { csv, csvExport, lijstRij } from './lijst.ts';
+import { csv, csvExport, filter, leesFilters, lijstRij } from './lijst.ts';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier, testApp } from './testapp.ts';
 
 const NU = new Date('2026-04-01T10:00:00.000Z');
@@ -256,5 +256,18 @@ describe('GET /api/dossiers eigenaar filter', () => {
     expect((await lijst('')).rijen.map((r) => r.id).sort()).toEqual([vanBea, vanBob].sort());
     expect((await lijst(`?eigenaar=${bob}`)).rijen.map((r) => r.id)).toEqual([vanBob]);
     expect((await lijst(`?eigenaar=${bea}`)).rijen.map((r) => r.id)).toEqual([vanBea]);
+  });
+});
+
+describe('filter() ligt bij', () => {
+  it('finds a dossier waiting on its bezoeker under Bezoeker, not under Beheerder', () => {
+    const wachtOpBezoeker = naInschrijving('huur', { id: 1, bezoeker_id: 7, bezoeker_toegewezen_at: '2026-03-03T09:00:00.000Z' });
+    const wachtOpBeheerder = naInschrijving('huur', { id: 2 });
+    const alle = [wachtOpBezoeker, wachtOpBeheerder];
+    const rijen = new Map(alle.map((d) => [d.id, lijstRij(d, GM, NU, BEHEERDER)]));
+    const ids = (ligt_bij: string) => filter(alle, rijen, leesFilters({ ligt_bij }), NU).map((d) => d.id);
+    expect(ids('bezoeker')).toEqual([1]);
+    expect(ids('beheerder')).toEqual([2]);
+    expect(ids('uitvoerder')).toEqual([]);
   });
 });

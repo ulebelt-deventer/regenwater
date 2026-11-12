@@ -81,9 +81,10 @@ $container-max-widths: (lg: 1200px);
 // Who the next step lies with
 .bij { display: inline-block; padding: .1rem .5rem; border-radius: .3rem; font-size: $font-size-sm; font-weight: 600; white-space: nowrap; }
 .bij-beheerder { background: #f8e9a6; color: #5c4a00; }
-.bij-klusser { background: #d6e5f7; color: #1d4f8f; }
+.bij-bezoeker, .bij-uitvoerder, .rol-klusser { background: #d6e5f7; color: #1d4f8f; }
 .bij-corporatie, .bij-bewoner { background: #e0daf3; color: #3f2f86; }
 .bij-gesloten { background: #e4e4e4; color: #555; }
+.bij-ijskast { background: #dbf1fa; color: #0b5a75; }
 
 .badge-aandacht { background: #fde2e2; color: #b42318; border: 1px solid #f5b5b5; font-weight: 600; }
 .aandacht { background: #fde2e2; color: #b42318; border: 1px solid #f5b5b5; }

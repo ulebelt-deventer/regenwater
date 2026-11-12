@@ -16,6 +16,7 @@ export interface LijstRij {
   stapNr: number;
   status: string;
   ligtBij: LigtBij | null;
+  ijskast: boolean;
   gesloten: boolean;
   uitgevoerd: boolean;
   aandacht: boolean;
@@ -259,7 +260,7 @@ function BeheerderTabel(props: { rijen: LijstRij[] }) {
                   <td>{r.huur_koop ?? ''}</td>
                   <td class="qa-bezoeker">{r.bezoeker ?? <span class="text-body-tertiary">--</span>}</td>
                   <td class="qa-uitvoerder">{r.uitvoerder ?? <span class="text-body-tertiary">--</span>}</td>
-                  <td><StatusLabel label={r.status} ligtBij={r.ligtBij} /></td>
+                  <td><StatusLabel label={r.status} ligtBij={r.ligtBij} ijskast={r.ijskast} /></td>
                   <td class="small text-muted text-truncate" style={{ 'max-width': '16rem' }}>{r.notities ?? ''}</td>
                 </tr>
               )}
@@ -286,7 +287,7 @@ function DossierKaart(props: { rij: LijstRij; klusser?: boolean }) {
             <span class="qa-adres">{r().adres}</span>
           </div>
           <Show when={!props.klusser || r().opdracht!.aanZet} fallback={<span class="small">{r().volgende}</span>}>
-            <StatusLabel label={r().status} ligtBij={r().ligtBij} />
+            <StatusLabel label={r().status} ligtBij={r().ligtBij} ijskast={r().ijskast} />
           </Show>
         </div>
         <div class="small text-muted">
@@ -328,7 +329,7 @@ function KlusserTabel(props: { rijen: LijstRij[] }) {
                   <td><OpdrachtBadge opdracht={r.opdracht!} /></td>
                   <td class="qa-volgende">
                     <Show when={r.opdracht!.aanZet} fallback={<span class="small">{r.volgende}</span>}>
-                      <StatusLabel label={r.status} ligtBij={r.ligtBij} />
+                      <StatusLabel label={r.status} ligtBij={r.ligtBij} ijskast={r.ijskast} />
                     </Show>
                   </td>
                   <td class="text-nowrap">{komendeAfspraak(r) ? datum(komendeAfspraak(r)!) : ''}</td>

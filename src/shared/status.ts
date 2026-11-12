@@ -2,11 +2,12 @@ import { CORPORATIE_EMAIL } from './constants.ts';
 import { datum, isoDatum, lokaal } from './datum.ts';
 import type { Adres, Dossier, IJskast, Ontvanger, Verzending } from './types.ts';
 
-export type LigtBij = 'beheerder' | 'klusser' | 'corporatie' | 'bewoner';
+export type LigtBij = 'beheerder' | 'bezoeker' | 'uitvoerder' | 'corporatie' | 'bewoner';
 
 export const LIGT_BIJ_LABEL: Record<LigtBij, string> = {
   beheerder: 'Beheerder',
-  klusser: 'Klusser',
+  bezoeker: 'Bezoeker',
+  uitvoerder: 'Uitvoerder',
   corporatie: 'Woningcorporatie',
   bewoner: 'Bewoner',
 };
@@ -77,19 +78,19 @@ export const STAPPEN: Stap[] = [
     gedaan: (d) => (d.bezoeker_id !== null ? d.bezoeker_toegewezen_at : null),
   },
   {
-    nr: 3, key: 'afspraak', ligtBij: 'klusser', label: 'Bezoek plannen', anker: 'sectie-bezoek',
+    nr: 3, key: 'afspraak', ligtBij: 'bezoeker', label: 'Bezoek plannen', anker: 'sectie-bezoek',
     regel: 'Nog geen afspraakdatum',
     geldt: () => true,
     gedaan: (d) => d.afspraak,
   },
   {
-    nr: 4, key: 'bezoek', ligtBij: 'klusser', label: 'Bezoek uitvoeren', anker: 'sectie-bezoek',
+    nr: 4, key: 'bezoek', ligtBij: 'bezoeker', label: 'Bezoek uitvoeren', anker: 'sectie-bezoek',
     regel: '"Bezoek afronden" is nog niet aangetikt',
     geldt: () => true,
     gedaan: (d) => d.bezoek_afgerond_at,
   },
   {
-    nr: 5, key: 'plan', ligtBij: 'klusser', label: 'Plan van Aanpak afronden', anker: 'sectie-plan',
+    nr: 5, key: 'plan', ligtBij: 'bezoeker', label: 'Plan van Aanpak afronden', anker: 'sectie-plan',
     regel: '"Klaar voor controle" is nog niet aangetikt',
     geldt: () => true,
     gedaan: (d) => d.klaar_voor_controle_at,
@@ -123,7 +124,7 @@ export const STAPPEN: Stap[] = [
     gedaan: (d) => (d.uitvoerder_id !== null ? d.uitvoerder_toegewezen_at : null),
   },
   {
-    nr: 10, key: 'uitvoering', ligtBij: 'klusser', label: 'Werk uitvoeren', anker: 'sectie-uitvoering',
+    nr: 10, key: 'uitvoering', ligtBij: 'uitvoerder', label: 'Werk uitvoeren', anker: 'sectie-uitvoering',
     regel: '"Werk opgeleverd" is nog niet aangetikt',
     geldt: () => true,
     gedaan: (d) => d.werk_opgeleverd_at,

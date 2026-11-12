@@ -228,7 +228,7 @@ function Pagina() {
                               <td class="d-inline-block d-md-table-cell me-2">
                                 <span class="badge border border-secondary text-secondary qa-rol">{r.rol}</span>
                               </td>
-                              <td class="d-inline-block d-md-table-cell" data-label="Status"><StatusLabel label={r.status} ligtBij={r.ligtBij} /></td>
+                              <td class="d-inline-block d-md-table-cell" data-label="Status"><StatusLabel label={r.status} ligtBij={r.ligtBij} ijskast={r.ijskast} /></td>
                               <td class="text-nowrap" data-label="Laatste activiteit">{r.laatste_activiteit_at ? kortDatum(r.laatste_activiteit_at) : ''}</td>
                             </tr>
                           )}

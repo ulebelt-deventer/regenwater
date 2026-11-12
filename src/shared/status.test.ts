@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STAPPEN, huidigeStap, inschrijvingOntbreekt, opdracht, sectieOpen, status } from './status.ts';
+import { LIGT_BIJ_LABEL, STAPPEN, huidigeStap, inschrijvingOntbreekt, opdracht, sectieOpen, status } from './status.ts';
 import { dossier, naInschrijving, verzending } from './testhulp.ts';
 
 const T = '2026-03-05T10:00:00.000Z';
@@ -129,5 +129,13 @@ describe('sectieOpen', () => {
 
   it('throws on a section it does not know', () => {
     expect(() => sectieOpen(klaar, 'sectie-status')).toThrow('Onbekende sectie');
+  });
+});
+
+describe('ligt bij', () => {
+  it('puts the bezoek steps with the bezoeker and Werk uitvoeren with the uitvoerder, never with a klusser in general', () => {
+    const bij = Object.fromEntries(STAPPEN.map((s) => [s.key, s.ligtBij]));
+    expect(bij).toMatchObject({ afspraak: 'bezoeker', bezoek: 'bezoeker', plan: 'bezoeker', uitvoering: 'uitvoerder' });
+    expect(Object.values(LIGT_BIJ_LABEL)).toEqual(['Beheerder', 'Bezoeker', 'Uitvoerder', 'Woningcorporatie', 'Bewoner']);
   });
 });

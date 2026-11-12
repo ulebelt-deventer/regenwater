@@ -14,7 +14,7 @@ export interface GebruikerRij extends Gebruiker {
 const KLEUR: Record<string, string> = { aandacht: 'text-danger fw-semibold', gesloten: 'text-secondary', uitgevoerd: 'text-success' };
 
 export function RolBadge(props: { rol: string }) {
-  return <span class={`badge ${props.rol === 'beheerder' ? 'text-bg-primary' : 'bij-klusser'} qa-rol`}>{props.rol === 'beheerder' ? 'Beheerder' : 'Klusser'}</span>;
+  return <span class={`badge ${props.rol === 'beheerder' ? 'text-bg-primary' : 'rol-klusser'} qa-rol`}>{props.rol === 'beheerder' ? 'Beheerder' : 'Klusser'}</span>;
 }
 
 export function Overzicht() {
