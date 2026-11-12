@@ -5,6 +5,7 @@ import { BORING_MAX_KM, DOORLAATBAARHEID, RIOOLKAARTEN } from '../../shared/cons
 import { datum } from '../../shared/datum.ts';
 import { SUBSIDIE_SJABLONEN, inschrijvingOntbreekt, laatsteVerzending, str, straatNummer } from '../../shared/status.ts';
 import type { Dossier, RioolDetectie } from '../../shared/types.ts';
+import { veld } from '../../shared/velden.ts';
 import { get, post } from '../api.ts';
 import { Modal, bevestig, melding, probeer, tip } from '../ui.tsx';
 import { MailKnop, MijlpaalRegel, zetMijlpaal } from './acties.tsx';
@@ -120,7 +121,7 @@ export function Inschrijving() {
           </div>
         </Show>
 
-        <VeldInvoer k="notities" hint="Dezelfde notities als bovenaan de dossierpagina. De bezoeker en uitvoerder zien ze ook." />
+        <VeldInvoer k="notities" hint={`Dezelfde notities als bovenaan de dossierpagina. ${veld('notities').hint}`} />
 
         <div class="border-top pt-3 qa-controle">
           <Show

@@ -14,7 +14,7 @@ test('onderaan de Inschrijving staan de Notities van de dossierpagina, met de ui
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}/inschrijving`);
-  await expect(veld(page, 'notities').locator('.qa-hint')).toContainText('bezoeker en uitvoerder');
+  await expect(veld(page, 'notities').locator('.qa-hint')).toContainText('bezoeker en uitvoerder zien deze notities ook, de bewoner en de woningcorporatie niet');
   await vul(page, 'notities', 'Gemeente en school hebben toestemming gegeven.');
   await opslagKlaar(page);
   await page.goto(`/dossiers/${id}`);

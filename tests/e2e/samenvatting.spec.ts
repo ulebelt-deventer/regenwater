@@ -205,7 +205,7 @@ test('de bezoekerkeuze begint met - niemand - en toont de huidige bezoeker in de
   await expect(blok.locator('.qa-toewijzen-knop')).toHaveText('Kies...');
 });
 
-test('Notities is tekst tot je op Bewerken tikt; dan krijgt het tekstvak de focus en slaat het op', async ({ page }) => {
+test('Notities is tekst tot je op Bewerken tikt; dan krijgt het tekstvak de focus, zegt het wie het ziet en slaat het op', async ({ page }) => {
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}`);
@@ -215,6 +215,7 @@ test('Notities is tekst tot je op Bewerken tikt; dan krijgt het tekstvak de focu
   await page.locator('.qa-notities-bewerken').click();
   const invoer = veld(page, 'notities').locator('.qa-invoer');
   await expect(invoer).toBeFocused();
+  await expect(veld(page, 'notities').locator('.qa-hint')).toContainText('de bewoner en de woningcorporatie niet');
   await invoer.fill('Sleutel ligt bij de buren');
   await page.locator('.qa-dossier-titel').click();
   await expect(page.locator('.qa-notities')).toContainText('Sleutel ligt bij de buren');

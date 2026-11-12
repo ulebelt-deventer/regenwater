@@ -83,7 +83,7 @@ export const VELDEN: Veld[] = [
   { key: 'kaart_annotaties', label: 'Tekeningen op de kaart', type: 'annotaties', pagina: 'bezoek', bewerkers: ['bezoeker'], inPlan: true },
 
   // Details page, inline
-  { key: 'notities', label: 'Notities', type: 'textarea', pagina: 'details', bewerkers: ['bezoeker', 'uitvoerder'] },
+  { key: 'notities', label: 'Notities', type: 'textarea', pagina: 'details', bewerkers: ['bezoeker', 'uitvoerder'], hint: 'Alleen voor De Ulebelt: de bezoeker en uitvoerder zien deze notities ook, de bewoner en de woningcorporatie niet.' },
   { key: 'afspraak', label: 'Bezoek-afspraak', type: 'datetime', pagina: 'details', bewerkers: ['bezoeker'], kolom: true, inPlan: true },
   { key: 'uitvoering_gepland', label: 'Uitvoering gepland op', type: 'date', pagina: 'details', bewerkers: ['uitvoerder'], kolom: true },
 
