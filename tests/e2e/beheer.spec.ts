@@ -247,6 +247,21 @@ test('op een telefoon leidt de rode stip via het accountmenu en het Uitleg-overz
   await expect(page.locator('.qa-nieuw-stip')).toHaveCount(0);
 });
 
+test('vanaf de herinneringsdatum vraagt het Overzicht om de bewaartermijnen te regelen, met een link naar Databeleid', async ({ page }) => {
+  await start(page);
+  await post(page.request, '/api/test/klok', { zet: '2030-11-11T23:59:00.000Z' });
+  await login(page, BEHEERDER.email);
+  await page.goto('/');
+  await expect(page.locator('.qa-tellingen')).toBeVisible();
+  await expect(page.locator('.qa-bewaartermijn-regelen')).toHaveCount(0);
+  await post(page.request, '/api/test/klok', { zet: '2030-11-12T00:00:00.000Z' });
+  await page.reload();
+  const banner = page.locator('.qa-bewaartermijn-regelen');
+  await expect(banner).toContainText('verwijdert oude gegevens nog niet vanzelf');
+  await banner.locator('a').click();
+  await expect(page).toHaveURL(/\/uitleg\/databeleid$/);
+});
+
 test('Uitleg: databeleid legt de procedures uit', async ({ page }) => {
   await start(page);
   await page.goto('/uitleg/databeleid');

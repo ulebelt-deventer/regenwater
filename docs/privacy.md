@@ -49,6 +49,6 @@ Healthchecks pings are empty POSTs and fonts are self-hosted, so neither receive
 
 ## Open
 
-- Detect and delete personal data past its retention period (nothing does this yet). Removing the bewoner's contact details has to reach the dossier fields, old values in `audit` payloads, `verzendingen` (recipient and mail text), names in free text such as Notities, and the backups. Deleting a user has to deal with the audit rows that point to them.
+- Detect and delete personal data past its retention period (nothing does this yet; from `BEWAARTERMIJN_HERINNERING`, 2030-11-12, the Overzicht asks the admins to get it built). Removing the bewoner's contact details has to reach the dossier fields, old values in `audit` payloads, `verzendingen` (recipient and mail text), names in free text such as Notities, and the backups. Deleting a user has to deal with the audit rows that point to them.
 - Backup retention, which decides how long deleted data lingers.
 - Questions for the team: do they want to go back to the same house, or only keep lessons and numbers (which could shorten how long the address stays)? Do subsidy terms or contracts set a retention period? Does the administratie keep facturen and Uitvoeringsspecificaties outside the app?

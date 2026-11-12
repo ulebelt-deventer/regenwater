@@ -29,13 +29,18 @@ export function Overzicht() {
 function OverzichtInhoud() {
   titel('Overzicht');
   const navigate = useNavigate();
-  const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[]; normNakijken: NormafvoerRij[] }>('/api/overzicht'));
+  const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[]; normNakijken: NormafvoerRij[]; bewaartermijnRegelen: boolean }>('/api/overzicht'));
   return (
     <>
       <h1 class="mb-3">Overzicht</h1>
       <Show when={data()} fallback={<Laden />}>
         {(d) => (
           <>
+            <Show when={d().bewaartermijnRegelen}>
+              <div class="alert alert-warning qa-bewaartermijn-regelen">
+                <A href="/uitleg/databeleid" class="alert-link">Bewaartermijnen regelen</A>: binnen een jaar zijn de eerste dossiers en accounts vijf jaar oud, maar de app verwijdert oude gegevens nog niet vanzelf. Vraag de technisch beheerder om dat te bouwen.
+              </div>
+            </Show>
             <Show when={d().normNakijken.length > 0}>
               <div class="alert alert-warning qa-norm-nakijken">
                 <A href="/beheer/normafvoer" class="alert-link">Normafvoer nakijken</A>: een jaar of langer niet nagekeken.

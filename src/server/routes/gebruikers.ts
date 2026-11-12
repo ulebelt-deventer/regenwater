@@ -1,5 +1,5 @@
 import type { Hono } from 'hono';
-import { NORM_CONTROLE_DAGEN } from '../../shared/constants.ts';
+import { BEWAARTERMIJN_HERINNERING, NORM_CONTROLE_DAGEN } from '../../shared/constants.ts';
 import { dagenSinds } from '../../shared/datum.ts';
 import type { Gebruiker, Rol } from '../../shared/types.ts';
 import { audit } from '../audit.ts';
@@ -145,6 +145,7 @@ export function gebruikerRoutes(app: Hono<Env>, ctx: Ctx): void {
       { key: 'uitgevoerd', label: 'Uitgevoerd', aantal: rijen.filter((r) => r.uitgevoerd).length, query: 's_gesloten=alle&s_uitgevoerd=ja' },
     ];
     const normNakijken = normafvoeren(ctx.db).filter((n) => dagenSinds(n.gecontroleerd_at, nu) >= NORM_CONTROLE_DAGEN);
-    return c.json({ tellingen, gebruikers: gebruikerRijen(ctx, false), normNakijken });
+    const bewaartermijnRegelen = nu >= new Date(BEWAARTERMIJN_HERINNERING);
+    return c.json({ tellingen, gebruikers: gebruikerRijen(ctx, false), normNakijken, bewaartermijnRegelen });
   });
 }
