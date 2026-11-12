@@ -2,7 +2,7 @@ import { For, type JSX } from 'solid-js';
 import { BTW_PROCENT } from '../../shared/constants.ts';
 import { euro } from '../../shared/datum.ts';
 import { getal } from '../../shared/kaart.ts';
-import { klussendienstRegel, specificatie, specificatieKop, specificatieTekst } from '../../shared/specificatie.ts';
+import { specificatie, specificatieKop, specificatieTekst } from '../../shared/specificatie.ts';
 import { type Doc, Merk, naamVan } from './onderdelen.tsx';
 
 const KNOPPEN_SCRIPT = `
@@ -70,7 +70,7 @@ export function Uitvoeringsspecificatie(props: { doc: Doc }): JSX.Element {
             )}
           </For>
           <tr class="qa-klussendienst">
-            <td colSpan={3}>{klussendienstRegel(s().klussendienst)}</td>
+            <td colSpan={3}>{s().klussendienst.regel}</td>
             <td class="getal">{euro(s().klussendienst.bedrag)}</td>
           </tr>
           <tr>

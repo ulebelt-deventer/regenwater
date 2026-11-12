@@ -6,9 +6,16 @@ import { Dropdown, probeer } from './ui.tsx';
 
 const INTERVAL_MS = 60_000;
 
+function kop({ ongelezen, totaal }: Notificaties): string {
+  if (ongelezen > 0) return `${ongelezen} ongelezen ${ongelezen === 1 ? 'melding' : 'meldingen'}`;
+  if (totaal === 1) return '1 melding (gelezen)';
+  if (totaal > 0) return `${totaal} meldingen (alle gelezen)`;
+  return 'Meldingen';
+}
+
 // The navbar bell: meldingen about the beheerder's own dossiers. Opening one marks every melding about that dossier read.
 export function Bel() {
-  const [data, setData] = createSignal<Notificaties>({ ongelezen: 0, items: [] });
+  const [data, setData] = createSignal<Notificaties>({ ongelezen: 0, totaal: 0, items: [] });
   // Bumped when marking starts and ends: a poll that overlaps a mark may predate it, so it is dropped and the mark's own answer stands.
   let generatie = 0;
   const laad = async () => {
@@ -53,21 +60,20 @@ export function Bel() {
       rechts
       vast
     >
-      <div class="dropdown-header">Meldingen</div>
+      <div class="dropdown-header qa-bel-kop">{kop(data())}</div>
       <div class="bel-lijst">
         <For each={data().items} fallback={<div class="dropdown-item-text text-muted qa-bel-leeg">Nog geen meldingen.</div>}>
           {(n) => (
             // A plain <a>, which the router still navigates: <A> would mark the dossier on screen active, dark green on dark green.
-            <a href={`/dossiers/${n.dossier_id}`} class="dropdown-item text-wrap py-2 qa-notificatie" classList={{ 'qa-notificatie-ongelezen': !n.gelezen }} onClick={() => lees(n.dossier_id)}>
-              <div class="d-flex align-items-baseline gap-2">
-                <span class={n.gelezen ? '' : 'fw-semibold'}>{n.adres}</span>
-                <Show when={!n.gelezen}>
-                  <span class="d-inline-block p-1 bg-danger rounded-circle flex-shrink-0"><span class="visually-hidden">Ongelezen</span></span>
-                </Show>
+            <a href={`/dossiers/${n.dossier_id}`} class="dropdown-item small d-flex align-items-baseline gap-2 py-2 qa-notificatie" classList={{ 'qa-notificatie-ongelezen': !n.gelezen }} onClick={() => lees(n.dossier_id)}>
+              {/* A read melding keeps an invisible dot, so every line starts at the same place. */}
+              <span class="d-inline-block p-1 bg-danger rounded-circle flex-shrink-0" classList={{ invisible: n.gelezen }}>
+                <Show when={!n.gelezen}><span class="visually-hidden">Ongelezen</span></Show>
+              </span>
+              <div class="overflow-hidden">
+                <div class="regels-2 text-break qa-notificatie-tekst"><span classList={{ 'fw-semibold': !n.gelezen }}>{n.adres}</span>: {n.titel}</div>
+                <div class="small text-muted">{datumTijd(n.created_at)}</div>
               </div>
-              <div>{n.titel}</div>
-              <Show when={n.detail}>{(d) => <div class="small text-muted">{d()}</div>}</Show>
-              <div class="small text-muted">{datumTijd(n.created_at)}</div>
             </a>
           )}
         </For>

@@ -5,6 +5,7 @@ import { isoDatum } from '../../shared/datum.ts';
 import { kaartItems } from '../../shared/kaart.ts';
 import { DOSSIERS_PER_PAGINA } from '../../shared/constants.ts';
 import { isBeheerder, magBewerken, magMijlpaal, magZien } from '../../shared/rechten.ts';
+import { klussendienstKosten } from '../../shared/specificatie.ts';
 import { STATUS_FILTERS, adresRegel, inIjskast } from '../../shared/status.ts';
 import { MIJLPALEN, type Dossier, type Gebruiker, type Json, type Mijlpaal, type Ontvanger, type RioolDetectie, SLUIT_REDENEN, type SluitReden } from '../../shared/types.ts';
 import { materiaalRijen, nieuwId, veldVoor, waarde } from '../../shared/velden.ts';
@@ -67,6 +68,14 @@ function zetNormVast(ctx: Ctx, c: C, d: Dossier): void {
   const { mm, gemeente } = d.normafvoer;
   ctx.db.prepare('UPDATE dossiers SET normafvoer_mm = ?, normafvoer_gemeente = ?, normafvoer_at = ? WHERE id = ?').run(mm, gemeente, ctx.klok.iso(), d.id);
   audit(ctx, actorVan(c), d.id, 'normafvoer_vastgezet', { mm, gemeente });
+}
+
+// The agreed Klussendienst amount starts from the rate once the bezoek has settled which regenpijpen are afgekoppeld.
+function zetKlussendienstKosten(ctx: Ctx, c: C, d: Dossier): void {
+  if (d.data.klussendienst_kosten !== undefined) return;
+  const { bedrag } = klussendienstKosten(d);
+  ctx.db.prepare('UPDATE dossiers SET data = ? WHERE id = ?').run(JSON.stringify({ ...d.data, klussendienst_kosten: bedrag }), d.id);
+  auditWijzigingen(ctx, actorVan(c), d.id, { klussendienst_kosten: [null, bedrag] });
 }
 
 export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
@@ -179,7 +188,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
           else data[key] = nieuw;
           ctx.db.prepare('UPDATE dossiers SET data = ? WHERE id = ?').run(JSON.stringify(data), d.id);
         }
-        if (veld.inPlan) planAt = planGewijzigd(ctx, d.id);
+        if (typeof veld.inPlan === 'function' ? veld.inPlan(d) : veld.inPlan) planAt = planGewijzigd(ctx, d.id);
         auditWijzigingen(ctx, actorVan(c), d.id, { [key]: [oud, nieuw] });
       })();
     }
@@ -243,10 +252,13 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     ctx.db.prepare(`UPDATE dossiers SET ${at} = ?, ${by} = ? WHERE id = ?`).run(ctx.klok.iso(), ik.id, d.id);
     audit(ctx, actorVan(c), d.id, 'mijlpaal', { mijlpaal: m, aan: true });
     // The opening's own request can get lost on a bad connection on site.
-    if (m === 'bezoek_afgerond') zetNormVast(ctx, c, d);
+    if (m === 'bezoek_afgerond') {
+      zetNormVast(ctx, c, d);
+      zetKlussendienstKosten(ctx, c, d);
+    }
     // Only a klusser's hand-off alerts the eigenaar; an admin registering it themselves already knows. "Inloggen als" counts as the klusser, so it can be tested.
     if (ik.rol === 'klusser' && (m === 'klaar_voor_controle' || m === 'werk_opgeleverd')) {
-      dossierMelding(ctx, d, `${m === 'klaar_voor_controle' ? 'Plan van Aanpak klaar voor controle' : 'Werk opgeleverd'} (${ik.naam})`, null);
+      dossierMelding(ctx, d, `${m === 'klaar_voor_controle' ? 'Klaar voor controle' : 'Werk opgeleverd'} (${ik.naam})`);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });
   });

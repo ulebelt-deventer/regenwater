@@ -10,16 +10,19 @@ const NOTIFICATIES_MAX = 50;
 function notificaties(ctx: Ctx, gebruikerId: number): Notificaties {
   const rijen = ctx.db
     .prepare(
-      `SELECT n.id, n.dossier_id, n.titel, n.detail, n.created_at, n.gelezen_at, d.adres_json
+      `SELECT n.id, n.dossier_id, n.titel, n.created_at, n.gelezen_at, d.adres_json
        FROM notificaties n JOIN dossiers d ON d.id = n.dossier_id
        WHERE n.gebruiker_id = ? ORDER BY n.gelezen_at IS NOT NULL, n.created_at DESC, n.id DESC LIMIT ?`,
     )
-    .all(gebruikerId, NOTIFICATIES_MAX) as { id: number; dossier_id: number; titel: string; detail: string | null; created_at: string; gelezen_at: string | null; adres_json: string | null }[];
-  const { ongelezen } = ctx.db.prepare('SELECT COUNT(*) AS ongelezen FROM notificaties WHERE gebruiker_id = ? AND gelezen_at IS NULL').get(gebruikerId) as { ongelezen: number };
+    .all(gebruikerId, NOTIFICATIES_MAX) as { id: number; dossier_id: number; titel: string; created_at: string; gelezen_at: string | null; adres_json: string | null }[];
+  const { ongelezen, totaal } = ctx.db
+    .prepare('SELECT COUNT(*) - COUNT(gelezen_at) AS ongelezen, COUNT(*) AS totaal FROM notificaties WHERE gebruiker_id = ?')
+    .get(gebruikerId) as { ongelezen: number; totaal: number };
   return {
     ongelezen,
+    totaal,
     items: rijen.map((r) => ({
-      id: r.id, dossier_id: r.dossier_id, titel: r.titel, detail: r.detail, created_at: r.created_at, gelezen: r.gelezen_at !== null,
+      id: r.id, dossier_id: r.dossier_id, titel: r.titel, created_at: r.created_at, gelezen: r.gelezen_at !== null,
       adres: adresRegel({ id: r.dossier_id, adres: r.adres_json ? (JSON.parse(r.adres_json) as Adres) : null }),
     })),
   };

@@ -3,7 +3,7 @@ import { geenSpecificatie, specificatie, specificatieTekst } from './specificati
 import { naInschrijving } from './testhulp.ts';
 import type { Dossier } from './types.ts';
 
-// The gebruikte materialen from the example the administratie sent, with one afgekoppelde regenpijp out of two.
+// The gebruikte materialen from the example the administratie sent, with € 50 agreed for the Klussendienst: one afgekoppelde regenpijp out of two.
 const GEBRUIKT: [string, number | null, number | null][] = [
   ['Rubberen ring', 195, 3],
   ['Vulautomaat', 1061, 1],
@@ -20,35 +20,41 @@ function opgeleverd(huur_koop: 'huur' | 'koop', over: Partial<Dossier> = {}): Do
   d.data.kaart_annotaties = [{ id: 'r1', type: 'regenpijp', p: [[1, 1]] }, { id: 'r2', type: 'regenpijp', p: [[5, 5]] }] as unknown as string[];
   d.data['regenpijp.r1.afkoppelen'] = 'ja';
   d.data['regenpijp.r2.afkoppelen'] = 'nee';
+  d.data.klussendienst_kosten = 5000;
   return d;
 }
 
 describe('uitvoeringsspecificatie', () => {
-  it('matches the administratie example: materials plus € 50 per afgekoppelde regenpijp, btw 21% over the subtotaal', () => {
+  it('matches the administratie example: materials plus the agreed Klussendienst, btw 21% over the subtotaal', () => {
     const s = specificatie(opgeleverd('koop'));
     expect(s.regels.map((r) => r.naam)).toEqual(GEBRUIKT.slice(0, 5).map(([n]) => n));
     expect(s.regels.map((r) => r.bedrag)).toEqual([585, 1061, 3091, 125, 292]);
-    expect(s.klussendienst).toEqual({ pijpen: 1, bedrag: 5000 });
+    expect(s.klussendienst.bedrag).toBe(5000);
     expect([s.subtotaal, s.btw, s.totaal]).toEqual([10154, 2132, 12286]);
     expect(s.waarschuwingen).toEqual([]);
   });
 
-  it('charges the Klussendienst for a huurwoning too', () => {
-    const s = specificatie(opgeleverd('huur'));
-    expect(s.klussendienst).toEqual({ pijpen: 1, bedrag: 5000 });
-    expect(s.totaal).toBe(12286);
+  it('charges huur and koop the Klussendienst amount agreed in the Plan, not the rate per afgekoppelde regenpijp', () => {
+    for (const huurKoop of ['huur', 'koop'] as const) {
+      const d = opgeleverd(huurKoop);
+      d.data.klussendienst_kosten = 7500;
+      d.data['regenpijp.r2.afkoppelen'] = 'ja';
+      const s = specificatie(d);
+      expect(s.klussendienst).toEqual({ regel: 'Klussendienst (afgesproken in het Plan van Aanpak)', bedrag: 7500 });
+      expect(s.subtotaal).toBe(5154 + 7500);
+    }
   });
 
-  it('warns about a used material without a price and a koop job with no afgekoppelde regenpijp', () => {
-    const d = opgeleverd('koop');
+  it('warns about a used material without a price and a job without an agreed Klussendienst amount', () => {
+    const d = opgeleverd('huur');
     d.data['gebruikt.g0.prijs'] = null;
-    d.data['regenpijp.r1.afkoppelen'] = 'twijfel';
+    delete d.data.klussendienst_kosten;
     const s = specificatie(d);
     expect(s.regels[0].bedrag).toBeNull();
     expect(s.subtotaal).toBe(5154 - 585);
     expect(s.waarschuwingen).toHaveLength(2);
     expect(s.waarschuwingen[0]).toContain('Rubberen ring heeft geen prijs');
-    expect(s.waarschuwingen[1]).toContain('Afkoppelen: Ja');
+    expect(s.waarschuwingen[1]).toContain('geen afgesproken kosten voor de Klussendienst');
   });
 
   it('is refused before oplevering and for a koopwoning without the Klussendienst', () => {
@@ -64,7 +70,7 @@ describe('uitvoeringsspecificatie', () => {
     expect(specificatieTekst(opgeleverd('koop', { data: {} }), null)).toContain('Bewoner: --\nAdres: Walstraat 74, 7411GK Deventer\nE-mail bewoner: --\nWoningeigenaar: Bewoner (koopwoning)\nUitvoerder: --');
     expect(t).toContain('3 × Rubberen ring à € 1,95: € 5,85');
     expect(t).toContain('0,5 × Flexibele buis 50 mm blind, per meter à € 2,50: € 1,25');
-    expect(t).toContain('Klussendienst: 1 regenpijp afgekoppeld × € 50,00: € 50,00');
+    expect(t).toContain('Klussendienst (afgesproken in het Plan van Aanpak): € 50,00');
     expect(t).toContain('Subtotaal: € 101,54\nbtw 21%: € 21,32\nTotaal: € 122,86');
     expect(t).not.toContain('Regenton');
     expect(t).not.toContain('LET OP');

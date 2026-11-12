@@ -98,7 +98,7 @@ describe('dossiers', () => {
     const id2 = await nieuwDossier();
     await beheerder.json('POST', `/api/dossiers/${id2}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
     expect((await beheerder.json('GET', '/api/notificaties')).items).toEqual([
-      expect.objectContaining({ dossier_id: id, adres: 'Walstraat 74, Deventer', titel: 'Plan van Aanpak klaar voor controle (Kees Klus)', gelezen: false }),
+      expect.objectContaining({ dossier_id: id, adres: 'Walstraat 74, Deventer', titel: 'Klaar voor controle (Kees Klus)', gelezen: false }),
     ]);
     expect(t.mailer.verstuurd).toEqual([]);
   });
@@ -109,7 +109,7 @@ describe('dossiers', () => {
     await beheerder.json('POST', `/api/auth/als/${klusserId}`);
     await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'klaar_voor_controle' });
     await beheerder.json('POST', '/api/auth/als/stop');
-    expect((await beheerder.json('GET', '/api/notificaties')).items.map((n: { titel: string }) => n.titel)).toEqual(['Plan van Aanpak klaar voor controle (Kees Klus)']);
+    expect((await beheerder.json('GET', '/api/notificaties')).items.map((n: { titel: string }) => n.titel)).toEqual(['Klaar voor controle (Kees Klus)']);
   });
 
   describe('eigenaar', () => {
@@ -250,7 +250,7 @@ describe('e-mail', () => {
     const { dossier } = await beheerder.json('GET', `/api/dossiers/${id}`);
     expect(dossier.verzendingen[0].mislukt_at).not.toBeNull();
     expect((await beheerder.json('GET', '/api/notificaties')).items).toEqual([
-      expect.objectContaining({ dossier_id: id, titel: 'E-mail niet afgeleverd: Subsidie aan anna@example.org', detail: expect.stringMatching(/^Foutmelding: /) }),
+      expect.objectContaining({ dossier_id: id, titel: 'E-mail niet afgeleverd aan anna@example.org' }),
     ]);
     expect(t.mailer.verstuurd).toEqual([]);
   });
@@ -354,7 +354,7 @@ describe('documents', () => {
     expect(await plan()).toMatch(/>Andere foto’s<\/h3><div[^>]*class="fotos">.*<img /);
   });
 
-  describe('Kosteninschatting in the Plan', () => {
+  describe('Prices in the Plan Materialenlijst', () => {
     const zet = (id: number, key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
     const plan = async (id: number) => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
     const metMaterialen = async (huurKoop: 'huur' | 'koop') => {
@@ -371,35 +371,55 @@ describe('documents', () => {
     };
     const totalen = (html: string) => [...html.matchAll(/qa-pdf-totaal-incl[^>]*>([^<]*)</g)].map((m) => m[1]);
 
-    it('totals the materials excl. and incl. btw with the no-guarantee caveat for a koopwoning, and is absent for a huurwoning', async () => {
+    it('prices each material and totals excl. and incl. btw with the no-guarantee caveat for a koopwoning, and shows no prices for a huurwoning', async () => {
       const koop = await plan((await metMaterialen('koop')).id);
-      expect(koop).toMatch(/qa-pdf-kosteninschatting.*Kosteninschatting.*Zelf uitvoeren.*€ 110,00.*btw 21%.*€ 23,10/);
+      expect(koop).toMatch(/qa-pdf-kosteninschatting.*€ 45,00.*€ 90,00.*€ 20,00.*€ 20,00.*Totaal excl. btw.*€ 110,00.*btw 21%.*€ 23,10/);
       expect(totalen(koop)).toEqual(['€ 133,10']);
       expect(koop).toContain('Dit is een prijsinschatting en geen garantie voor de uiteindelijke kosten.');
-      expect(koop).not.toContain('Met de Klussendienst');
       expect(koop).not.toContain('qa-pdf-zonder-prijs');
       const huurId = (await metMaterialen('huur')).id;
       await afkoppelen(huurId, ['ja']);
+      await zet(huurId, 'klussendienst_kosten', 5000);
       const huur = await plan(huurId);
       expect(huur).toContain('Materialenlijst');
-      expect(huur).not.toContain('Kosteninschatting');
+      expect(huur).not.toContain('qa-pdf-kosteninschatting');
       expect(huur).not.toContain('€');
     });
 
-    it('sets the Klussendienst per regenpijp to afkoppelen beside doing it yourself', async () => {
+    it('adds the agreed Klussendienst amount below the materials and to the totals, in whole cents', async () => {
       const { id } = await metMaterialen('koop');
-      await afkoppelen(id, ['ja', 'nee', 'ja']);
+      expect(await plan(id)).toMatch(/qa-pdf-klussendienst.*Uitvoering door de Klussendienst.*nog niet ingevuld/);
+      await zet(id, 'klussendienst_kosten', 10000);
       const html = await plan(id);
-      expect(html).toMatch(/Zelf uitvoeren.*Met de Klussendienst/);
-      expect(html).toMatch(/qa-pdf-klussendienst.*Klussendienst: 2 regenpijpen afkoppelen × € 50,00.*--.*€ 100,00/);
-      expect(totalen(html)).toEqual(['€ 133,10', '€ 254,10']);
+      expect(html).toMatch(/€ 20,00.*qa-pdf-klussendienst.*Uitvoering door de Klussendienst.*€ 100,00.*Totaal excl. btw.*€ 210,00/);
+      expect(totalen(html)).toEqual(['€ 254,10']);
+      expect((await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'klussendienst_kosten', value: 12.5 }, 400)).fout).toMatch(/Afgesproken kosten Klussendienst/);
     });
 
-    it('leaves out a koopwoning without materials or a regenpijp to afkoppelen, and shows the Klussendienst alone without materials', async () => {
+    it('prefills the agreed amount at Bezoek afgerond with € 50 per afgekoppelde regenpijp for huur and koop, and keeps an amount already agreed', async () => {
+      const bezoekAf = (id: number, aan: boolean) => beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'bezoek_afgerond', aan });
+      const kosten = async (id: number) => (await beheerder.json('GET', `/api/dossiers/${id}`)).dossier.data.klussendienst_kosten;
+      const koop = await nieuwDossier('koop');
+      await afkoppelen(koop, ['ja', 'nee', 'ja']);
+      await bezoekAf(koop, true);
+      expect(await kosten(koop)).toBe(10000);
+      await bezoekAf(koop, false);
+      await zet(koop, 'klussendienst_kosten', 7500);
+      await bezoekAf(koop, true);
+      expect(await kosten(koop)).toBe(7500);
+      const huur = await nieuwDossier('huur');
+      await afkoppelen(huur, ['ja']);
+      await bezoekAf(huur, true);
+      expect(await kosten(huur)).toBe(5000);
+    });
+
+    it('leaves out a koopwoning without materials or a Klussendienst amount, and shows the Klussendienst alone without materials', async () => {
       const id = await nieuwDossier('koop');
-      expect(await plan(id)).not.toContain('Kosteninschatting');
-      await afkoppelen(id, ['ja']);
-      expect(totalen(await plan(id))).toEqual(['€ 0,00', '€ 60,50']);
+      expect(await plan(id)).not.toContain('qa-pdf-kosteninschatting');
+      await zet(id, 'klussendienst_kosten', 0);
+      expect(await plan(id)).not.toContain('qa-pdf-kosteninschatting');
+      await zet(id, 'klussendienst_kosten', 5000);
+      expect(totalen(await plan(id))).toEqual(['€ 60,50']);
     });
 
     it('names a listed material without a price, which the total leaves out', async () => {
@@ -417,6 +437,16 @@ describe('documents', () => {
       expect(await plan(id)).toContain('€ 90,00');
     });
 
+    it('flags the Plan as changed when the Klussendienst amount changes for a koopwoning only, whose Plan shows it', async () => {
+      for (const huurKoop of ['huur', 'koop'] as const) {
+        const { id } = await metMaterialen(huurKoop);
+        const { plan_gewijzigd_at: voor } = (await beheerder.json('GET', `/api/dossiers/${id}`)).dossier;
+        t.klok.verschuif(6e4);
+        const { plan_gewijzigd_at: na } = await zet(id, 'klussendienst_kosten', 7500);
+        expect(na > voor).toBe(huurKoop === 'koop');
+      }
+    });
+
     it('flags the Plan as changed when a price changes', async () => {
       const { id, m2 } = await metMaterialen('koop');
       const { plan_gewijzigd_at: voor } = (await beheerder.json('GET', `/api/dossiers/${id}`)).dossier;
@@ -427,10 +457,12 @@ describe('documents', () => {
 
     it('stays out of the Opleverrapport', async () => {
       const { id } = await metMaterialen('koop');
+      await zet(id, 'klussendienst_kosten', 5000);
       await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
       await beheerder.verzoek('GET', `/docs/dossiers/${id}/opleverrapport.pdf`);
       expect(t.pdfs.at(-1)).toContain('Gebruikte materialen');
-      expect(t.pdfs.at(-1)).not.toContain('Kosteninschatting');
+      expect(t.pdfs.at(-1)).not.toContain('qa-pdf-kosteninschatting');
+      expect(t.pdfs.at(-1)).not.toContain('Klussendienst');
     });
   });
 
@@ -457,10 +489,11 @@ describe('documents', () => {
     expect(zelf.status).toBe(409);
     expect((await zelf.json()).fout).toMatch(/niet voor de Klussendienst gekozen/);
     await mijlpaal(koop, 'klussendienst_gekozen');
+    await beheerder.json('PATCH', `/api/dossiers/${koop}`, { key: 'klussendienst_kosten', value: 7500 });
     const html = await (await beheerder.verzoek('GET', pad(koop))).text();
     expect(html).toContain('Klimaatadaptatie Deventer');
     expect(html).toContain('anna@example.org');
-    expect(html).toContain('qa-klussendienst');
+    expect(html).toMatch(/qa-klussendienst.*afgesproken in het Plan van Aanpak.*€ 75,00/);
     expect((await klusser.verzoek('GET', pad(koop))).status).toBe(403);
   });
 

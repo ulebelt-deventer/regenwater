@@ -93,6 +93,7 @@ function waardeTekst(key: string, v: Json): string {
   if ((key.startsWith('annotaties.') || key === 'kaart_annotaties') && Array.isArray(v)) return `${v.length} tekening${v.length === 1 ? '' : 'en'}`;
   if (key.endsWith('.prijs') && typeof v === 'number') return euro(v);
   const def = veldVoor(key);
+  if (def && def.veld.cent && typeof v === 'number') return euro(v);
   const opties = def && !def.anders ? def.veld.opties : undefined;
   const optie = (w: Json) => {
     const o = opties ? opties.find(([k]) => k === w) : undefined;
@@ -150,7 +151,7 @@ function samenvatting(item: AuditItem): JSX.Element {
   if (t === 'heropend') return <>Was gesloten: {s(p().reden)}</>;
   if (t === 'ijskast_in') return <>Tot {datum(s(p().tot))}: {s(p().reden)}</>;
   if (t === 'ijskast_uit') return <>Stond erin tot {datum(s(p().tot))}</>;
-  if (t === 'ijskast_voorbij') return <>Eigenaar gemaild</>;
+  if (t === 'ijskast_voorbij') return <>Eigenaar gewaarschuwd</>;
   if (t === 'opnieuw_versturen_niet_nodig') return <>Voor {s(p().ontvanger)}: {s(p().notitie)}</>;
   if (t === 'meldingen_verborgen') return <>{(p().meldingen as string[]).map((m) => `“${m}”`).join(' ')}</>;
   if (t === 'email_verstuurd' || t === 'email_mislukt' || t === 'handmatig_verstuurd') return mail();

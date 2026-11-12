@@ -39,6 +39,14 @@ export const NIEUWS: NieuwsDatum[] = [
           'Elk regenpijp-blok begint nu met Afkoppelen?. Kies je Nee, dan verdwijnt de rest van dat blok (Voert af van, Waterberging, Soort, Diameter, Regenton, Ondergrond, Waar en Hoe), ook uit de samenvatting en het Plan van Aanpak, en vraagt de Controle er niet meer om.',
         ],
       },
+      {
+        kop: 'Plan van Aanpak',
+        punten: [
+          'Onder de Materialenlijst vul je nu de Afgesproken kosten Klussendienst in, bij huur- en koopwoningen. Bij Bezoek afronden staat daar al € 50 per regenpijp die wordt afgekoppeld; pas het bedrag aan als je iets anders afspreekt. Het Plan van Aanpak van een huurwoning toont het bedrag niet.',
+          'Bij een koopwoning staat in de Materialenlijst van het Plan van Aanpak nu per materiaal de prijs en het bedrag, met daaronder Uitvoering door de Klussendienst en het totaal excl. en incl. btw. Zelf uitvoeren en Met de Klussendienst staan niet meer naast elkaar.',
+          'De Uitvoeringsspecificatie rekent voor de Klussendienst nu de Afgesproken kosten uit het Plan van Aanpak, niet meer € 50 per afgekoppelde regenpijp.',
+        ],
+      },
     ],
   },
   {

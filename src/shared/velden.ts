@@ -1,5 +1,5 @@
 import { CORPORATIES, DOORLAATBAARHEID } from './constants.ts';
-import { datum, datumTijd } from './datum.ts';
+import { datum, datumTijd, euro } from './datum.ts';
 import { getal, kaartItems } from './kaart.ts';
 import type { Dossier, Json } from './types.ts';
 
@@ -22,7 +22,7 @@ export interface Veld {
   opsomming?: boolean; // a textarea shown as "• " bullets, stored as plain lines without empty ones
   suggesties?: [string, string][]; // lines that links above an opsomming add
   anders?: boolean; // the last option is "Anders, namelijk:" with a write-in stored under `${key}_anders`
-  inPlan?: boolean;
+  inPlan?: boolean | ((d: Dossier) => boolean); // a change after sending marks the Plan as gewijzigd
   inOplever?: boolean;
   controle?: boolean; // the Controle text lists it while empty
   zichtbaar?: (d: Dossier, id: string | null) => boolean;
@@ -31,6 +31,7 @@ export interface Veld {
   kolom?: boolean; // stored as a real column, not in the JSON data
   min?: number;
   max?: number;
+  cent?: boolean; // a number in cents, entered and shown in euros
 }
 
 export interface FotoSlot {
@@ -115,6 +116,8 @@ export const VELDEN: Veld[] = [
   { key: 'materiaal.*.naam', label: 'Materiaal', type: 'text', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'materiaal.*.prijs', label: 'Prijs', type: 'number', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'materiaal.*.aantal', label: 'Aantal', type: 'number', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
+  // Prefilled at Bezoek afronden from klussendienstKosten; from then on the agreed amount, which the specificatie and, for koop, the Plan use.
+  { key: 'klussendienst_kosten', label: 'Afgesproken kosten Klussendienst', type: 'number', cent: true, pagina: 'plan', bewerkers: ['bezoeker'], inPlan: (d) => d.huur_koop === 'koop', controle: true, min: 0 },
   // Uitvoering
   { key: 'uitgevoerd', label: 'Wat is er uitgevoerd?', type: 'textarea', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true, hint: 'Beschrijf wat er gedaan is en wat er anders ging dan in het plan. Dit komt in het opleverrapport voor de bewoner en de woningcorporatie.' },
   { key: 'gebruikt', label: 'Gebruikte materialen', type: 'ids', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true },
@@ -228,7 +231,7 @@ export function veldTekst(d: Dossier, key: string): string | null {
     case 'checks':
       return optieLabel(v, d, key);
     case 'number':
-      return getal(w as number);
+      return v.cent ? euro(w as number) : getal(w as number);
     case 'date':
       return datum(w as string);
     case 'datetime':

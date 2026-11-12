@@ -296,10 +296,18 @@ export const MIGRATIES: string[] = [
     gebruiker_id INTEGER NOT NULL REFERENCES gebruikers(id),
     dossier_id INTEGER NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
     titel TEXT NOT NULL,
-    detail TEXT,
     created_at TEXT NOT NULL,
     gelezen_at TEXT
   );
   CREATE INDEX notificaties_gebruiker ON notificaties (gebruiker_id, gelezen_at);
+  `,
+  // The agreed klussendienst_kosten of a dossier past its Bezoek starts at € 50 per regenpijp on Afkoppelen: Ja.
+  `
+  UPDATE dossiers SET data = json_set(data, '$.klussendienst_kosten', 5000 * (
+    SELECT count(*) FROM json_each(dossiers.data, '$.kaart_annotaties') a
+    WHERE json_extract(a.value, '$.type') = 'regenpijp'
+      AND json_extract(dossiers.data, '$."regenpijp.' || json_extract(a.value, '$.id') || '.afkoppelen"') = 'ja'
+  ))
+  WHERE bezoek_afgerond_at IS NOT NULL AND json_type(data, '$.klussendienst_kosten') IS NULL;
   `,
 ];

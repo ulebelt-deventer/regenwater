@@ -41,6 +41,8 @@ $container-max-widths: (lg: 1200px);
 .label-klein { font-size: 90%; line-height: $line-height-base * $font-size-base; }
 // One line, cut off by fading out over its last 10px rather than an ellipsis, which would hide letters. Text that fits but reaches those 10px fades too.
 .label-afgekapt { white-space: nowrap; overflow: hidden; mask-image: linear-gradient(to right, #000 calc(100% - 10px), transparent); }
+// At most two lines, the second ending in an ellipsis when the text is longer. Wraps even where white-space is nowrap (eg a .dropdown-item).
+.regels-2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; white-space: normal; }
 .pre-wrap { white-space: pre-wrap; }
 .font-serif { font-family: Georgia, 'Times New Roman', serif; }
 // The label column of a read-only Regel: narrower on phones so the value keeps room.
@@ -162,6 +164,7 @@ $container-max-widths: (lg: 1200px);
 .topbar .dropdown-menu::before { top: -.5rem; border-bottom-color: var(--bs-dropdown-border-color); }
 .topbar .dropdown-menu::after { top: calc(-.5rem + 1px); border-bottom-color: var(--bs-dropdown-bg); }
 .bel .dropdown-menu { width: 22rem; }
+.bel .badge { --bs-badge-padding-x: .35em; --bs-badge-padding-y: .2em; --bs-badge-font-size: .6rem; }
 .bel-lijst { max-height: 70vh; overflow-y: auto; }
 // On a phone the bell's menu spans the screen, so its arrow would point past the bell.
 @include media-breakpoint-down(sm) {

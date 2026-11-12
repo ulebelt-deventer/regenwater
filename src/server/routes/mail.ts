@@ -117,7 +117,7 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
       sjabloon: def.key, aan, onderwerp: bericht.onderwerp, tekst: bericht.tekst, tag_problemen: ontbrekend.length > 0,
     });
     if (mislukt) {
-      dossierMelding(ctx, d, `E-mail niet afgeleverd: ${bericht.onderwerp} aan ${aan}`, `Foutmelding: ${mislukt}`);
+      dossierMelding(ctx, d, `E-mail niet afgeleverd aan ${aan}`);
       fout(502, `De e-mail aan ${aan} kon niet worden verstuurd. Controleer het adres en probeer het opnieuw.`);
     }
     return c.json({ dossier: laadDossier(ctx.db, d.id)! });

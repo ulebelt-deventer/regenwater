@@ -1,8 +1,8 @@
 import { For, type JSX, Show } from 'solid-js';
-import { BTW_PROCENT, DOORLAATBAARHEID, KLUSSENDIENST_PER_REGENPIJP_CENT } from '../../shared/constants.ts';
+import { BTW_PROCENT, DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { euro, kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, verdelingTekst, waterberging } from '../../shared/kaart.ts';
-import { btwOver, klussendienstKosten } from '../../shared/specificatie.ts';
+import { btwOver } from '../../shared/specificatie.ts';
 import { eigenaar, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
 import { BEOORDELINGEN, materiaalRijen, materiaalTotaal, opsommingRegels, nietOpRiool, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
@@ -36,51 +36,55 @@ function Materialen(props: { doc: Doc; lijst: 'materialen' | 'gebruikt' }): JSX.
   );
 }
 
-// Only for a koopwoning: a huurwoning's plan carries no prices. The bewoner chooses between doing the work themselves
-// and the Klussendienst, so each gets its own column; without a regenpijp to afkoppelen there is no Klussendienst column.
-function Kosteninschatting(props: { doc: Doc }): JSX.Element {
+// Only for a koopwoning: a huurwoning's plan carries no prices. The Klussendienst row is the amount agreed in the Plan, not a calculation.
+function MaterialenMetPrijzen(props: { doc: Doc }): JSX.Element {
   const rijen = () => getoondeMaterialen(props.doc.d, 'materialen');
   const zonderPrijs = () => rijen().filter((r) => r.prijs === null).map((r) => r.naam.trim());
-  const materiaal = () => materiaalTotaal(rijen());
-  const klussendienst = () => klussendienstKosten(props.doc.d);
-  const kolommen = () => {
-    const zelf = { kop: 'Zelf uitvoeren', klussendienst: null, excl: materiaal() };
-    const metKlussendienst = { kop: 'Met de Klussendienst', klussendienst: klussendienst().bedrag, excl: materiaal() + klussendienst().bedrag };
-    return klussendienst().pijpen > 0 ? [zelf, metKlussendienst] : [zelf];
+  const klussendienst = () => {
+    const k = props.doc.d.data.klussendienst_kosten;
+    return typeof k === 'number' ? k : null;
   };
+  const excl = () => materiaalTotaal(rijen()) + (klussendienst() ?? 0);
   return (
-    <Show when={props.doc.d.huur_koop === 'koop' && (rijen().length > 0 || klussendienst().pijpen > 0)}>
+    <Show when={rijen().length > 0 || (klussendienst() ?? 0) > 0} fallback={<Show when={props.doc.concept}><p><Leeg doc={props.doc} /></p></Show>}>
       <div class="qa-pdf-kosteninschatting">
-        <h3>Kosteninschatting</h3>
         <table class="tabel">
           <thead>
             <tr>
-              <th />
-              <For each={kolommen()}>{(k) => <th class="getal">{k.kop}</th>}</For>
+              <th>Materiaal</th>
+              <th class="getal">Aantal</th>
+              <th class="getal">Prijs excl. btw</th>
+              <th class="getal">Bedrag</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Materiaal</td>
-              <For each={kolommen()}>{() => <td class="getal">{euro(materiaal())}</td>}</For>
-            </tr>
-            <Show when={klussendienst().pijpen > 0}>
+            <For each={rijen()}>
+              {(r) => (
+                <tr>
+                  <td>{r.naam}</td>
+                  <td class="getal">{getal(r.aantal!)}</td>
+                  <td class="getal">{r.prijs === null ? '--' : euro(r.prijs)}</td>
+                  <td class="getal">{r.prijs === null ? '--' : euro(Math.round(r.prijs * r.aantal!))}</td>
+                </tr>
+              )}
+            </For>
+            <Show when={klussendienst() !== 0 && (klussendienst() !== null || props.doc.concept)}>
               <tr class="qa-pdf-klussendienst">
-                <td>{`Klussendienst: ${klussendienst().pijpen} ${klussendienst().pijpen === 1 ? 'regenpijp' : 'regenpijpen'} afkoppelen × ${euro(KLUSSENDIENST_PER_REGENPIJP_CENT)}`}</td>
-                <For each={kolommen()}>{(k) => <td class="getal">{k.klussendienst === null ? '--' : euro(k.klussendienst)}</td>}</For>
+                <td colSpan={3}>Uitvoering door de Klussendienst</td>
+                <td class="getal">{klussendienst() === null ? <Leeg doc={props.doc} /> : euro(klussendienst()!)}</td>
               </tr>
             </Show>
             <tr>
-              <td>Totaal excl. btw</td>
-              <For each={kolommen()}>{(k) => <td class="getal">{euro(k.excl)}</td>}</For>
+              <td colSpan={3}>Totaal excl. btw</td>
+              <td class="getal">{euro(excl())}</td>
             </tr>
             <tr>
-              <td>{`btw ${BTW_PROCENT}%`}</td>
-              <For each={kolommen()}>{(k) => <td class="getal">{euro(btwOver(k.excl))}</td>}</For>
+              <td colSpan={3}>{`btw ${BTW_PROCENT}%`}</td>
+              <td class="getal">{euro(btwOver(excl()))}</td>
             </tr>
             <tr>
-              <th>Totaal incl. btw</th>
-              <For each={kolommen()}>{(k) => <th class="getal qa-pdf-totaal-incl">{euro(k.excl + btwOver(k.excl))}</th>}</For>
+              <th colSpan={3}>Totaal incl. btw</th>
+              <th class="getal qa-pdf-totaal-incl">{euro(excl() + btwOver(excl()))}</th>
             </tr>
           </tbody>
         </table>
@@ -442,8 +446,9 @@ export function Plan(props: { doc: Doc }): JSX.Element {
       <Bodemgegevens doc={props.doc} />
       <PlanVanAanpak doc={props.doc} />
       <h2>5. Materialenlijst</h2>
-      <Materialen doc={props.doc} lijst="materialen" />
-      <Kosteninschatting doc={props.doc} />
+      <Show when={props.doc.d.huur_koop === 'koop'} fallback={<Materialen doc={props.doc} lijst="materialen" />}>
+        <MaterialenMetPrijzen doc={props.doc} />
+      </Show>
       <Bijlage doc={props.doc} />
     </>
   );

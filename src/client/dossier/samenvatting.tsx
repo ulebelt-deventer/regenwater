@@ -199,6 +199,7 @@ export function PlanSamenvatting() {
       <VeldRegel k="beoordeling_toelichting" label="Toelichting" />
       <VeldRegel k="voorstel" label="Voorstel" />
       <MateriaalRegel lijst="materialen" label="Materialen" soort="geschat" />
+      <VeldRegel k="klussendienst_kosten" label="Klussendienst" />
     </>
   );
 }

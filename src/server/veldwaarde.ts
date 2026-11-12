@@ -33,7 +33,7 @@ export function controleerWaarde(veld: Veld, anders: boolean, v: Json): Json {
       if (typeof v !== 'string') ongeldig();
       return v.trim() === '' ? null : v;
     case 'number':
-      if (typeof v !== 'number' || !Number.isFinite(v)) ongeldig();
+      if (typeof v !== 'number' || !Number.isFinite(v) || (veld.cent && !Number.isInteger(v))) ongeldig();
       if ((veld.min !== undefined && v < veld.min) || (veld.max !== undefined && v > veld.max)) {
         fout(400, `${veld.label} moet tussen ${veld.min ?? '-∞'} en ${veld.max ?? '∞'} liggen.`);
       }

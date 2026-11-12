@@ -1,5 +1,6 @@
 // Dossier in ijskast doen: the routes, the default list, and the one melding for the eigenaar on the day.
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { Notificaties } from '../shared/types.ts';
 import { ijskastWekker } from './ijskast.ts';
 import { Klant, type TestApp, maakGebruiker, nieuwDossier, testApp } from './testapp.ts';
 
@@ -21,7 +22,7 @@ beforeEach(async () => {
 
 const inIjskast = (tot = '2026-03-10', reden = 'Bewoner verbouwt eerst', status = 200) => bea.json('POST', `/api/dossiers/${id}/ijskast`, { tot, reden }, status);
 const lijstIds = async (q = '') => (await bea.json<{ rijen: { id: number; status: string }[] }>('GET', `/api/dossiers${q}`)).rijen;
-const meldingen = async () => (await bea.json<{ items: { dossier_id: number; titel: string; detail: string | null }[] }>('GET', '/api/notificaties')).items;
+const meldingen = async () => (await bea.json<Notificaties>('GET', '/api/notificaties')).items;
 
 describe('Dossier in ijskast doen', () => {
   it('stores the reden and date, leaves the dossier out of the default list and shows it with the ijskast filter', async () => {
@@ -66,7 +67,7 @@ describe('the ijskast wekker', () => {
     t.klok.zet(new Date('2026-03-10T07:00:00.000Z'));
     expect(ijskastWekker(t.ctx)).toBe(1);
     expect(ijskastWekker(t.ctx)).toBe(0);
-    expect(await meldingen()).toEqual([{ dossier_id: id, titel: 'Uit de ijskast', detail: 'In de ijskast gedaan op 2 maart 2026 door Bea Beheer, met als reden: Bewoner verbouwt eerst', adres: expect.any(String), id: expect.any(Number), created_at: expect.any(String), gelezen: false }]);
+    expect(await meldingen()).toEqual([{ dossier_id: id, titel: 'Uit de ijskast: Bewoner verbouwt eerst', adres: expect.any(String), id: expect.any(Number), created_at: expect.any(String), gelezen: false }]);
     expect(t.mailer.verstuurd).toEqual([]);
     const { items } = await bea.json<{ items: { type: string }[] }>('GET', `/api/dossiers/${id}/activiteit`);
     expect(items.map((i) => i.type).slice(0, 2)).toEqual(['ijskast_voorbij', 'ijskast_in']);
@@ -88,6 +89,6 @@ describe('the ijskast wekker', () => {
     expect(ijskastWekker(t.ctx)).toBe(0);
     t.klok.zet(new Date('2026-03-20T09:00:00.000Z'));
     expect(ijskastWekker(t.ctx)).toBe(1);
-    expect((await meldingen()).map((m) => m.detail)).toEqual([expect.stringContaining('Nog een week')]);
+    expect((await meldingen()).map((m) => m.titel)).toEqual(['Uit de ijskast: Nog een week']);
   });
 });

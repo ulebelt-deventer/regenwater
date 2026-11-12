@@ -1,5 +1,8 @@
 // Plan van Aanpak sub-page (bezoeker after the bezoek, then admin during review): what we'll do.
 import { Show } from 'solid-js';
+import { KLUSSENDIENST_PER_REGENPIJP_CENT } from '../../shared/constants.ts';
+import { euro } from '../../shared/datum.ts';
+import { klussendienstKosten } from '../../shared/specificatie.ts';
 import { MijlpaalRegel } from './acties.tsx';
 import { Controle, afronden } from './bezoek.tsx';
 import { TerugLink, useNaarSectie } from './pagina.tsx';
@@ -12,6 +15,10 @@ export function Plan() {
   const toelichtingNodig = () => {
     const b = s.d.data.beoordeling;
     return typeof b === 'string' && b !== 'uitvoerbaar' && !s.d.data.beoordeling_toelichting;
+  };
+  const klussendienstHint = () => {
+    const k = klussendienstKosten(s.d);
+    return `Excl. btw. Reken ongeveer ${euro(KLUSSENDIENST_PER_REGENPIJP_CENT)} per regenpijp die wordt afgekoppeld; hier ${k.pijpen} × ${euro(KLUSSENDIENST_PER_REGENPIJP_CENT)} = ${euro(k.bedrag)}.`;
   };
 
   return (
@@ -32,6 +39,7 @@ export function Plan() {
         <VeldInvoer k="voorstel" />
 
         <MateriaalTabel lijst="materialen" />
+        <VeldInvoer k="klussendienst_kosten" hint={klussendienstHint()} />
 
         <Controle s={s} pagina="plan" />
         <MijlpaalRegel mijlpaal="klaar_voor_controle" label="Klaar voor controle" />

@@ -234,3 +234,28 @@ describe('the dossier eigenaar', () => {
     expect(db.prepare('SELECT id, eigenaar_id FROM dossiers ORDER BY id').all()).toEqual([{ id: 1, eigenaar_id: 1 }, { id: 2, eigenaar_id: 2 }]);
   });
 });
+
+describe('the agreed klussendienst_kosten', () => {
+  it('sets € 50 per afgekoppelde regenpijp on huur and koop dossiers past their Bezoek, and leaves earlier dossiers and set amounts alone', () => {
+    const versie = MIGRATIES.findIndex((m) => m.includes("'$.klussendienst_kosten'"));
+    expect(versie).toBeGreaterThan(0);
+    const db = dbTot(versie);
+    const T = '2026-03-02T10:00:00.000Z';
+    db.prepare("INSERT INTO gebruikers (id, naam, email, rol, created_at) VALUES (1, 'Anna', 'anna@example.org', 'beheerder', ?)").run(T);
+    const pijpen = {
+      kaart_annotaties: [{ id: 'r1', type: 'regenpijp' }, { id: 'r2', type: 'regenpijp' }, { id: 'r3', type: 'regenpijp' }, { id: 'd1', type: 'dak' }],
+      'regenpijp.r1.afkoppelen': 'ja', 'regenpijp.r2.afkoppelen': 'ja', 'regenpijp.r3.afkoppelen': 'nee', 'dak.d1.afkoppelen': 'ja',
+    };
+    const dossier = db.prepare('INSERT INTO dossiers (id, created_at, created_by, huur_koop, bezoek_afgerond_at, data) VALUES (?, ?, 1, ?, ?, ?)');
+    dossier.run(1, T, 'koop', T, JSON.stringify(pijpen));
+    dossier.run(2, T, 'koop', T, '{}');
+    dossier.run(3, T, 'huur', T, JSON.stringify(pijpen));
+    dossier.run(4, T, 'koop', null, JSON.stringify(pijpen));
+    dossier.run(5, T, 'koop', T, JSON.stringify({ ...pijpen, klussendienst_kosten: 12345 }));
+
+    migreer(db);
+
+    const kosten = db.prepare("SELECT json_extract(data, '$.klussendienst_kosten') FROM dossiers ORDER BY id").pluck().all();
+    expect(kosten).toEqual([10000, 0, 10000, null, 12345]);
+  });
+});

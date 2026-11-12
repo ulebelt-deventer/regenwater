@@ -16,9 +16,9 @@ export async function feedbackMail(ctx: Ctx, onderwerp: string, tekst: string): 
   }
 }
 
-// An in-app melding under the bell for the dossier's eigenaar. The address is not part of the titel: the bell shows the dossier's current address.
-export function dossierMelding(ctx: Ctx, d: Dossier, titel: string, detail: string | null): void {
-  ctx.db.prepare('INSERT INTO notificaties (gebruiker_id, dossier_id, titel, detail, created_at) VALUES (?, ?, ?, ?, ?)').run(d.eigenaar_id, d.id, titel, detail, ctx.klok.iso());
+// An in-app melding under the bell for the dossier's eigenaar. The bell shows "{current address}: {titel}" on at most two lines, cut off when longer, so the titel leads with what happened; the details are on the dossier.
+export function dossierMelding(ctx: Ctx, d: Dossier, titel: string): void {
+  ctx.db.prepare('INSERT INTO notificaties (gebruiker_id, dossier_id, titel, created_at) VALUES (?, ?, ?, ?)').run(d.eigenaar_id, d.id, titel, ctx.klok.iso());
 }
 
 export function dossierLink(ctx: Ctx, id: number): string {

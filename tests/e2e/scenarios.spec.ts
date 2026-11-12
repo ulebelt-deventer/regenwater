@@ -134,6 +134,12 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await expect(page.locator(`table .qa-dossier-${id} .qa-opdracht`)).toHaveText('Bezoek');
   await expect(page.locator(`table .qa-dossier-${id} .qa-opdracht-aan-zet`)).toHaveCount(1);
   await bezoek(page, id);
+  // No regenpijp is afgekoppeld, so the agreed amount starts at € 0 and is entered in euros.
+  await page.goto(`/dossiers/${id}/plan`);
+  const kosten = veld(page, 'klussendienst_kosten').locator('.qa-invoer');
+  await expect(kosten).toHaveValue('0');
+  await kosten.fill('125.5');
+  await opslagKlaar(page);
   await plan(page, id);
   expect((await emails(page)).map((m) => m.aan)).not.toContain(BEHEERDER.email);
   await page.goto(`/dossiers/${id}/plan`);
@@ -153,6 +159,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   expect(await laatsteMail(page)).toMatchObject({ aan: 'bea@example.org', bijlagen: [PLAN_PDF] });
   const pdf = await laatsteDocument(page);
   expect(pdf).toContain('Woningeigenaar: Bewoner (koopwoning)');
+  expect(pdf).toMatch(/Uitvoering door de Klussendienst\s*€ 125,50/);
   await status(page, 'Klussendienst of zelf? (koop)');
   await page.locator('.qa-klussendienst').click();
   await status(page, 'Uitvoerder toewijzen');

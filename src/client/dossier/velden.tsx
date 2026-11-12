@@ -114,7 +114,7 @@ function Invoer(props: { k: string; veld: Veld; opties: [string, string][] | und
         <textarea class="form-control qa-invoer" rows={props.veld.rijen ?? 3} disabled={props.uit} value={tekst(w())} onInput={(e) => zetTekst(e.currentTarget.value)} />
       </Match>
       <Match when={props.veld.type === 'number'}>
-        <GetalInvoer waarde={w()} min={props.veld.min} max={props.veld.max} uit={props.uit} onZet={zet} class={props.breed ? '' : undefined} />
+        <GetalInvoer waarde={w()} min={props.veld.min} max={props.veld.max} schaal={props.veld.cent ? 100 : 1} uit={props.uit} onZet={(n) => zet(n !== null && props.veld.cent ? Math.round(n) : n)} class={props.breed ? '' : undefined} />
       </Match>
       <Match when={props.veld.type === 'radio' && props.veld.menu}>
         <div class="d-sm-flex align-items-center gap-2">

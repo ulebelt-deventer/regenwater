@@ -15,7 +15,7 @@ export interface SpecificatieRegel {
 
 export interface Specificatie {
   regels: SpecificatieRegel[];
-  klussendienst: { pijpen: number; bedrag: number };
+  klussendienst: { regel: string; bedrag: number };
   subtotaal: number;
   btw: number;
   totaal: number;
@@ -41,15 +41,16 @@ export function specificatie(d: Dossier): Specificatie {
       if (r.prijs === null) waarschuwingen.push(`${naam} heeft geen prijs; telt niet mee in het totaal.`);
       return { naam, aantal: r.aantal!, prijs: r.prijs, bedrag: r.prijs === null ? null : Math.round(r.prijs * r.aantal!) };
     });
-  // The Klussendienst counts for huur and koop alike.
-  const klussendienst = klussendienstKosten(d);
-  if (klussendienst.pijpen === 0) waarschuwingen.push('Geen enkele regenpijp staat op "Afkoppelen: Ja" bij het Bezoek, dus de Klussendienst telt als € 0.');
+  // The Klussendienst counts for huur and koop alike, at the amount agreed in the Plan.
+  const k = d.data.klussendienst_kosten;
+  if (typeof k !== 'number') waarschuwingen.push('Bij het Plan van Aanpak zijn geen afgesproken kosten voor de Klussendienst ingevuld, dus de Klussendienst telt als € 0.');
+  const klussendienst = { regel: 'Klussendienst (afgesproken in het Plan van Aanpak)', bedrag: typeof k === 'number' ? k : 0 };
   const subtotaal = regels.reduce((s, r) => s + (r.bedrag ?? 0), 0) + klussendienst.bedrag;
   const btw = btwOver(subtotaal);
   return { regels, klussendienst, subtotaal, btw, totaal: subtotaal + btw, waarschuwingen };
 }
 
-// The Plan's Kosteninschatting uses this too, so both documents name the same Klussendienst price.
+// The rate times the regenpijpen on Afkoppelen: Ja: the suggestion that prefills the agreed klussendienst_kosten.
 export function klussendienstKosten(d: Dossier): { pijpen: number; bedrag: number } {
   const pijpen = kaartItems(d).regenpijpen.filter((p) => str(d, `regenpijp.${p.id}.afkoppelen`) === 'ja').length;
   return { pijpen, bedrag: pijpen * KLUSSENDIENST_PER_REGENPIJP_CENT };
@@ -71,10 +72,6 @@ export function specificatieKop(d: Dossier, uitvoerder: string | null): [string,
   ];
 }
 
-export function klussendienstRegel(k: { pijpen: number }): string {
-  return `Klussendienst: ${k.pijpen} ${k.pijpen === 1 ? 'regenpijp' : 'regenpijpen'} afgekoppeld × ${euro(KLUSSENDIENST_PER_REGENPIJP_CENT)}`;
-}
-
 // Plain text to paste into an email to the administratie. No column alignment: a proportional font would undo it.
 export function specificatieTekst(d: Dossier, uitvoerder: string | null): string {
   const s = specificatie(d);
@@ -82,7 +79,7 @@ export function specificatieTekst(d: Dossier, uitvoerder: string | null): string
   const blokken = [
     ['Uitvoeringsspecificatie'],
     specificatieKop(d, uitvoerder).map(([l, v]) => `${l}: ${v ?? '--'}`),
-    [...s.regels.map(regel), `${klussendienstRegel(s.klussendienst)}: ${euro(s.klussendienst.bedrag)}`],
+    [...s.regels.map(regel), `${s.klussendienst.regel}: ${euro(s.klussendienst.bedrag)}`],
     [`Subtotaal: ${euro(s.subtotaal)}`, `btw ${BTW_PROCENT}%: ${euro(s.btw)}`, `Totaal: ${euro(s.totaal)}`],
     s.waarschuwingen.map((w) => `LET OP: ${w}`),
   ];

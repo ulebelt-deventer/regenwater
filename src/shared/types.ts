@@ -186,12 +186,13 @@ export interface Notificatie {
   dossier_id: number;
   adres: string;
   titel: string;
-  detail: string | null;
   created_at: string;
   gelezen: boolean;
 }
 
+// The items are the most recent only; the counts cover all of the beheerder's meldingen.
 export interface Notificaties {
   ongelezen: number;
+  totaal: number;
   items: Notificatie[];
 }
