@@ -564,9 +564,10 @@ describe('beheer', () => {
     expect(sjablonen.find((s: { key: string }) => s.key === 'subsidie_huur').tekst).toBe('Beste {bewonr}');
   });
 
-  it('mails feedback to every feedback recipient, logging each in the audit trail, and lists it for admins', async () => {
+  it('mails feedback to every feedback recipient with no Reply-To, logging each in the audit trail, and lists it for admins', async () => {
     await klusser.json('POST', '/api/feedback', { scherm: '/dossiers/1', tekst: 'Knop te klein' }, 201);
     expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);
+    expect(t.mailer.verstuurd[0].replyTo).toBeUndefined();
     expect(t.mailer.verstuurd[0].tekst).toContain('Knop te klein');
     const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
     expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);

@@ -1,7 +1,7 @@
 // The eight scenarios from spec.md: one dossier each, walked through the UI, checking status, aandacht and the documents after each action.
 import { type Page, expect, test } from '@playwright/test';
 import {
-  ADRES, BEHEERDER, KLUSSER, afspraak, bezoek, emails, geenAandacht, laatsteDocument, login, mail, naarDossier, nieuwDossier, opslagKlaar,
+  ADRES, BEHEERDER, CORPORATIE_AAN, KLUSSER, afspraak, bezoek, corporatieMail, emails, geenAandacht, laatsteDocument, login, mail, naarDossier, nieuwDossier, opslagKlaar,
   plan, planTekst, sluit, sluitModal, start, status, subsidieMail, tekst, uitvoering, veld, verschuifDagen, verstuurMail, wijsToe,
 } from './hulp.ts';
 import { STANDAARD_MATERIALEN } from '../../src/shared/constants.ts';
@@ -68,9 +68,12 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
   expect(await laatsteMail(page)).toMatchObject({ aan: 'bea@example.org', bijlagen: [PLAN_PDF] });
   await status(page, 'Plan controleren & versturen');
   await page.locator('.qa-mail-plan_corporatie').click();
+  await expect(page.locator('.qa-mail .qa-mail-onderwerp')).not.toHaveValue('');
+  await expect(page.locator('.qa-mail .qa-mail-aan')).toHaveValue('');
+  await page.locator('.qa-mail .qa-mail-aan').fill(CORPORATIE_AAN);
   await page.locator('.qa-mail .qa-mail-cc').fill('wijkbeheer@ieder1.nl');
   await verstuurMail(page);
-  expect(await laatsteMail(page)).toMatchObject({ aan: 'regenwater@ieder1.nl', cc: `${BEHEERDER.email}, wijkbeheer@ieder1.nl`, onderwerp: `Verzoek toestemming afkoppeling ${ADRES}`, bijlagen: [PLAN_PDF] });
+  expect(await laatsteMail(page)).toMatchObject({ aan: CORPORATIE_AAN, cc: `${BEHEERDER.email}, wijkbeheer@ieder1.nl`, onderwerp: `Verzoek toestemming afkoppeling ${ADRES}`, bijlagen: [PLAN_PDF] });
   const pdf = await laatsteDocument(page);
   expect(pdf).toContain('Plan van Aanpak regenwater');
   expect(pdf).toContain('Bewoner: Bea Bewoner');
@@ -80,7 +83,7 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
   expect(pdf).toContain('Regenton plaatsen bij pijp A');
   expect(pdf).toContain('Regenton 210 liter');
   expect(pdf).not.toContain('Regentonstandaard');
-  await status(page, 'Plan goedkeuren (huur)');
+  await status(page, 'Plan goedkeuren');
   await expect(page.locator('.qa-sectie-versturen .qa-verstuurd')).toHaveCount(2);
 
   await page.locator('.qa-akkoord').click();
@@ -101,8 +104,8 @@ test('huur: inschrijving, bezoek, plan, akkoord, uitvoering en opleverrapport to
 
   await naarDossier(page, id);
   await status(page, 'Opleverrapport versturen');
-  await mail(page, 'oplever_corporatie');
-  expect(await laatsteMail(page)).toMatchObject({ aan: 'regenwater@ieder1.nl', bijlagen: [OPLEVER_PDF] });
+  await corporatieMail(page, 'oplever_corporatie');
+  expect(await laatsteMail(page)).toMatchObject({ aan: CORPORATIE_AAN, bijlagen: [OPLEVER_PDF] });
   const rapport = await laatsteDocument(page);
   expect(rapport).toContain('Opleverrapport regenwater');
   expect(rapport).toContain(`Uitgevoerd door: ${KLUSSER.naam}`);
@@ -162,7 +165,7 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   const pdf = await laatsteDocument(page);
   expect(pdf).toContain('Woningeigenaar: Bewoner (koopwoning)');
   expect(pdf).toMatch(/Uitvoering door de Klussendienst\s*€ 125,50/);
-  await status(page, 'Klussendienst of zelf? (koop)');
+  await status(page, 'Plan goedkeuren');
   await page.locator('.qa-klussendienst').click();
   await status(page, 'Uitvoerder toewijzen');
 
@@ -237,7 +240,7 @@ test('koop, bewoner doet het zelf: gesloten na het plan', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await totPlanKlaar(page, klusserId, 'koop');
   await mail(page, 'plan_bewoner_koop');
-  await status(page, 'Klussendienst of zelf? (koop)');
+  await status(page, 'Plan goedkeuren');
   await expect(page.locator('.qa-klussendienst.btn-success')).not.toContainText('✅');
   await expect(page.locator('.qa-zelf.btn-danger')).toBeVisible();
   await page.locator('.qa-zelf').click();
@@ -272,8 +275,8 @@ test('niet subsidiabel: gescheiden riool, subsidiemail en gesloten bij de inschr
 test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw versturen herstart de wachttijd, ijskast, dan akkoord', async ({ page }) => {
   const { klusserId } = await start(page);
   const id = await totPlanKlaar(page, klusserId, 'huur');
-  await mail(page, 'plan_corporatie');
-  await status(page, 'Plan goedkeuren (huur)');
+  await corporatieMail(page, 'plan_corporatie');
+  await status(page, 'Plan goedkeuren');
   await geenAandacht(page);
 
   await page.goto(`/dossiers/${id}/plan`);
@@ -293,14 +296,14 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
   await naarDossier(page, id);
   await verschuifDagen(page, 10);
   await expect(page.locator('.qa-aandacht')).not.toContainText('reageert al');
-  await mail(page, 'plan_corporatie');
+  await corporatieMail(page, 'plan_corporatie');
   await geenAandacht(page);
   await expect(page.locator('.qa-sectie-versturen .qa-verstuurd')).toContainText('12 maart 2026');
   expect(await laatsteDocument(page)).toContain('Regenton en wadi in de achtertuin');
 
   // 20 days after the first send but 10 after the resend: still quiet.
   await verschuifDagen(page, 10);
-  await status(page, 'Plan goedkeuren (huur)');
+  await status(page, 'Plan goedkeuren');
   await geenAandacht(page);
   await verschuifDagen(page, 5);
   await expect(page.locator('.qa-aandacht')).toContainText('Ieder1 reageert al 15 dagen niet op het plan. Nabellen?');
@@ -328,8 +331,8 @@ test('woningcorporatie vraagt wijzigingen: Plan gewijzigd met audit, opnieuw ver
 test('woningcorporatie wijst af: gesloten als Plan afgewezen', async ({ page }) => {
   const { klusserId } = await start(page);
   await totPlanKlaar(page, klusserId, 'huur');
-  await mail(page, 'plan_corporatie');
-  await status(page, 'Plan goedkeuren (huur)');
+  await corporatieMail(page, 'plan_corporatie');
+  await status(page, 'Plan goedkeuren');
   // Two equal buttons, without a ✅ that reads as already done.
   await expect(page.locator('.qa-akkoord.btn-success')).not.toContainText('✅');
   await expect(page.locator('.qa-afgewezen.btn-danger')).toBeVisible();
@@ -398,10 +401,10 @@ test('papieren bezoek: bezoeker toegewezen zonder mail, PDF met Schouw door en A
   expect(pdf).toContain('Woningeigenaar: Rentree');
 
   const voor = (await emails(page)).length;
-  await mail(page, 'plan_corporatie', true);
+  await corporatieMail(page, 'plan_corporatie', true);
   expect(await emails(page)).toHaveLength(voor);
   await expect(page.locator('.qa-sectie-versturen .qa-verstuurd')).toContainText('Handmatig verstuurd op 2 maart 2026');
-  await status(page, 'Plan goedkeuren (huur)');
+  await status(page, 'Plan goedkeuren');
   expect((await emails(page)).some((m) => m.aan === KLUSSER.email)).toBe(false);
   await geenAandacht(page);
 });

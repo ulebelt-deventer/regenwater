@@ -87,6 +87,17 @@ describe('MAILGUN_REGIO', () => {
     info.mockRestore();
   });
 
+  it('sets the Reply-To header only when the mail has one', async () => {
+    const forms: FormData[] = [];
+    vi.stubGlobal('fetch', (_url: string, init: { body: FormData }) => {
+      forms.push(init.body);
+      return Promise.resolve(new Response('{}'));
+    });
+    await stuur();
+    await new MailgunMailer(leesConfig()).verstuur({ aan: 'a@example.org', onderwerp: 'O', tekst: 'T' });
+    expect(forms.map((f) => f.get('h:Reply-To'))).toEqual(['r@example.org', null]);
+  });
+
   it('refuses to start on an unknown region', () => {
     vi.stubEnv('MAILGUN_REGIO', 'US');
     expect(() => leesConfig()).toThrow('Onbekende MAILGUN_REGIO US');

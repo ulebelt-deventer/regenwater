@@ -88,6 +88,15 @@ describe('tags', () => {
   });
 });
 
+describe('Reply-To', () => {
+  it("is the dossier's eigenaar, also when another admin sends the mail, who still gets the CC", async () => {
+    const annaId = maakGebruiker(t, 'Anna Admin', 'beheerder');
+    await bea.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: annaId });
+    await stuur('subsidie_huur', {});
+    expect(t.mailer.verstuurd[0]).toMatchObject({ replyTo: 'anna.admin@example.org', cc: 'bea.beheer@example.org' });
+  });
+});
+
 describe('extra CC', () => {
   it('copies an extra address on both woningcorporatie mails, beside the sender, and records it', async () => {
     const { dossier } = await stuur('plan_corporatie', { aan: 'ieder1@example.org', cc: ' wijk@example.org ' });

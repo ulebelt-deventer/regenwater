@@ -64,7 +64,7 @@ describe('huidigeStap', () => {
   it('skips the corporatie step for a koopwoning and waits for the bewoner instead', () => {
     const d = naInschrijving('koop', { bezoeker_id: 2, bezoeker_toegewezen_at: T, afspraak: '2026-03-10T14:00', bezoek_afgerond_at: T, klaar_voor_controle_at: T });
     d.verzendingen.push(verzending('plan_bewoner_koop', T));
-    expect(status(d)).toMatchObject({ label: 'Klussendienst of zelf? (koop)', ligtBij: 'bewoner' });
+    expect(status(d)).toMatchObject({ stap: { key: 'keuze_koop' }, label: 'Plan goedkeuren', ligtBij: 'bewoner' });
     d.klussendienst_gekozen_at = T;
     expect(huidigeStap(d).key).toBe('uitvoerder');
   });

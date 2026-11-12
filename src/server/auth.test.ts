@@ -21,9 +21,10 @@ const geblokkeerd = () =>
   (t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'login_geblokkeerd' ORDER BY id").all() as { payload: string }[]).map((r) => JSON.parse(r.payload) as Record<string, string>);
 
 describe('requesting a code', () => {
-  it('mails a six-digit code and a link with the 15-minute notice', async () => {
+  it('mails a six-digit code and a link with the 15-minute notice, with no Reply-To', async () => {
     await new Klant(t).json('POST', '/api/auth/request', { email: KEES });
     const [m] = mailsAan(KEES);
+    expect(m.replyTo).toBeUndefined();
     expect(m.onderwerp).toMatch(/^Je inlogcode voor Ulebelt Regenwater: \d{6}$/);
     expect(m.tekst).toContain('https://regenton.test/inloggen/link#');
     expect(m.tekst).toContain('15 minuten geldig');

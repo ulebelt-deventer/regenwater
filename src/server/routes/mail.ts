@@ -10,7 +10,7 @@ import { bijlageNaam, bijlagePdf } from '../documenten/index.tsx';
 import { log } from '../log.ts';
 import { EMAIL_RE, tekstNaarHtml } from '../mail.ts';
 import { dossierLink, dossierMelding } from '../meldingen.ts';
-import { laadDossier } from '../repo.ts';
+import { gebruiker, laadDossier } from '../repo.ts';
 import { haalDossier } from './dossiers.ts';
 
 export function sjabloonTekst(ctx: Ctx, key: string): { onderwerp: string; tekst: string } {
@@ -108,7 +108,7 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
     const waarden = tagWaarden(ctx, d, afzender);
     // A klusser's dossier link carries their address in the href only, so a logged-out tap prefills the login form.
     const html = def.ontvanger === 'bezoeker' || def.ontvanger === 'uitvoerder' ? tekstNaarHtml(tekst, { [waarden.link]: `${waarden.link}?email=${encodeURIComponent(aan)}` }) : undefined;
-    const bericht = { aan, cc: extraCc ? `${afzender.email}, ${extraCc}` : afzender.email, replyTo: afzender.email, onderwerp, tekst, html };
+    const bericht = { aan, cc: extraCc ? `${afzender.email}, ${extraCc}` : afzender.email, replyTo: gebruiker(ctx.db, d.eigenaar_id)!.email, onderwerp, tekst, html };
     const ontbrekend = ontbrekendeWaarden(def, waarden, onderwerp, tekst);
     const nu = ctx.klok.iso();
     const opslaan = ctx.db.prepare(

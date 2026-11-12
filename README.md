@@ -54,5 +54,6 @@ npm test            # both
 
 - `docs/spec.md`: UI and workflow spec, page by page.
 - `docs/architecture.md`: stack, storage, e-mail, photos, PDFs, monitoring and backups.
-- `docs/TODO.md`, `docs/questions.md`: open work and open questions.
+- `docs/berekening.md`: how the waterberging per regenpijp is calculated.
+- `docs/privacy.md`: personal data, processors and AVG compliance.
 - `devops/README.md`: VPS provisioning, deploys and operations.

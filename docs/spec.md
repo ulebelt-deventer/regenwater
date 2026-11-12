@@ -386,8 +386,8 @@
     | 4 | Klusser | Bezoek uitvoeren | "Bezoek afronden" not yet tapped |
     | 5 | Klusser | Plan van Aanpak afronden | "Klaar voor controle" not yet tapped |
     | 6 | Beheerder | Plan controleren & versturen | Plan not yet sent (to the corporatie if huur, to the bewoner if koop) and no besluit recorded (approval, rejection or the bewoner's choice) |
-    | 7 | Woningcorporatie | Plan goedkeuren (huur) | Corporatie approval not yet recorded |
-    | 8 | Bewoner | Klussendienst of zelf? (koop) | Bewoner's choice not yet recorded |
+    | 7 | Woningcorporatie | Plan goedkeuren | Corporatie approval not yet recorded |
+    | 8 | Bewoner | Plan goedkeuren | Bewoner's choice not yet recorded |
     | 9 | Beheerder | Uitvoerder toewijzen | No uitvoerder assigned |
     | 10 | Klusser | Werk uitvoeren | "Werk opgeleverd" not yet tapped |
     | 11 | Beheerder | Opleverrapport versturen | Not yet closed as Uitgevoerd |
@@ -421,7 +421,7 @@
     | 5 Plan van Aanpak afronden | \> 5 days since bezoek afgerond | "Bezoek was {n} dagen geleden; plan nog niet klaar voor controle." |
     | 6 Plan controleren & versturen | \> 5 days since ready for review | "Plan wacht al {n} dagen op controle." |
     | 7 Plan goedkeuren (huur) | \> 14 days since the latest send to the corporatie | "{corporatie} reageert al {n} dagen niet op het plan. Nabellen?" |
-    | 8 Klussendienst of zelf? (koop) | \> 14 days since the latest send to the bewoner | "Bewoner kiest al {n} dagen niet tussen Klussendienst of zelf. Nabellen?" |
+    | 8 Plan goedkeuren (koop) | \> 14 days since the latest send to the bewoner | "Bewoner kiest al {n} dagen niet tussen Klussendienst of zelf. Nabellen?" |
     | 9 Uitvoerder toewijzen | \> 7 days since approval/choice | "Plan al {n} dagen goedgekeurd, nog geen uitvoerder." |
     | 10 Werk uitvoeren | \> 3 days after uitvoering gepland; if no date, > 21 days since uitvoerder assigned; never while the planned date is in the future | "Uitvoering was gepland op {datum}, maar niet opgeleverd." / "{uitvoerder} heeft na {n} dagen nog geen uitvoering gepland." |
     | 11 Opleverrapport versturen | \> 7 days since werk opgeleverd | "Werk al {n} dagen opgeleverd. Rapport versturen en dossier sluiten?" |

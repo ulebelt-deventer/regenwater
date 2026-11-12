@@ -128,6 +128,15 @@ export async function mail(page: Page, sjabloon: string, handmatig = false): Pro
   await verstuurMail(page, handmatig);
 }
 
+export const CORPORATIE_AAN = 'corporatie@example.org';
+
+// No corporatie has a known address yet, so Aan starts empty and the test types one.
+export async function corporatieMail(page: Page, sjabloon: string, handmatig = false): Promise<void> {
+  await page.locator(`.qa-mail-${sjabloon}`).click();
+  await page.locator('.qa-mail .qa-mail-aan').fill(CORPORATIE_AAN);
+  await verstuurMail(page, handmatig);
+}
+
 export async function annuleerMail(page: Page): Promise<void> {
   const modal = page.locator('.qa-mail');
   await expect(modal.locator('.qa-mail-aan')).toBeVisible();

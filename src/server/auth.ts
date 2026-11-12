@@ -112,7 +112,7 @@ export function authRoutes(app: Hono<Env>, ctx: Ctx): void {
     })();
     poging(ctx, 'mail', g.email, ipAdres);
     const m = loginMail(code, `${ctx.config.basisUrl}/inloggen/link#${token}`);
-    await ctx.mailer.verstuur({ aan: g.email, replyTo: ULEBELT_CONTACT_EMAIL, ...m });
+    await ctx.mailer.verstuur({ aan: g.email, ...m });
     return c.json({ ok: true });
   });
 

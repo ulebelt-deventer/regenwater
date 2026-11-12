@@ -9,7 +9,7 @@ Two palettes for coloring the status label by phase of the workflow instead of b
 | 1. Inschrijving | Inschrijving |
 | 2. Bezoek & plan | Bezoeker toewijzen, Bezoek plannen, Bezoek uitvoeren, Plan van Aanpak afronden |
 | 3. Controle | Plan controleren & versturen |
-| 4. Akkoord | Plan goedkeuren (huur), Klussendienst of zelf? (koop) |
+| 4. Akkoord | Plan goedkeuren (huur en koop) |
 | 5. Uitvoering | Uitvoerder toewijzen, Werk uitvoeren |
 | 6. Oplevering | Opleverrapport versturen |
 

@@ -114,13 +114,13 @@ export const STAPPEN: Stap[] = [
     },
   },
   {
-    nr: 7, key: 'akkoord_huur', ligtBij: 'corporatie', label: 'Plan goedkeuren (huur)', anker: 'sectie-versturen',
+    nr: 7, key: 'akkoord_huur', ligtBij: 'corporatie', label: 'Plan goedkeuren', anker: 'sectie-versturen',
     regel: 'Goedkeuring van de woningcorporatie nog niet geregistreerd',
     geldt: (d) => d.huur_koop === 'huur',
     gedaan: (d) => d.corporatie_akkoord_at,
   },
   {
-    nr: 8, key: 'keuze_koop', ligtBij: 'bewoner', label: 'Klussendienst of zelf? (koop)', anker: 'sectie-versturen',
+    nr: 8, key: 'keuze_koop', ligtBij: 'bewoner', label: 'Plan goedkeuren', anker: 'sectie-versturen',
     regel: 'Keuze van de bewoner nog niet geregistreerd',
     geldt: (d) => d.huur_koop === 'koop',
     gedaan: (d) => d.klussendienst_gekozen_at,

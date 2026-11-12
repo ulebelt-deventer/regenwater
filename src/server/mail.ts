@@ -13,7 +13,7 @@ export interface Bijlage {
 export interface Bericht {
   aan: string;
   cc?: string | null;
-  replyTo: string;
+  replyTo?: string; // dossier mails only: the dossier's eigenaar
   onderwerp: string;
   tekst: string;
   html?: string; // without it, the HTML part is tekstNaarHtml(tekst)
@@ -64,7 +64,7 @@ export class BestandMailer implements Mailer {
     fs.mkdirSync(this.dir, { recursive: true });
     const naam = `${new Date().toISOString().replace(/[:.]/g, '-')}-${b.aan.replace(/[^a-z0-9@.-]/gi, '_')}.html`;
     const pad = path.join(this.dir, naam);
-    const kop = `<pre style="background:#f7f0e5;padding:8px">Aan: ${escHtml(b.aan)}\nCc: ${escHtml(b.cc ?? '')}\nReply-To: ${escHtml(b.replyTo)}\nOnderwerp: ${escHtml(b.onderwerp)}\nBijlagen: ${(b.bijlagen ?? []).map((x) => escHtml(x.naam)).join(', ')}</pre>`;
+    const kop = `<pre style="background:#f7f0e5;padding:8px">Aan: ${escHtml(b.aan)}\nCc: ${escHtml(b.cc ?? '')}\nReply-To: ${escHtml(b.replyTo ?? '')}\nOnderwerp: ${escHtml(b.onderwerp)}\nBijlagen: ${(b.bijlagen ?? []).map((x) => escHtml(x.naam)).join(', ')}</pre>`;
     fs.writeFileSync(pad, kop + (b.html ?? tekstNaarHtml(b.tekst)));
     for (const bijlage of b.bijlagen ?? []) fs.writeFileSync(`${pad}-${bijlage.naam}`, bijlage.inhoud);
     log.info(`email sent to ${b.aan}, subject ${b.onderwerp}, view at: ${pad}`);
@@ -88,7 +88,7 @@ export class MailgunMailer implements Mailer {
     form.set('from', this.afzender);
     form.set('to', b.aan);
     if (b.cc) form.set('cc', b.cc);
-    form.set('h:Reply-To', b.replyTo);
+    if (b.replyTo) form.set('h:Reply-To', b.replyTo);
     form.set('subject', b.onderwerp);
     form.set('text', b.tekst);
     form.set('html', b.html ?? tekstNaarHtml(b.tekst));

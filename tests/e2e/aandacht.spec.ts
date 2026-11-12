@@ -1,6 +1,6 @@
 // Aandacht findings that the scenarios don't reach, and the one check that the printer produces a real PDF.
 import { expect, test } from '@playwright/test';
-import { afspraak, bezoek, geenAandacht, ja, kies, mail, naarDossier, nieuwDossier, opslagKlaar, plan, post, start, status, subsidieMail, verschuifDagen, wijsToe } from './hulp.ts';
+import { afspraak, bezoek, corporatieMail, geenAandacht, ja, kies, naarDossier, nieuwDossier, opslagKlaar, plan, post, start, status, subsidieMail, verschuifDagen, wijsToe } from './hulp.ts';
 
 test('een afspraak in de toekomst is geen aandachtspunt, drie dagen erna zonder afgerond bezoek wel', async ({ page }) => {
   const { klusserId } = await start(page);
@@ -29,7 +29,7 @@ test('koopwoning met een goedkeuring van de woningcorporatie: Klopt niet', async
   await bezoek(page, id);
   await plan(page, id);
   await naarDossier(page, id);
-  await mail(page, 'plan_corporatie');
+  await corporatieMail(page, 'plan_corporatie');
   await page.locator('.qa-akkoord').click();
   await status(page, 'Uitvoerder toewijzen');
   await geenAandacht(page);

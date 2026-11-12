@@ -5,11 +5,7 @@ export const ULEBELT_CONTACT_EMAIL = 'regenwater@ulebelt.nl'; // PLACEHOLDER
 
 export const CORPORATIES = ['SallandWonen', 'Rentree', 'Ieder1', 'De Marken'] as const;
 // A corporatie without an address here leaves Aan empty in the mail preview, for the admin to fill in.
-export const CORPORATIE_EMAIL: Record<string, string> = {
-  SallandWonen: 'regenwater@sallandwonen.nl', // PLACEHOLDER
-  Rentree: 'regenwater@rentree.nl', // PLACEHOLDER
-  Ieder1: 'regenwater@ieder1.nl', // PLACEHOLDER
-};
+export const CORPORATIE_EMAIL: Record<string, string> = {}; // PLACEHOLDER: the admin team will supply the addresses
 
 export const RIOOLKAARTEN: Record<string, string> = {
   Deventer: 'https://deventer.maps.arcgis.com/apps/webappviewer/index.html?id=f981cd8df5744a18aa87f59998905764',

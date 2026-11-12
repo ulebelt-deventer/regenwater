@@ -23,6 +23,7 @@ Leave out:
 - Changes to help and explanation pages: people read them when they need them.
 - Prompts and dialog options that explain themselves when they appear (a "vervangen?" question, an Annuleren button).
 - Reassurance that existing data was migrated or still shows. If nobody has to act, don't mention it.
+- Cleanup of placeholders and mail plumbing (a placeholder address removed or replaced, a Reply-To or sender corrected), even when it changes where a reply lands or leaves a field empty to fill in.
 - Edge cases in the admins' day-to-day work and changes to troubleshooting tools such as Inloggen als, even when a rule changed. The test is whether it changes how the team works most days.
 
 When unsure, leave it out and name it in your summary so I can decide.

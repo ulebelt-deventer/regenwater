@@ -30,7 +30,7 @@ Load is tiny (about 15 active users a day), so the design optimizes for simplici
 
 - Mailgun, EU region, sends the login emails, the klusser/bewoner/corporatie emails and the feedback emails. Admin meldingen about a dossier are in-app only (the `notificaties` table, under the navbar bell).
 - Feedback recipients are a comma-separated list in the environment, `MELDINGEN_FEEDBACK`. The app refuses to start in production if it is missing or holds an invalid address. Each recipient gets a separate email, so one refusal doesn't block the others.
-- Sender domain: the domain admin adds Mailgun's SPF and DKIM records and a DMARC policy before launch. Every email sets Reply-To explicitly, so replies reach a person.
+- Sender domain: the domain admin adds Mailgun's SPF and DKIM records and a DMARC policy before launch. A mail about a dossier sets Reply-To to the dossier's eigenaar, so replies reach the admin responsible for it, whoever sent it; the login and feedback mails set no Reply-To.
 - Bounces: a Mailgun webhook (`/webhooks/mailgun`, signature-verified) marks failed sends and triggers the "E-mail niet afgeleverd" melding. It's a later addition, not part of the first milestones; until then a rejection at send time is the only failure the app sees.
 - Keep attachments under about 10 MB, since many corporatie mail servers reject larger messages; the PDF renderer downsizes embedded images if needed.
 - In development nothing is sent: each email is written to a local `.html` file under `tmp/emails/`, and the server logs one line: `email sent to <to>, subject <subject>, view at: <path to .html file>`.
