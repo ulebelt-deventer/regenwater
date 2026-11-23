@@ -21,6 +21,7 @@ export const KLOPT_NIET_KOP = 'De gegevens spreken elkaar tegen. Controleer:';
 // Warnings on the Bezoek page that a beheerder can hide per dossier, like a finding.
 export const KAART_MELDINGEN = {
   geen_dak: 'Er is nog geen dak ingetekend op de kadasterkaart.',
+  geen_regenpijp: 'Er is nog geen regenpijp ingetekend op de kadasterkaart.',
   geen_tuin: 'Er is nog geen tuin ingetekend op de kadasterkaart.',
 } as const;
 

@@ -213,9 +213,9 @@ describe('verborgen meldingen', () => {
     expect((await bevindingen(id)).map((b) => b.sleutel)).toContain('plan_gewijzigd:corporatie');
   });
 
-  it('hides the geen dak melding for a beheerder only, and refuses a melding that is not showing', async () => {
+  it('hides the geen dak, regenpijp and tuin meldingen for a beheerder only, and refuses a melding that is not showing', async () => {
     const id = await nieuwDossier();
-    expect((await verberg(id, ['geen_dak', 'geen_tuin'])).dossier.verborgen).toEqual(['geen_dak', 'geen_tuin']);
+    expect((await verberg(id, ['geen_dak', 'geen_regenpijp', 'geen_tuin'])).dossier.verborgen).toEqual(['geen_dak', 'geen_regenpijp', 'geen_tuin']);
     await verberg(id, ['koop_met_akkoord'], 409);
     await verberg(id, [], 400);
     await verberg(id, 'geen_dak', 400);

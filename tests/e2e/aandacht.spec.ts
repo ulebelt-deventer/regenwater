@@ -47,11 +47,16 @@ test('een beheerder verbergt meldingen met het rode kruisje, en ze blijven weg n
   await start(page);
   const id = await nieuwDossier(page, { huurKoop: 'koop' });
   await page.goto(`/dossiers/${id}/bezoek`);
-  await page.locator('.qa-geen-dak .qa-verberg').click();
-  await expect(page.locator('.qa-geen-dak')).toHaveCount(0);
+  await expect(page.locator('.qa-regenpijpen .qa-geen-regenpijp')).toBeVisible();
+  for (const melding of ['.qa-geen-dak', '.qa-geen-regenpijp']) {
+    await page.locator(`${melding} .qa-verberg`).click();
+    await expect(page.locator(melding)).toHaveCount(0);
+  }
   await page.reload();
   await expect(page.locator('.qa-veld-wensen')).toBeVisible();
+  await expect(page.locator('.qa-regenpijpen > h3')).toBeVisible();
   await expect(page.locator('.qa-geen-dak')).toHaveCount(0);
+  await expect(page.locator('.qa-geen-regenpijp')).toHaveCount(0);
 
   await post(page.request, `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
   await naarDossier(page, id);

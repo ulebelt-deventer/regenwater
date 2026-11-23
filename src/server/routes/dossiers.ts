@@ -446,6 +446,7 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     const zichtbaar = new Map(aandacht(d, gebruikersMap(ctx.db), ctx.klok.nu()).bevindingen.map((b) => [b.sleutel, { tekst: b.tekst, ontvanger: b.ontvanger }]));
     const items = kaartItems(d);
     if (!items.daken.length) zichtbaar.set('geen_dak', { tekst: KAART_MELDINGEN.geen_dak, ontvanger: undefined });
+    if (!items.regenpijpen.length) zichtbaar.set('geen_regenpijp', { tekst: KAART_MELDINGEN.geen_regenpijp, ontvanger: undefined });
     if (!items.tuinen.length) zichtbaar.set('geen_tuin', { tekst: KAART_MELDINGEN.geen_tuin, ontvanger: undefined });
     const nieuw = [...new Set(sleutels as string[])].filter((s) => !d.verborgen.includes(s));
     if (nieuw.some((s) => !zichtbaar.has(s))) fout(409, 'Deze melding staat er niet meer. Herlaad de pagina.');

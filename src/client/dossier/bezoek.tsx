@@ -357,10 +357,10 @@ export function Bezoek() {
           </Show>
         </div>
 
-        <Show when={items().regenpijpen.length}>
-          {/* By id, so typing in a field doesn't recreate the block and lose focus. */}
-          <div id="veld-regenpijpen" class="mb-3 pt-3 qa-regenpijpen">
-            <h3 class="mb-3"><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</h3>
+        <div id="veld-regenpijpen" class="mb-3 pt-3 qa-regenpijpen">
+          <h3 class="mb-3"><OnderdeelIcoon soort="regenpijp" class="me-1" />Regenpijpen</h3>
+          <Show when={items().regenpijpen.length} fallback={kaartMelding('geen_regenpijp')}>
+            {/* By id, so typing in a field doesn't recreate the block and lose focus. */}
             <For each={items().regenpijpen.map((r) => r.id)}>{(id) => <RegenpijpBlok id={id} />}</For>
             <div class="small text-muted">
               ** <span class="qa-normafvoer">{normafvoerTekst(s.d.normafvoer)}</span>
@@ -369,8 +369,8 @@ export function Bezoek() {
               </Show>
             </div>
             <Show when={normOpen()}><NormModal onSluit={() => setNormOpen(false)} /></Show>
-          </div>
-        </Show>
+          </Show>
+        </div>
 
         <div id="veld-tuinen" class="mb-3 qa-tuinen">
           <div class="form-label fw-semibold mb-1"><OnderdeelIcoon soort="tuin" class="me-1" />Tuin</div>
