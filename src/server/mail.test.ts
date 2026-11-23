@@ -149,6 +149,69 @@ describe('woningcorporatie addresses', () => {
   });
 });
 
+describe('subsidiepaginas', () => {
+  interface Rij { id: number; gemeente: string; url: string }
+  const lijst = async () => (await bea.json<{ subsidiepaginas: Rij[] }>('GET', '/api/subsidiepaginas')).subsidiepaginas;
+  const rijVan = async (gemeente: string) => (await lijst()).find((r) => r.gemeente === gemeente)!;
+  const link = async () => (await bea.json('GET', `/api/dossiers/${id}/mail/subsidie_huur`)).waarden.subsidie_info;
+  const plan = async () => (await bea.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
+  const naarZwolle = () => t.ctx.db.prepare("UPDATE dossiers SET adres_json = json_set(adres_json, '$.gemeente', 'Zwolle') WHERE id = ?").run(id);
+
+  it('starts with Deventer, Olst-Wijhe and Raalte', async () => {
+    expect((await lijst()).map((r) => r.gemeente)).toEqual(['Deventer', 'Olst-Wijhe', 'Raalte']);
+  });
+
+  it('feeds a changed, added or deleted link to the mail and the Plan', async () => {
+    const deventer = await rijVan('Deventer');
+    await bea.json('PATCH', `/api/subsidiepaginas/${deventer.id}`, { url: ' https://subsidie.example.org/deventer ' });
+    expect(await link()).toBe('https://subsidie.example.org/deventer');
+    expect(await plan()).toContain('href="https://subsidie.example.org/deventer"');
+
+    naarZwolle();
+    expect(await link()).toBe('');
+    await bea.json('POST', '/api/subsidiepaginas', { gemeente: 'zwolle', url: 'https://subsidie.example.org/zwolle' });
+    expect(await link()).toBe('https://subsidie.example.org/zwolle');
+    expect(await plan()).toContain('href="https://subsidie.example.org/zwolle"');
+
+    await bea.json('DELETE', `/api/subsidiepaginas/${(await rijVan('zwolle')).id}`);
+    expect(await link()).toBe('');
+    expect(await plan()).toMatch(/qa-pdf-subsidie.*nog niet ingevuld/);
+  });
+
+  it('refuses a missing gemeente, a duplicate in any case, a link that is not http(s) and an unknown row, and records each change', async () => {
+    const deventer = await rijVan('Deventer');
+    expect((await bea.json('POST', '/api/subsidiepaginas', { gemeente: ' ', url: 'https://example.org' }, 400)).fout).toBe('Vul een gemeente in.');
+    expect((await bea.json('POST', '/api/subsidiepaginas', { gemeente: 'deventer', url: 'https://example.org' }, 409)).fout).toBe('deventer staat al in de tabel.');
+    expect((await bea.json('POST', '/api/subsidiepaginas', { gemeente: 'Zwolle', url: 'www.zwolle.nl' }, 400)).fout).toBe('Vul een volledige link in, die begint met https://.');
+    await bea.json('PATCH', `/api/subsidiepaginas/${deventer.id}`, { url: 'javascript:alert(1)' }, 400);
+    await bea.json('PATCH', `/api/subsidiepaginas/${deventer.id}`, { url: 12 }, 400);
+    await bea.json('PATCH', '/api/subsidiepaginas/999', { url: 'https://example.org' }, 404);
+    await bea.json('DELETE', '/api/subsidiepaginas/999', undefined, 404);
+    expect((await rijVan('Deventer')).url).toBe(deventer.url);
+
+    await bea.json('PATCH', `/api/subsidiepaginas/${deventer.id}`, { url: deventer.url });
+    await bea.json('PATCH', `/api/subsidiepaginas/${deventer.id}`, { url: 'https://subsidie.example.org/deventer' });
+    await bea.json('POST', '/api/subsidiepaginas', { gemeente: 'Zwolle', url: 'https://subsidie.example.org/zwolle' });
+    await bea.json('DELETE', `/api/subsidiepaginas/${(await rijVan('Zwolle')).id}`);
+    const { items } = await bea.json('GET', '/api/activiteit');
+    const eigen = items.filter((i: { type: string }) => i.type.startsWith('subsidiepagina_')).map((i: { type: string; payload: unknown }) => [i.type, i.payload]);
+    expect(eigen).toEqual([
+      ['subsidiepagina_verwijderd', { gemeente: 'Zwolle', url: 'https://subsidie.example.org/zwolle' }],
+      ['subsidiepagina_toegevoegd', { gemeente: 'Zwolle', url: 'https://subsidie.example.org/zwolle' }],
+      ['subsidiepagina_gewijzigd', { gemeente: 'Deventer', oud: deventer.url, nieuw: 'https://subsidie.example.org/deventer' }],
+    ]);
+  });
+
+  it('is for admins only', async () => {
+    const kees = await new Klant(t).login('kees.klus@example.org');
+    const deventer = await rijVan('Deventer');
+    await kees.json('GET', '/api/subsidiepaginas', undefined, 403);
+    await kees.json('POST', '/api/subsidiepaginas', { gemeente: 'Zwolle', url: 'https://example.org' }, 403);
+    await kees.json('PATCH', `/api/subsidiepaginas/${deventer.id}`, { url: 'https://example.org' }, 403);
+    await kees.json('DELETE', `/api/subsidiepaginas/${deventer.id}`, undefined, 403);
+  });
+});
+
 describe('extra CC', () => {
   it('copies an extra address on both woningcorporatie mails, beside the sender, and records it', async () => {
     const { dossier } = await stuur('plan_corporatie', { aan: 'ieder1@example.org', cc: ' wijk@example.org ' });

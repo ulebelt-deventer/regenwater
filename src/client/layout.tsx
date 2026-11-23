@@ -80,6 +80,7 @@ function Navbar() {
               <A class="dropdown-item qa-nav-gebruikers" href="/gebruikers"><i class="bi bi-people me-2" aria-hidden="true" />Gebruikers</A>
               <A class="dropdown-item" href="/beheer/materialen"><i class="bi bi-hammer me-2" aria-hidden="true" />Materialen</A>
               <A class="dropdown-item qa-nav-normafvoer" href="/beheer/normafvoer"><i class="bi bi-cloud-rain me-2" aria-hidden="true" />Normafvoer</A>
+              <A class="dropdown-item qa-nav-subsidiepaginas" href="/beheer/subsidiepaginas"><i class="bi bi-link-45deg me-2" aria-hidden="true" />Subsidiepagina's</A>
               <A class="dropdown-item qa-nav-woningcorporaties" href="/beheer/woningcorporaties"><i class="bi bi-building me-2" aria-hidden="true" />Woningcorporaties</A>
               <A class="dropdown-item" href="/beheer/sjablonen"><i class="bi bi-envelope me-2" aria-hidden="true" />E-mailsjablonen</A>
               <A class="dropdown-item" href="/beheer/feedback"><i class="bi bi-lightbulb me-2" aria-hidden="true" />Feedback</A>

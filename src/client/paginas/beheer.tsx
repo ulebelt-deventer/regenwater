@@ -1,10 +1,10 @@
-// Beheer pages (admin): Normafvoer, Woningcorporaties, Materialen, E-mailsjablonen and Feedback.
+// Beheer pages (admin): Normafvoer, Subsidiepagina's, Woningcorporaties, Materialen, E-mailsjablonen and Feedback.
 import { A, useParams } from '@solidjs/router';
 import { For, Show, createResource, createSignal } from 'solid-js';
 import { NORM_STANDAARD_LABEL } from '../../shared/constants.ts';
 import { datum, datumTijd } from '../../shared/datum.ts';
 import { controleerTags, probleemTeksten, sjabloonDef } from '../../shared/sjablonen.ts';
-import type { CorporatieAdres, NormafvoerRij } from '../../shared/types.ts';
+import type { CorporatieAdres, NormafvoerRij, Subsidiepagina } from '../../shared/types.ts';
 import { del, get, patch, post, put, query } from '../api.ts';
 import { AlleenBeheerder, Kruimels, Laden, bevestig, melding, probeer, titel } from '../ui.tsx';
 
@@ -98,6 +98,95 @@ function NormafvoerInhoud() {
             <input id="norm-nieuw-mm" class="form-control qa-norm-nieuw-mm" type="number" min="1" max="100" step="1" required value={mm()} onInput={(e) => setMm(e.currentTarget.value)} />
           </div>
           <button type="submit" class="btn btn-primary qa-norm-voeg-toe">Toevoegen</button>
+        </form>
+      </Show>
+    </>
+  );
+}
+
+// ---- Subsidiepagina's ----
+
+interface Subsidie {
+  subsidiepaginas: Subsidiepagina[];
+  gemeenten: string[];
+}
+
+export function Subsidiepaginas() {
+  titel("Subsidiepagina's");
+  return (
+    <AlleenBeheerder>
+      <SubsidiepaginasInhoud />
+    </AlleenBeheerder>
+  );
+}
+
+function SubsidiepaginasInhoud() {
+  const [data, { mutate }] = createResource(() => get<Subsidie>('/api/subsidiepaginas'));
+  const [gemeente, setGemeente] = createSignal('');
+  const [url, setUrl] = createSignal('');
+  const vrij = () => {
+    const bezet = new Set(data()!.subsidiepaginas.map((s) => s.gemeente));
+    return data()!.gemeenten.filter((g) => !bezet.has(g));
+  };
+
+  const toevoegen = async (e: Event) => {
+    e.preventDefault();
+    const naam = gemeente().trim();
+    if (!data()!.gemeenten.includes(naam) && !(await bevestig(`${naam} toevoegen?`, 'Deze naam kennen we nog niet uit de dossiers. Hij moet precies zo geschreven zijn als in het adres, anders vindt de app de link niet.', { ja: 'Toevoegen' }))) return;
+    if (await probeer(async () => mutate(await post<Subsidie>('/api/subsidiepaginas', { gemeente: naam, url: url() })))) {
+      setGemeente('');
+      setUrl('');
+    }
+  };
+  const wijzig = async (s: Subsidiepagina, invoer: HTMLInputElement) => {
+    if (invoer.value.trim() === s.url) return;
+    if (await probeer(async () => mutate(await patch<Subsidie>(`/api/subsidiepaginas/${s.id}`, { url: invoer.value })))) melding('success', `${s.gemeente} opgeslagen.`);
+    else invoer.value = s.url;
+  };
+  const verwijder = async (s: Subsidiepagina) => {
+    if (!(await bevestig(`${s.gemeente} verwijderen?`, 'De subsidie-e-mails en het Plan van Aanpak van dossiers in deze gemeente hebben dan geen link meer.', { ja: 'Verwijderen', gevaar: true }))) return;
+    await probeer(async () => mutate(await del<Subsidie>(`/api/subsidiepaginas/${s.id}`)));
+  };
+
+  return (
+    <>
+      <h1>Subsidiepagina's</h1>
+      <p class="text-muted">De link naar de subsidiepagina van elke gemeente. De subsidie-e-mails en het Plan van Aanpak nemen de link van de gemeente van het adres over. Heeft een gemeente geen link, dan waarschuwt het e-mailvenster en vul je hem zelf in.</p>
+      <Show when={data()} fallback={<Laden />}>
+        <div class="table-responsive">
+          <table class="table align-middle qa-subsidiepaginas" style={{ 'max-width': '52rem' }}>
+            <thead>
+              <tr>
+                <th>Gemeente</th>
+                <th colspan="2">Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={data()!.subsidiepaginas}>
+                {(s) => (
+                  <tr class="qa-subsidiepagina">
+                    <td class="text-nowrap qa-subsidiepagina-gemeente">{s.gemeente}</td>
+                    <td><input class="form-control form-control-sm qa-subsidiepagina-url" type="url" aria-label={`Link, ${s.gemeente}`} value={s.url} onChange={(e) => wijzig(s, e.currentTarget)} /></td>
+                    <td class="w-1px">
+                      <button type="button" class="btn btn-outline-danger btn-sm qa-subsidiepagina-verwijder" aria-label={`${s.gemeente} verwijderen`} onClick={() => verwijder(s)}><i class="bi bi-trash" aria-hidden="true" /></button>
+                    </td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
+        <form class="d-flex flex-wrap gap-2 align-items-end qa-subsidiepagina-toevoegen" style={{ 'max-width': '52rem' }} onSubmit={toevoegen}>
+          <div>
+            <label class="form-label" for="subsidie-gemeente">Gemeente</label>
+            <input id="subsidie-gemeente" class="form-control qa-subsidiepagina-nieuw-gemeente" list="subsidie-gemeenten" required value={gemeente()} onInput={(e) => setGemeente(e.currentTarget.value)} />
+            <datalist id="subsidie-gemeenten"><For each={vrij()}>{(g) => <option value={g} />}</For></datalist>
+          </div>
+          <div class="flex-grow-1">
+            <label class="form-label" for="subsidie-url">Link</label>
+            <input id="subsidie-url" class="form-control qa-subsidiepagina-nieuw-url" type="url" placeholder="https://" required value={url()} onInput={(e) => setUrl(e.currentTarget.value)} />
+          </div>
+          <button type="submit" class="btn btn-primary qa-subsidiepagina-voeg-toe">Toevoegen</button>
         </form>
       </Show>
     </>

@@ -1,3 +1,11 @@
+// The subsidiepagina's a new database starts with. The e2e reset empties every table and runs this again; never edit it, since the migration below ran it once already.
+export const SUBSIDIEPAGINAS_ZAAD = `
+  INSERT INTO subsidiepaginas (gemeente, url) VALUES
+    ('Deventer', 'https://www.deventer.nl/subsidieloket/duurzaamheidssubsidies/subsidie-voor-groene-en-watervriendelijke-maatregelen'),
+    ('Olst-Wijhe', 'https://www.olst-wijhe.nl/klimaatsubsidie'),
+    ('Raalte', 'https://www.raalte.nl/klimaatsubsidie');
+`;
+
 // Append-only: each entry runs once, in order, tracked by PRAGMA user_version.
 export const MIGRATIES: string[] = [
   `
@@ -324,5 +332,14 @@ export const MIGRATIES: string[] = [
     aan TEXT NOT NULL,
     cc TEXT NOT NULL
   );
+  `,
+  // The gemeente's own subsidie page, for the subsidie mails and the Plan van Aanpak; the admins keep it on the Subsidiepagina's page.
+  `
+  CREATE TABLE subsidiepaginas (
+    id INTEGER PRIMARY KEY,
+    gemeente TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    url TEXT NOT NULL
+  );
+  ${SUBSIDIEPAGINAS_ZAAD}
   `,
 ];

@@ -127,6 +127,12 @@ export interface CorporatieAdres {
   cc: string;
 }
 
+export interface Subsidiepagina {
+  id: number;
+  gemeente: string;
+  url: string;
+}
+
 // A row of the Normafvoer table. gemeente null is the standaard row, for every gemeente without its own.
 export interface NormafvoerRij {
   id: number;

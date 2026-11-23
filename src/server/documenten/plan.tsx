@@ -1,5 +1,5 @@
 import { For, type JSX, Show } from 'solid-js';
-import { BTW_PROCENT, DOORLAATBAARHEID, SUBSIDIEPAGINAS } from '../../shared/constants.ts';
+import { BTW_PROCENT, DOORLAATBAARHEID } from '../../shared/constants.ts';
 import { euro, kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { btwOver } from '../../shared/specificatie.ts';
@@ -404,16 +404,14 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
 }
 
 function Subsidie(props: { doc: Doc }): JSX.Element {
-  const gemeente = () => props.doc.d.adres?.gemeente ?? null;
-  const pagina = () => (gemeente() ? SUBSIDIEPAGINAS[gemeente()!] : undefined);
   return (
-    <Show when={pagina() || props.doc.concept}>
+    <Show when={props.doc.subsidiepagina || props.doc.concept}>
       <h2>6. Subsidie</h2>
       <p class="qa-pdf-subsidie">
-        <Show when={pagina()} fallback={<Leeg doc={props.doc} />}>
+        <Show when={props.doc.subsidiepagina} fallback={<Leeg doc={props.doc} />}>
           {(url) => (
             <>
-              Meer informatie over de subsidie van de gemeente {gemeente()}: <a href={url()}>{url()}</a>
+              Meer informatie over de subsidie van de gemeente {props.doc.d.adres!.gemeente}: <a href={url()}>{url()}</a>
             </>
           )}
         </Show>

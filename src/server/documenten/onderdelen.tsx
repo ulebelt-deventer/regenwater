@@ -16,6 +16,7 @@ export interface Doc {
   gm: Map<number, Gebruiker>;
   concept: boolean;
   foto: (id: string) => string;
+  subsidiepagina: string | null;
 }
 
 const ICOON_SVG: Record<(typeof ICOON)[IcoonSoort]['naam'], string> = { house, leaf, bricks, droplet };

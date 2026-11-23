@@ -7,7 +7,7 @@ import type { Dossier } from '../../shared/types.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, fout } from '../context.ts';
 import { fotoDataUrl } from '../fotos.ts';
-import { gebruikersMap } from '../repo.ts';
+import { gebruikersMap, subsidiepagina } from '../repo.ts';
 import { haalDossier } from '../routes/dossiers.ts';
 import { adresRegel } from '../../shared/status.ts';
 import { Bezoekformulier } from './formulier.tsx';
@@ -25,7 +25,7 @@ export function bijlageNaam(d: Dossier, soort: keyof typeof BIJLAGE_NAAM): strin
 }
 
 function doc(ctx: Ctx, d: Dossier, concept = false): Doc {
-  return { d, gm: gebruikersMap(ctx.db), concept, foto: (id) => fotoDataUrl(ctx.config, id) };
+  return { d, gm: gebruikersMap(ctx.db), concept, foto: (id) => fotoDataUrl(ctx.config, id), subsidiepagina: subsidiepagina(ctx.db, d) };
 }
 
 function html(titel: string, inhoud: () => JSX.Element, scherm = false): string {

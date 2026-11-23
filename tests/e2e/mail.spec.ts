@@ -1,6 +1,6 @@
-// The mail pop-up: "Handmatig verstuurd" sends nothing, so it must not be one mis-tap away from Versturen; the prefilled addresses.
+// The mail pop-up: "Handmatig verstuurd" sends nothing, so it must not be one mis-tap away from Versturen; the prefilled addresses and subsidie link.
 import { expect, test } from '@playwright/test';
-import { BEHEERDER, emails, nieuwDossier, start, tikAan, verstuurMail } from './hulp.ts';
+import { BEHEERDER, emails, ja, nieuwDossier, start, tikAan, verstuurMail } from './hulp.ts';
 
 test('Handmatig verstuurd vraagt eerst bevestiging; annuleren markeert niets, bevestigen markeert zonder te mailen', async ({ page }) => {
   await start(page);
@@ -54,6 +54,37 @@ test('Handmatig verstuurd staat onder Versturen, en de pop-up ligt boven de opsl
   const opslag = (await page.locator('.opslag').boundingBox())!;
   const bovenste = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)!.closest('.opslag, .qa-mail')!.className, [opslag.x + opslag.width / 2, opslag.y + opslag.height / 2]);
   expect(bovenste).toContain('qa-mail');
+});
+
+test("de link van Beheer > Subsidiepagina's staat in de subsidie-e-mail, en een gemeente kun je toevoegen en verwijderen", async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  await page.locator('.qa-nav-beheer').click();
+  await page.locator('.qa-nav-subsidiepaginas').click();
+  const rijen = page.locator('.qa-subsidiepagina');
+  await expect(rijen.locator('.qa-subsidiepagina-gemeente')).toHaveText(['Deventer', 'Olst-Wijhe', 'Raalte']);
+
+  const deventer = rijen.filter({ has: page.locator('.qa-subsidiepagina-gemeente', { hasText: 'Deventer' }) }).locator('.qa-subsidiepagina-url');
+  await deventer.fill('https://subsidie.example.org/deventer');
+  await Promise.all([page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok()), deventer.press('Tab')]);
+  await expect(page.locator('.qa-melding-success').last()).toContainText('Deventer opgeslagen');
+
+  const nieuw = page.locator('.qa-subsidiepagina-toevoegen');
+  await nieuw.locator('.qa-subsidiepagina-nieuw-gemeente').fill('Zwolle');
+  await nieuw.locator('.qa-subsidiepagina-nieuw-url').fill('https://subsidie.example.org/zwolle');
+  await nieuw.locator('.qa-subsidiepagina-voeg-toe').click();
+  await ja(page);
+  await expect(rijen.locator('.qa-subsidiepagina-gemeente')).toHaveText(['Deventer', 'Olst-Wijhe', 'Raalte', 'Zwolle']);
+  await page.reload();
+  await expect(deventer).toHaveValue('https://subsidie.example.org/deventer');
+  await rijen.last().locator('.qa-subsidiepagina-verwijder').click();
+  await ja(page);
+  await expect(rijen.locator('.qa-subsidiepagina-gemeente')).toHaveText(['Deventer', 'Olst-Wijhe', 'Raalte']);
+
+  await nieuwDossier(page, { huurKoop: 'huur' });
+  await page.locator('.qa-mail-subsidie_huur').click();
+  await expect(page.locator('.qa-mail .qa-mail-tekst')).toHaveValue(/Meer informatie over de subsidie: https:\/\/subsidie\.example\.org\/deventer/);
+  await expect(page.locator('.qa-mail .qa-mail-tagfout')).toHaveCount(0);
 });
 
 test('de adressen van Beheer > Woningcorporaties staan al ingevuld in de mail aan die woningcorporatie, en de pop-up zegt waar antwoorden heen gaan', async ({ page }) => {

@@ -1,5 +1,4 @@
 import type { Hono } from 'hono';
-import { SUBSIDIEPAGINAS } from '../../shared/constants.ts';
 import { adresRegel, corporatieNaam, str } from '../../shared/status.ts';
 import { SJABLONEN, type SjabloonDef, ontbrekendeWaarden, vulIn } from '../../shared/sjablonen.ts';
 import type { Dossier, Gebruiker } from '../../shared/types.ts';
@@ -10,7 +9,7 @@ import { bijlageNaam, bijlagePdf } from '../documenten/index.tsx';
 import { log } from '../log.ts';
 import { EMAIL_RE, tekstNaarHtml } from '../mail.ts';
 import { dossierLink, dossierMelding } from '../meldingen.ts';
-import { corporatieAdressen, gebruiker, laadDossier } from '../repo.ts';
+import { corporatieAdressen, gebruiker, laadDossier, subsidiepagina } from '../repo.ts';
 import { haalDossier } from './dossiers.ts';
 
 export function sjabloonTekst(ctx: Ctx, key: string): { onderwerp: string; tekst: string } {
@@ -42,7 +41,7 @@ export function tagWaarden(ctx: Ctx, d: Dossier, afzender: Gebruiker): Record<st
     link: dossierLink(ctx, d.id),
     straat: d.adres ? d.adres.straat : '',
     plaats: d.adres ? d.adres.plaats : '',
-    subsidie_info: (d.adres && SUBSIDIEPAGINAS[d.adres.gemeente]) ?? '',
+    subsidie_info: subsidiepagina(ctx.db, d) ?? '',
   };
 }
 

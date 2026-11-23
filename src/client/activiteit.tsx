@@ -64,6 +64,9 @@ export const TYPE_LABEL: Record<string, string> = {
   normafvoer_verwijderd: 'Normafvoer verwijderd',
   sjabloon_gewijzigd: 'E-mailsjabloon gewijzigd',
   corporatie_adres_gewijzigd: 'Adressen woningcorporatie gewijzigd',
+  subsidiepagina_toegevoegd: 'Subsidiepagina toegevoegd',
+  subsidiepagina_gewijzigd: 'Subsidiepagina gewijzigd',
+  subsidiepagina_verwijderd: 'Subsidiepagina verwijderd',
   feedback: 'Feedback gegeven',
 };
 
@@ -186,6 +189,8 @@ function samenvatting(item: AuditItem): JSX.Element {
     const leeg = (v: string) => v || '(leeg)';
     return <>{s(p().corporatie)}: Aan {leeg(oud.aan)} → {leeg(nieuw.aan)}, CC {leeg(oud.cc)} → {leeg(nieuw.cc)}</>;
   }
+  if (t === 'subsidiepagina_toegevoegd' || t === 'subsidiepagina_verwijderd') return <>{s(p().gemeente)}: {s(p().url)}</>;
+  if (t === 'subsidiepagina_gewijzigd') return <>{s(p().gemeente)}: {s(p().oud)} → {s(p().nieuw)}</>;
   if (t === 'feedback') return <A href="/beheer/feedback">Op {s(p().scherm)}</A>;
   return null;
 }

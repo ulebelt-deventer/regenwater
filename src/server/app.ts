@@ -4,6 +4,7 @@ import type { Gebruiker } from '../shared/types.ts';
 import { authRoutes, sessieMiddleware, startSessie } from './auth.ts';
 import { type Ctx, type Env, body, fout } from './context.ts';
 import { migreer } from './db.ts';
+import { SUBSIDIEPAGINAS_ZAAD } from './migraties.ts';
 import { documentRoutes } from './documenten/index.tsx';
 import { VerstelbareKlok } from './klok.ts';
 import { log } from './log.ts';
@@ -69,6 +70,7 @@ function testRoutes(app: Hono<Env>, ctx: Ctx): void {
     ctx.db.transaction(() => tabellen.forEach((t) => ctx.db.exec(`DELETE FROM ${t}`)))();
     ctx.db.pragma('foreign_keys = ON');
     migreer(ctx.db);
+    ctx.db.exec(SUBSIDIEPAGINAS_ZAAD);
     klok().reset();
     mailer().verstuurd = [];
     mailer().faalVoor = null;

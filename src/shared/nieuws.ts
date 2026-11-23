@@ -9,6 +9,13 @@ export const NIEUWS: NieuwsDatum[] = [
     datum: '2026-11-21',
     groepen: [
       {
+        kop: 'Plan van Aanpak',
+        punten: [
+          'Het Plan van Aanpak heeft nu een onderdeel 6. Subsidie, met de link naar de subsidiepagina van de gemeente van de bewoner.',
+          'Bij een huurwoning vraagt de app niet meer naar de Afgesproken kosten Klussendienst en noemt hij ze nergens meer, ook niet in de Uitvoeringsspecificatie.',
+        ],
+      },
+      {
         kop: 'Uitvoering',
         punten: [
           'De uitvoerder geeft nu op de Uitvoering bij elke regenpijp met Afkoppelen? Ja of Twijfel aan of hij echt is afgekoppeld. Werk opgeleverd kan pas als dat overal is ingevuld. De antwoorden staan in het Opleverrapport; bij werk dat al eerder is opgeleverd staat daar (onbekend). Ze veranderen de kosten Klussendienst niet.',
@@ -18,6 +25,7 @@ export const NIEUWS: NieuwsDatum[] = [
       {
         kop: 'E-mail',
         punten: [
+          'De e-mails over subsidie bevatten nu de echte link naar de subsidiepagina van de gemeente van de bewoner. Die links beheer je onder Beheer, Subsidiepagina\'s, waar Deventer, Olst-Wijhe en Raalte al in staan. Heeft de gemeente daar geen link, dan waarschuwt het e-mailvenster en zet je zelf een link in de tekst.',
           'Onder Beheer, Woningcorporaties stel je nu per woningcorporatie een adres voor Aan en een adres voor CC in. De e-mails aan die woningcorporatie hebben ze dan al ingevuld; je kunt ze per e-mail nog aanpassen. Laat je ze leeg, dan vul je ze zoals nu zelf in.',
         ],
       },

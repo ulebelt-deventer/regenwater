@@ -1,5 +1,5 @@
 import { CORPORATIES } from '../shared/constants.ts';
-import type { Adres, Annotatie, CorporatieAdres, Dossier, Extra, Foto, Gebruiker, IJskast, Json, Normafvoer, NormafvoerRij, PlanAck, Verzending } from '../shared/types.ts';
+import type { Adres, Annotatie, CorporatieAdres, Dossier, Extra, Foto, Gebruiker, IJskast, Json, Normafvoer, NormafvoerRij, PlanAck, Subsidiepagina, Verzending } from '../shared/types.ts';
 import { fout } from './context.ts';
 import type { DB } from './db.ts';
 
@@ -49,6 +49,14 @@ function groepeer<T>(rijen: Record<string, unknown>[], maak: (r: Record<string, 
 export function corporatieAdressen(db: DB): CorporatieAdres[] {
   const rijen = db.prepare('SELECT * FROM corporatie_adressen').all() as CorporatieAdres[];
   return CORPORATIES.map((corporatie) => rijen.find((r) => r.corporatie === corporatie) ?? { corporatie, aan: '', cc: '' });
+}
+
+export const subsidiepaginas = (db: DB) => db.prepare('SELECT * FROM subsidiepaginas ORDER BY gemeente').all() as Subsidiepagina[];
+
+// The link for a dossier's gemeente, or null when the dossier has no adres or its gemeente has no row.
+export function subsidiepagina(db: DB, d: Dossier): string | null {
+  if (!d.adres) return null;
+  return (db.prepare('SELECT url FROM subsidiepaginas WHERE gemeente = ?').pluck().get(d.adres.gemeente) as string | undefined) ?? null;
 }
 
 export const normafvoeren = (db: DB) => db.prepare('SELECT * FROM normafvoeren ORDER BY gemeente').all() as NormafvoerRij[];

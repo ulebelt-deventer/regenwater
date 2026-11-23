@@ -11,13 +11,6 @@ export const RIOOLKAARTEN: Record<string, string> = {
   'Olst-Wijhe': 'https://olst-wijhe.maps.arcgis.com/apps/instant/basic/index.html?appid=859f1b244196497e9f13df1f7c136676',
 };
 
-// The gemeente's own subsidie page, for the subsidie mails and the Plan van Aanpak.
-export const SUBSIDIEPAGINAS: Record<string, string> = {
-  Deventer: 'https://www.deventer.nl/subsidieloket/duurzaamheidssubsidies/subsidie-voor-groene-en-watervriendelijke-maatregelen',
-  Raalte: 'https://www.raalte.nl/klimaatsubsidie',
-  'Olst-Wijhe': 'https://www.olst-wijhe.nl/klimaatsubsidie',
-};
-
 // The PDOK viewer centred on an RD point, with the kadastrale kaart layers on (layer id from the PDOK service catalog).
 export function kadastraleKaartUrl([x, y]: [number, number]): string {
   const l = '97cf6a64-9cfc-4ce6-9741-2db44fd27fca';

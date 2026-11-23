@@ -1,13 +1,13 @@
 import type { Hono } from 'hono';
 import { NIEUWS } from '../../shared/nieuws.ts';
 import { SJABLONEN, TAG_UITLEG, controleerTags } from '../../shared/sjablonen.ts';
-import type { Adres, CorporatieAdres, NormafvoerRij } from '../../shared/types.ts';
+import type { Adres, CorporatieAdres, NormafvoerRij, Subsidiepagina } from '../../shared/types.ts';
 import { audit, type AuditRij } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
 import { EMAIL_RE } from '../mail.ts';
 import { feedbackMail } from '../meldingen.ts';
-import { corporatieAdressen, gebruikersMap, leesNormMm, normafvoeren } from '../repo.ts';
+import { corporatieAdressen, gebruikersMap, leesNormMm, normafvoeren, subsidiepaginas } from '../repo.ts';
 import { DETECTIE_GEMEENTEN } from '../riool.ts';
 import { auditItem } from './dossiers.ts';
 
@@ -86,10 +86,62 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
     if (!rij) fout(404, 'Normafvoer niet gevonden');
     return rij;
   };
-  const normAntwoord = (c: C) => {
+  // Suggestions for a new row, spelled as the adressen spell them.
+  const bekendeGemeenten = () => {
     const gebruikt = ctx.db.prepare("SELECT DISTINCT json_extract(adres_json, '$.gemeente') FROM dossiers WHERE adres_json IS NOT NULL").pluck().all() as string[];
-    return c.json({ normafvoeren: normafvoeren(ctx.db), gemeenten: [...new Set([...DETECTIE_GEMEENTEN, ...gebruikt])].sort() });
+    return [...new Set([...DETECTIE_GEMEENTEN, ...gebruikt])].sort();
   };
+  const normAntwoord = (c: C) => c.json({ normafvoeren: normafvoeren(ctx.db), gemeenten: bekendeGemeenten() });
+
+  // Subsidiepagina per gemeente, for the subsidie mails and the Plan van Aanpak.
+  const subsidieRij = (c: C) => {
+    const rij = ctx.db.prepare('SELECT * FROM subsidiepaginas WHERE id = ?').get(idParam(c)) as Subsidiepagina | undefined;
+    if (!rij) fout(404, 'Subsidiepagina niet gevonden');
+    return rij;
+  };
+  const leesUrl = (b: Record<string, unknown>) => {
+    const url = typeof b.url === 'string' ? b.url.trim() : '';
+    if (!URL.canParse(url) || !['http:', 'https:'].includes(new URL(url).protocol)) fout(400, 'Vul een volledige link in, die begint met https://.');
+    return url;
+  };
+  const subsidieAntwoord = (c: C) => c.json({ subsidiepaginas: subsidiepaginas(ctx.db), gemeenten: bekendeGemeenten() });
+
+  app.get('/api/subsidiepaginas', (c) => {
+    alleenBeheerder(c);
+    return subsidieAntwoord(c);
+  });
+
+  app.post('/api/subsidiepaginas', async (c) => {
+    alleenBeheerder(c);
+    const b = await body<Record<string, unknown>>(c);
+    const gemeente = typeof b.gemeente === 'string' ? b.gemeente.trim() : '';
+    if (!gemeente) fout(400, 'Vul een gemeente in.');
+    const url = leesUrl(b);
+    if (subsidiepaginas(ctx.db).some((s) => s.gemeente.toLowerCase() === gemeente.toLowerCase())) fout(409, `${gemeente} staat al in de tabel.`);
+    ctx.db.prepare('INSERT INTO subsidiepaginas (gemeente, url) VALUES (?, ?)').run(gemeente, url);
+    audit(ctx, actorVan(c), null, 'subsidiepagina_toegevoegd', { gemeente, url });
+    return subsidieAntwoord(c);
+  });
+
+  app.patch('/api/subsidiepaginas/:id', async (c) => {
+    alleenBeheerder(c);
+    const b = await body<Record<string, unknown>>(c);
+    const oud = subsidieRij(c);
+    const url = leesUrl(b);
+    if (url !== oud.url) {
+      ctx.db.prepare('UPDATE subsidiepaginas SET url = ? WHERE id = ?').run(url, oud.id);
+      audit(ctx, actorVan(c), null, 'subsidiepagina_gewijzigd', { gemeente: oud.gemeente, oud: oud.url, nieuw: url });
+    }
+    return subsidieAntwoord(c);
+  });
+
+  app.delete('/api/subsidiepaginas/:id', (c) => {
+    alleenBeheerder(c);
+    const rij = subsidieRij(c);
+    ctx.db.prepare('DELETE FROM subsidiepaginas WHERE id = ?').run(rij.id);
+    audit(ctx, actorVan(c), null, 'subsidiepagina_verwijderd', { gemeente: rij.gemeente, url: rij.url });
+    return subsidieAntwoord(c);
+  });
 
   // Woningcorporaties: the default Aan and CC of their mails. One address each; empty leaves the field for the admin to fill in.
   app.get('/api/corporaties', (c) => {
