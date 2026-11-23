@@ -98,6 +98,21 @@ describe('MAILGUN_REGIO', () => {
     expect(forms.map((f) => f.get('h:Reply-To'))).toEqual(['r@example.org', null]);
   });
 
+  it('prefixes the subject with [TEST] on a staging install, in the sent mail and the log, and not on the live site', async () => {
+    const forms: FormData[] = [];
+    vi.stubGlobal('fetch', (_url: string, init: { body: FormData }) => {
+      forms.push(init.body);
+      return Promise.resolve(new Response('{}'));
+    });
+    const info = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await stuur();
+    vi.stubEnv('STAGING', '1');
+    await stuur();
+    expect(forms.map((f) => f.get('subject'))).toEqual(['O', '[TEST] O']);
+    expect(info).toHaveBeenLastCalledWith('email sent to a@example.org, subject [TEST] O');
+    info.mockRestore();
+  });
+
   it('refuses to start on an unknown region', () => {
     vi.stubEnv('MAILGUN_REGIO', 'US');
     expect(() => leesConfig()).toThrow('Onbekende MAILGUN_REGIO US');

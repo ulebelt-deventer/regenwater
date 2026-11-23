@@ -76,20 +76,23 @@ export class MailgunMailer implements Mailer {
   private domein: string;
   private api: string;
   private afzender: string;
+  private staging: boolean;
   constructor(cfg: Config) {
     if (!cfg.mailgun) throw new Error('Mailgun niet geconfigureerd');
     this.sleutel = cfg.mailgun.sleutel;
     this.domein = cfg.mailgun.domein;
     this.api = cfg.mailgun.api;
     this.afzender = cfg.afzender;
+    this.staging = cfg.staging;
   }
   async verstuur(b: Bericht): Promise<void> {
+    const onderwerp = `${this.staging ? '[TEST] ' : ''}${b.onderwerp}`;
     const form = new FormData();
     form.set('from', this.afzender);
     form.set('to', b.aan);
     if (b.cc) form.set('cc', b.cc);
     if (b.replyTo) form.set('h:Reply-To', b.replyTo);
-    form.set('subject', b.onderwerp);
+    form.set('subject', onderwerp);
     form.set('text', b.tekst);
     form.set('html', b.html ?? tekstNaarHtml(b.tekst));
     for (const x of b.bijlagen ?? []) form.append('attachment', new Blob([new Uint8Array(x.inhoud)], { type: 'application/pdf' }), x.naam);
@@ -100,6 +103,6 @@ export class MailgunMailer implements Mailer {
     });
     if (!res.ok) throw new Error(`Mailgun ${res.status}: ${await res.text()}`);
     // Accepted by Mailgun only: a later bounce shows up in Mailgun's event log, not here.
-    log.info(`email sent to ${b.aan}${b.cc ? `, cc ${b.cc}` : ''}, subject ${b.onderwerp}`);
+    log.info(`email sent to ${b.aan}${b.cc ? `, cc ${b.cc}` : ''}, subject ${onderwerp}`);
   }
 }
