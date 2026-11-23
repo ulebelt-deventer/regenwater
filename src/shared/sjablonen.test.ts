@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SJABLONEN, TAG_UITLEG, controleerTags, gebruikteTags, probleemTeksten, sjabloonDef, vulIn } from './sjablonen.ts';
+import { SJABLONEN, TAG_UITLEG, controleerTags, gebruikteTags, ontbrekendeWaarden, probleemTeksten, sjabloonDef, vulIn } from './sjablonen.ts';
 
 describe('gebruikteTags', () => {
   it('finds every lowercase {tag}, repeats included, and ignores look-alikes', () => {
@@ -33,6 +33,18 @@ describe('probleemTeksten', () => {
   it('words unknown tags first, then missing ones', () => {
     expect(probleemTeksten({ onbekend: ['adress'], ontbrekend: ['link'] })).toEqual(['{adress} is geen bekende tag voor deze e-mail.', '{link} ontbreekt, maar is nodig.']);
     expect(probleemTeksten({ onbekend: [], ontbrekend: [] })).toEqual([]);
+  });
+});
+
+describe('ontbrekendeWaarden', () => {
+  const def = sjabloonDef('subsidie_koop');
+  it('flags a required value deleted from the text, and not one still there', () => {
+    expect(ontbrekendeWaarden(def, { subsidie_info: 'https://gemeente.example.org' }, 'Subsidie', 'Zie https://gemeente.example.org')).toEqual([]);
+    expect(ontbrekendeWaarden(def, { subsidie_info: 'https://gemeente.example.org' }, 'Subsidie', 'Zie de website')).toEqual(['subsidie_info']);
+  });
+
+  it('flags a required value that is empty for this dossier, whatever the text says', () => {
+    expect(ontbrekendeWaarden(def, { subsidie_info: '' }, 'Subsidie', 'Zie https://gemeente.example.org')).toEqual(['subsidie_info']);
   });
 });
 

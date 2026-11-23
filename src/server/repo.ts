@@ -1,4 +1,5 @@
-import type { Adres, Annotatie, Dossier, Extra, Foto, Gebruiker, IJskast, Json, Normafvoer, NormafvoerRij, PlanAck, Verzending } from '../shared/types.ts';
+import { CORPORATIES } from '../shared/constants.ts';
+import type { Adres, Annotatie, CorporatieAdres, Dossier, Extra, Foto, Gebruiker, IJskast, Json, Normafvoer, NormafvoerRij, PlanAck, Verzending } from '../shared/types.ts';
 import { fout } from './context.ts';
 import type { DB } from './db.ts';
 
@@ -42,6 +43,12 @@ function groepeer<T>(rijen: Record<string, unknown>[], maak: (r: Record<string, 
     m.get(id)!.push(maak(r));
   }
   return m;
+}
+
+// Every corporatie in CORPORATIES; one the admins haven't filled in yet has empty addresses.
+export function corporatieAdressen(db: DB): CorporatieAdres[] {
+  const rijen = db.prepare('SELECT * FROM corporatie_adressen').all() as CorporatieAdres[];
+  return CORPORATIES.map((corporatie) => rijen.find((r) => r.corporatie === corporatie) ?? { corporatie, aan: '', cc: '' });
 }
 
 export const normafvoeren = (db: DB) => db.prepare('SELECT * FROM normafvoeren ORDER BY gemeente').all() as NormafvoerRij[];

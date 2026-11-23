@@ -49,6 +49,8 @@ const isHuur = (d: Dossier) => d.huur_koop === 'huur';
 const regenpijpWaarde = (d: Dossier, id: string | null, veld: string) => d.data[`regenpijp.${id}.${veld}`];
 // A regenpijp on Afkoppelen: Nee keeps only that answer; its other fields and boxes are hidden everywhere.
 export const nietOpRiool = (d: Dossier, id: string | null) => regenpijpWaarde(d, id, 'afkoppelen') !== 'nee';
+// The regenpijpen on Afkoppelen: Ja or Twijfel, whose Afgekoppeld? the uitvoerder confirms.
+export const teAfkoppelen = (d: Dossier, id: string | null) => ['ja', 'twijfel'].includes(regenpijpWaarde(d, id, 'afkoppelen') as string);
 
 export const BEOORDELINGEN: [string, string, string][] = [
   ['uitvoerbaar', 'Wensen uitvoerbaar', 'De Ulebelt is positief over de wensen van de bewoner en denkt dat ze uitvoerbaar zijn.'],
@@ -117,10 +119,12 @@ export const VELDEN: Veld[] = [
   { key: 'materiaal.*.naam', label: 'Materiaal', type: 'text', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true },
   { key: 'materiaal.*.prijs', label: 'Prijs', type: 'number', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
   { key: 'materiaal.*.aantal', label: 'Aantal', type: 'number', pagina: 'plan', bewerkers: ['bezoeker'], inPlan: true, min: 0 },
-  // Prefilled at Bezoek afronden from klussendienstKosten; from then on the agreed amount, which the specificatie and, for koop, the Plan use.
-  { key: 'klussendienst_kosten', label: 'Afgesproken kosten Klussendienst', type: 'number', cent: true, pagina: 'plan', bewerkers: ['bezoeker'], inPlan: (d) => d.huur_koop === 'koop', controle: true, min: 0 },
+  // Prefilled at Bezoek afronden from klussendienstKosten; from then on the agreed amount for the Plan and the specificatie. Huur never mentions it.
+  { key: 'klussendienst_kosten', label: 'Afgesproken kosten Klussendienst', type: 'number', cent: true, pagina: 'plan', bewerkers: ['bezoeker'], inPlan: (d) => d.huur_koop === 'koop', zichtbaar: (d) => !isHuur(d), controle: true, min: 0 },
   // Uitvoering
   { key: 'uitgevoerd', label: 'Wat is er uitgevoerd?', type: 'textarea', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true, hint: 'Beschrijf wat er gedaan is en wat er anders ging dan in het plan. Dit komt in het opleverrapport voor de bewoner en de woningcorporatie.' },
+  // Shown in the Opleverrapport only; it feeds no calculation, the Klussendienst stays as agreed.
+  { key: 'regenpijp.*.afgekoppeld', label: 'Afgekoppeld?', type: 'radio', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true, zichtbaar: teAfkoppelen, opties: [['ja', 'Ja'], ['nee', 'Nee']] },
   { key: 'gebruikt', label: 'Gebruikte materialen', type: 'ids', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true },
   { key: 'gebruikt.*.naam', label: 'Materiaal', type: 'text', pagina: 'uitvoering', bewerkers: ['uitvoerder'], inOplever: true },
   { key: 'gebruikt.*.prijs', label: 'Prijs', type: 'number', pagina: 'uitvoering', bewerkers: ['uitvoerder'], min: 0 },
@@ -281,6 +285,12 @@ export function materiaalRijen(d: Dossier, lijstKey: 'materialen' | 'gebruikt'):
 
 export function materiaalTotaal(rijen: MateriaalRij[]): number {
   return rijen.reduce((s, r) => s + (r.prijs !== null && r.aantal !== null ? Math.round(r.prijs * r.aantal) : 0), 0);
+}
+
+// Why Werk opgeleverd can't be set yet: a regenpijp to afkoppelen without its Afgekoppeld?.
+export function opleverFout(d: Dossier): string | null {
+  const open = kaartItems(d).regenpijpen.filter((r) => teAfkoppelen(d, r.id) && isLeeg(waarde(d, `regenpijp.${r.id}.afgekoppeld`)));
+  return open.length ? `Vul eerst bij regenpijp ${open.map((r) => r.label).join(', ')} in of hij is afgekoppeld.` : null;
 }
 
 export interface Ontbrekend {

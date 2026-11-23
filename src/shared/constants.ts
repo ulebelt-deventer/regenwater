@@ -4,13 +4,18 @@ export const APP_NAAM = 'Ulebelt Regenwater';
 export const ULEBELT_CONTACT_EMAIL = 'regenwater@ulebelt.nl'; // PLACEHOLDER
 
 export const CORPORATIES = ['SallandWonen', 'Rentree', 'Ieder1', 'De Marken'] as const;
-// A corporatie without an address here leaves Aan empty in the mail preview, for the admin to fill in.
-export const CORPORATIE_EMAIL: Record<string, string> = {}; // PLACEHOLDER: the admin team will supply the addresses
 
 export const RIOOLKAARTEN: Record<string, string> = {
   Deventer: 'https://deventer.maps.arcgis.com/apps/webappviewer/index.html?id=f981cd8df5744a18aa87f59998905764',
   Raalte: 'https://experience.arcgis.com/experience/8b52137b53714e35a54b3a4e8f1217e8',
   'Olst-Wijhe': 'https://olst-wijhe.maps.arcgis.com/apps/instant/basic/index.html?appid=859f1b244196497e9f13df1f7c136676',
+};
+
+// The gemeente's own subsidie page, for the subsidie mails and the Plan van Aanpak.
+export const SUBSIDIEPAGINAS: Record<string, string> = {
+  Deventer: 'https://www.deventer.nl/subsidieloket/duurzaamheidssubsidies/subsidie-voor-groene-en-watervriendelijke-maatregelen',
+  Raalte: 'https://www.raalte.nl/klimaatsubsidie',
+  'Olst-Wijhe': 'https://www.olst-wijhe.nl/klimaatsubsidie',
 };
 
 // The PDOK viewer centred on an RD point, with the kadastrale kaart layers on (layer id from the PDOK service catalog).
@@ -19,7 +24,6 @@ export function kadastraleKaartUrl([x, y]: [number, number]): string {
   const lagen = ['kadastralekaart;_', 'Perceel;standaard:perceel', 'KadastraleGrens;standaard:kadastralegrens', 'Bebouwing;standaard:bebouwing', 'OpenbareRuimteNaam;_'];
   return `https://app.pdok.nl/viewer/#x=${Math.round(x)}&y=${Math.round(y)}&z=14&background=BRT-A%20standaard&layers=${lagen.map((n) => `${l};${n};1`).join(',')}`;
 }
-export const SUBSIDIE_INFO_URL = 'https://www.ulebelt.nl/regenwater'; // PLACEHOLDER
 export const NORM_STANDAARD_LABEL = 'Standaard (overige gemeenten)';
 export const NORM_CONTROLE_DAGEN = 365; // the Overzicht asks to recheck a norm unchecked for this long
 // From this date the Overzicht asks for automatic deletion past the bewaartermijnen, which nothing does yet (docs/privacy.md, Open). A year before the first 5-year termijn can run out.

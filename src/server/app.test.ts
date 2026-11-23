@@ -373,6 +373,16 @@ describe('documents', () => {
     expect(await plan()).toMatch(/>Andere foto’s<\/h3><div[^>]*class="fotos">.*<img /);
   });
 
+  it("links the gemeente's subsidiepagina in the Plan, and leaves the section out of the PDF for a gemeente without one", async () => {
+    const id = await nieuwDossier();
+    const plan = async () => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
+    expect(await plan()).toMatch(/6\. Subsidie.*qa-pdf-subsidie.*gemeente.*Deventer.*href="https:\/\/www\.deventer\.nl\/subsidieloket\//);
+    t.ctx.db.prepare("UPDATE dossiers SET adres_json = json_set(adres_json, '$.gemeente', 'Zwolle') WHERE id = ?").run(id);
+    expect(await plan()).toMatch(/6\. Subsidie.*qa-pdf-subsidie.*nog niet ingevuld/);
+    await beheerder.verzoek('GET', `/docs/dossiers/${id}/plan.pdf`);
+    expect(t.pdfs[0]).not.toContain('Subsidie');
+  });
+
   describe('Prices in the Plan Materialenlijst', () => {
     const zet = (id: number, key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
     const plan = async (id: number) => (await beheerder.verzoek('GET', `/docs/dossiers/${id}/concept-plan`)).text();
@@ -415,7 +425,7 @@ describe('documents', () => {
       expect((await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'klussendienst_kosten', value: 12.5 }, 400)).fout).toMatch(/Afgesproken kosten Klussendienst/);
     });
 
-    it('prefills the agreed amount at Bezoek afgerond with € 50 per afgekoppelde regenpijp for huur and koop, and keeps an amount already agreed', async () => {
+    it('prefills the agreed amount at Bezoek afgerond with € 50 per afgekoppelde regenpijp for koop only, and keeps an amount already agreed', async () => {
       const bezoekAf = (id: number, aan: boolean) => beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'bezoek_afgerond', aan });
       const kosten = async (id: number) => (await beheerder.json('GET', `/api/dossiers/${id}`)).dossier.data.klussendienst_kosten;
       const koop = await nieuwDossier('koop');
@@ -429,7 +439,7 @@ describe('documents', () => {
       const huur = await nieuwDossier('huur');
       await afkoppelen(huur, ['ja']);
       await bezoekAf(huur, true);
-      expect(await kosten(huur)).toBe(5000);
+      expect(await kosten(huur)).toBeUndefined();
     });
 
     it('leaves out a koopwoning without materials or a Klussendienst amount, and shows the Klussendienst alone without materials', async () => {
@@ -507,6 +517,39 @@ describe('documents', () => {
     expect((await beheerder.verzoek('GET', `/docs/dossiers/${id}/opleverrapport.pdf`)).status).toBe(409);
   });
 
+  describe('Afgekoppeld? per regenpijp', () => {
+    const pijpen = async (id: number) => {
+      await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'kaart_annotaties', value: ['a', 'b', 'c'].map((r, i) => ({ id: r, type: 'regenpijp', p: [[i, i]] })) });
+      for (const [r, afkoppelen] of [['a', 'ja'], ['b', 'twijfel'], ['c', 'nee']]) await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: `regenpijp.${r}.afkoppelen`, value: afkoppelen });
+    };
+
+    it('needs an answer from the uitvoerder for every regenpijp on Ja or Twijfel before Werk opgeleverd, and none on Nee', async () => {
+      const id = await nieuwDossier();
+      await pijpen(id);
+      await beheerder.json('POST', `/api/dossiers/${id}/toewijzen`, { rol: 'uitvoerder', gebruiker_id: klusserId });
+      const opleveren = (status: number) => klusser.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' }, status);
+      expect((await opleveren(400)).fout).toBe('Vul eerst bij regenpijp A, B in of hij is afgekoppeld.');
+      await klusser.json('PATCH', `/api/dossiers/${id}`, { key: 'regenpijp.a.afgekoppeld', value: 'ja' });
+      expect((await opleveren(400)).fout).toBe('Vul eerst bij regenpijp B in of hij is afgekoppeld.');
+      await klusser.json('PATCH', `/api/dossiers/${id}`, { key: 'regenpijp.b.afgekoppeld', value: 'nee' });
+      expect((await opleveren(200)).dossier.werk_opgeleverd_at).not.toBeNull();
+    });
+
+    it('lists the answers in the Opleverrapport, with (onbekend) for a regenpijp opgeleverd without one', async () => {
+      const id = await nieuwDossier();
+      await pijpen(id);
+      await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'regenpijp.a.afgekoppeld', value: 'nee' });
+      await beheerder.json('PATCH', `/api/dossiers/${id}`, { key: 'regenpijp.b.afgekoppeld', value: 'ja' });
+      await beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
+      // A dossier opgeleverd before the question existed.
+      t.ctx.db.prepare("UPDATE dossiers SET data = json_remove(data, '$.\"regenpijp.b.afgekoppeld\"') WHERE id = ?").run(id);
+      await beheerder.verzoek('GET', `/docs/dossiers/${id}/opleverrapport.pdf`);
+      const rapport = t.pdfs.at(-1)!;
+      expect(rapport).toMatch(/qa-pdf-afgekoppeld.*<td>A<\/td><td>Ja<\/td><td>Nee<\/td>.*<td>B<\/td><td>Twijfel<\/td><td>\(onbekend\)<\/td>/);
+      expect(rapport).not.toMatch(/<td>C<\/td>/);
+    });
+  });
+
   it('gives the uitvoeringsspecificatie only to admins, after oplevering, and for koop only with the Klussendienst', async () => {
     const pad = (id: number) => `/docs/dossiers/${id}/uitvoeringsspecificatie`;
     const mijlpaal = (id: number, m: string) => beheerder.json('POST', `/api/dossiers/${id}/mijlpaal`, { mijlpaal: m });
@@ -523,6 +566,15 @@ describe('documents', () => {
     expect(html).toContain('anna@example.org');
     expect(html).toMatch(/qa-klussendienst.*afgesproken in het Plan van Aanpak.*€ 75,00.*Totaal excl. btw.*qa-subtotaal.*€ 75,00.*qa-btw.*€ 15,75.*Totaal incl. btw.*qa-totaal.*€ 90,75/);
     expect((await klusser.verzoek('GET', pad(koop))).status).toBe(403);
+  });
+
+  it('leaves the Klussendienst off the uitvoeringsspecificatie for huur', async () => {
+    const huur = await nieuwDossier('huur');
+    await beheerder.json('PATCH', `/api/dossiers/${huur}`, { key: 'klussendienst_kosten', value: 7500 });
+    await beheerder.json('POST', `/api/dossiers/${huur}/mijlpaal`, { mijlpaal: 'werk_opgeleverd' });
+    const html = await (await beheerder.verzoek('GET', `/docs/dossiers/${huur}/uitvoeringsspecificatie`)).text();
+    expect(html).toContain('qa-subtotaal');
+    expect(html).not.toContain('Klussendienst');
   });
 
   it('prints a blank bezoekformulier with the current materials list', async () => {

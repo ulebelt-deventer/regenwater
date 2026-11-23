@@ -130,7 +130,7 @@ export async function mail(page: Page, sjabloon: string, handmatig = false): Pro
 
 export const CORPORATIE_AAN = 'corporatie@example.org';
 
-// No corporatie has a known address yet, so Aan starts empty and the test types one.
+// A fresh database has no woningcorporatie addresses, so Aan starts empty and the test types one.
 export async function corporatieMail(page: Page, sjabloon: string, handmatig = false): Promise<void> {
   await page.locator(`.qa-mail-${sjabloon}`).click();
   await page.locator('.qa-mail .qa-mail-aan').fill(CORPORATIE_AAN);

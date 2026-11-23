@@ -120,6 +120,13 @@ export interface Annotatie {
   tekst?: string;
 }
 
+// The default Aan and CC of the woningcorporatie mails; empty until an admin enters them.
+export interface CorporatieAdres {
+  corporatie: string;
+  aan: string;
+  cc: string;
+}
+
 // A row of the Normafvoer table. gemeente null is the standaard row, for every gemeente without its own.
 export interface NormafvoerRij {
   id: number;

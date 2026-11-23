@@ -97,11 +97,11 @@
     - `plan_gewijzigd_at`: one timestamp on the dossier, bumped by the server whenever a field that appears in the Plan van Aanpak PDF actually changes (incl. photos and kaart annotations). The field definitions in code mark which fields are in the PDF, so this needs no per-field timestamps. The audit trail shows exactly what changed.
   - *For each input with optional photo upload slots, the label and hint span the full width, and below them it's a 2-column system: you write in the left, and the right (narrow) column is the photo slot, where you take, upload, paste or drop photos that are downscaled, uploaded and attached (see the photo slot rules under Straatfoto). On phones the slot sits below the input, and at every width once it holds two or more photos (the input then takes the full width). Tap a pic then tap "Verwijderen" to remove it. Multiple photos can be attached to any such slot, though usually it will be 0-1 in a given slot.*
   - *Every email the app sends to a person outside the admin team (bewoner, corporatie, klusser) goes through the same preview pop-up, opened by a button:*
-    - Aan: prefilled (bewoner's e-mail, the corporatie's address constant, the klusser's account e-mail) but editable; validated as an e-mail address. Onderwerp and tekst are editable too, prefilled from the template.
-    - The onderwerp and tekst arrive with the template's `{tags}` already filled in for this dossier, so the pop-up shows exactly the mail that will be sent, and it's sent as edited. If a required value is no longer in the text (eg the dossier link in a klusser email), the pop-up shows a warning and "Versturen" then asks "Weet je het zeker?" before sending.
+    - Aan: prefilled (bewoner's e-mail, the woningcorporatie's Aan from Beheer > Woningcorporaties, the klusser's account e-mail) but editable; validated as an e-mail address. A woningcorporatie mail also has an optional CC field, prefilled with that woningcorporatie's CC. Onderwerp and tekst are editable too, prefilled from the template.
+    - The onderwerp and tekst arrive with the template's `{tags}` already filled in for this dossier, so the pop-up shows exactly the mail that will be sent, and it's sent as edited. If a required value is no longer in the text (eg the dossier link in a klusser email), or the dossier has none (a gemeente without a subsidiepagina), the pop-up shows a warning and "Versturen" then asks "Weet je het zeker?" before sending.
     - Edits apply to this one send only; to change the standard text, edit the template under Beheer > E-mailsjablonen. The sent subject and text are stored in the audit trail.
     - Red .alert.alert-danger at top if this email (same template, same dossier) was already sent, with the date.
-    - CC'd to the admin who sends it (pending the team question about a shared inbox).
+    - CC'd to the admin who sends it; replies go to the dossier's eigenaar. Below the addresses the pop-up says where the copy and the replies go.
     - Attachments (the PDF) are listed by name; they're generated at send time.
     - On its own line below "Annuleren"/"Versturen", at the left, a link "Handmatig verstuurd...": for when the admin downloaded the PDF and emailed it themselves. Since it sends nothing, it first asks for confirmation that the app won't send this email and that they sent it themselves. It records a send at the current time exactly like "Versturen" does (it counts for the status, the aandacht clocks and Plan gewijzigd), shown as "Handmatig verstuurd op {datum}".
   - Title: this address
@@ -273,7 +273,7 @@
       - The dossier's materials are plain text rows (materiaal, prijs, aantal) belonging to the dossier, not links to the default list: when the dossier is created, the table is prefilled with a copy of the default list (managed on the Materialen page), and from then on every row's Materiaal and Prijs can be edited, and rows deleted, to match what's actually needed on site. Later changes to the default list don't touch existing dossiers.
       - "+ Ander materiaal" adds an empty row.
       - Footer: "Geschatte materiaalkosten: € {totaal}", auto-calculated.
-    - Afgesproken kosten Klussendienst (euro input, excl. btw; huur and koop): the work cost agreed with the bewoner or corporatie, which the Plan and Opleverrapport (koop) and the Uitvoeringsspecificatie show. "Bezoek afronden" prefills it, once, with € 50 per regenpijp on "Afkoppelen: Ja"; the hint shows that calculation. A change marks the Plan as gewijzigd for a koopwoning only, as a huurwoning's Plan doesn't show it.
+    - Afgesproken kosten Klussendienst (euro input, excl. btw; koop only): the work cost agreed with the bewoner, which the Plan, the Opleverrapport and the Uitvoeringsspecificatie show. "Bezoek afronden" prefills it, once, with € 50 per regenpijp on "Afkoppelen: Ja"; the hint shows that calculation. A change marks the Plan as gewijzigd. For a huurwoning the Klussendienst cost is mentioned nowhere: the field is hidden and not prefilled.
       - Default list (named as in the sample where it has the item; placeholder prices, for the team to correct on the Materialen page):
 
         | Materiaal | Prijs |
@@ -324,16 +324,18 @@
     - On the details page, inline:
       - Link "Plan van Aanpak (PDF)", generated live from the current data.
       - Uitvoering gepland op (date, optional): the uitvoerder enters it after arranging the work with the bewoner by phone.
-      - The compact summary (what was done, opleverfoto thumbnails, used materials with an Aantal plus the total), and the "Invullen" / "Bewerken" button to the sub-page.
+      - The compact summary (what was done, Afgekoppeld per regenpijp, opleverfoto thumbnails, used materials with an Aantal plus the total), and the "Invullen" / "Bewerken" button to the sub-page.
     - Wat is er uitgevoerd? (textarea), with the hint "Beschrijf wat er gedaan is en wat er anders ging dan in het plan. Dit komt in het opleverrapport voor de bewoner en de woningcorporatie."
+    - Regenpijpen: "Regenpijp {X}: afgekoppeld?" (Ja/Nee) for each regenpijp on Afkoppelen: Ja or Twijfel. It feeds no calculation: the Klussendienst stays as agreed. A dossier opgeleverd before this question existed shows "(onbekend)", in the summary and the Opleverrapport, never a Ja.
     - Opleverfoto's: a slot where they can upload pictures of the completed work.
     - Gebruikte materialen (table, the basis for invoicing): the same columns as Materialen die nodig zijn, pre-populated with a copy of the planned rows that have an Aantal; each row can be edited or deleted, and "+ Ander materiaal" adds rows.
-    - Button: "Werk opgeleverd" - uitvoerder taps this to hand the dossier back to the admin.
+    - Koopwoning only, read-only below the table: the Afgesproken kosten Klussendienst, with a note that the bewoner pays this amount and that the uitvoerder tells an admin if the work went differently from the Plan.
+    - Button, on its own line: "Werk opgeleverd" - uitvoerder taps this to hand the dossier back to the admin. Refused, with the regenpijpen named, while a listed regenpijp has no Afgekoppeld? answer.
   - **Oplevering** (inline, admin; gray until "Werk opgeleverd" is tapped)
     - Link "Opleverrapport (PDF)"
     - Link "Uitvoeringsspecificatie (voor de factuur)": everything the administratie needs to make the factuur. The app never makes the factuur itself (no factuurnummer, no Ulebelt bedrijfsgegevens). Available for a huurwoning, and for a koopwoning only when the bewoner chose the Klussendienst; otherwise it's greyed out with the reason.
-      - Contents: project ("Klimaatadaptatie {gemeente}"), bewoner naam, adres with postcode, bewoner e-mail, woningeigenaar, uitvoerder and opleverdatum; then the Gebruikte materialen that have an Aantal (Prijs excl. btw, Aantal, Bedrag); a line "Klussendienst (afgesproken in het Plan van Aanpak)" with the Afgesproken kosten Klussendienst (huur and koop alike); then Totaal excl. btw, btw 21% (over that total, rounded to the cent) and Totaal incl. btw, worded as in the Plan. All prices are excl. btw.
-      - A used material without a prijs, or empty Afgesproken kosten Klussendienst (counted as € 0), gets a "Let op" line on the page and in the text.
+      - Contents: project ("Klimaatadaptatie {gemeente}"), bewoner naam, adres with postcode, bewoner e-mail, woningeigenaar, uitvoerder and opleverdatum; then the Gebruikte materialen that have an Aantal (Prijs excl. btw, Aantal, Bedrag); for a koopwoning a line "Klussendienst (afgesproken in het Plan van Aanpak)" with the Afgesproken kosten Klussendienst (a huurwoning has none); then Totaal excl. btw, btw 21% (over that total, rounded to the cent) and Totaal incl. btw, worded as in the Plan. All prices are excl. btw.
+      - A used material without a prijs, or a koopwoning's empty Afgesproken kosten Klussendienst (counted as € 0), gets a "Let op" line on the page and in the text.
       - The link opens a print-friendly page that starts with the Ulebelt logo and the Regenwater wordmark (also when printed), with buttons "Afdrukken" (print or save as PDF from the browser) and "Kopieer als tekst": the same contents in plain lines, for pasting into a mail to the administratie. Each detail is labelled as on the page ("Bewoner: ...", "E-mail bewoner: ...", "--" when empty), since the factuur may go to the gemeente for the subsidie rather than to the bewoner. It's never sent from the app.
     - "Opleverrapport versturen naar woningcorporatie" (if huur)
       - Button opens a pop-up to preview the email to be sent to the woningcorporatie, with the opleverrapport PDF attached. Green text indicating if it was already sent.
@@ -355,6 +357,7 @@
     - Afspraken: wat gaat de bewoner doen, wat gaat De Ulebelt doen.
   - **5. Materialenlijst**: the rows with an Aantal. A huurwoning's Plan lists Materiaal and Aantal only and carries no prices at all.
     - A koopwoning's Plan gives one priced list: Materiaal, Aantal, Prijs excl. btw and Bedrag per row, then "Uitvoering door de Klussendienst" with the Afgesproken kosten Klussendienst (left out at € 0), then Totaal excl. btw, btw 21% and Totaal incl. btw. Listed materials without a price show "--" and are named as not counted, and a closing line says it is a prijsinschatting, not a guarantee of the final costs.
+  - **6. Subsidie**: a link to the gemeente's own subsidiepagina. Left out for a gemeente without one.
   - **Bijlage**: in two columns, the boorprofiel image (left) and the standard "Doorlaatbaarheid per grondsoort" table, rendered as text from a constant in code (transcribed from the sample):
 
     | Grondsoort | Doorlaatbaarheid |
@@ -372,7 +375,7 @@
     | Zeer fijn (duin)zand | Matig |
     | Fijn en grof grind | Zeer goed |
     | Schelpen | Zeer goed |
-  - The completion report (opleverrapport) uses the same header, plus an Uitvoering section: description of the work, opleverfoto's, Gebruikte materialen: for a koopwoning the same priced list as the Plan's Materialenlijst, over the Gebruikte materialen and without the prijsinschatting line; for a huurwoning Materiaal and Aantal only, with no prices.
+  - The completion report (opleverrapport) uses the same header, plus an Uitvoering section: description of the work, a Regenpijpen table (Pijp, Afkoppelen volgens het plan, Afgekoppeld) for the regenpijpen on Ja or Twijfel, opleverfoto's, Gebruikte materialen: for a koopwoning the same priced list as the Plan's Materialenlijst, over the Gebruikte materialen and without the prijsinschatting line; for a huurwoning Materiaal and Aantal only, with no prices.
 - Statussen page
   - Linked from the "?" next to Volgende stap. Lists every status in order with its rule, generated from the same rule list the app uses, so docs and behavior can't drift apart.
   - Columns #, Status (bold), Ligt bij (a label colored by role, as everywhere the app shows who the ball lies with), Huidig zolang.
@@ -455,8 +458,10 @@
     - The norm per gemeente in whole mm, starting with one undeletable row "Standaard (overige gemeenten)" at 20 mm for every gemeente without its own row. Admins add a gemeente (suggestions from existing dossiers and the riool detection; an unknown name asks for confirmation, since it must match the address spelling), change a value, delete a row, or tap Nagekeken. Changing a value counts as nagekeken. All of it is in the activity log.
     - A dossier keeps the norm from the first time its Bezoek opens, so a change only reaches dossiers whose Bezoek hasn't opened yet.
     - A row not checked for 12 months is listed on the Overzicht until it's marked Nagekeken.
+  - "Woningcorporaties"
+    - One row per woningcorporatie with its Aan and CC address, each saved on leaving the field, validated as an e-mail address or empty, and recorded in the activity log. Empty until an admin enters them; the woningcorporatie mails prefill them. (As more settings per woningcorporatie appear, this may become one page to add and configure woningcorporaties.)
   - "E-mailsjablonen"
-    - The templates: Subsidie: subsidiabel, huurwoning / subsidiabel, koopwoning / niet subsidiabel; Bezoeker toegewezen; Plan naar bewoner (huur); Plan naar bewoner (koop, asks Klussendienst of zelf); Plan naar woningcorporatie; Uitvoerder toegewezen; Opleverrapport naar woningcorporatie; Opleverrapport naar bewoner; Oproep Signal-groep (copied to the clipboard, no onderwerp). The login email is fixed in code.
+    - The templates: Subsidie: subsidiabel, huurwoning / subsidiabel, koopwoning / niet subsidiabel; Bezoeker toegewezen; Plan naar bewoner (huur); Plan naar bewoner (koop, asks Klussendienst of zelf); Plan naar woningcorporatie; Uitvoerder toegewezen; Opleverrapport naar woningcorporatie; Opleverrapport naar bewoner; Oproep Signal-groep (copied to the clipboard, no onderwerp). The login email is fixed in code. The three Subsidie templates require `{subsidie_info}`, the link to the gemeente's subsidiepagina (Deventer, Olst-Wijhe and Raalte, a constant in code).
     - Seeded at launch from the prototype's drafts, with texts written for the ones it lacks; admins edit them from then on.
     - Lists the templates as buttons (three columns on desktop, stacked on phones), each opening the template's own edit page with a breadcrumb back to the list. Each one has {...} tags, listed at the top so you know what tags are supported (required ones marked), and validated on save with warnings for unknown tags (eg a typo `{adress}`) and missing required tags (eg `{link}` in a klusser email).
   - "Leeg bezoekformulier (PDF)" (see Bezoek)

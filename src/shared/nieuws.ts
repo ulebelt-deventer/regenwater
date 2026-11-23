@@ -6,6 +6,24 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-11-21',
+    groepen: [
+      {
+        kop: 'Uitvoering',
+        punten: [
+          'De uitvoerder geeft nu op de Uitvoering bij elke regenpijp met Afkoppelen? Ja of Twijfel aan of hij echt is afgekoppeld. Werk opgeleverd kan pas als dat overal is ingevuld. De antwoorden staan in het Opleverrapport; bij werk dat al eerder is opgeleverd staat daar (onbekend). Ze veranderen de kosten Klussendienst niet.',
+          'Bij een koopwoning ziet de uitvoerder onder de Gebruikte materialen nu de Afgesproken kosten Klussendienst. Ging het werk anders dan in het Plan van Aanpak, dan laat de uitvoerder het jou weten.',
+        ],
+      },
+      {
+        kop: 'E-mail',
+        punten: [
+          'Onder Beheer, Woningcorporaties stel je nu per woningcorporatie een adres voor Aan en een adres voor CC in. De e-mails aan die woningcorporatie hebben ze dan al ingevuld; je kunt ze per e-mail nog aanpassen. Laat je ze leeg, dan vul je ze zoals nu zelf in.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-11-12',
     groepen: [
       {

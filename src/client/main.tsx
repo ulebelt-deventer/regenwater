@@ -14,7 +14,7 @@ import { Uitvoering } from './dossier/uitvoering.tsx';
 import { Layout } from './layout.tsx';
 import { startOpslag } from './opslag.ts';
 import { Activiteit } from './paginas/activiteit.tsx';
-import { Feedback, Materialen, NormafvoerBeheer, SjabloonPagina, Sjablonen } from './paginas/beheer.tsx';
+import { Feedback, Materialen, NormafvoerBeheer, SjabloonPagina, Sjablonen, Woningcorporaties } from './paginas/beheer.tsx';
 import { Dossiers } from './paginas/dossiers.tsx';
 import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
 import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
@@ -53,6 +53,7 @@ render(
       <Route path="/gebruikers/:id" component={GebruikerPagina} />
       <Route path="/beheer/materialen" component={Materialen} />
       <Route path="/beheer/normafvoer" component={NormafvoerBeheer} />
+      <Route path="/beheer/woningcorporaties" component={Woningcorporaties} />
       <Route path="/beheer/sjablonen" component={Sjablonen} />
       <Route path="/beheer/sjablonen/:key" component={SjabloonPagina} />
       <Route path="/beheer/feedback" component={Feedback} />

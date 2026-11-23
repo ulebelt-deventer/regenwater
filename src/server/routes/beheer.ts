@@ -1,12 +1,13 @@
 import type { Hono } from 'hono';
 import { NIEUWS } from '../../shared/nieuws.ts';
 import { SJABLONEN, TAG_UITLEG, controleerTags } from '../../shared/sjablonen.ts';
-import type { Adres, NormafvoerRij } from '../../shared/types.ts';
+import type { Adres, CorporatieAdres, NormafvoerRij } from '../../shared/types.ts';
 import { audit, type AuditRij } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
+import { EMAIL_RE } from '../mail.ts';
 import { feedbackMail } from '../meldingen.ts';
-import { gebruikersMap, leesNormMm, normafvoeren } from '../repo.ts';
+import { corporatieAdressen, gebruikersMap, leesNormMm, normafvoeren } from '../repo.ts';
 import { DETECTIE_GEMEENTEN } from '../riool.ts';
 import { auditItem } from './dossiers.ts';
 
@@ -89,6 +90,31 @@ export function beheerRoutes(app: Hono<Env>, ctx: Ctx): void {
     const gebruikt = ctx.db.prepare("SELECT DISTINCT json_extract(adres_json, '$.gemeente') FROM dossiers WHERE adres_json IS NOT NULL").pluck().all() as string[];
     return c.json({ normafvoeren: normafvoeren(ctx.db), gemeenten: [...new Set([...DETECTIE_GEMEENTEN, ...gebruikt])].sort() });
   };
+
+  // Woningcorporaties: the default Aan and CC of their mails. One address each; empty leaves the field for the admin to fill in.
+  app.get('/api/corporaties', (c) => {
+    alleenBeheerder(c);
+    return c.json({ corporaties: corporatieAdressen(ctx.db) });
+  });
+
+  app.put('/api/corporaties/:naam', async (c) => {
+    alleenBeheerder(c);
+    const oud = corporatieAdressen(ctx.db).find((r) => r.corporatie === c.req.param('naam'));
+    if (!oud) fout(404, 'Onbekende woningcorporatie');
+    const b = await body<Record<string, unknown>>(c);
+    const adres = (key: 'aan' | 'cc', label: string) => {
+      const v = b[key];
+      if (typeof v !== 'string') fout(400, `${label} ontbreekt.`);
+      if (v.trim() && !EMAIL_RE.test(v.trim())) fout(400, `Vul een geldig e-mailadres in bij ${label}, of laat het leeg.`);
+      return v.trim();
+    };
+    const nieuw: CorporatieAdres = { corporatie: oud.corporatie, aan: adres('aan', 'Aan'), cc: adres('cc', 'CC') };
+    if (nieuw.aan !== oud.aan || nieuw.cc !== oud.cc) {
+      ctx.db.prepare('INSERT INTO corporatie_adressen (corporatie, aan, cc) VALUES (?, ?, ?) ON CONFLICT (corporatie) DO UPDATE SET aan = excluded.aan, cc = excluded.cc').run(nieuw.corporatie, nieuw.aan, nieuw.cc);
+      audit(ctx, actorVan(c), null, 'corporatie_adres_gewijzigd', { corporatie: oud.corporatie, oud: { aan: oud.aan, cc: oud.cc }, nieuw: { aan: nieuw.aan, cc: nieuw.cc } });
+    }
+    return c.json({ corporaties: corporatieAdressen(ctx.db) });
+  });
 
   app.get('/api/normafvoeren', (c) => {
     alleenBeheerder(c);

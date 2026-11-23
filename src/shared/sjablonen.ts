@@ -1,4 +1,3 @@
-import { SUBSIDIE_INFO_URL } from './constants.ts';
 import type { Ontvanger } from './types.ts';
 
 export type Bijlage = 'plan' | 'opleverrapport';
@@ -19,19 +18,19 @@ const GROET = '\n\nMet vriendelijke groet,\n{afzender}\nDe Ulebelt';
 export const SJABLONEN: SjabloonDef[] = [
   {
     key: 'subsidie_huur', naam: 'Subsidie: subsidiabel, huurwoning', ontvanger: 'bewoner', bijlage: null,
-    tags: ['bewoner', 'adres', 'corporatie', 'afzender', 'subsidie_info'], verplicht: [],
+    tags: ['bewoner', 'adres', 'corporatie', 'afzender', 'subsidie_info'], verplicht: ['subsidie_info'],
     onderwerp: 'Uw aanmelding: we komen graag langs',
     tekst: `Beste {bewoner},\n\nBedankt voor uw aanmelding voor het afkoppelen van regenwater op {adres}. Goed nieuws: uw woning komt in aanmerking.\n\nEen van onze vrijwilligers neemt binnenkort contact met u op om een afspraak te maken. Na het bezoek vragen wij toestemming aan {corporatie}.\n\nMeer informatie over de subsidie: {subsidie_info}${GROET}`,
   },
   {
     key: 'subsidie_koop', naam: 'Subsidie: subsidiabel, koopwoning', ontvanger: 'bewoner', bijlage: null,
-    tags: ['bewoner', 'adres', 'afzender', 'subsidie_info'], verplicht: [],
+    tags: ['bewoner', 'adres', 'afzender', 'subsidie_info'], verplicht: ['subsidie_info'],
     onderwerp: 'Uw aanmelding: we komen graag langs',
     tekst: `Beste {bewoner},\n\nBedankt voor uw aanmelding voor het afkoppelen van regenwater op {adres}. Goed nieuws: uw woning komt in aanmerking voor subsidie.\n\nEen van onze vrijwilligers neemt binnenkort contact met u op voor een bezoek. Alvast meer informatie over de subsidie: {subsidie_info}${GROET}`,
   },
   {
     key: 'subsidie_niet', naam: 'Subsidie: niet subsidiabel', ontvanger: 'bewoner', bijlage: null,
-    tags: ['bewoner', 'adres', 'afzender', 'subsidie_info'], verplicht: [],
+    tags: ['bewoner', 'adres', 'afzender', 'subsidie_info'], verplicht: ['subsidie_info'],
     onderwerp: 'Uw aanmelding bij De Ulebelt',
     tekst: `Beste {bewoner},\n\nBedankt voor uw aanmelding voor het afkoppelen van regenwater op {adres}.\n\nUw woning is al aangesloten op een gescheiden rioolstelsel: het regenwater gaat daar al apart van het afvalwater. Daarom komt u helaas niet in aanmerking voor de subsidie.\n\nOp {subsidie_info} vindt u wel tips om zelf regenwater op te vangen.${GROET}`,
   },
@@ -101,7 +100,7 @@ export const TAG_UITLEG: Record<string, string> = {
   link: 'link naar het dossier',
   straat: 'straatnaam (zonder huisnummer)',
   plaats: 'plaats',
-  subsidie_info: `link naar de subsidie-informatie (${SUBSIDIE_INFO_URL})`,
+  subsidie_info: 'link naar de subsidiepagina van de gemeente',
 };
 
 export function gebruikteTags(s: string): string[] {
@@ -125,9 +124,9 @@ export function probleemTeksten(p: TagProblemen): string[] {
   return [...p.onbekend.map((t) => `{${t}} is geen bekende tag voor deze e-mail.`), ...p.ontbrekend.map((t) => `{${t}} ontbreekt, maar is nodig.`)];
 }
 
-// The required tags whose filled-in value no longer appears in an already filled-in mail, eg the dossier link deleted from the text.
+// The required tags with no value for this dossier, or whose value no longer appears in an already filled-in mail, eg the dossier link deleted from the text.
 export function ontbrekendeWaarden(def: SjabloonDef, waarden: Record<string, string>, onderwerp: string, tekst: string): string[] {
-  return def.verplicht.filter((t) => !`${onderwerp}\n${tekst}`.includes(waarden[t]));
+  return def.verplicht.filter((t) => !waarden[t] || !`${onderwerp}\n${tekst}`.includes(waarden[t]));
 }
 
 export function vulIn(s: string, waarden: Record<string, string>): string {

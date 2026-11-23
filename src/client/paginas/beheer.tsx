@@ -1,10 +1,10 @@
-// Beheer pages (admin): Normafvoer, Materialen, E-mailsjablonen and Feedback.
+// Beheer pages (admin): Normafvoer, Woningcorporaties, Materialen, E-mailsjablonen and Feedback.
 import { A, useParams } from '@solidjs/router';
 import { For, Show, createResource, createSignal } from 'solid-js';
 import { NORM_STANDAARD_LABEL } from '../../shared/constants.ts';
 import { datum, datumTijd } from '../../shared/datum.ts';
 import { controleerTags, probleemTeksten, sjabloonDef } from '../../shared/sjablonen.ts';
-import type { NormafvoerRij } from '../../shared/types.ts';
+import type { CorporatieAdres, NormafvoerRij } from '../../shared/types.ts';
 import { del, get, patch, post, put, query } from '../api.ts';
 import { AlleenBeheerder, Kruimels, Laden, bevestig, melding, probeer, titel } from '../ui.tsx';
 
@@ -99,6 +99,59 @@ function NormafvoerInhoud() {
           </div>
           <button type="submit" class="btn btn-primary qa-norm-voeg-toe">Toevoegen</button>
         </form>
+      </Show>
+    </>
+  );
+}
+
+// ---- Woningcorporaties ----
+
+// The mail addresses only, for now. As more settings per woningcorporatie appear, this may become one page to add and configure woningcorporaties.
+export function Woningcorporaties() {
+  titel('Woningcorporaties');
+  return (
+    <AlleenBeheerder>
+      <WoningcorporatiesInhoud />
+    </AlleenBeheerder>
+  );
+}
+
+function WoningcorporatiesInhoud() {
+  const [data, { mutate }] = createResource(() => get<{ corporaties: CorporatieAdres[] }>('/api/corporaties'));
+  const wijzig = async (r: CorporatieAdres, key: 'aan' | 'cc', invoer: HTMLInputElement) => {
+    if (invoer.value.trim() === r[key]) return;
+    const ok = await probeer(async () => mutate(await put<{ corporaties: CorporatieAdres[] }>(`/api/corporaties/${encodeURIComponent(r.corporatie)}`, { aan: r.aan, cc: r.cc, [key]: invoer.value })));
+    if (ok) melding('success', `${r.corporatie} opgeslagen.`);
+    else invoer.value = r[key];
+  };
+
+  return (
+    <>
+      <h1>Woningcorporaties</h1>
+      <p class="text-muted">De adressen die de e-mails aan de woningcorporatie al ingevuld krijgen bij Aan en CC. In de e-mail zelf kun je ze nog aanpassen. Leeg laten mag: dan vul je het adres in bij het versturen.</p>
+      <Show when={data()} fallback={<Laden />}>
+        <div class="table-responsive">
+          <table class="table align-middle qa-corporaties" style={{ 'max-width': '52rem' }}>
+            <thead>
+              <tr>
+                <th>Woningcorporatie</th>
+                <th>Aan</th>
+                <th>CC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={data()!.corporaties}>
+                {(r) => (
+                  <tr class={`qa-corporatie qa-corporatie-${r.corporatie.replace(/\W/g, '')}`}>
+                    <td class="text-nowrap">{r.corporatie}</td>
+                    <td><input class="form-control form-control-sm qa-corporatie-aan" type="email" aria-label={`Aan, ${r.corporatie}`} value={r.aan} onChange={(e) => wijzig(r, 'aan', e.currentTarget)} /></td>
+                    <td><input class="form-control form-control-sm qa-corporatie-cc" type="email" aria-label={`CC, ${r.corporatie}`} value={r.cc} onChange={(e) => wijzig(r, 'cc', e.currentTarget)} /></td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
       </Show>
     </>
   );

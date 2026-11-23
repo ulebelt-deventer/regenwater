@@ -1,4 +1,3 @@
-import { CORPORATIE_EMAIL } from './constants.ts';
 import { datum, isoDatum, lokaal } from './datum.ts';
 import type { Adres, Dossier, IJskast, Ontvanger, Verzending } from './types.ts';
 
@@ -220,11 +219,6 @@ export function corporatieNaam(d: Dossier): string | null {
 export function eigenaar(d: Dossier): string | null {
   if (d.huur_koop === 'koop') return 'Bewoner (koopwoning)';
   return corporatieNaam(d);
-}
-
-export function corporatieEmail(d: Dossier): string {
-  const e = str(d, 'woningeigenaar');
-  return e && e in CORPORATIE_EMAIL ? CORPORATIE_EMAIL[e] : '';
 }
 
 export function adresRegel(d: Pick<Dossier, 'id' | 'adres'>): string {

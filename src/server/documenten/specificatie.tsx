@@ -1,4 +1,4 @@
-import { For, type JSX } from 'solid-js';
+import { For, type JSX, Show } from 'solid-js';
 import { BTW_PROCENT } from '../../shared/constants.ts';
 import { euro } from '../../shared/datum.ts';
 import { getal } from '../../shared/kaart.ts';
@@ -69,10 +69,14 @@ export function Uitvoeringsspecificatie(props: { doc: Doc }): JSX.Element {
               </tr>
             )}
           </For>
-          <tr class="qa-klussendienst">
-            <td colSpan={3}>{s().klussendienst.regel}</td>
-            <td class="getal">{euro(s().klussendienst.bedrag)}</td>
-          </tr>
+          <Show when={s().klussendienst}>
+            {(k) => (
+              <tr class="qa-klussendienst">
+                <td colSpan={3}>{k().regel}</td>
+                <td class="getal">{euro(k().bedrag)}</td>
+              </tr>
+            )}
+          </Show>
           <tr>
             <td colSpan={3}>Totaal excl. btw</td>
             <td class="getal qa-subtotaal">{euro(s().subtotaal)}</td>

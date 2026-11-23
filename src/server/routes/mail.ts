@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
-import { SUBSIDIE_INFO_URL } from '../../shared/constants.ts';
-import { adresRegel, corporatieEmail, corporatieNaam, str } from '../../shared/status.ts';
+import { SUBSIDIEPAGINAS } from '../../shared/constants.ts';
+import { adresRegel, corporatieNaam, str } from '../../shared/status.ts';
 import { SJABLONEN, type SjabloonDef, ontbrekendeWaarden, vulIn } from '../../shared/sjablonen.ts';
 import type { Dossier, Gebruiker } from '../../shared/types.ts';
 import { audit } from '../audit.ts';
@@ -10,7 +10,7 @@ import { bijlageNaam, bijlagePdf } from '../documenten/index.tsx';
 import { log } from '../log.ts';
 import { EMAIL_RE, tekstNaarHtml } from '../mail.ts';
 import { dossierLink, dossierMelding } from '../meldingen.ts';
-import { gebruiker, laadDossier } from '../repo.ts';
+import { corporatieAdressen, gebruiker, laadDossier } from '../repo.ts';
 import { haalDossier } from './dossiers.ts';
 
 export function sjabloonTekst(ctx: Ctx, key: string): { onderwerp: string; tekst: string } {
@@ -30,7 +30,7 @@ function foutmelding(mislukt: string): string {
 const naamVan = (ctx: Ctx, id: number | null) =>
   id === null ? '' : (ctx.db.prepare('SELECT naam FROM gebruikers WHERE id = ?').get(id) as { naam: string }).naam;
 
-// What each {tag} becomes for this dossier, sent by `afzender`.
+// What each {tag} becomes for this dossier, sent by `afzender`. Empty when not known, which the mail pop-up flags for a required tag.
 export function tagWaarden(ctx: Ctx, d: Dossier, afzender: Gebruiker): Record<string, string> {
   return {
     bewoner: str(d, 'bewoner_naam') ?? '',
@@ -42,8 +42,14 @@ export function tagWaarden(ctx: Ctx, d: Dossier, afzender: Gebruiker): Record<st
     link: dossierLink(ctx, d.id),
     straat: d.adres ? d.adres.straat : '',
     plaats: d.adres ? d.adres.plaats : '',
-    subsidie_info: SUBSIDIE_INFO_URL,
+    subsidie_info: (d.adres && SUBSIDIEPAGINAS[d.adres.gemeente]) ?? '',
   };
+}
+
+// The addresses from the Woningcorporaties page; "Anders, namelijk" has none.
+function corporatieAdres(ctx: Ctx, d: Dossier): { aan: string; cc: string } {
+  const e = str(d, 'woningeigenaar');
+  return corporatieAdressen(ctx.db).find((r) => r.corporatie === e) ?? { aan: '', cc: '' };
 }
 
 function standaardAan(ctx: Ctx, d: Dossier, def: SjabloonDef): string {
@@ -51,7 +57,7 @@ function standaardAan(ctx: Ctx, d: Dossier, def: SjabloonDef): string {
     case 'bewoner':
       return str(d, 'bewoner_email') ?? '';
     case 'corporatie':
-      return corporatieEmail(d);
+      return corporatieAdres(ctx, d).aan;
     case 'bezoeker':
     case 'uitvoerder': {
       const id = d[`${def.ontvanger}_id`];
@@ -75,10 +81,13 @@ export function mailRoutes(app: Hono<Env>, ctx: Ctx): void {
     const def = mailDef(c);
     const t = sjabloonTekst(ctx, def.key);
     const waarden = tagWaarden(ctx, d, c.get('actor'));
+    const eigenaar = gebruiker(ctx.db, d.eigenaar_id)!;
     return c.json({
       sjabloon: { key: def.key, naam: def.naam, ontvanger: def.ontvanger, tags: def.tags, verplicht: def.verplicht },
       aan: standaardAan(ctx, d, def),
       cc: c.get('actor').email,
+      extraCc: def.ontvanger === 'corporatie' ? corporatieAdres(ctx, d).cc : '',
+      replyTo: { naam: eigenaar.naam, email: eigenaar.email },
       onderwerp: vulIn(t.onderwerp, waarden),
       tekst: vulIn(t.tekst, waarden),
       waarden: Object.fromEntries(def.tags.map((k) => [k, waarden[k]])),

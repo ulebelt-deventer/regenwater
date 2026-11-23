@@ -8,7 +8,7 @@ import { isBeheerder, magBewerken, magMijlpaal, magZien } from '../../shared/rec
 import { klussendienstKosten } from '../../shared/specificatie.ts';
 import { STATUS_FILTERS, adresRegel, inIjskast } from '../../shared/status.ts';
 import { MIJLPALEN, type Dossier, type Gebruiker, type Json, type Mijlpaal, type Ontvanger, type RioolDetectie, SLUIT_REDENEN, type SluitReden } from '../../shared/types.ts';
-import { materiaalRijen, nieuwId, veldVoor, waarde } from '../../shared/velden.ts';
+import { materiaalRijen, nieuwId, opleverFout, veldVoor, waarde } from '../../shared/velden.ts';
 import { audit, auditWijzigingen, type AuditRij } from '../audit.ts';
 import { alleenBeheerder } from '../auth.ts';
 import { type C, type Ctx, type Env, actorVan, body, fout, idParam } from '../context.ts';
@@ -70,9 +70,9 @@ function zetNormVast(ctx: Ctx, c: C, d: Dossier): void {
   audit(ctx, actorVan(c), d.id, 'normafvoer_vastgezet', { mm, gemeente });
 }
 
-// The agreed Klussendienst amount starts from the rate once the bezoek has settled which regenpijpen are afgekoppeld.
+// The agreed Klussendienst amount starts from the rate once the bezoek has settled which regenpijpen are afgekoppeld. Huur never mentions it.
 function zetKlussendienstKosten(ctx: Ctx, c: C, d: Dossier): void {
-  if (d.data.klussendienst_kosten !== undefined) return;
+  if (d.data.klussendienst_kosten !== undefined || d.huur_koop === 'huur') return;
   const { bedrag } = klussendienstKosten(d);
   ctx.db.prepare('UPDATE dossiers SET data = ? WHERE id = ?').run(JSON.stringify({ ...d.data, klussendienst_kosten: bedrag }), d.id);
   auditWijzigingen(ctx, actorVan(c), d.id, { klussendienst_kosten: [null, bedrag] });
@@ -249,6 +249,10 @@ export function dossierRoutes(app: Hono<Env>, ctx: Ctx): void {
     // Already set is checked first: setting Klaar voor controle ends the bezoeker's rights, so a repeat tap would otherwise be refused.
     if (d[at] !== null) return c.json({ dossier: d });
     if (!magMijlpaal(ik, d, m)) fout(403, 'Je kunt deze stap niet (meer) registreren. Vraag een beheerder.');
+    if (m === 'werk_opgeleverd') {
+      const reden = opleverFout(d);
+      if (reden) fout(400, reden);
+    }
     ctx.db.prepare(`UPDATE dossiers SET ${at} = ?, ${by} = ? WHERE id = ?`).run(ctx.klok.iso(), ik.id, d.id);
     audit(ctx, actorVan(c), d.id, 'mijlpaal', { mijlpaal: m, aan: true });
     // The opening's own request can get lost on a bad connection on site.

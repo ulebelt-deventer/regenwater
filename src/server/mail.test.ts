@@ -55,12 +55,20 @@ describe('tags', () => {
     expect(v.tekst).toContain('Beste Anna de Vries,');
     expect(v.tekst).toContain('regenwater op Walstraat 74, Deventer.');
     expect(`${v.onderwerp} ${v.tekst}`).not.toMatch(/\{[a-z_]+\}/);
-    expect(v.waarden).toEqual({ bewoner: 'Anna de Vries', adres: 'Walstraat 74, Deventer', corporatie: 'Ieder1', afzender: 'Bea Beheer', subsidie_info: expect.stringMatching(/^https:\/\//) as string });
-    expect(v).toMatchObject({ aan: 'anna@example.org', cc: 'bea.beheer@example.org', bijlage: null });
+    expect(v.waarden).toEqual({ bewoner: 'Anna de Vries', adres: 'Walstraat 74, Deventer', corporatie: 'Ieder1', afzender: 'Bea Beheer', subsidie_info: 'https://www.deventer.nl/subsidieloket/duurzaamheidssubsidies/subsidie-voor-groene-en-watervriendelijke-maatregelen' });
+    expect(v).toMatchObject({ aan: 'anna@example.org', cc: 'bea.beheer@example.org', extraCc: '', bijlage: null });
+  });
+
+  it("leaves the subsidie link empty for a gemeente without a known subsidiepagina, and flags the sent mail", async () => {
+    t.ctx.db.prepare("UPDATE dossiers SET adres_json = json_set(adres_json, '$.gemeente', 'Zwolle') WHERE id = ?").run(id);
+    const v = await bea.json('GET', `/api/dossiers/${id}/mail/subsidie_koop`);
+    expect(v.waarden.subsidie_info).toBe('');
+    await stuur('subsidie_koop', { tekst: v.tekst });
+    expect((await laatsteAudit()).payload.tag_problemen).toBe(true);
   });
 
   it('sends the subject and text exactly as edited', async () => {
-    await stuur('subsidie_huur', { onderwerp: 'Over de Walstraat', tekst: 'Beste Anna, {adres} blijft {adres}.' });
+    await stuur('plan_bewoner_huur', { onderwerp: 'Over de Walstraat', tekst: 'Beste Anna, {adres} blijft {adres}.' });
     expect(t.mailer.verstuurd[0]).toMatchObject({ onderwerp: 'Over de Walstraat', tekst: 'Beste Anna, {adres} blijft {adres}.' });
     expect((await laatsteAudit()).payload).toMatchObject({ tag_problemen: false, onderwerp: 'Over de Walstraat' });
   });
@@ -89,11 +97,55 @@ describe('tags', () => {
 });
 
 describe('Reply-To', () => {
-  it("is the dossier's eigenaar, also when another admin sends the mail, who still gets the CC", async () => {
+  it("is the dossier's eigenaar, also when another admin sends the mail, who still gets the CC, and the pop-up says so", async () => {
     const annaId = maakGebruiker(t, 'Anna Admin', 'beheerder');
+    expect((await bea.json('GET', `/api/dossiers/${id}/mail/subsidie_huur`)).replyTo).toEqual({ naam: 'Bea Beheer', email: 'bea.beheer@example.org' });
     await bea.json('POST', `/api/dossiers/${id}/eigenaar`, { gebruiker_id: annaId });
+    expect((await bea.json('GET', `/api/dossiers/${id}/mail/subsidie_huur`)).replyTo).toEqual({ naam: 'Anna Admin', email: 'anna.admin@example.org' });
     await stuur('subsidie_huur', {});
     expect(t.mailer.verstuurd[0]).toMatchObject({ replyTo: 'anna.admin@example.org', cc: 'bea.beheer@example.org' });
+  });
+});
+
+describe('woningcorporatie addresses', () => {
+  const zet = (corporatie: string, aan: unknown, cc: unknown, status = 200) => bea.json('PUT', `/api/corporaties/${encodeURIComponent(corporatie)}`, { aan, cc }, status);
+  const corporatieMail = async () => bea.json('GET', `/api/dossiers/${id}/mail/plan_corporatie`);
+
+  it('lists every woningcorporatie, empty until an admin enters addresses', async () => {
+    const { corporaties } = await bea.json('GET', '/api/corporaties');
+    expect(corporaties).toEqual(['SallandWonen', 'Rentree', 'Ieder1', 'De Marken'].map((corporatie) => ({ corporatie, aan: '', cc: '' })));
+    expect(await corporatieMail()).toMatchObject({ aan: '', extraCc: '' });
+  });
+
+  it("prefills Aan and the extra CC of the dossier's woningcorporatie, trimmed, and only on its mails", async () => {
+    await zet('Ieder1', ' woningen@example.org ', 'wijk@example.org');
+    await zet('Rentree', 'rentree@example.org', '');
+    expect(await corporatieMail()).toMatchObject({ aan: 'woningen@example.org', extraCc: 'wijk@example.org' });
+    expect(await bea.json('GET', `/api/dossiers/${id}/mail/subsidie_huur`)).toMatchObject({ aan: 'anna@example.org', extraCc: '' });
+    await bea.json('PATCH', `/api/dossiers/${id}`, { key: 'woningeigenaar', value: 'anders' });
+    expect(await corporatieMail()).toMatchObject({ aan: '', extraCc: '' });
+  });
+
+  it('refuses an invalid address or an unknown woningcorporatie, and records each change', async () => {
+    expect((await zet('Ieder1', 'woningen@example', '', 400)).fout).toBe('Vul een geldig e-mailadres in bij Aan, of laat het leeg.');
+    expect((await zet('Ieder1', '', 'a@b.nl, c@d.nl', 400)).fout).toBe('Vul een geldig e-mailadres in bij CC, of laat het leeg.');
+    await zet('Ieder1', undefined, '', 400);
+    await zet('Onbekend', '', '', 404);
+    await zet('Ieder1', 'woningen@example.org', '');
+    await zet('Ieder1', 'woningen@example.org', '');
+    await zet('Ieder1', '', 'wijk@example.org');
+    const { items } = await bea.json('GET', '/api/activiteit');
+    const eigen = items.filter((i: { type: string }) => i.type === 'corporatie_adres_gewijzigd').map((i: { payload: unknown }) => i.payload);
+    expect(eigen).toEqual([
+      { corporatie: 'Ieder1', oud: { aan: 'woningen@example.org', cc: '' }, nieuw: { aan: '', cc: 'wijk@example.org' } },
+      { corporatie: 'Ieder1', oud: { aan: '', cc: '' }, nieuw: { aan: 'woningen@example.org', cc: '' } },
+    ]);
+  });
+
+  it('is for admins only', async () => {
+    const kees = await new Klant(t).login('kees.klus@example.org');
+    await kees.json('GET', '/api/corporaties', undefined, 403);
+    await kees.json('PUT', '/api/corporaties/Ieder1', { aan: '', cc: '' }, 403);
   });
 });
 

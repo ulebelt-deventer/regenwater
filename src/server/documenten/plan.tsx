@@ -1,11 +1,11 @@
 import { For, type JSX, Show } from 'solid-js';
-import { BTW_PROCENT, DOORLAATBAARHEID } from '../../shared/constants.ts';
+import { BTW_PROCENT, DOORLAATBAARHEID, SUBSIDIEPAGINAS } from '../../shared/constants.ts';
 import { euro, kortDatum } from '../../shared/datum.ts';
 import { AUTO_VERDELING_UITLEG, type Vlak, autoGesplitst, bronnenTekst, getal, kaartAnnotaties, kaartFoto, kaartItems, normafvoerTekst, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { btwOver } from '../../shared/specificatie.ts';
 import { eigenaar, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { BEOORDELINGEN, materiaalRijen, materiaalTotaal, opsommingRegels, nietOpRiool, optieLabel, veld, veldZichtbaar } from '../../shared/velden.ts';
+import { BEOORDELINGEN, materiaalRijen, materiaalTotaal, opsommingRegels, nietOpRiool, optieLabel, teAfkoppelen, veld, veldZichtbaar } from '../../shared/velden.ts';
 import { Alinea, type Doc, Fotos, FotoMetTekening, Keuze, Kop, Leeg, OnderdeelIcoon, Of, fotosIn, heeft, naamVan } from './onderdelen.tsx';
 
 const getoondeMaterialen = (d: Dossier, lijst: 'materialen' | 'gebruikt') => materiaalRijen(d, lijst).filter((r) => r.naam.trim() && r.aantal !== null && r.aantal > 0);
@@ -403,6 +403,25 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
   );
 }
 
+function Subsidie(props: { doc: Doc }): JSX.Element {
+  const gemeente = () => props.doc.d.adres?.gemeente ?? null;
+  const pagina = () => (gemeente() ? SUBSIDIEPAGINAS[gemeente()!] : undefined);
+  return (
+    <Show when={pagina() || props.doc.concept}>
+      <h2>6. Subsidie</h2>
+      <p class="qa-pdf-subsidie">
+        <Show when={pagina()} fallback={<Leeg doc={props.doc} />}>
+          {(url) => (
+            <>
+              Meer informatie over de subsidie van de gemeente {gemeente()}: <a href={url()}>{url()}</a>
+            </>
+          )}
+        </Show>
+      </p>
+    </Show>
+  );
+}
+
 function Bijlage(props: { doc: Doc }): JSX.Element {
   return (
     <div class="nieuwe-pagina">
@@ -455,8 +474,41 @@ export function Plan(props: { doc: Doc }): JSX.Element {
       <Show when={props.doc.d.huur_koop === 'koop'} fallback={<Materialen doc={props.doc} lijst="materialen" />}>
         <MaterialenMetPrijzen doc={props.doc} lijst="materialen" />
       </Show>
+      <Subsidie doc={props.doc} />
       <Bijlage doc={props.doc} />
     </>
+  );
+}
+
+// Per regenpijp the Plan meant to afkoppelen, the uitvoerder's answer; one never given shows as (onbekend), not as a Ja.
+function Afgekoppeld(props: { doc: Doc }): JSX.Element {
+  const d = () => props.doc.d;
+  const pijpen = () => kaartItems(d()).regenpijpen.filter((r) => teAfkoppelen(d(), r.id));
+  const kies = (id: string, veldNaam: string) => optieLabel(veld(`regenpijp.*.${veldNaam}`), d(), `regenpijp.${id}.${veldNaam}`);
+  return (
+    <Show when={pijpen().length > 0}>
+      <h3>Regenpijpen</h3>
+      <table class="tabel qa-pdf-afgekoppeld">
+        <thead>
+          <tr>
+            <th>Pijp</th>
+            <th>Afkoppelen volgens het plan</th>
+            <th>Afgekoppeld</th>
+          </tr>
+        </thead>
+        <tbody>
+          <For each={pijpen()}>
+            {(r) => (
+              <tr>
+                <td>{r.label}</td>
+                <td>{kies(r.id, 'afkoppelen')}</td>
+                <td>{kies(r.id, 'afgekoppeld') ?? '(onbekend)'}</td>
+              </tr>
+            )}
+          </For>
+        </tbody>
+      </table>
+    </Show>
   );
 }
 
@@ -474,6 +526,7 @@ export function Opleverrapport(props: { doc: Doc }): JSX.Element {
       />
       <h2>Uitvoering</h2>
       <Alinea doc={props.doc} key="uitgevoerd" />
+      <Afgekoppeld doc={props.doc} />
       <Fotos doc={props.doc} slot="opleverfotos" />
       <h3>Gebruikte materialen</h3>
       <Show when={d().huur_koop === 'koop'} fallback={<Materialen doc={props.doc} lijst="gebruikt" />}>

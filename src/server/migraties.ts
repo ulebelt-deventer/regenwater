@@ -317,4 +317,12 @@ export const MIGRATIES: string[] = [
   UPDATE notificaties SET soort = 'ijskast' WHERE titel LIKE 'Uit de ijskast:%';
   UPDATE notificaties SET soort = 'mail_mislukt' WHERE titel LIKE 'E-mail niet afgeleverd%';
   `,
+  // The default Aan and CC of the woningcorporatie mails, entered by the admins on the Woningcorporaties page.
+  `
+  CREATE TABLE corporatie_adressen (
+    corporatie TEXT PRIMARY KEY,
+    aan TEXT NOT NULL,
+    cc TEXT NOT NULL
+  );
+  `,
 ];

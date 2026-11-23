@@ -29,24 +29,32 @@ describe('uitvoeringsspecificatie', () => {
     const s = specificatie(opgeleverd('koop'));
     expect(s.regels.map((r) => r.naam)).toEqual(GEBRUIKT.slice(0, 5).map(([n]) => n));
     expect(s.regels.map((r) => r.bedrag)).toEqual([585, 1061, 3091, 125, 292]);
-    expect(s.klussendienst.bedrag).toBe(5000);
+    expect(s.klussendienst!.bedrag).toBe(5000);
     expect([s.subtotaal, s.btw, s.totaal]).toEqual([10154, 2132, 12286]);
     expect(s.waarschuwingen).toEqual([]);
   });
 
-  it('charges huur and koop the Klussendienst amount agreed in the Plan, not the rate per afgekoppelde regenpijp', () => {
-    for (const huurKoop of ['huur', 'koop'] as const) {
-      const d = opgeleverd(huurKoop);
-      d.data.klussendienst_kosten = 7500;
-      d.data['regenpijp.r2.afkoppelen'] = 'ja';
-      const s = specificatie(d);
-      expect(s.klussendienst).toEqual({ regel: 'Klussendienst (afgesproken in het Plan van Aanpak)', bedrag: 7500 });
-      expect(s.subtotaal).toBe(5154 + 7500);
-    }
+  it('charges koop the Klussendienst amount agreed in the Plan, not the rate per afgekoppelde regenpijp', () => {
+    const d = opgeleverd('koop');
+    d.data.klussendienst_kosten = 7500;
+    d.data['regenpijp.r2.afkoppelen'] = 'ja';
+    const s = specificatie(d);
+    expect(s.klussendienst).toEqual({ regel: 'Klussendienst (afgesproken in het Plan van Aanpak)', bedrag: 7500 });
+    expect(s.subtotaal).toBe(5154 + 7500);
+  });
+
+  it('leaves the Klussendienst out for huur: no line, no warning, not in the totals, in the text neither', () => {
+    const d = opgeleverd('huur');
+    delete d.data.klussendienst_kosten;
+    const s = specificatie(d);
+    expect(s.klussendienst).toBeNull();
+    expect(s.subtotaal).toBe(5154);
+    expect(s.waarschuwingen).toEqual([]);
+    expect(specificatieTekst(opgeleverd('huur'), 'Piet')).not.toContain('Klussendienst');
   });
 
   it('warns about a used material without a price and a job without an agreed Klussendienst amount', () => {
-    const d = opgeleverd('huur');
+    const d = opgeleverd('koop');
     d.data['gebruikt.g0.prijs'] = null;
     delete d.data.klussendienst_kosten;
     const s = specificatie(d);

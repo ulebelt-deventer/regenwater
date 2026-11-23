@@ -15,7 +15,7 @@ export interface SpecificatieRegel {
 
 export interface Specificatie {
   regels: SpecificatieRegel[];
-  klussendienst: { regel: string; bedrag: number };
+  klussendienst: { regel: string; bedrag: number } | null;
   subtotaal: number;
   btw: number;
   totaal: number;
@@ -41,11 +41,14 @@ export function specificatie(d: Dossier): Specificatie {
       if (r.prijs === null) waarschuwingen.push(`${naam} heeft geen prijs; telt niet mee in het totaal.`);
       return { naam, aantal: r.aantal!, prijs: r.prijs, bedrag: r.prijs === null ? null : Math.round(r.prijs * r.aantal!) };
     });
-  // The Klussendienst counts for huur and koop alike, at the amount agreed in the Plan.
-  const k = d.data.klussendienst_kosten;
-  if (typeof k !== 'number') waarschuwingen.push('Bij het Plan van Aanpak zijn geen afgesproken kosten voor de Klussendienst ingevuld, dus de Klussendienst telt als € 0.');
-  const klussendienst = { regel: 'Klussendienst (afgesproken in het Plan van Aanpak)', bedrag: typeof k === 'number' ? k : 0 };
-  const subtotaal = regels.reduce((s, r) => s + (r.bedrag ?? 0), 0) + klussendienst.bedrag;
+  // Only koop pays the Klussendienst, at the amount agreed in the Plan; for huur it is mentioned nowhere.
+  let klussendienst: Specificatie['klussendienst'] = null;
+  if (d.huur_koop === 'koop') {
+    const k = d.data.klussendienst_kosten;
+    if (typeof k !== 'number') waarschuwingen.push('Bij het Plan van Aanpak zijn geen afgesproken kosten voor de Klussendienst ingevuld, dus de Klussendienst telt als € 0.');
+    klussendienst = { regel: 'Klussendienst (afgesproken in het Plan van Aanpak)', bedrag: typeof k === 'number' ? k : 0 };
+  }
+  const subtotaal = regels.reduce((s, r) => s + (r.bedrag ?? 0), 0) + (klussendienst?.bedrag ?? 0);
   const btw = btwOver(subtotaal);
   return { regels, klussendienst, subtotaal, btw, totaal: subtotaal + btw, waarschuwingen };
 }
@@ -79,7 +82,7 @@ export function specificatieTekst(d: Dossier, uitvoerder: string | null): string
   const blokken = [
     ['Uitvoeringsspecificatie'],
     specificatieKop(d, uitvoerder).map(([l, v]) => `${l}: ${v ?? '--'}`),
-    [...s.regels.map(regel), `${s.klussendienst.regel}: ${euro(s.klussendienst.bedrag)}`],
+    [...s.regels.map(regel), ...(s.klussendienst ? [`${s.klussendienst.regel}: ${euro(s.klussendienst.bedrag)}`] : [])],
     [`Totaal excl. btw: ${euro(s.subtotaal)}`, `btw ${BTW_PROCENT}%: ${euro(s.btw)}`, `Totaal incl. btw: ${euro(s.totaal)}`],
     s.waarschuwingen.map((w) => `LET OP: ${w}`),
   ];

@@ -4,7 +4,7 @@ import { datum, euro } from '../../shared/datum.ts';
 import { type Regenpijp, bronnenTekst, getal, kaartItems, verdelingTekst, waterberging } from '../../shared/kaart.ts';
 import { SUBSIDIE_SJABLONEN, adresRegel, laatsteVerzending, str } from '../../shared/status.ts';
 import type { Dossier } from '../../shared/types.ts';
-import { materiaalRijen, materiaalTotaal, nietOpRiool, opsommingRegels, veldTekst, veldVoor, veldZichtbaar } from '../../shared/velden.ts';
+import { materiaalRijen, materiaalTotaal, nietOpRiool, opsommingRegels, teAfkoppelen, veldTekst, veldVoor, veldZichtbaar } from '../../shared/velden.ts';
 import { FotoDuimen } from './fotos.tsx';
 import { useDossier } from './staat.ts';
 import { Regel } from './velden.tsx';
@@ -205,9 +205,18 @@ export function PlanSamenvatting() {
 }
 
 export function UitvoeringSamenvatting() {
+  const s = useDossier();
+  const pijpen = () => kaartItems(s.d).regenpijpen.filter((r) => teAfkoppelen(s.d, r.id));
+  // Once the werk is opgeleverd, a regenpijp without an answer reads (onbekend), never as a Ja.
+  const antwoord = (id: string) => veldTekst(s.d, `regenpijp.${id}.afgekoppeld`) ?? (s.d.werk_opgeleverd_at ? '(onbekend)' : '--');
   return (
     <>
       <VeldRegel k="uitgevoerd" label="Uitgevoerd" />
+      <Show when={pijpen().length}>
+        <Regel label="Afgekoppeld" class="qa-sv-afgekoppeld">
+          <For each={pijpen()}>{(r) => <div>Regenpijp {r.label}: {antwoord(r.id)}</div>}</For>
+        </Regel>
+      </Show>
       <FotoRegel slot="opleverfotos" label="Opleverfoto’s" />
       <MateriaalRegel lijst="gebruikt" label="Gebruikte materialen" soort="gebruikt" />
     </>

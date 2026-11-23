@@ -9,7 +9,7 @@ import { type Doc, Fotos, FotoMetTekening, Kop } from './onderdelen.tsx';
 // Item fields get their own blocks below; `kaart_annotaties` is the kaart itself.
 const losseVelden = (pagina: 'bezoek' | 'plan') =>
   VELDEN.filter((v) => v.pagina === pagina && !v.key.includes('*') && v.type !== 'annotaties' && v.key !== 'materialen');
-const REGENPIJP_VELDEN = VELDEN.filter((v) => v.key.startsWith('regenpijp.*.'));
+const REGENPIJP_VELDEN = VELDEN.filter((v) => v.pagina === 'bezoek' && v.key.startsWith('regenpijp.*.'));
 const LEGE_PIJPEN = ['A', 'B', 'C', 'D'];
 const LEGE_DELEN = 3;
 
