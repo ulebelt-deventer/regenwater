@@ -1,12 +1,13 @@
 // Uitvoering sub-page (uitvoerder): what was done, which regenpijpen were afgekoppeld, opleverfoto's and the materials used.
-import { For, Show, onMount } from 'solid-js';
-import { kaartItems } from '../../shared/kaart.ts';
+import { For, Show, createSignal, onMount } from 'solid-js';
+import { kaartFoto, kaartItems } from '../../shared/kaart.ts';
 import { opleverFout, teAfkoppelen, veldTekst } from '../../shared/velden.ts';
 import { bevestig, melding } from '../ui.tsx';
 import { MijlpaalRegel, actie, zetMijlpaal } from './acties.tsx';
 import { FotoSlot } from './fotos.tsx';
 import { TerugLink, useNaarSectie } from './pagina.tsx';
 import { useDossier } from './staat.ts';
+import { Tekenaar } from './tekenaar.tsx';
 import { MateriaalTabel, VeldInvoer } from './velden.tsx';
 
 export function Uitvoering() {
@@ -17,6 +18,7 @@ export function Uitvoering() {
     if (s.d.data.gebruikt === undefined && s.mag(['uitvoerder'])) void actie(s, 'gebruikt-vullen');
   });
   const teBevestigen = () => kaartItems(s.d).regenpijpen.filter((r) => teAfkoppelen(s.d, r.id));
+  const [kaartOpen, setKaartOpen] = createSignal<string | null>(null);
   const opleveren = async () => {
     const reden = opleverFout(s.d);
     if (reden) {
@@ -38,9 +40,20 @@ export function Uitvoering() {
         <VeldInvoer k="uitgevoerd" />
         <Show when={teBevestigen().length}>
           <div class="mb-3 qa-afgekoppeld">
-            <div class="form-label fw-semibold mb-1">Regenpijpen</div>
-            <div class="form-text mt-0 mb-2">Geef per regenpijp die volgens het Plan van Aanpak wordt afgekoppeld aan of dat is gebeurd.</div>
+            <div class="fs-5 fw-semibold mb-1">Regenpijpen</div>
+            <div class="form-text mt-0 mb-2">
+              Geef per regenpijp die volgens het Plan van Aanpak wordt afgekoppeld aan of dat is gebeurd.
+              <Show when={kaartFoto(s.d)}>
+                {(f) => (
+                  <>
+                    {' '}
+                    <button type="button" class="btn btn-link btn-inline qa-kaart-bekijken" onClick={() => setKaartOpen(f().id)}>Bekijk op de kaart waar ze staan.</button>
+                  </>
+                )}
+              </Show>
+            </div>
             <For each={teBevestigen()}>{(r) => <VeldInvoer k={`regenpijp.${r.id}.afgekoppeld`} label={`Regenpijp ${r.label}: afgekoppeld?`} class="mb-2" />}</For>
+            <Show when={kaartOpen()}>{(id) => <Tekenaar fotoId={id()} alleenBekijken onSluit={() => setKaartOpen(null)} onFoto={setKaartOpen} />}</Show>
           </div>
         </Show>
         <div id="veld-opleverfotos" class="mb-3 qa-veld-opleverfotos">

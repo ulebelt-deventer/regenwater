@@ -358,10 +358,10 @@ export function MateriaalTabel(props: { lijst: 'materialen' | 'gebruikt' }) {
         <table class={`table table-sm align-middle w-100 w-sm-auto qa-materialen-${props.lijst}`}>
           <thead>
             <tr>
-              <th>Materiaal</th>
-              <th class="w-4-5rem w-sm-7-5rem">Prijs (€)</th>
-              <th class="w-3-6rem w-sm-6rem">Aantal</th>
-              <th class="d-none d-sm-table-cell text-end">Subtotaal</th>
+              <th class="fw-semibold">Materiaal</th>
+              <th class="fw-semibold w-4-5rem w-sm-7-5rem">Prijs (€)</th>
+              <th class="fw-semibold w-3-6rem w-sm-6rem">Aantal</th>
+              <th class="fw-semibold d-none d-sm-table-cell text-end">Subtotaal</th>
               <th class="d-none d-sm-table-cell w-1px" />
             </tr>
           </thead>

@@ -1,10 +1,17 @@
-// The Uitvoering page: the uitvoerder confirms per regenpijp whether it was afgekoppeld before Werk opgeleverd; a koopwoning shows the agreed Klussendienst amount.
+// The Uitvoering page: the uitvoerder confirms per regenpijp whether it was afgekoppeld before Werk opgeleverd, with the kaart to look up which is which; a koopwoning shows the agreed Klussendienst amount.
 import { type Page, expect, test } from '@playwright/test';
+import sharp from 'sharp';
 import { ja, kies, nieuwDossier, opslagKlaar, post, start, tikAan, zet } from './hulp.ts';
 
-async function opUitvoering(page: Page, huurKoop: 'huur' | 'koop'): Promise<number> {
+async function opUitvoering(page: Page, huurKoop: 'huur' | 'koop', metKaart = false): Promise<number> {
   const { klusserId } = await start(page);
   const id = await nieuwDossier(page, { huurKoop });
+  if (metKaart) {
+    await page.goto(`/dossiers/${id}/bezoek`);
+    const png = await sharp({ create: { width: 400, height: 300, channels: 3, background: '#e8e8e8' } }).png().toBuffer();
+    await page.locator('.qa-fotoslot-kaart .qa-foto-invoer').setInputFiles({ name: 'kaart.png', mimeType: 'image/png', buffer: png });
+    await expect(page.locator('.qa-fotoslot-kaart .qa-foto')).toHaveCount(1);
+  }
   await zet(page, id, {
     kaart_annotaties: [{ id: 'a', type: 'regenpijp', p: [[1, 1]] }, { id: 'b', type: 'regenpijp', p: [[2, 2]] }],
     'regenpijp.a.afkoppelen': 'ja',
@@ -54,4 +61,22 @@ test('een huurwoning noemt de kosten Klussendienst niet op de Uitvoering', async
   await expect(page.locator('.qa-materiaal-totaal')).toBeVisible();
   await expect(page.locator('.qa-afgekoppeld')).toBeVisible();
   await expect(page.locator('.qa-klussendienst-afgesproken')).toHaveCount(0);
+});
+
+test('de kaart opent vanaf de Regenpijpen om te bekijken en te zoomen, zonder tekengereedschap', async ({ page }) => {
+  await opUitvoering(page, 'koop', true);
+  await page.locator('.qa-afgekoppeld .qa-kaart-bekijken').click();
+  const tekenaar = page.locator('.qa-tekenaar');
+  await expect(tekenaar.locator('.qa-tekenaar-svg text')).toHaveText(['A', 'B']);
+  await expect(tekenaar.locator('.qa-hint')).toContainText('Knijp of scroll om te zoomen');
+  // The beheerder may draw on the kaart elsewhere; here it's only for looking.
+  await expect(tekenaar.locator('.qa-gereedschap-kies, .qa-gereedschap-regenpijp, .qa-foto-verwijderen')).toHaveCount(0);
+  await tekenaar.locator('.qa-tekenaar-sluiten').click();
+  await expect(tekenaar).toHaveCount(0);
+});
+
+test('zonder kaart staat er geen link naar de kaart bij de Regenpijpen', async ({ page }) => {
+  await opUitvoering(page, 'koop');
+  await expect(page.locator('.qa-afgekoppeld')).toBeVisible();
+  await expect(page.locator('.qa-kaart-bekijken')).toHaveCount(0);
 });

@@ -61,7 +61,8 @@ interface Stap {
 }
 
 // Rotating swaps in a new photo id and the arrows go to another photo in the slot; `onFoto` hands either back as the new `fotoId`.
-export function Tekenaar(props: { fotoId: string; onSluit: () => void; onFoto: (id: string) => void }) {
+// `alleenBekijken`: only zoom and pan, even for someone who may draw.
+export function Tekenaar(props: { fotoId: string; onSluit: () => void; onFoto: (id: string) => void; alleenBekijken?: boolean }) {
   const s = useDossier();
   const foto = () => {
     const f = s.d.fotos.find((x) => x.id === props.fotoId);
@@ -71,7 +72,7 @@ export function Tekenaar(props: { fotoId: string; onSluit: () => void; onFoto: (
   const fotoSlot = untrack(foto).slot; // a photo never moves to another slot
   const isKaart = fotoSlot === 'kaart';
   const slot = fotoSlotVoor(fotoSlot)!.slot;
-  const uit = () => !s.mag(slot.bewerkers);
+  const uit = () => props.alleenBekijken || !s.mag(slot.bewerkers);
   const W = () => foto().breedte;
   const H = () => foto().hoogte;
   const u = () => Math.max(W(), H()) / 900;
