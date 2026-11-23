@@ -6,7 +6,7 @@ import { datum, datumTijd } from '../../shared/datum.ts';
 import { controleerTags, probleemTeksten, sjabloonDef } from '../../shared/sjablonen.ts';
 import type { CorporatieAdres, NormafvoerRij, Subsidiepagina } from '../../shared/types.ts';
 import { del, get, patch, post, put, query } from '../api.ts';
-import { AlleenBeheerder, Kruimels, Laden, bevestig, melding, probeer, titel } from '../ui.tsx';
+import { AlleenBeheerder, Kruimels, Laden, bevestig, melding, probeer, tip, titel } from '../ui.tsx';
 
 // ---- Normafvoer ----
 
@@ -124,15 +124,16 @@ function SubsidiepaginasInhoud() {
   const [data, { mutate }] = createResource(() => get<Subsidie>('/api/subsidiepaginas'));
   const [gemeente, setGemeente] = createSignal('');
   const [url, setUrl] = createSignal('');
+  // Lower case throughout, as the server matches a dossier's gemeente.
   const vrij = () => {
-    const bezet = new Set(data()!.subsidiepaginas.map((s) => s.gemeente));
-    return data()!.gemeenten.filter((g) => !bezet.has(g));
+    const bezet = new Set(data()!.subsidiepaginas.map((s) => s.gemeente.toLowerCase()));
+    return data()!.gemeenten.filter((g) => !bezet.has(g.toLowerCase()));
   };
 
   const toevoegen = async (e: Event) => {
     e.preventDefault();
     const naam = gemeente().trim();
-    if (!data()!.gemeenten.includes(naam) && !(await bevestig(`${naam} toevoegen?`, 'Deze naam kennen we nog niet uit de dossiers. Hij moet precies zo geschreven zijn als in het adres, anders vindt de app de link niet.', { ja: 'Toevoegen' }))) return;
+    if (!data()!.gemeenten.some((g) => g.toLowerCase() === naam.toLowerCase()) && !(await bevestig(`${naam} toevoegen?`, 'Deze naam kennen we nog niet uit de dossiers. Hij moet precies zo geschreven zijn als in het adres, anders vindt de app de link niet.', { ja: 'Toevoegen' }))) return;
     if (await probeer(async () => mutate(await post<Subsidie>('/api/subsidiepaginas', { gemeente: naam, url: url() })))) {
       setGemeente('');
       setUrl('');
@@ -179,6 +180,15 @@ function SubsidiepaginasInhoud() {
         <form class="d-flex flex-wrap gap-2 align-items-end qa-subsidiepagina-toevoegen" style={{ 'max-width': '52rem' }} onSubmit={toevoegen}>
           <div>
             <label class="form-label" for="subsidie-gemeente">Gemeente</label>
+            <span
+              class="text-muted ms-1 qa-subsidiepagina-gemeente-uitleg"
+              tabindex="0"
+              role="img"
+              aria-label="Hoe schrijf je de gemeente?"
+              ref={tip('Schrijf de naam van de gemeente precies zoals hij in het adres van de dossiers staat, bijvoorbeeld Olst-Wijhe. Alleen hoofdletters maken niet uit. De lijst stelt de gemeenten uit de dossiers voor die hier nog geen link hebben.')}
+            >
+              <i class="bi bi-question-circle" aria-hidden="true" />
+            </span>
             <input id="subsidie-gemeente" class="form-control qa-subsidiepagina-nieuw-gemeente" list="subsidie-gemeenten" required value={gemeente()} onInput={(e) => setGemeente(e.currentTarget.value)} />
             <datalist id="subsidie-gemeenten"><For each={vrij()}>{(g) => <option value={g} />}</For></datalist>
           </div>

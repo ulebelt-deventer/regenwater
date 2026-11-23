@@ -161,6 +161,11 @@ describe('subsidiepaginas', () => {
     expect((await lijst()).map((r) => r.gemeente)).toEqual(['Deventer', 'Olst-Wijhe', 'Raalte']);
   });
 
+  it("suggests the gemeenten of the dossiers' adressen", async () => {
+    naarZwolle();
+    expect((await bea.json('GET', '/api/subsidiepaginas')).gemeenten).toContain('Zwolle');
+  });
+
   it('feeds a changed, added or deleted link to the mail and the Plan', async () => {
     const deventer = await rijVan('Deventer');
     await bea.json('PATCH', `/api/subsidiepaginas/${deventer.id}`, { url: ' https://subsidie.example.org/deventer ' });

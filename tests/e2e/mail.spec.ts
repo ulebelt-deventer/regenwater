@@ -81,6 +81,23 @@ test("de link van Beheer > Subsidiepagina's staat in de subsidie-e-mail, en een 
   await ja(page);
   await expect(rijen.locator('.qa-subsidiepagina-gemeente')).toHaveText(['Deventer', 'Olst-Wijhe', 'Raalte']);
 
+  // A known gemeente without a link is suggested, and matches in any case without asking.
+  const suggesties = page.locator('#subsidie-gemeenten option');
+  await expect(suggesties).toHaveCount(0);
+  await rijen.last().locator('.qa-subsidiepagina-verwijder').click();
+  await ja(page);
+  await expect(suggesties).toHaveCount(1);
+  await expect(suggesties).toHaveAttribute('value', 'Raalte');
+  await nieuw.locator('.qa-subsidiepagina-nieuw-gemeente').fill('raalte');
+  await nieuw.locator('.qa-subsidiepagina-nieuw-url').fill('https://subsidie.example.org/raalte');
+  await nieuw.locator('.qa-subsidiepagina-voeg-toe').click();
+  await expect(rijen.locator('.qa-subsidiepagina-gemeente')).toHaveText(['Deventer', 'Olst-Wijhe', 'raalte']);
+  await expect(page.locator('.qa-bevestig')).toHaveCount(0);
+  await expect(suggesties).toHaveCount(0);
+
+  await page.locator('.qa-subsidiepagina-gemeente-uitleg').hover();
+  await expect(page.locator('.qa-tip')).toContainText('precies zoals hij in het adres van de dossiers staat');
+
   await nieuwDossier(page, { huurKoop: 'huur' });
   await page.locator('.qa-mail-subsidie_huur').click();
   await expect(page.locator('.qa-mail .qa-mail-tekst')).toHaveValue(/Meer informatie over de subsidie: https:\/\/subsidie\.example\.org\/deventer/);
