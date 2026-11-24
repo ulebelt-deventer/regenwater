@@ -10,7 +10,7 @@ Visitors sign up at `/proberen` with a name and email address and get their own 
 - Every link in a proefomgeving's mail starts with `/s/<id>`, which sets the cookie and redirects to the rest of the path, so login links work on a fresh browser.
 - Every mail goes to the owner, without cc, with a boxed note saying who would have got it. The subject gets `[TEST]` like all staging mail. The one exception is mail to exactly one of the team's feedback addresses (`MELDINGEN_FEEDBACK`), which goes out unchanged, so feedback reaches the team.
 - `<DATA_DIR>/proef/register.db` lists the proefomgevingen: id, owner email and name, created and last used. "Last used" is updated at most hourly on any request that isn't a 401. `bash devops/list-sandboxes.sh staging` lists them.
-- Limits: `PROEF_PER_UUR` new ones per hour and `PROEF_MAX` in total (`src/shared/constants.ts`). An address that already has a staging account gets a 409.
+- Limits: `PROEF_PER_UUR` new ones per hour and `PROEF_MAX` in total (`src/shared/constants.ts`). An address that already has a staging account or a proefomgeving gets a 409, which the page shows with a link to Inloggen.
 
 ## The sjabloon
 

@@ -105,10 +105,12 @@ export class Proefomgevingen {
       if (!EMAIL_RE.test(email)) fout(400, 'Vul een geldig e-mailadres in.');
       // Both are written into JSON text when a sjabloon is copied.
       if (/["\\]/.test(naam + email)) fout(400, 'Gebruik geen aanhalingstekens of backslashes.');
+      // The page links a 409 to Inloggen, which finds the right app by email address.
       if (this.hoofd.db.prepare('SELECT 1 FROM gebruikers WHERE email = ? COLLATE NOCASE').get(email)) {
-        fout(409, 'Met dit e-mailadres heb je al een account op de testomgeving. Log in via Inloggen.');
+        fout(409, 'Met dit e-mailadres heb je al een account op de testomgeving.');
       }
-      const rij = this.rijVoorEmail(email) ?? this.maak(naam, email);
+      if (this.rijVoorEmail(email)) fout(409, 'Met dit e-mailadres heb je al een proefomgeving.');
+      const rij = this.maak(naam, email);
       const headers = new Headers(c.req.raw.headers);
       headers.delete('content-length');
       const verzoek = new Request(new URL('/api/auth/request', c.req.url), { method: 'POST', headers, body: JSON.stringify({ email }) });
@@ -245,7 +247,7 @@ export class Proefomgevingen {
       const eigenaar = db.prepare('SELECT id, naam, email FROM gebruikers WHERE email = ? COLLATE NOCASE').get(sjabloon.email) as Pick<Rij, 'naam' | 'email'> & { id: number } | undefined;
       if (!eigenaar) throw new Error(`De sjabloon-proefomgeving heeft geen gebruiker ${sjabloon.email}`);
       if (db.prepare('SELECT 1 FROM gebruikers WHERE email = ? COLLATE NOCASE AND id != ?').get(email, eigenaar.id)) {
-        fout(409, 'Dit e-mailadres hoort bij een voorbeeldgebruiker. Kies een ander adres.');
+        fout(400, 'Dit e-mailadres hoort bij een voorbeeldgebruiker. Kies een ander adres.');
       }
       db.transaction(() => {
         for (const t of ['sessies', 'login_codes', 'login_pogingen']) db.exec(`DELETE FROM ${t}`);

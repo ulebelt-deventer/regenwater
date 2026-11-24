@@ -1,6 +1,6 @@
 import { Show, createSignal } from 'solid-js';
 import { PROEF_BEWAAR_DAGEN } from '../../shared/constants.ts';
-import { ApiFout, post } from '../api.ts';
+import { ApiFout, post, query } from '../api.ts';
 import { omgeving } from '../sessie.ts';
 import { titel } from '../ui.tsx';
 
@@ -12,15 +12,19 @@ export function Proberen() {
   const [code, setCode] = createSignal('');
   const [verstuurd, setVerstuurd] = createSignal(false);
   const [fout, setFout] = createSignal<string | null>(null);
+  // A 409: the address already has a proefomgeving or a staging account, so the visitor should log in instead.
+  const [naarInloggen, setNaarInloggen] = createSignal(false);
   const [bezig, setBezig] = createSignal(false);
 
   const doe = async (fn: () => Promise<void>) => {
     setFout(null);
+    setNaarInloggen(false);
     setBezig(true);
     try {
       await fn();
     } catch (e) {
       setFout(e instanceof ApiFout ? e.message : 'Er ging iets mis. Probeer het opnieuw.');
+      setNaarInloggen(e instanceof ApiFout && e.status === 409);
     } finally {
       setBezig(false);
     }
@@ -49,7 +53,15 @@ export function Proberen() {
         <p>E-mails die de app normaal aan een bewoner, klusser of corporatie stuurt, komen in deze proefomgeving bij jou terecht.</p>
         <p class="text-muted small">We bewaren je naam, e-mailadres en proefomgeving tot {PROEF_BEWAAR_DAGEN} dagen na je laatste bezoek, en verwijderen ze dan.</p>
         <Show when={fout()}>
-          <div class="alert alert-danger qa-proberen-fout">{fout()}</div>
+          <div class="alert alert-danger qa-proberen-fout">
+            {fout()}{' '}
+            {/* rel="external" makes a full load: the router's own navigation starts Inloggen before ?email= is in the URL. */}
+            <Show when={naarInloggen()}>
+              <a class="qa-proberen-naar-inloggen" rel="external" href={`/inloggen${query({ email: email().trim() })}`}>
+                Log hier in
+              </a>
+            </Show>
+          </div>
         </Show>
         <Show
           when={verstuurd()}

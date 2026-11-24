@@ -77,6 +77,21 @@ test('op de testomgeving maakt /proberen een proefomgeving aan met naam en e-mai
   expect(verzonden).toEqual([{ naam: 'Pim Proef', email: 'pim@example.org' }, { email: 'pim@example.org', code: '123456' }]);
 });
 
+test('op de testomgeving weigert /proberen een e-mailadres dat al een proefomgeving heeft en linkt naar Inloggen met dat adres', async ({ page }) => {
+  await start(page);
+  await page.context().clearCookies();
+  await alsOmgeving(page, 'test');
+  await page.route('**/api/proberen', (route) => route.fulfill({ status: 409, json: { fout: 'Met dit e-mailadres heb je al een proefomgeving.' } }));
+  await page.goto('/proberen');
+  await page.locator('.qa-proberen-naam').fill('Pim Proef');
+  await page.locator('.qa-proberen-email').fill('pim@example.org');
+  await page.locator('.qa-proberen-maak').click();
+  await expect(page.locator('.qa-proberen-fout')).toContainText('al een proefomgeving');
+  await expect(page.locator('.qa-proberen-verstuurd')).toHaveCount(0);
+  await page.locator('.qa-proberen-naar-inloggen').click();
+  await expect(page.locator('.qa-login-email')).toHaveValue('pim@example.org');
+});
+
 test('op de live site toont /proberen geen aanmeldformulier', async ({ page }) => {
   await start(page);
   await page.context().clearCookies();

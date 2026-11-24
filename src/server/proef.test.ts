@@ -80,11 +80,17 @@ describe('proefomgevingen', () => {
     expect((await team.json('GET', '/api/dossiers')).totaal).toBe(0);
   });
 
-  it('sends a returning visitor to the same proefomgeving', async () => {
+  it('refuses a second sign-up for an address that has a proefomgeving, and logs that address in to it', async () => {
     const { t, klant } = opzet();
     const eerst = await aanmelden(t, klant(), 'Pim Proef', 'pim@example.org');
-    const later = await aanmelden(t, klant(), 'Pim Proef', 'pim@example.org');
-    expect(later).toBe(eerst);
+    const mails = t.mailer.verstuurd.length;
+    expect((await klant().json('POST', '/api/proberen', { naam: 'Pim Proef', email: 'PIM@example.org' }, 409)).fout).toBe('Met dit e-mailadres heb je al een proefomgeving.');
+    expect(t.mailer.verstuurd).toHaveLength(mails);
+    expect(fs.readdirSync(path.join(t.ctx.config.dataDir, 'proef')).filter((f) => /^[0-9a-f]{12}$/.test(f))).toEqual([eerst]);
+    const k = klant();
+    await k.json('POST', '/api/auth/request', { email: 'pim@example.org' });
+    await k.json('POST', '/api/auth/code', { email: 'pim@example.org', code: code(t, 'pim@example.org') });
+    expect(k.cookies.get('proef')).toBe(eerst);
   });
 
   it('copies the sjabloon with the visitor in its owner place, also in texts that named the owner', async () => {
@@ -121,14 +127,14 @@ describe('proefomgevingen', () => {
     await aanmelden(t, eigenaar, 'Sjabloon Beheerder', SJABLOON);
     await eigenaar.json('POST', '/api/gebruikers', { naam: 'Karel Klusser', email: 'karel@example.org', telefoon: '', rol: 'klusser' });
     const k = klant();
-    await k.json('POST', '/api/proberen', { naam: 'Karel', email: 'karel@example.org' }, 409);
+    await k.json('POST', '/api/proberen', { naam: 'Karel', email: 'karel@example.org' }, 400);
     expect(fs.readdirSync(path.join(t.ctx.config.dataDir, 'proef')).filter((f) => /^[0-9a-f]{12}$/.test(f))).toHaveLength(1);
   });
 
   it('logs in through the /s/<id> link from the mail on a browser that never saw the proefomgeving', async () => {
     const { t, klant } = opzet();
     const id = await aanmelden(t, klant(), 'Pim Proef', 'pim@example.org');
-    await klant().json('POST', '/api/proberen', { naam: 'Pim Proef', email: 'pim@example.org' });
+    await klant().json('POST', '/api/auth/request', { email: 'pim@example.org' });
     const link = /https:\/\/regenton\.test(\/s\/[0-9a-f]{12}\/inloggen\/link)#(\S+)/.exec(t.mailer.verstuurd.at(-1)!.tekst)!;
     expect(link[1]).toBe(`/s/${id}/inloggen/link`);
 
@@ -162,7 +168,7 @@ describe('proefomgevingen', () => {
     const { t, klant } = opzet();
     maakGebruiker(t, 'Team Lid', 'beheerder');
     const k = klant();
-    expect((await k.json('POST', '/api/proberen', { naam: 'Team Lid', email: 'team.lid@example.org' }, 409)).fout).toMatch(/Log in via Inloggen/);
+    expect((await k.json('POST', '/api/proberen', { naam: 'Team Lid', email: 'team.lid@example.org' }, 409)).fout).toBe('Met dit e-mailadres heb je al een account op de testomgeving.');
     await aanmelden(t, k, 'Pim Proef', 'pim@example.org');
     await k.login('team.lid@example.org');
     expect(k.cookies.has('proef')).toBe(false);
