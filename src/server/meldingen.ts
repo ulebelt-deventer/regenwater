@@ -1,5 +1,4 @@
 import type { Dossier, NotificatieSoort } from '../shared/types.ts';
-import { audit } from './audit.ts';
 import type { Ctx } from './context.ts';
 import { log } from './log.ts';
 
@@ -8,7 +7,6 @@ export async function feedbackMail(ctx: Ctx, onderwerp: string, tekst: string): 
   for (const aan of ctx.config.feedbackAan) {
     try {
       await ctx.mailer.verstuur({ aan, onderwerp, tekst });
-      audit(ctx, { id: null, als: null }, null, 'melding_verstuurd', { aan, onderwerp });
     } catch (e) {
       log.error(`melding niet verstuurd aan ${aan}: ${onderwerp}`, e);
     }

@@ -172,6 +172,16 @@ describe('proefomgevingen', () => {
     expect((await k.json('GET', '/api/auth/me')).ik).toMatchObject({ email: 'karel@example.org', rol: 'klusser' });
   });
 
+  it('mails feedback from a proefomgeving to the team, unredirected, naming the visitor and the proefomgeving', async () => {
+    const { t, klant } = opzet();
+    const k = klant();
+    const id = await aanmelden(t, k, 'Pim Proef', 'pim@example.org');
+    await k.json('POST', '/api/feedback', { tekst: 'Waar vind ik de kaart?', scherm: '/dossiers/1' }, 201);
+    const mails = t.mailer.verstuurd.filter((m) => m.onderwerp === 'Feedback van Pim Proef');
+    expect(mails.map((m) => m.aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);
+    expect(mails[0].tekst).toMatch(new RegExp(`^Pim Proef \\(pim@example\\.org\\) op https://regenton\\.test/s/${id}/dossiers/1:\\n\\nWaar vind ik de kaart\\?`));
+  });
+
   it('caps new proefomgevingen per hour', async () => {
     const { t, klant } = opzet();
     const register = new Database(path.join(t.ctx.config.dataDir, 'proef', 'register.db'));
@@ -213,6 +223,16 @@ describe('DoorstuurMailer', () => {
     expect(m).toMatchObject({ aan: 'pim@example.org', cc: null, replyTo: 'pim@example.org', onderwerp: 'Je afspraak' });
     expect(m.tekst).toBe('[Dit is de testomgeving. Op de echte site was deze e-mail verstuurd aan bewoner@example.org, cc team@example.org.]\n\nTot dinsdag.');
     expect(m.html).toMatch(/<body[^>]*><div style="border[^"]*"><em>Dit is de testomgeving\. Op de echte site was deze e-mail verstuurd aan bewoner@example\.org, cc team@example\.org\.<\/em><\/div><p>Tot dinsdag\.<\/p>/);
+  });
+
+  it('lets mail to exactly one team feedback address through unchanged, and redirects it with a cc', async () => {
+    const echt = new GeheugenMailer();
+    const mailer = new DoorstuurMailer(echt, 'pim@example.org', ['Team@example.org']);
+    const b = { aan: 'team@example.org', onderwerp: 'Feedback van Pim', tekst: 'Mooi' };
+    await mailer.verstuur(b);
+    await mailer.verstuur({ ...b, cc: 'bewoner@example.org' });
+    expect(echt.verstuurd.map((m) => m.aan)).toEqual(['team@example.org', 'pim@example.org']);
+    expect(echt.verstuurd[0]).toEqual(b);
   });
 
   it('sends the owner own mail unchanged', async () => {

@@ -617,25 +617,25 @@ describe('beheer', () => {
     expect(sjablonen.find((s: { key: string }) => s.key === 'subsidie_huur').tekst).toBe('Beste {bewonr}');
   });
 
-  it('mails feedback to every feedback recipient with no Reply-To, logging each in the audit trail, and lists it for admins', async () => {
+  it('mails feedback to every feedback recipient with no Reply-To, keeps their addresses out of the audit trail, and lists it for admins', async () => {
     await klusser.json('POST', '/api/feedback', { scherm: '/dossiers/1', tekst: 'Knop te klein' }, 201);
     expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);
     expect(t.mailer.verstuurd[0].replyTo).toBeUndefined();
     expect(t.mailer.verstuurd[0].tekst).toContain('Knop te klein');
-    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
-    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['feedback1@example.org', 'feedback2@example.org']);
+    const rijen = t.ctx.db.prepare('SELECT type, payload FROM audit').all() as { type: string; payload: string }[];
+    expect(rijen.map((r) => r.type)).toContain('feedback');
+    expect(rijen.filter((r) => r.payload.includes('feedback1@') || r.payload.includes('feedback2@'))).toEqual([]);
     const { feedback } = await beheerder.json('GET', '/api/feedback');
     expect(feedback.map((f: { tekst: string }) => f.tekst)).toEqual(['Knop te klein']);
   });
 
-  it('still mails the other feedback recipients when one is refused, and logs no send for the refused one', async () => {
+  it('still mails the other feedback recipients when one is refused, and logs the refusal as an error', async () => {
     t.mailer.faalVoor = 'feedback1@example.org';
     const fout = vi.spyOn(console, 'error').mockImplementation(() => {});
     await klusser.json('POST', '/api/feedback', { scherm: '/', tekst: 'Hoi' }, 201);
+    expect(fout.mock.calls.flat().join(' ')).toContain('melding niet verstuurd aan feedback1@example.org');
     fout.mockRestore();
     expect(t.mailer.verstuurd.map((m) => m.aan)).toEqual(['feedback2@example.org']);
-    const rijen = t.ctx.db.prepare("SELECT payload FROM audit WHERE type = 'melding_verstuurd'").all() as { payload: string }[];
-    expect(rijen.map((r) => (JSON.parse(r.payload) as { aan: string }).aan)).toEqual(['feedback2@example.org']);
   });
 
   it("filters Alle activiteit by a klusser, including what an admin did as them", async () => {

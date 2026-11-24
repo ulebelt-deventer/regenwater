@@ -342,4 +342,8 @@ export const MIGRATIES: string[] = [
   );
   ${SUBSIDIEPAGINAS_ZAAD}
   `,
+  // Feedback mails are no longer logged per recipient: the feedback entry covers it, and the addresses stay out of the activity log.
+  `
+  DELETE FROM audit WHERE type = 'melding_verstuurd';
+  `,
 ];

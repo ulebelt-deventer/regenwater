@@ -32,17 +32,20 @@ interface Proef {
   app: Hono<Env>;
 }
 
-// Every mail from a proefomgeving goes to its owner, with a note naming who would have got it: a visitor can type any address and edit every template.
+// Every mail from a proefomgeving goes to its owner, with a note naming who would have got it: a visitor can type any address and edit every template. Mail to exactly one of `doorlaten` (the team's feedback addresses) goes out unchanged.
 export class DoorstuurMailer implements Mailer {
   private echt: Mailer;
   private eigenaar: string;
-  constructor(echt: Mailer, eigenaar: string) {
+  private doorlaten: string[];
+  constructor(echt: Mailer, eigenaar: string, doorlaten: string[] = []) {
     this.echt = echt;
     this.eigenaar = eigenaar;
+    this.doorlaten = doorlaten.map((a) => a.toLowerCase());
   }
   async verstuur(b: Bericht): Promise<void> {
     const ontvangers = b.cc ? `${b.aan}, cc ${b.cc}` : b.aan;
-    if (ontvangers.toLowerCase() === this.eigenaar.toLowerCase()) return this.echt.verstuur(b);
+    const klein = ontvangers.toLowerCase();
+    if (klein === this.eigenaar.toLowerCase() || this.doorlaten.includes(klein)) return this.echt.verstuur(b);
     const zin = `Dit is de testomgeving. Op de echte site was deze e-mail verstuurd aan ${ontvangers}.`;
     const html = b.html ?? tekstNaarHtml(b.tekst);
     const opening = /<body[^>]*>/.exec(html);
@@ -186,12 +189,12 @@ export class Proefomgevingen {
     const dir = this.dir(rij.id);
     const dbPad = path.join(dir, 'app.db');
     if (!fs.existsSync(dbPad)) throw new Error(`Proefomgeving ${rij.id} staat in het register maar ${dbPad} bestaat niet`);
-    const config = { ...this.hoofd.config, dataDir: dir, fotoDir: path.join(dir, 'fotos'), basisUrl: `${this.hoofd.config.basisUrl}/s/${rij.id}`, feedbackAan: [] };
+    const config = { ...this.hoofd.config, dataDir: dir, fotoDir: path.join(dir, 'fotos'), basisUrl: `${this.hoofd.config.basisUrl}/s/${rij.id}` };
     const ctx: Ctx = {
       ...this.hoofd,
       db: openDb(dbPad),
       config,
-      mailer: new DoorstuurMailer(this.hoofd.mailer, rij.email),
+      mailer: new DoorstuurMailer(this.hoofd.mailer, rij.email, this.hoofd.config.feedbackAan),
       verzoek: (regel) => this.hoofd.verzoek(`[proef ${rij.id}] ${regel}`),
     };
     const p = { ctx, app: createApp(ctx) };
