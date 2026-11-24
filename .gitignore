@@ -7,5 +7,6 @@ playwright-report/
 .DS_Store
 devops/*.env
 _files
-TODO.md
+_TODO.md
+_JOURNAL.md
 backups/

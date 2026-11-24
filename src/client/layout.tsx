@@ -41,6 +41,18 @@ function OmgevingLabel() {
   );
 }
 
+function StagingBanner() {
+  return (
+    <Show when={omgeving() === 'test'}>
+      <div class="text-bg-warning py-2 no-print qa-staging-banner">
+        <div class="container-lg gx-2 gx-md-4">
+          <strong>Testomgeving.</strong> Hier probeer je uit hoe de app werkt. Deze omgeving is niet volledig afgeschermd: zet hier geen echte gegevens van bewoners in.
+        </div>
+      </div>
+    </Show>
+  );
+}
+
 // Logged out: the same bar without the links, since there's nothing to navigate to yet.
 function KaleNavbar() {
   return (
@@ -201,6 +213,7 @@ export function Layout(props: RouteSectionProps) {
   });
   return (
     <Show when={geladen()}>
+      <StagingBanner />
       <Show when={sessie()} fallback={<KaleNavbar />}>
         <Navbar />
         <AlsBanner />

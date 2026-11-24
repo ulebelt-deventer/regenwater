@@ -168,9 +168,9 @@ export function authRoutes(app: Hono<Env>, ctx: Ctx): void {
     return c.json({ ik, actor: actor.id === ik.id ? null : actor, nu: ctx.klok.iso() });
   });
 
-  // Open, so the logged-out navbar shows the label too.
+  // Open, so the logged-out navbar shows the label too. STAGING wins over development, so STAGING=1 npm start previews a staging install.
   app.get('/api/omgeving', (c) => {
-    const omgeving: Omgeving = ctx.config.modus === 'development' ? 'dev' : ctx.config.staging ? 'test' : null;
+    const omgeving: Omgeving = ctx.config.staging ? 'test' : ctx.config.modus === 'development' ? 'dev' : null;
     return c.json({ omgeving });
   });
 

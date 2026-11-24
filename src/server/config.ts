@@ -13,7 +13,7 @@ export interface Config {
   afzender: string; // From address
   feedbackAan: string[]; // who gets an email for each feedback item
   healthcheckUrl: string | null;
-  staging: boolean; // A test or demo install; the navbar says TEST and mail subjects start with [TEST].
+  staging: boolean; // A test or demo install; the navbar says TEST under an orange banner, and mail subjects start with [TEST].
 }
 
 function verplicht(naam: string): string {
