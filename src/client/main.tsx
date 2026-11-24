@@ -21,7 +21,7 @@ import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Nieuws } from './paginas/nieuws.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
 import { Proberen } from './paginas/proberen.tsx';
-import { AandachtUitleg, Databeleid, Installeren, Privacy, RechtenUitleg, Statussen, UitlegOverzicht } from './paginas/uitleg.tsx';
+import { AandachtUitleg, Databeleid, Installeren, OverDeApp, Privacy, RechtenUitleg, Statussen, UitlegOverzicht } from './paginas/uitleg.tsx';
 import { startScrollHerstel } from './scrollherstel.ts';
 import { startVersieControle } from './versie.ts';
 
@@ -68,6 +68,7 @@ render(
       <Route path="/uitleg/rechten" component={RechtenUitleg} />
       <Route path="/uitleg/databeleid" component={Databeleid} />
       <Route path="/installeren" component={Installeren} />
+      <Route path="/over-de-app" component={OverDeApp} />
       <Route path="/privacy" component={Privacy} />
       <Route path="*" component={NietGevonden} />
     </Router>

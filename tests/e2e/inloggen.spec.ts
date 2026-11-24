@@ -118,3 +118,14 @@ test('de privacypagina is uitgelogd te lezen, zonder doorsturen naar inloggen', 
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page.locator('.qa-privacy-titel')).toBeVisible();
 });
+
+test('de pagina Over deze app is uitgelogd te openen via de footer en linkt naar de code op GitHub', async ({ page }) => {
+  await start(page);
+  await page.context().clearCookies();
+  await page.goto('/inloggen');
+  await page.locator('.qa-footer-over').click();
+  await expect(page.locator('.qa-over-titel')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(/\/over-de-app$/);
+  await expect(page.locator('.qa-over-github')).toHaveAttribute('href', 'https://github.com/ulebelt-deventer/regenwater');
+});

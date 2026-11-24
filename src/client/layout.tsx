@@ -190,6 +190,7 @@ function Footer() {
   return (
     <footer class="border-top mt-5 py-3 small text-muted">
       <div class="container-lg d-flex gap-3">
+        <A href="/over-de-app" class="link-secondary qa-footer-over">Over deze app</A>
         <A href="/privacy" class="link-secondary">Privacy</A>
         <Show when={sessie()}>
           <button type="button" class="btn btn-link btn-inline link-secondary qa-feedback" onClick={() => setFeedback(true)}>Feedback geven</button>

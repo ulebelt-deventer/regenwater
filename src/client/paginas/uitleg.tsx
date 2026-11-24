@@ -1,4 +1,4 @@
-// Explanation pages, open to every user: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Databeleid, Installeren and Privacy.
+// Explanation pages, open to every user: Statussen, Aandacht-criteria and Rechten, generated from the rules the app uses, plus Databeleid, Installeren, Over deze app and Privacy.
 import { A } from '@solidjs/router';
 import { For, type JSX, Show, createSignal, onCleanup, onMount } from 'solid-js';
 import { KLOPT_NIET_KOP, KLOPT_NIET_REGELS, LIGT_STIL_REGELS } from '../../shared/aandacht.ts';
@@ -374,6 +374,36 @@ export function Installeren() {
         <div class="row g-3 mb-3">{android ? [androidStappen, iphone] : [iphone, androidStappen]}</div>
         <p class="mb-0">Open daarna de app via het nieuwe icoontje en log nog één keer in met je e-mailadres en code. De app op je beginscherm heeft een eigen login, los van die in je browser.</p>
       </Show>
+    </>
+  );
+}
+
+// Public, like Privacy: what the app is for, and where its code lives.
+export function OverDeApp() {
+  titel('Over deze app');
+  return (
+    <>
+      <h1 class="qa-over-titel">Over deze app</h1>
+      <section class="card card-body mb-3">
+        <h2>Waarvoor</h2>
+        <p class="mb-0">Regenwater helpt buurtgroepen om regenpijpen af te koppelen van het riool. Vrijwilligers bezoeken woningen, maken een plan, en plaatsen regentonnen. De app volgt elke woning van aanmelding tot oplevering, en regelt het papierwerk. Hij is gemaakt om op je telefoon te gebruiken, in iemands achtertuin.</p>
+      </section>
+      <section class="card card-body mb-3">
+        <h2>Wat de app doet</h2>
+        <ul class="mb-0">
+          <li>Eén dossier per woning, van aanmelding tot uitvoering. Je ziet altijd bij welke stap elke woning is, en welke woningen aandacht nodig hebben.</li>
+          <li>Vul een adres in en je krijgt de kadastrale kaart, een luchtfoto en het boorprofiel. In Deventer, Raalte en Olst-Wijhe vindt de app ook op welk soort riool het huis zit.</li>
+          <li>Formulieren slaan zichzelf op terwijl je typt, je kunt op foto's tekenen, en foto's die je zonder bereik maakt worden verstuurd zodra er weer verbinding is.</li>
+          <li>De app rekent de waterberging per regenpijp uit, en maakt een materiaallijst met kostenraming.</li>
+          <li>Het Plan van Aanpak en het opleverrapport als pdf, en e-mails aan bewoners en woningcorporaties vanuit sjablonen die je zelf schrijft.</li>
+          <li>Geen wachtwoord om te onthouden: je logt in met een link of code per e-mail.</li>
+          <li>Gebouwd voor de AVG, met de gegevens op een eigen server in de EU.</li>
+        </ul>
+      </section>
+      <section class="card card-body mb-3">
+        <p>Made with 💙 by <a href="https://ulebelt.nl/">De Ulebelt</a> + <a href="https://topherhunt.com/">Topher Hunt</a></p>
+        <p class="mb-0">De app is open source: de code staat op <a href="https://github.com/ulebelt-deventer/regenwater" class="qa-over-github">GitHub</a>. Je mag hem gratis gebruiken en aanpassen voor jouw buurt.</p>
+      </section>
     </>
   );
 }

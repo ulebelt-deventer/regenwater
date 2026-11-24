@@ -39,7 +39,7 @@ export async function api<T = any>(methode: string, pad: string, inhoud?: unknow
 }
 
 // Pages readable without logging in.
-const OPENBAAR = ['/inloggen', '/privacy', '/proberen'];
+const OPENBAAR = ['/inloggen', '/over-de-app', '/privacy', '/proberen'];
 export const isOpenbaar = (pad: string) => OPENBAAR.some((p) => pad.startsWith(p));
 
 export const TERUG_SLEUTEL = 'terugNaInloggen';
