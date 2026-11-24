@@ -56,6 +56,16 @@ describe('proefomgevingen', () => {
     expect(fs.existsSync(path.join(t.ctx.config.dataDir, 'proef', id, 'fotos'))).toBe(true);
   });
 
+  it('tells the overzicht it is a proefomgeving, and the main app that it is not', async () => {
+    const { t, klant } = opzet();
+    const pim = klant();
+    await aanmelden(t, pim, 'Pim Proef', 'pim@example.org');
+    maakGebruiker(t, 'Team Lid', 'beheerder');
+    const team = await new Klant({ app: t.app, mailer: t.mailer }).login('team.lid@example.org');
+    expect((await pim.json('GET', '/api/overzicht')).proefomgeving).toBe(true);
+    expect((await team.json('GET', '/api/overzicht')).proefomgeving).toBe(false);
+  });
+
   it('keeps each visitor dossiers from the others and from the main app', async () => {
     const { t, klant } = opzet();
     const pim = klant();

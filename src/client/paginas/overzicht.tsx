@@ -1,7 +1,7 @@
 import { A, Navigate, useNavigate } from '@solidjs/router';
 import { For, Show, createResource } from 'solid-js';
 import { datum } from '../../shared/datum.ts';
-import { NORM_STANDAARD_LABEL } from '../../shared/constants.ts';
+import { NORM_STANDAARD_LABEL, PROEF_BEWAAR_DAGEN } from '../../shared/constants.ts';
 import type { Gebruiker, NormafvoerRij } from '../../shared/types.ts';
 import { get } from '../api.ts';
 import { sessie } from '../sessie.ts';
@@ -29,13 +29,18 @@ export function Overzicht() {
 function OverzichtInhoud() {
   titel('Overzicht');
   const navigate = useNavigate();
-  const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[]; normNakijken: NormafvoerRij[]; bewaartermijnRegelen: boolean }>('/api/overzicht'));
+  const [data] = createResource(() => get<{ tellingen: { key: string; label: string; aantal: number; query: string }[]; gebruikers: GebruikerRij[]; normNakijken: NormafvoerRij[]; bewaartermijnRegelen: boolean; proefomgeving: boolean }>('/api/overzicht'));
   return (
     <>
       <h1 class="mb-3">Overzicht</h1>
       <Show when={data()} fallback={<Laden />}>
         {(d) => (
           <>
+            <Show when={d().proefomgeving}>
+              <div class="alert alert-info qa-proefomgeving">
+                Dit is je eigen proefomgeving. Kijk rond en maak dossiers aan om te zien hoe de app werkt. Als je hem {PROEF_BEWAAR_DAGEN} dagen niet gebruikt, wordt hij verwijderd.
+              </div>
+            </Show>
             <Show when={d().bewaartermijnRegelen}>
               <div class="alert alert-warning qa-bewaartermijn-regelen">
                 <A href="/uitleg/databeleid" class="alert-link">Bewaartermijnen regelen</A>: binnen een jaar zijn de eerste dossiers en accounts vijf jaar oud, maar de app verwijdert oude gegevens nog niet vanzelf. Vraag de technisch beheerder om dat te bouwen.

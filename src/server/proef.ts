@@ -189,7 +189,7 @@ export class Proefomgevingen {
     const dir = this.dir(rij.id);
     const dbPad = path.join(dir, 'app.db');
     if (!fs.existsSync(dbPad)) throw new Error(`Proefomgeving ${rij.id} staat in het register maar ${dbPad} bestaat niet`);
-    const config = { ...this.hoofd.config, dataDir: dir, fotoDir: path.join(dir, 'fotos'), basisUrl: `${this.hoofd.config.basisUrl}/s/${rij.id}` };
+    const config = { ...this.hoofd.config, proefomgeving: true, dataDir: dir, fotoDir: path.join(dir, 'fotos'), basisUrl: `${this.hoofd.config.basisUrl}/s/${rij.id}` };
     const ctx: Ctx = {
       ...this.hoofd,
       db: openDb(dbPad),

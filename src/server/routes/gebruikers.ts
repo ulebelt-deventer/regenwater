@@ -146,6 +146,6 @@ export function gebruikerRoutes(app: Hono<Env>, ctx: Ctx): void {
     ];
     const normNakijken = normafvoeren(ctx.db).filter((n) => dagenSinds(n.gecontroleerd_at, nu) >= NORM_CONTROLE_DAGEN);
     const bewaartermijnRegelen = nu >= new Date(BEWAARTERMIJN_HERINNERING);
-    return c.json({ tellingen, gebruikers: gebruikerRijen(ctx, false), normNakijken, bewaartermijnRegelen });
+    return c.json({ tellingen, gebruikers: gebruikerRijen(ctx, false), normNakijken, bewaartermijnRegelen, proefomgeving: ctx.config.proefomgeving });
   });
 }

@@ -1,4 +1,4 @@
-// The DEV or TEST label in the navbar, the staging banner and the /proberen sign-up. The e2e server reports no omgeving, so these tests fake the API answers they depend on.
+// The DEV or TEST label in the navbar, the staging banner, the /proberen sign-up and the proefomgeving banner. The e2e server reports no omgeving, so these tests fake the API answers they depend on.
 import { type Page, expect, test } from '@playwright/test';
 import type { Omgeving } from '../../src/shared/types.ts';
 import { start } from './hulp.ts';
@@ -83,4 +83,25 @@ test('op de live site toont /proberen geen aanmeldformulier', async ({ page }) =
   await page.goto('/proberen');
   await expect(page.locator('.qa-proberen-niet')).toBeVisible();
   await expect(page.locator('.qa-proberen-form')).toHaveCount(0);
+});
+
+test('in een proefomgeving staat bovenaan het overzicht een blauwe banner dat je mag rondkijken en dat hij na 90 dagen zonder gebruik verdwijnt', async ({ page }) => {
+  await start(page);
+  await page.route('**/api/overzicht', async (route) => route.fulfill({ json: { ...(await (await route.fetch()).json()), proefomgeving: true } }));
+  await page.goto('/');
+  const banner = page.locator('.qa-proefomgeving');
+  await expect(banner).toBeVisible();
+  await expect(banner).toHaveClass(/alert-info/);
+  await expect(banner).toContainText('proefomgeving');
+  await expect(banner).toContainText('90 dagen');
+  const bannerVak = await banner.boundingBox();
+  const tellingenVak = await page.locator('.qa-tellingen').boundingBox();
+  expect(bannerVak!.y).toBeLessThan(tellingenVak!.y);
+});
+
+test('buiten een proefomgeving staat er geen proefomgeving-banner op het overzicht', async ({ page }) => {
+  await start(page);
+  await page.goto('/');
+  await expect(page.locator('.qa-tellingen')).toBeVisible();
+  await expect(page.locator('.qa-proefomgeving')).toHaveCount(0);
 });

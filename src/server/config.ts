@@ -14,6 +14,7 @@ export interface Config {
   feedbackAan: string[]; // who gets an email for each feedback item
   healthcheckUrl: string | null;
   staging: boolean; // A test or demo install; the navbar says TEST under an orange banner, and mail subjects start with [TEST].
+  proefomgeving: boolean; // One visitor's copy from /proberen (proef.ts); the overzicht says so.
 }
 
 function verplicht(naam: string): string {
@@ -53,5 +54,6 @@ export function leesConfig(): Config {
     feedbackAan: productie ? adressen('MELDINGEN_FEEDBACK') : ['feedback@example.org'],
     healthcheckUrl: process.env.HEALTHCHECK_URL ?? null,
     staging: (process.env.STAGING ?? '').trim() !== '',
+    proefomgeving: false,
   };
 }
