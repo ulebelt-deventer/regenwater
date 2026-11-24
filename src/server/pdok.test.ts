@@ -142,6 +142,33 @@ describe('dichtsteBoring', () => {
     await expect(dichtsteBoring(nep({ bro: [broAntwoord([])], dino: [{ error: { code: 400 } }] }).ctx, LL)).rejects.toMatchObject({ status: 502, message: 'DINOloket gaf een fout (400). Probeer het later opnieuw.' });
   });
 
+  it('fails with a 502 naming the service when BRO or DINO cannot be reached or does not answer in time', async () => {
+    const onbereikbaar = (pad: string, e: Error) => {
+      const { ctx } = nep({ bro: [broAntwoord([])], dino: [dinoAntwoord([])] });
+      const echt = ctx.haal;
+      ctx.haal = async (invoer, init) => {
+        if (String(invoer).includes(pad)) throw e;
+        return echt(invoer, init);
+      };
+      return dichtsteBoring(ctx, LL);
+    };
+    await expect(onbereikbaar('/characteristics/searches', new TypeError('fetch failed'))).rejects.toMatchObject({ status: 502, message: 'BRO is niet bereikbaar. Probeer het later opnieuw.' });
+    await expect(onbereikbaar('/MapServer/0/query', new DOMException('signal timed out', 'TimeoutError'))).rejects.toMatchObject({ status: 502, message: 'DINOloket is niet bereikbaar. Probeer het later opnieuw.' });
+  });
+
+  it('gives up on a request that does not answer within the timeout', async () => {
+    const { ctx } = nep({ bro: [broAntwoord([]), broAntwoord([])], dino: [dinoAntwoord([]), dinoAntwoord([])] });
+    const signalen: (AbortSignal | null | undefined)[] = [];
+    const echt = ctx.haal;
+    ctx.haal = async (invoer, init) => {
+      signalen.push(init?.signal);
+      return echt(invoer, init);
+    };
+    await dichtsteBoring(ctx, LL);
+    expect(signalen.length).toBeGreaterThan(0);
+    for (const s of signalen) expect(s).toBeInstanceOf(AbortSignal);
+  });
+
   it('fails when DINO returns only part of the borings in the circle', async () => {
     const { ctx } = nep({ bro: [broAntwoord([])], dino: [{ ...dinoAntwoord([{ id: 'X', lat: 52.255, lon: 6.16 }]), exceededTransferLimit: true }] });
     await expect(dichtsteBoring(ctx, LL)).rejects.toThrow('DINOloket gaf niet alle boringen binnen 0.5 km');

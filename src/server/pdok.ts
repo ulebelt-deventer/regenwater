@@ -2,6 +2,7 @@ import { BORING_MAX_KM } from '../shared/constants.ts';
 import type { Adres } from '../shared/types.ts';
 import type { Ctx } from './context.ts';
 import { fout } from './context.ts';
+import { log } from './log.ts';
 
 const LOCATIESERVER = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1';
 const LUCHTFOTO_WMS = 'https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0';
@@ -13,8 +14,25 @@ const BRO_PROFIEL = 'https://publiek.broservices.nl/sr/bhrgt/v2/profile/graph/di
 const DINO_ZOEK = 'https://www.broloket.nl/standalone/rest/services/uitgifteloket_gdn/lks_gbo_rd_v1/MapServer/0/query';
 const DINO_PROFIEL = 'https://www.dinoloket.nl/uitgifteloket/api/brh/profile/';
 
+const TIMEOUT_MS = 30_000;
+
+// ctx.haal with a timeout over the whole response, body included. fetch throws a TypeError when it cannot connect or the body breaks off, and the signal a TimeoutError: both are the service's fault, so they become a 502 naming it.
+async function haal(ctx: Ctx, dienst: string, url: string, init?: RequestInit): Promise<Response> {
+  let res: Response;
+  let body: ArrayBuffer;
+  try {
+    res = await ctx.haal(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    body = await res.arrayBuffer();
+  } catch (e) {
+    if (!(e instanceof TypeError || (e instanceof DOMException && e.name === 'TimeoutError'))) throw e;
+    log.info(`${dienst} onbereikbaar (${new URL(url).host}): ${String(e.cause ?? e)}`);
+    fout(502, `${dienst} is niet bereikbaar. Probeer het later opnieuw.`);
+  }
+  return new Response(body, { status: res.status, headers: res.headers });
+}
+
 async function json(ctx: Ctx, url: string): Promise<Record<string, unknown>> {
-  const res = await ctx.haal(url);
+  const res = await haal(ctx, 'PDOK', url);
   if (!res.ok) fout(502, `PDOK gaf een fout (${res.status}). Probeer het later opnieuw.`);
   return (await res.json()) as Record<string, unknown>;
 }
@@ -92,7 +110,7 @@ function wmsUrl(basis: string, lagen: string, bbox: Bbox, w: number, h: number, 
 }
 
 async function plaatje(ctx: Ctx, url: string): Promise<Buffer> {
-  const res = await ctx.haal(url);
+  const res = await haal(ctx, 'PDOK', url);
   const type = res.headers.get('content-type') ?? '';
   if (!res.ok || !type.startsWith('image/')) fout(502, `De luchtfoto kon niet worden geladen (${res.status}). Probeer het later opnieuw.`);
   return Buffer.from(await res.arrayBuffer());
@@ -131,7 +149,7 @@ const dinoFout = (status: number | string): never => fout(502, `DINOloket gaf ee
 
 // BHR-GT: the geotechnical borings registered in BRO. Each one's standardizedLocation is always lat/lon; its deliveredLocation is in whatever system the supplier used, so only the first is read.
 async function broBoringen(ctx: Ctx, ll: [number, number], km: number): Promise<Boring[]> {
-  const res = await ctx.haal(BRO_ZOEK, {
+  const res = await haal(ctx, 'BRO', BRO_ZOEK, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/xml' },
     body: JSON.stringify({
@@ -158,7 +176,7 @@ async function dinoBoringen(ctx: Ctx, ll: [number, number], km: number): Promise
     geometry: JSON.stringify({ x: ll[0], y: ll[1] }), geometryType: 'esriGeometryPoint', inSR: '4326', distance: String(km * 1000), units: 'esriSRUnit_Meter',
     outFields: 'DINO_NR', returnGeometry: 'true', outSR: '4326', f: 'json',
   });
-  const res = await ctx.haal(`${DINO_ZOEK}?${p}`);
+  const res = await haal(ctx, 'DINOloket', `${DINO_ZOEK}?${p}`);
   if (!res.ok) dinoFout(res.status);
   const r = (await res.json()) as { error?: { code: number }; exceededTransferLimit?: boolean; features: { attributes: { DINO_NR: string }; geometry: { x: number; y: number } }[] };
   if (r.error) dinoFout(r.error.code);
@@ -172,15 +190,15 @@ async function dinoBoringen(ctx: Ctx, ll: [number, number], km: number): Promise
 // The profile drawing as SVG, or null when the boring has no layer description. BRO draws a boring from its own XML, so that is fetched first.
 async function profielSvg(ctx: Ctx, b: Boring): Promise<string | null> {
   if (b.bron === 'DINO') {
-    const res = await ctx.haal(`${DINO_PROFIEL}${encodeURIComponent(b.id)}`);
+    const res = await haal(ctx, 'DINOloket', `${DINO_PROFIEL}${encodeURIComponent(b.id)}`);
     if (!res.ok) dinoFout(res.status);
     const svg = await res.text();
     if (!svg.includes('<svg')) dinoFout('geen tekening');
     return svg.includes('geen boormonsterbeschrijving') ? null : svg;
   }
-  const obj = await ctx.haal(`${BRO_OBJECT}${encodeURIComponent(b.id)}`, { headers: { accept: 'application/xml' } });
+  const obj = await haal(ctx, 'BRO', `${BRO_OBJECT}${encodeURIComponent(b.id)}`, { headers: { accept: 'application/xml' } });
   if (!obj.ok) broFout(obj.status);
-  const res = await ctx.haal(BRO_PROFIEL, { method: 'POST', headers: { 'content-type': 'application/xml', accept: 'application/svg+xml' }, body: await obj.text() });
+  const res = await haal(ctx, 'BRO', BRO_PROFIEL, { method: 'POST', headers: { 'content-type': 'application/xml', accept: 'application/svg+xml' }, body: await obj.text() });
   if (!res.ok) broFout(res.status);
   const svg = await res.text();
   if (!svg.includes('<svg')) broFout('geen tekening');
