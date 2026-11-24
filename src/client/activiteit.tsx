@@ -44,6 +44,7 @@ export const TYPE_LABEL: Record<string, string> = {
   email_verstuurd: 'E-mail verstuurd',
   email_mislukt: 'E-mail niet afgeleverd',
   handmatig_verstuurd: 'Handmatig verstuurd',
+  melding_verstuurd: 'Melding verstuurd',
   gebruiker_aangemaakt: 'Gebruiker aangemaakt',
   gebruiker_gewijzigd: 'Gebruiker gewijzigd',
   gebruiker_gearchiveerd: 'Gebruiker gearchiveerd',
@@ -158,6 +159,8 @@ function samenvatting(item: AuditItem): JSX.Element {
   if (t === 'opnieuw_versturen_niet_nodig') return <>Voor {s(p().ontvanger)}: {s(p().notitie)}</>;
   if (t === 'meldingen_verborgen') return <>{(p().meldingen as string[]).map((m) => `“${m}”`).join(' ')}</>;
   if (t === 'email_verstuurd' || t === 'email_mislukt' || t === 'handmatig_verstuurd') return mail();
+  // Older entries, which also hold the recipient's address: it stays out of view.
+  if (t === 'melding_verstuurd') return <>“{s(p().onderwerp)}”</>;
   if (t === 'dossier_verwijderd') return <>Dossier {s(p().dossier_id)}: {s(p().adres)}</>;
   if (t === 'gebruiker_aangemaakt' || t === 'gebruiker_gearchiveerd' || t === 'gebruiker_gedearchiveerd' || t === 'inloggen_als_start' || t === 'inloggen_als_stop') {
     return <A href={`/gebruikers/${s(p().gebruiker_id)}`}>{s(p().naam)}</A>;

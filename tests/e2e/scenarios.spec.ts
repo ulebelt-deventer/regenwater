@@ -156,9 +156,13 @@ test('koop met Klussendienst: nieuwe klusser als uitvoerder, badges in Mijn doss
   await expect(page.locator('.qa-naar-plan')).toHaveText('Bekijken');
   await expect(veld(page, 'afspraak').locator('.qa-datum')).toBeDisabled();
 
+  // The hand-off reaches the beheerder's bell, and opening the dossier reads it.
   await login(page, BEHEERDER.email);
-  await naarDossier(page, id);
+  await page.goto('/');
   await expect(page.locator('.qa-bel-aantal')).toHaveText('1');
+  await naarDossier(page, id);
+  await expect(page.locator('.qa-nav-bel')).toBeVisible();
+  await expect(page.locator('.qa-bel-aantal')).toHaveCount(0);
   await status(page, 'Plan controleren & versturen');
   await mail(page, 'plan_bewoner_koop');
   expect(await laatsteMail(page)).toMatchObject({ aan: 'bea@example.org', bijlagen: [PLAN_PDF] });

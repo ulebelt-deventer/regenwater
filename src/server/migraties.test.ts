@@ -281,19 +281,3 @@ describe('the agreed klussendienst_kosten', () => {
     expect(kosten).toEqual([10000, 0, 10000, null, 12345]);
   });
 });
-
-describe('dropping the per-recipient feedback mail entries', () => {
-  it('deletes every melding_verstuurd entry with the recipient addresses, and keeps the feedback entries', () => {
-    const versie = MIGRATIES.findIndex((m) => m.includes("DELETE FROM audit WHERE type = 'melding_verstuurd'"));
-    expect(versie).toBeGreaterThan(0);
-    const db = dbTot(versie);
-    const T = '2026-03-02T10:00:00.000Z';
-    const audit = db.prepare('INSERT INTO audit (created_at, updated_at, actor_id, dossier_id, type, payload) VALUES (?, ?, NULL, NULL, ?, ?)');
-    audit.run(T, T, 'feedback', JSON.stringify({ id: 1, scherm: '/' }));
-    audit.run(T, T, 'melding_verstuurd', JSON.stringify({ aan: 'team@example.org', onderwerp: 'Feedback van Anna' }));
-
-    migreer(db);
-
-    expect(db.prepare('SELECT type FROM audit').pluck().all()).toEqual(['feedback']);
-  });
-});
