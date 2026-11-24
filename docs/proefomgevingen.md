@@ -16,7 +16,7 @@ Visitors sign up at `/proberen` with a name and email address and get their own 
 
 New proefomgevingen copy the one owned by `PROEF_SJABLOON` (an email address in `devops/staging.env`); without it they start empty. To set it up:
 
-1. Sign up at `/proberen` with a made-up, distinctive name and address (say "Sjabloon Beheerder"). The copy replaces that name and address everywhere with the visitor's, so a common name would also be replaced inside other text.
+1. Sign up at `/proberen` with a made-up, distinctive name (say "Sjabloon Beheerder") and an address you receive mail on but that appears nowhere else, such as a plus-address (`you+sjabloon@…`). The login code goes to that address. The copy replaces the name and address everywhere with the visitor's, so a common name would also be replaced inside other text.
 2. Fill it with example dossiers, klussers and photos. Use no real data: visitors see all of it.
 3. Set `PROEF_SJABLOON` to that address, push the env and restart.
 
