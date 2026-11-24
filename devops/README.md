@@ -45,6 +45,7 @@ Per environment (`<env>` = `production` or `staging`):
 - `bash devops/status.sh <env>`: service, health, TLS, memory, errors, Litestream, backup check and host at a glance.
 - `bash devops/logs.sh <env>`: follows the app's and the jobs' journald logs. With more args (e.g. `--since "1 hour ago" -p warning`) it passes them to journalctl and prints once.
 - `bash devops/backup.sh <env>`: downloads a consistent snapshot of `app.db` and all photos to a folder `backups/<env>-<timestamp>/` (gitignored), laid out like `data/`, and checks that the database is intact and every photo it lists is present. Run it before a deploy with a data migration; it does not depend on Litestream.
+- `bash devops/list-sandboxes.sh staging`: lists the proefomgevingen with their owner, dates, counts and the addresses of dossiers the visitor added. Read-only.
 - `bash devops/restart.sh <env>`: restart without deploying. Sessions live in SQLite, so no one is logged out.
 - `bash devops/push-env.sh <env>`: update secrets; restarts the app and Litestream.
 - Run a job now: `ssh <host> systemctl start regenton-<env>-backup-check.service`.
