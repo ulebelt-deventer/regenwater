@@ -151,10 +151,10 @@ function RegenpijpBlok(props: { id: string }) {
                   </Show>
                 </div>
               </div>
-              <For each={['soort', 'diameter', 'regenton']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
-              <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
-              <VeldInvoer k={k('ondergrond')} class="col-12 col-md-6" breed />
             </Show>
+            <For each={['soort', 'diameter', 'regenton']}>{(v) => <VeldInvoer k={k(v)} class={KORT} breed labelClass={LABEL_CLASS[v]} />}</For>
+            <For each={['waar', 'hoe']}>{(v) => <VeldInvoer k={k(v)} class="col-12 col-md-6" breed labelClass={LABEL_CLASS[v]} />}</For>
+            <VeldInvoer k={k('ondergrond')} class="col-12 col-md-6" breed />
             <VeldInvoer k={k('opmerking')} class="col-12 col-md-6" breed />
           </div>
         </div>

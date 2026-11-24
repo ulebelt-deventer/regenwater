@@ -123,11 +123,11 @@ function RegenpijpRegel(props: { pijp: Regenpijp }) {
   const items = () => kaartItems(s.d);
   const kort = () => {
     const afkoppelen = veldTekst(s.d, k('afkoppelen')) && `Afkoppelen: ${veldTekst(s.d, k('afkoppelen'))}`;
-    if (!nietOpRiool(s.d, props.pijp.id)) return afkoppelen;
-    const w = waterberging(props.pijp, items().daken, s.d.normafvoer.mm);
+    const afvoer = nietOpRiool(s.d, props.pijp.id);
+    const w = afvoer && waterberging(props.pijp, items().daken, s.d.normafvoer.mm);
     const delen = [
       afkoppelen,
-      props.pijp.bronnen.length ? `van ${bronnenTekst(props.pijp, items().labels)}` : 'aan geen dak gekoppeld',
+      afvoer && (props.pijp.bronnen.length ? `van ${bronnenTekst(props.pijp, items().labels)}` : 'aan geen dak gekoppeld'),
       w && `${w.liter} liter waterberging`,
       veldTekst(s.d, k('soort')),
       veldTekst(s.d, k('diameter')),

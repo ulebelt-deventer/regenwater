@@ -342,28 +342,30 @@ test('Andere foto’s staat op het Bezoek tussen Wat wenst de bewoner en Afsprak
   await expect(page.locator('.qa-sectie-bezoek .qa-duimen-andere_fotos > *')).toHaveCount(2);
 });
 
-test('Afkoppelen op Nee laat bij die regenpijp alleen Afkoppelen staan, ook in de samenvatting; terug op Ja staat alles er nog', async ({ page }) => {
+test('Afkoppelen op Nee verbergt bij die regenpijp Voert af van, Waterberging, Waar en Hoe maar houdt Soort, Diameter, Regenton en Ondergrond, ook in Controle en samenvatting; terug op Ja staat alles er nog', async ({ page }) => {
   const id = await tweeRegenpijpen(page);
   await zet(page, id, { 'regenpijp.r1.soort': 'zink', 'regenpijp.r1.regenton': 'gewenst' });
   await page.reload();
   const [a, b] = [page.locator('.qa-regenpijp').first(), page.locator('.qa-regenpijp').nth(1)];
-  const overig = ['.qa-veld-regenpijp-bronnen', '.qa-waterberging', '.qa-veld-regenpijp-soort', '.qa-veld-regenpijp-diameter', '.qa-veld-regenpijp-regenton', '.qa-veld-regenpijp-ondergrond', '.qa-veld-regenpijp-waar', '.qa-veld-regenpijp-hoe'];
+  const afvoer = ['.qa-veld-regenpijp-bronnen', '.qa-waterberging', '.qa-veld-regenpijp-waar', '.qa-veld-regenpijp-hoe'];
+  const blijft = ['.qa-veld-regenpijp-soort', '.qa-veld-regenpijp-diameter', '.qa-veld-regenpijp-regenton', '.qa-veld-regenpijp-ondergrond'];
   const waar = a.locator('.qa-veld-regenpijp-waar textarea');
   await waar.fill('De border in');
   await waar.blur();
-  for (const veld of overig) await expect(a.locator(veld)).toBeVisible();
+  for (const veld of [...afvoer, ...blijft]) await expect(a.locator(veld)).toBeVisible();
 
   await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('nee');
   await expect(a.locator('.qa-veld-regenpijp-afkoppelen')).toBeVisible();
-  for (const veld of overig) await expect(a.locator(veld)).toHaveCount(0);
-  for (const veld of overig.filter((v) => !v.endsWith('ondergrond'))) await expect(b.locator(veld)).toBeVisible();
-  await expect(page.locator('.qa-controle')).toContainText('Regenpijp B: Soort');
-  await expect(page.locator('.qa-controle')).not.toContainText('Regenpijp A');
+  for (const veld of afvoer) await expect(a.locator(veld)).toHaveCount(0);
+  for (const veld of blijft) await expect(a.locator(veld)).toBeVisible();
+  for (const veld of [...afvoer, ...blijft.filter((v) => !v.endsWith('ondergrond'))]) await expect(b.locator(veld)).toBeVisible();
+  await expect(page.locator('.qa-controle')).toContainText('Regenpijp A: Diameter');
+  await expect(page.locator('.qa-controle')).not.toContainText('Regenpijp A: Waar');
   await opslagKlaar(page);
 
   await page.goto(`/dossiers/${id}`);
   const samenvatting = page.locator('.qa-sectie-bezoek .qa-sv-regenpijp').first();
-  await expect(samenvatting).toHaveText(/^\s*Regenpijp A\s*Afkoppelen: Nee \(blijft naar riool gaan\)\s*$/);
+  await expect(samenvatting).toHaveText(/^\s*Regenpijp A\s*Afkoppelen: Nee \(blijft naar riool gaan\) · Zink · Regenton: Niet aanwezig, wel gewenst\s*$/);
 
   await page.goto(`/dossiers/${id}/bezoek`);
   await a.locator('.qa-veld-regenpijp-afkoppelen select.qa-invoer').selectOption('ja');

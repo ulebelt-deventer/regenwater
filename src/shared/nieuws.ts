@@ -6,6 +6,17 @@ export interface NieuwsDatum {
 
 export const NIEUWS: NieuwsDatum[] = [
   {
+    datum: '2026-11-24',
+    groepen: [
+      {
+        kop: 'Bezoek',
+        punten: [
+          'Kies je bij een regenpijp Afkoppelen? Nee, dan vul je nu toch Soort, Diameter en Regenton in, en bij een gewenste regenton ook de Ondergrond. Zo kun je een regenton plaatsen bij een pijp die op het riool blijft. Ze staan ook in de samenvatting en het Plan van Aanpak, en de Controle vraagt er weer om.',
+        ],
+      },
+    ],
+  },
+  {
     datum: '2026-11-21',
     groepen: [
       {

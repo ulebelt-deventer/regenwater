@@ -298,7 +298,7 @@ describe('documents', () => {
     expect(html).toContain('nog niet ingevuld');
   });
 
-  it('shows only Afkoppelen in the Plan for a regenpijp that stays on the riool, without its other cells, waterberging row or photos, and keeps them all for Twijfel', async () => {
+  it('shows Soort, Diameter, Regenton and Ondergrond in the Plan for a regenpijp that stays on the riool, without its Waar & hoe, waterberging row or Waar photos, and keeps them all for Twijfel', async () => {
     const id = await nieuwDossier();
     const zet = (key: string, value: unknown) => beheerder.json('PATCH', `/api/dossiers/${id}`, { key, value });
     await zet('kaart_annotaties', [{ id: 'd1', type: 'dak', p: [[0, 0], [10, 0], [10, 10], [0, 10]] }, { id: 'r1', type: 'regenpijp', p: [[1, 1]] }]);
@@ -314,8 +314,9 @@ describe('documents', () => {
     await zet('regenpijp.r1.afkoppelen', 'nee');
     const nee = await plan();
     expect(nee).toContain('Nee (blijft naar riool gaan)');
-    expect(nee).toContain('qa-pdf-op-riool');
-    for (const tekst of ['Zink', '80 mm', 'Niet aanwezig, wel gewenst', 'Tegels', 'De border in', 'Via:', 'qa-pdf-waterberging', '>Regenpijp A</figcaption>']) expect(nee).not.toContain(tekst);
+    expect(nee).toMatch(/class="qa-pdf-op-riool"[^>]*>.*Ondergrond: (<!--\$-->)?Tegels/);
+    for (const tekst of ['Zink', '80 mm', 'Niet aanwezig, wel gewenst']) expect(nee).toContain(tekst);
+    for (const tekst of ['De border in', 'Via:', 'qa-pdf-waterberging', '>Regenpijp A</figcaption>']) expect(nee).not.toContain(tekst);
 
     await zet('regenpijp.r1.afkoppelen', 'twijfel');
     const twijfel = await plan();
@@ -336,7 +337,7 @@ describe('documents', () => {
 
     await zet('regenpijp.r1.afkoppelen', 'nee');
     const nee = await plan();
-    expect(nee).toMatch(/class="qa-pdf-op-riool"[^>]*>Wordt aangesloten op pijp B</);
+    expect(nee).toMatch(/class="qa-pdf-op-riool"[^>]*>(<!--\$-->)?Wordt aangesloten op pijp B</);
     expect(nee).toContain('>Regenpijp A</figcaption>');
 
     await zet('regenpijp.r1.afkoppelen', 'ja');

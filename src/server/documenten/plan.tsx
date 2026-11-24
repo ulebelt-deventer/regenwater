@@ -337,11 +337,22 @@ function PlanVanAanpak(props: { doc: Doc }): JSX.Element {
                 <tr>
                   <td>{r.label}</td>
                   <td><Of doc={props.doc} v={kies(r.id, 'afkoppelen')} /></td>
-                  <Show when={nietOpRiool(d(), r.id)} fallback={<td colspan={5} class="qa-pdf-op-riool">{str(d(), k(r.id, 'opmerking'))}</td>}>
-                    <td>{r.bronnen.length ? bronnenTekst(r, labels()) : '--'}</td>
-                    <td><Of doc={props.doc} v={kies(r.id, 'soort')} /></td>
-                    <td><Of doc={props.doc} v={kies(r.id, 'diameter')} /></td>
-                    <td><Of doc={props.doc} v={kies(r.id, 'regenton')} /></td>
+                  <td>{nietOpRiool(d(), r.id) && (r.bronnen.length ? bronnenTekst(r, labels()) : '--')}</td>
+                  <td><Of doc={props.doc} v={kies(r.id, 'soort')} /></td>
+                  <td><Of doc={props.doc} v={kies(r.id, 'diameter')} /></td>
+                  <td><Of doc={props.doc} v={kies(r.id, 'regenton')} /></td>
+                  <Show
+                    when={nietOpRiool(d(), r.id)}
+                    fallback={
+                      <td class="qa-pdf-op-riool">
+                        {str(d(), k(r.id, 'opmerking'))}
+                        <Show when={getoond(r.id, 'ondergrond') && str(d(), k(r.id, 'ondergrond'))}>
+                          {str(d(), k(r.id, 'opmerking')) && <br />}
+                          <span class="klein">Ondergrond: {str(d(), k(r.id, 'ondergrond'))}</span>
+                        </Show>
+                      </td>
+                    }
+                  >
                     <td>
                       <Of doc={props.doc} v={str(d(), k(r.id, 'waar'))} />
                       <Show when={kies(r.id, 'hoe')}>
