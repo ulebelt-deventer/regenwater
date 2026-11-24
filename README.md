@@ -1,63 +1,75 @@
-# Ulebelt Regenton portal
+# Regenwater
 
-A web portal for the Ulebelt rainwater project (Regenwater / Regenton). Volunteers (klussers) visit homes, design a rainwater capture plan, and install rain barrels. The portal follows each household from inschrijving to installation as one dossier. Admins (beheerders) set up dossiers and assign the work. Klussers do the on-site visit, fill in the plan and record the installation. The app produces the PDFs and e-mails that go to the bewoner and the woningcorporatie. The interface is in Dutch and built mobile-first, since most of the work happens on a phone in someone's backyard.
+**Een gratis, open-source app voor regenwaterprojecten in de buurt.** Vrijwilligers bezoeken woningen, maken een plan om regenpijpen af te koppelen van het riool, en plaatsen regentonnen. De app volgt elke woning van aanmelding tot oplevering, en regelt het papierwerk.
 
-## Main features
+Gemaakt door en voor [De Ulebelt](https://ulebelt.nl/) in Deventer. Bedoeld voor gebruik op je telefoon, in iemands achtertuin.
 
-- **Dossiers**: one per address, moving through 11 steps (defined in `src/shared/status.ts`): inschrijving, assign a bezoeker, plan and do the bezoek, finish the Plan van Aanpak, admin check and send, akkoord from the corporatie (huur) or the bewoner's choice (koop), assign an uitvoerder, do the work, send the opleverrapport. Status and "aandacht nodig" findings are computed from the dossier's data, never stored.
-- **Inschrijving**: address lookup through PDOK, kadastrale kaart, luchtfoto, and a boorprofiel auto-filled from the nearest boring (BRO / DINOloket).
-- **On-site visit and plan**: field forms with autosave, photos with drawn annotations, daken / tuinen / regenpijpen, and a materials list with cost estimate.
-- **Documents**: PDFs (plan, opleverrapport), a concept-Plan preview, paper bezoekformulieren and a materials print page, all rendered on the server and printed with Chromium.
-- **E-mail**: login links, notices to klussers, bewoners and corporaties from editable templates (sjablonen), and feedback to the developer. Admins get their dossier alerts (meldingen) in the app, under the navbar bell.
-- **Lists and overview**: an Overzicht with counts for admins, and a filterable, sortable Dossiers list with CSV export.
-- **Users**: beheerder and klusser roles, passwordless login (an e-mailed link plus a 6-digit code), archiving, "Inloggen als" impersonation, and an audit log (Activiteit).
-- **Offline-friendly**: photos queue in IndexedDB and upload when the connection comes back. The app can be installed to the home screen.
+![De lijst met dossiers: elke woning met zijn status en wat aandacht nodig heeft](docs/screenshot.jpg)
 
-## Stack
+## Wat de app doet
 
-TypeScript throughout: a Hono server on Node 26, SQLite through `better-sqlite3` (plain SQL migrations that run on boot), a SolidJS + Bootstrap 5 SPA built with Vite, and Playwright's Chromium for the PDFs. Code lives in `src/server`, `src/client` and `src/shared` (field definitions and status rules used by both sides).
+- **Eén dossier per woning**, van aanmelding tot uitvoering. Je ziet altijd bij welke stap elke woning is, en welke woningen aandacht nodig hebben.
+- **Zoekt dingen voor je op**: vul een adres in en je krijgt de kadastrale kaart, een luchtfoto en het boorprofiel. In Deventer, Raalte en Olst-Wijhe vindt de app ook op welk soort riool het huis zit.
+- **Werkt in de tuin**: formulieren slaan zichzelf op terwijl je typt, je kunt op foto's tekenen, en foto's die je zonder bereik maakt worden verstuurd zodra er weer verbinding is.
+- **Rekent voor je**: de waterberging per regenpijp, en een materiaallijst met kostenraming.
+- **Regelt het papierwerk**: het Plan van Aanpak en het opleverrapport als pdf, en e-mails aan bewoners en woningcorporaties vanuit sjablonen die je zelf schrijft.
+- **Eenvoudig voor vrijwilligers**: geen wachtwoord om te onthouden, alleen een inloglink per e-mail. Beheerders verdelen de bezoeken en klussen.
+- **Zorgvuldig met privacy**: gebouwd voor de AVG, met je gegevens op je eigen server in de EU.
 
-## Development quickstart
+## Gebruiken in jouw buurt
 
-Requirements: Node 26 (`nvm use` reads `.nvmrc`).
+Je mag de app gratis gebruiken en aanpassen onder de EUPL-licentie. Voor een eigen versie heb je een kleine gehuurde server nodig (een paar euro per maand), een domeinnaam, en iemand die een middag met de opdrachtregel uit de voeten kan. **[Je eigen versie draaien](docs/run-your-own.md)** loopt alle stappen met je door.
+
+Vragen of ideeën? [Maak een issue aan](https://github.com/ulebelt-deventer/regenwater/issues).
+
+## Voor ontwikkelaars
+
+Alles in TypeScript: een Hono-server op Node 26, SQLite via `better-sqlite3` (gewone SQL-migraties die bij het opstarten draaien), een SolidJS + Bootstrap 5 SPA gebouwd met Vite, en Chromium via Playwright voor de pdf's. De code staat in `src/server`, `src/client` en `src/shared` (velddefinities en statusregels die beide kanten gebruiken).
+
+### Snel aan de slag
+
+Nodig: Node 26 (`nvm use` leest `.nvmrc`).
 
 ```sh
 npm install
-npx playwright install chromium   # needed for PDF rendering and the e2e tests
+npx playwright install chromium   # nodig voor de pdf's en de e2e-tests
 
-# Seed yourself as an admin (creates data/app.db and runs migrations if needed)
-npm run beheerder -- "Your Name" you@example.org
+# Maak jezelf beheerder (maakt data/app.db aan en draait zo nodig de migraties)
+npm run beheerder -- "Je Naam" jij@example.org
 
-npm start   # same as npm run dev
+npm start   # hetzelfde als npm run dev
 ```
 
-Then open http://localhost:7425 and log in with that e-mail. **No mail is sent in development.** Each e-mail is written to `tmp/emails/*.html`, and the server prints a line `email sent to ..., view at: <path>`. Open that file to get the login code or link.
+Open daarna http://localhost:7425 en log in met dat e-mailadres. **In ontwikkeling wordt geen mail verstuurd.** Elke e-mail wordt weggeschreven naar `tmp/emails/*.html`, en de server print een regel `email sent to ..., view at: <pad>`. Open dat bestand voor de inlogcode of -link.
 
-Notes:
+Goed om te weten:
 
-- `npm start` / `npm run dev` starts the Vite client on 7425 (proxying `/api`, `/docs` and `/health`) and the API server on 3000, rebuilding and restarting the server on change. Use the 7425 URL (the server's startup line prints it too). Login links point there. Production doesn't use `npm start`: its systemd unit runs `node dist/server/main.js`.
-- Data lives in `data/` (gitignored): `app.db` and `fotos/`. Delete the folder to start fresh, then seed again. `DATA_DIR=...` points the server and the seed command somewhere else.
-- `npm run beheerder` rebuilds the server bundle first, so run it before `npm start` (or expect the dev server to restart once). It fails if the e-mail already exists. Add further users from the Gebruikers page in the app.
-- The inschrijving fetches live data from PDOK, BRO and DINOloket, so it needs an internet connection.
+- `npm start` / `npm run dev` start de Vite-client op 7425 (die `/api`, `/docs` en `/health` doorstuurt) en de API-server op 3000, en bouwt en herstart de server bij elke wijziging. Gebruik de URL met 7425 (de server print hem ook bij het opstarten); inloglinks wijzen daarheen. Productie gebruikt geen `npm start`: de systemd-unit draait `node dist/server/main.js`.
+- Gegevens staan in `data/` (staat in .gitignore): `app.db` en `fotos/`. Verwijder de map om opnieuw te beginnen, en maak jezelf daarna weer beheerder. Met `DATA_DIR=...` gebruiken de server en het seed-commando een andere map.
+- `npm run beheerder` bouwt eerst de serverbundel, dus draai het vóór `npm start` (anders herstart de dev-server één keer). Het geeft een fout als het e-mailadres al bestaat. Andere gebruikers voeg je toe op de pagina Gebruikers in de app.
+- De inschrijving haalt live gegevens op bij PDOK, BRO en DINOloket, en heeft dus internet nodig.
 
-## Tests and checks
+### Tests en controles
 
 ```sh
 npm run typecheck
 npm run lint
-npm run test:vite   # Vitest unit tests
-npm run test:e2e    # builds, then runs the Playwright scenarios
-npm test            # both
+npm run test:vite   # Vitest-unittests
+npm run test:e2e    # bouwt, en draait dan de Playwright-scenario's
+npm test            # beide
 ```
 
-## Docs and deployment
+### Documentatie
 
-- `docs/spec.md`: UI and workflow spec, page by page.
-- `docs/architecture.md`: stack, storage, e-mail, photos, PDFs, monitoring and backups.
-- `docs/berekening.md`: how the waterberging per regenpijp is calculated.
-- `docs/privacy.md`: personal data, processors and AVG compliance.
-- `devops/README.md`: VPS provisioning, deploys and operations.
+De documentatie hieronder is in het Engels.
 
-## License
+- `docs/spec.md`: specificatie van de schermen en de werkwijze, pagina voor pagina.
+- `docs/architecture.md`: stack, opslag, e-mail, foto's, pdf's, monitoring en back-ups.
+- `docs/berekening.md`: hoe de waterberging per regenpijp wordt berekend.
+- `docs/privacy.md`: persoonsgegevens, verwerkers en de AVG.
+- `docs/run-your-own.md`: je eigen productieversie opzetten, van begin tot eind.
+- `devops/README.md`: naslag voor de VPS-inrichting, deploys en beheer.
 
-Copyright 2026 De Ulebelt (https://ulebelt.nl/, Deventer, NL). Licensed under the EUPL-1.2; see `LICENSE`.
+## Licentie
+
+Copyright 2026 De Ulebelt (https://ulebelt.nl/, Deventer). De code valt onder de EUPL-1.2; zie `LICENSE`. De naam en het logo van De Ulebelt vallen niet onder die licentie: vraag ons eerst of je ze mag gebruiken.
