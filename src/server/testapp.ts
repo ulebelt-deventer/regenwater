@@ -51,18 +51,19 @@ export function maakGebruiker(t: TestApp, naam: string, rol: 'beheerder' | 'klus
   return Number(t.ctx.db.prepare('INSERT INTO gebruikers (naam, email, rol, created_at) VALUES (?, ?, ?, ?)').run(naam, email, rol, t.ctx.klok.iso()).lastInsertRowid);
 }
 
-// A logged-in browser: keeps the session cookie between requests.
+// A logged-in browser: keeps its cookies between requests.
 export class Klant {
-  private cookie = '';
-  private t: TestApp;
+  readonly cookies = new Map<string, string>();
+  private t: Pick<TestApp, 'app' | 'mailer'>;
   private ip: string;
-  constructor(t: TestApp, ip = '10.0.0.1') {
+  constructor(t: Pick<TestApp, 'app' | 'mailer'>, ip = '10.0.0.1') {
     this.t = t;
     this.ip = ip;
   }
 
   async verzoek(methode: string, pad: string, inhoud?: unknown, extra: RequestInit = {}): Promise<Response> {
-    const headers: Record<string, string> = { 'x-forwarded-for': this.ip, cookie: this.cookie };
+    const cookie = [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
+    const headers: Record<string, string> = { 'x-forwarded-for': this.ip, cookie };
     let b: BodyInit | undefined;
     if (inhoud instanceof Uint8Array) b = inhoud as BodyInit;
     else if (inhoud !== undefined) {
@@ -70,8 +71,11 @@ export class Klant {
       b = JSON.stringify(inhoud);
     }
     const res = await this.t.app.request(pad, { method: methode, body: b, ...extra, headers: { ...headers, ...(extra.headers as Record<string, string>) } });
-    const gezet = res.headers.get('set-cookie');
-    if (gezet) this.cookie = gezet.split(';')[0];
+    for (const gezet of res.headers.getSetCookie()) {
+      const [naam, ...waarde] = gezet.split(';')[0].split('=');
+      if (/max-age=0/i.test(gezet)) this.cookies.delete(naam);
+      else this.cookies.set(naam, waarde.join('='));
+    }
     return res;
   }
 

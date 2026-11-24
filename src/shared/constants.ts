@@ -32,6 +32,11 @@ export const LOGIN_POGINGEN_PER_IP_PER_UUR = 20;
 export const SESSIE_DAGEN = 30;
 export const LAATST_ACTIEF_INTERVAL_MIN = 5;
 
+// Proefomgevingen (staging only, see src/server/proef.ts)
+export const PROEF_BEWAAR_DAGEN = 90; // deleted this long after their last use
+export const PROEF_PER_UUR = 60; // new proefomgevingen per hour, across all visitors
+export const PROEF_MAX = 200; // all stay open, ~3 file descriptors each, under systemd's default limit of 1024
+
 // Audit: adjacent autosaves by the same person merge into one entry within this window.
 export const AUDIT_MERGE_MIN = 60;
 

@@ -69,6 +69,8 @@ Bash scripts adapted from `tmp/devops-SAMPLE`, run from the maintainer's machine
 - `push-env.sh`: writes `/etc/regenton-<env>.env` (Mailgun key, healthcheck URLs, S3 credentials) from the local gitignored `devops/<env>.env`.
 - `status.sh`, `logs.sh`, `restart.sh`: health, memory, recent errors, backup age and disk at a glance; journald logs; restart.
 
+Staging also serves proefomgevingen: a database per visitor who signs up at `/proberen`, deleted 90 days after its last use. See `docs/proefomgevingen.md`.
+
 Scheduled jobs are systemd timers, defined in `provision.sh`, each running a small Node script as the app user with the same environment file. Timers rather than crontab entries because the sample scripts already use them, `Persistent=true` catches up on a run missed during a reboot, and output lands in journald next to the app's logs.
 
 - Daily backup check (see Backups).

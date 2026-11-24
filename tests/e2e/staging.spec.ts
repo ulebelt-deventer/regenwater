@@ -1,4 +1,4 @@
-// The DEV or TEST label in the navbar and the staging banner. The e2e server is neither, so the label tests fake /api/omgeving's answer.
+// The DEV or TEST label in the navbar, the staging banner and the /proberen sign-up. The e2e server reports no omgeving, so these tests fake the API answers they depend on.
 import { type Page, expect, test } from '@playwright/test';
 import type { Omgeving } from '../../src/shared/types.ts';
 import { start } from './hulp.ts';
@@ -56,4 +56,31 @@ test('het label en de staging-banner staan ook op de inlogpagina', async ({ page
   await page.goto('/inloggen');
   await expect(page.locator('.qa-navbar-uitgelogd .qa-omgeving-label')).toHaveText('TEST');
   await expect(page.locator('.qa-staging-banner')).toBeVisible();
+});
+
+test('op de testomgeving maakt /proberen een proefomgeving aan met naam en e-mailadres en logt in met de code', async ({ page }) => {
+  await start(page);
+  await page.context().clearCookies();
+  await alsOmgeving(page, 'test');
+  const verzonden: Record<string, unknown>[] = [];
+  for (const pad of ['**/api/proberen', '**/api/auth/code']) {
+    await page.route(pad, (route) => (verzonden.push(route.request().postDataJSON()), route.fulfill({ json: { ok: true } })));
+  }
+  await page.goto('/proberen');
+  await page.locator('.qa-proberen-naam').fill('Pim Proef');
+  await page.locator('.qa-proberen-email').fill('pim@example.org');
+  await page.locator('.qa-proberen-maak').click();
+  await expect(page.locator('.qa-proberen-verstuurd')).toContainText('pim@example.org');
+  await page.locator('.qa-proberen-code').fill('123456');
+  await page.locator('.qa-proberen-inloggen').click();
+  await page.waitForURL((url) => url.pathname !== '/proberen');
+  expect(verzonden).toEqual([{ naam: 'Pim Proef', email: 'pim@example.org' }, { email: 'pim@example.org', code: '123456' }]);
+});
+
+test('op de live site toont /proberen geen aanmeldformulier', async ({ page }) => {
+  await start(page);
+  await page.context().clearCookies();
+  await page.goto('/proberen');
+  await expect(page.locator('.qa-proberen-niet')).toBeVisible();
+  await expect(page.locator('.qa-proberen-form')).toHaveCount(0);
 });

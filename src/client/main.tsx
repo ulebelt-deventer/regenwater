@@ -20,6 +20,7 @@ import { GebruikerPagina, Gebruikers } from './paginas/gebruikers.tsx';
 import { Inloggen, InloggenLink } from './paginas/inloggen.tsx';
 import { Nieuws } from './paginas/nieuws.tsx';
 import { Overzicht } from './paginas/overzicht.tsx';
+import { Proberen } from './paginas/proberen.tsx';
 import { AandachtUitleg, Databeleid, Installeren, Privacy, RechtenUitleg, Statussen, UitlegOverzicht } from './paginas/uitleg.tsx';
 import { startScrollHerstel } from './scrollherstel.ts';
 import { startVersieControle } from './versie.ts';
@@ -38,6 +39,7 @@ render(
       <Route path="/" component={Overzicht} />
       <Route path="/inloggen" component={Inloggen} />
       <Route path="/inloggen/link" component={InloggenLink} />
+      <Route path="/proberen" component={Proberen} />
       <Route path="/dossiers" component={Dossiers} />
       <Route path="/dossiers/:id" component={DossierRoute}>
         <Route path="/" component={Details} />

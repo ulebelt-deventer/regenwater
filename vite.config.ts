@@ -17,6 +17,7 @@ export default defineConfig({
     // No live reload: a page being tested must not refresh under you. A manual refresh still gets the latest code.
     hmr: false,
     // Prefix match: '/api' without the slash would also proxy the client's own /api.ts module.
-    proxy: { '/api/': 'http://localhost:3000', '/docs/': 'http://localhost:3000', '/health': 'http://localhost:3000' },
+    // /s/ is the proefomgeving links' redirect (src/server/proef.ts), with STAGING set.
+    proxy: { '/api/': 'http://localhost:3000', '/docs/': 'http://localhost:3000', '/health': 'http://localhost:3000', '/s/': 'http://localhost:3000' },
   },
 });
